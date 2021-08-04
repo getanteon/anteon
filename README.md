@@ -1,1 +1,1 @@
-# ddosify_private
+# Ddosify PRO
