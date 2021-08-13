@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"ddosify.com/hammer/engine"
-	"ddosify.com/hammer/engine/types"
+	"ddosify.com/hammer/core"
+	"ddosify.com/hammer/core/types"
 )
 
 // We might consider to use Viper: https://github.com/spf13/viper
@@ -44,7 +44,7 @@ func main() {
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
-	pc := types.ProxyContext{
+	pc := types.Proxy{
 		Strategy: "single",
 		Addr:     proxyURL,
 	}
@@ -56,16 +56,16 @@ func main() {
 	if target != nil {
 		*scenario = "{'scenario': [{'url':'" + *target + "', 'timeout':'" + strconv.Itoa(*timeout) + "'}]}"
 	}
-	var sc types.ScenarioContext
+	var sc types.Scenario
 	json.Unmarshal([]byte(*scenario), &sc)
 
-	packetContext := types.PacketContext{
+	packet := types.Packet{
 		Protocol: strings.ToUpper(*protocol),
 		Method:   strings.ToUpper(*method),
 		Payload:  *payload,
 	}
 
-	hc := types.HammerContext{
+	h := types.Hammer{
 		Concurrency:       *concurrency,
 		CPUCount:          *cpuCount,
 		TotalReqCount:     *reqCount,
@@ -73,14 +73,14 @@ func main() {
 		TestDuration:      *duration,
 		Scenario:          sc,
 		Proxy:             pc,
-		NetworkPacket:     packetContext,
+		Packet:            packet,
 		ReportDestination: *output,
 	}
-	if err = hc.Validate(); err != nil {
+	if err = h.Validate(); err != nil {
 		exitWithMsg(err.Error())
 	}
 
-	hammer, err := engine.CreateHammer(hc)
+	hammer, err := core.CreateEngine(h)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
