@@ -54,7 +54,7 @@ func (h *Hammer) Validate() error {
 	}
 
 	if !util.StringInSlice(h.ReportDestination, supportedDestinations[:]) {
-		return fmt.Errorf("Unsupported Output Destination: %s", h.ReportDestination)
+		return fmt.Errorf("Unsupported Report Destination: %s", h.ReportDestination)
 	}
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {
