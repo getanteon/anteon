@@ -43,11 +43,11 @@ func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
 	flag.Parse()
 
-	sc := createScenario()
-	pc := createProxy()
-	packet := createPacket()
+	s := createScenario()
+	p := createProxy()
+	pckt := createPacket()
 
-	h := createHamemr(sc, pc, packet)
+	h := createHammer(s, p, pckt)
 	if err := h.Validate(); err != nil {
 		exitWithMsg(err.Error())
 	}
@@ -62,29 +62,29 @@ func main() {
 	engine.Stop()
 }
 
-func createHamemr(sc types.Scenario, pc types.Proxy, packet types.Packet) types.Hammer {
+func createHammer(s types.Scenario, p types.Proxy, pckt types.Packet) types.Hammer {
 	h := types.Hammer{
 		Concurrency:       *concurrency,
 		CPUCount:          *cpuCount,
 		TotalReqCount:     *reqCount,
 		LoadType:          *loadType,
 		TestDuration:      *duration,
-		Scenario:          sc,
-		Proxy:             pc,
-		Packet:            packet,
+		Scenario:          s,
+		Proxy:             p,
+		Packet:            pckt,
 		ReportDestination: *output,
 	}
 	return h
 }
 
 func createPacket() types.Packet {
-	packet := types.Packet{
+	pckt := types.Packet{
 		Protocol: strings.ToUpper(*protocol),
 		Method:   strings.ToUpper(*method),
 		Payload:  *payload,
 		Headers:  parseHeaders(headers),
 	}
-	return packet
+	return pckt
 }
 
 func createProxy() types.Proxy {
@@ -92,22 +92,22 @@ func createProxy() types.Proxy {
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
-	pc := types.Proxy{
+	p := types.Proxy{
 		Strategy: "single",
 		Addr:     proxyURL,
 	}
-	return pc
+	return p
 }
 
 func createScenario() types.Scenario {
-	var sc types.Scenario
+	var s types.Scenario
 	if target != nil {
 		url, err := url.Parse(*target)
 		if err != nil {
 			exitWithMsg(err.Error())
 		}
 
-		sc = types.Scenario{
+		s = types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{
 					URL:     *url,
@@ -118,7 +118,7 @@ func createScenario() types.Scenario {
 	} else {
 		exitWithMsg("Target is not provided.")
 	}
-	return sc
+	return s
 }
 
 func exitWithMsg(msg string) {
