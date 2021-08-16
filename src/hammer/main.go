@@ -1,19 +1,20 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"ddosify.com/hammer/core"
 	"ddosify.com/hammer/core/types"
 )
+
+const headerRegexp = `^([\w-]+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
@@ -28,9 +29,11 @@ var (
 	payload  = flag.String("b", "", "Payload of the network packet")
 	headers  header
 
-	target   = flag.String("t", "", "Target URL")
-	timeout  = flag.Int("T", 20, "Request timeout in seconds")
-	scenario = flag.String("s", "", "Test scenario content in json format. Ex: [{url: 'sample.com', timeout: 10}, {url: 'sample.com/t', timeout: 12}]")
+	target  = flag.String("t", "", "Target URL")
+	timeout = flag.Int("T", 20, "Request timeout in seconds")
+
+	//TODO: read from json file with whole parameters. config.json
+	// scenario = flag.String("s", "", "Test scenario content in json format. Ex: [{url: 'sample.com', timeout: 10}, {url: 'sample.com/t', timeout: 12}]")
 
 	proxy  = flag.String("P", "", "Proxy address as host:port")
 	output = flag.String("o", "stdout", "Output destination")
@@ -40,31 +43,26 @@ func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
 	flag.Parse()
 
-	proxyURL, err := url.Parse(*proxy)
+	sc := createScenario()
+	pc := createProxy()
+	packet := createPacket()
+
+	h := createHamemr(sc, pc, packet)
+	if err := h.Validate(); err != nil {
+		exitWithMsg(err.Error())
+	}
+
+	engine, err := core.CreateEngine(h)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
-	pc := types.Proxy{
-		Strategy: "single",
-		Addr:     proxyURL,
-	}
 
-	//TODO: change scenario input flow. Suan bu kod calismiyor...
-	if *target == "" && *scenario == "" {
-		exitWithMsg("Provide target url (-t) or scenario (-s) option")
-	}
-	if target != nil {
-		*scenario = "{'scenario': [{'url':'" + *target + "', 'timeout':'" + strconv.Itoa(*timeout) + "'}]}"
-	}
-	var sc types.Scenario
-	json.Unmarshal([]byte(*scenario), &sc)
+	engine.Start()
+	time.Sleep(time.Second * 3)
+	engine.Stop()
+}
 
-	packet := types.Packet{
-		Protocol: strings.ToUpper(*protocol),
-		Method:   strings.ToUpper(*method),
-		Payload:  *payload,
-	}
-
+func createHamemr(sc types.Scenario, pc types.Proxy, packet types.Packet) types.Hammer {
 	h := types.Hammer{
 		Concurrency:       *concurrency,
 		CPUCount:          *cpuCount,
@@ -76,17 +74,51 @@ func main() {
 		Packet:            packet,
 		ReportDestination: *output,
 	}
-	if err = h.Validate(); err != nil {
-		exitWithMsg(err.Error())
-	}
+	return h
+}
 
-	hammer, err := core.CreateEngine(h)
+func createPacket() types.Packet {
+	packet := types.Packet{
+		Protocol: strings.ToUpper(*protocol),
+		Method:   strings.ToUpper(*method),
+		Payload:  *payload,
+		Headers:  parseHeaders(headers),
+	}
+	return packet
+}
+
+func createProxy() types.Proxy {
+	proxyURL, err := url.Parse(*proxy)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
-	hammer.Start()
-	time.Sleep(time.Second * 3)
-	hammer.Stop()
+	pc := types.Proxy{
+		Strategy: "single",
+		Addr:     proxyURL,
+	}
+	return pc
+}
+
+func createScenario() types.Scenario {
+	var sc types.Scenario
+	if target != nil {
+		url, err := url.Parse(*target)
+		if err != nil {
+			exitWithMsg(err.Error())
+		}
+
+		sc = types.Scenario{
+			Scenario: []types.ScenarioItem{
+				{
+					URL:     *url,
+					Timeout: *timeout,
+				},
+			},
+		}
+	} else {
+		exitWithMsg("Target is not provided.")
+	}
+	return sc
 }
 
 func exitWithMsg(msg string) {
@@ -94,6 +126,19 @@ func exitWithMsg(msg string) {
 		fmt.Fprintln(os.Stderr, msg)
 	}
 	os.Exit(1)
+}
+
+func parseHeaders(headersArr []string) map[string]string {
+	re := regexp.MustCompile(headerRegexp)
+	headersMap := make(map[string]string)
+	for _, h := range headersArr {
+		matches := re.FindStringSubmatch(h)
+		if len(matches) < 1 {
+			exitWithMsg(fmt.Sprintf("invalid header:  %v", h))
+		}
+		headersMap[matches[1]] = matches[2]
+	}
+	return headersMap
 }
 
 type header []string

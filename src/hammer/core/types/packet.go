@@ -26,7 +26,6 @@ type Packet struct {
 	Payload string
 }
 
-// TODO: validate Headers format with regex
 func (p *Packet) validate() error {
 	if !util.StringInSlice(p.Protocol, supportedProtocols[:]) {
 		return fmt.Errorf("Unsupported Protocol: %s", p.Protocol)
@@ -34,5 +33,6 @@ func (p *Packet) validate() error {
 	if !util.StringInSlice(p.Method, supportedProtocolMethods[p.Protocol][:]) {
 		return fmt.Errorf("Unsupported Request Method: %s", p.Method)
 	}
+
 	return nil
 }

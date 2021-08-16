@@ -12,7 +12,7 @@ var hammer *Engine
 var once sync.Once
 
 type Engine struct {
-	params types.Hammer
+	hammer types.Hammer
 
 	proxyService proxy.ProxyService
 
@@ -23,7 +23,7 @@ func CreateEngine(h types.Hammer) (engine *Engine, err error) {
 	if engine == nil {
 		once.Do(
 			func() {
-				engine = &Engine{params: h}
+				engine = &Engine{hammer: h}
 				if err := h.Validate(); err != nil {
 					return
 				}
