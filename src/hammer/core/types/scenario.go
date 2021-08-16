@@ -8,8 +8,10 @@ import (
 	"strings"
 )
 
+//TODO: JSON marsh,unmarsh kalkabilir buradan. İhityac var mı emin olamadım.
+
 type Scenario struct {
-	Scenario []scenarioItem
+	Scenario []ScenarioItem
 }
 
 func (sc *Scenario) String() string {
@@ -20,7 +22,7 @@ func (sc *Scenario) String() string {
 	return s
 }
 
-type scenarioItem struct {
+type ScenarioItem struct {
 	// Target URL
 	URL url.URL `json:"url,string"`
 
@@ -28,12 +30,12 @@ type scenarioItem struct {
 	Timeout int `json:"timeout,int"`
 }
 
-func (sci *scenarioItem) String() string {
+func (sci *ScenarioItem) String() string {
 	return fmt.Sprintf("URL: %s, Timeout: %d", &sci.URL, sci.Timeout)
 }
 
 // We need to implement Unmarshaler interface for URL
-func (sci *scenarioItem) UnmarshalJSON(j []byte) error {
+func (sci *ScenarioItem) UnmarshalJSON(j []byte) error {
 	var rawStrings map[string]string
 
 	err := json.Unmarshal(j, &rawStrings)
