@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"net/url"
+	"strings"
 	"sync"
 
 	"ddosify.com/hammer/core/types"
@@ -20,9 +21,10 @@ func CreateProxyService(p types.Proxy) (ProxyService, error) {
 	if service == nil {
 		once.Do(
 			func() {
-				if p.Strategy == "single" {
+				if strings.EqualFold(p.Strategy, "single") {
 					service = &singleProxyStrategy{}
 				} 
+				service.init(p)
 			},
 		)
 	}

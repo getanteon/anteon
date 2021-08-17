@@ -43,6 +43,10 @@ func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
 	flag.Parse()
 
+	if *target == "" {
+		exitWithMsg("Please provide the target url")
+	}
+
 	s := createScenario()
 	p := createProxy()
 	pckt := createPacket()
