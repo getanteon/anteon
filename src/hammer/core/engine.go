@@ -1,12 +1,20 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"ddosify.com/hammer/core/proxy"
 	"ddosify.com/hammer/core/request"
 	"ddosify.com/hammer/core/types"
+)
+
+const (
+	tickerInterval = 100
+	// QPS?
+	// maxReq?
 )
 
 var hammer *Engine
@@ -18,14 +26,17 @@ type Engine struct {
 	proxyService   proxy.ProxyService
 	requestService request.RequestService
 
-	stopChan chan struct{}
+	tickCounter int
+	reqCountArr []int
+
+	ctx context.Context
 }
 
-func CreateEngine(h types.Hammer) (engine *Engine, err error) {
+func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err error) {
 	if engine == nil {
 		once.Do(
 			func() {
-				engine = &Engine{hammer: h}
+				engine = &Engine{hammer: h, ctx: ctx}
 				if err := h.Validate(); err != nil {
 					return
 				}
@@ -45,11 +56,41 @@ func CreateEngine(h types.Hammer) (engine *Engine, err error) {
 }
 
 func (e *Engine) Start() {
-	fmt.Println("Starting to hammerizing...")
-	// http.ProxyURL(e.proxyService.GetNewProxy())
-	e.requestService.Send(e.proxyService.GetNewProxy())
+	fmt.Println("Hammerizing...")
+
+	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
+	e.tickCounter = 0
+	e.reqCountArr = []int{10, 20, 30, 20, 10, 20, 30, 20, 10}
+
+	defer func() {
+		fmt.Println("Stopping the ticker")
+		ticker.Stop()
+		e.stop()
+	}()
+
+	for range ticker.C {
+		if e.tickCounter >= len(e.reqCountArr) {
+			fmt.Println("All request has been sent")
+			return
+		}
+
+		select {
+		case <-e.ctx.Done():
+			fmt.Println(("Stop signal received.."))
+			return
+		default:
+			for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
+				go func(i int) {
+					res := e.requestService.Send(e.proxyService.GetNewProxy())
+					fmt.Println("Res:", res)
+				}(i)
+			}
+		}
+
+		e.tickCounter++
+	}
 }
 
-func (e *Engine) Stop() {
-	fmt.Println("Hammer stopped.")
+func (e *Engine) stop() {
+	fmt.Println("Engine Finished.")
 }

@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"runtime"
 	"strings"
-	"time"
 
 	"ddosify.com/hammer/core"
 	"ddosify.com/hammer/core/types"
@@ -56,14 +57,33 @@ func main() {
 		exitWithMsg(err.Error())
 	}
 
-	engine, err := core.CreateEngine(h)
+	run(h)
+}
+
+func run(h types.Hammer) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	engine, err := core.CreateEngine(ctx, h)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	defer func() {
+		signal.Stop(c)
+		cancel()
+	}()
+
+	go func() {
+		select {
+		case <-c:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
 	engine.Start()
-	time.Sleep(time.Second * 3)
-	engine.Stop()
 }
 
 func createHammer(s types.Scenario, p types.Proxy, pckt types.Packet) types.Hammer {
