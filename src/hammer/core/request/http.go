@@ -2,6 +2,7 @@ package request
 
 import (
 	"fmt"
+	"math/rand"
 	"net/url"
 
 	"ddosify.com/hammer/core/types"
@@ -18,7 +19,14 @@ func (h *httpRequest) init(p types.Packet, s types.Scenario) {
 	fmt.Println("Http Request Service initialized.")
 }
 
-func (h *httpRequest) Send(proxyAddr *url.URL) (res types.Response) {
+func (h *httpRequest) Send(proxyAddr *url.URL) (res types.Response, err error) {
+
+	// DO request
+
+	if rand.Intn(10)%2 == 0 {
+		err = &types.Error{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
+	}
+
 	res = types.Response{
 		RequestID: uuid.New(),
 	}

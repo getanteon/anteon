@@ -11,7 +11,7 @@ import (
 type ProxyService interface {
 	init(types.Proxy)
 	GetNewProxy() *url.URL
-	ReportProxy(*url.URL)
+	ReportProxy(addr *url.URL, reason string)
 }
 
 var once sync.Once
