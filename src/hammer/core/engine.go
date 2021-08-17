@@ -79,15 +79,36 @@ func (e *Engine) Start() {
 			fmt.Println(("Stop signal received.."))
 			return
 		default:
-			for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
-				go func(i int) {
-					res := e.requestService.Send(e.proxyService.GetNewProxy())
-					fmt.Println("Res:", res)
-				}(i)
-			}
+			e.runWorkers()
 		}
 
 		e.tickCounter++
+	}
+}
+
+func (e *Engine) runWorkers() {
+	for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
+		go func() {
+			e.runWorker()
+		}()
+	}
+}
+
+func (e *Engine) runWorker() {
+	p := e.proxyService.GetNewProxy()
+	res, err := e.requestService.Send(p)
+
+	if err != nil {
+		if custom_err, ok := err.(*types.Error); ok {
+
+			switch custom_err.Type {
+			case types.ErrorProxy:
+				e.proxyService.ReportProxy(p, custom_err.Reason)
+			}
+
+		}
+	} else {
+		fmt.Println("Res:", res)
 	}
 }
 

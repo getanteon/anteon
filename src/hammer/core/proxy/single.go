@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"net/url"
 
 	"ddosify.com/hammer/core/types"
@@ -19,6 +20,7 @@ func (sp *singleProxyStrategy) GetNewProxy() *url.URL {
 	return sp.proxyAddr
 }
 
-func (sp *singleProxyStrategy) ReportProxy(*url.URL) {
+func (sp *singleProxyStrategy) ReportProxy(addr *url.URL, reason string) {
+	fmt.Printf("%v reported for: %s\n", addr, reason)
 	return
 }
