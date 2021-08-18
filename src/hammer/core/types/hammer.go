@@ -11,10 +11,13 @@ const (
 	LoadTypeCapacity = "capacity"
 	LoadTypeStress   = "stress"
 	LoadTypeSoak     = "soak"
+
+	OutputTypeStdout    = "stdout"
+	OutputTypeTimescale = "timescale"
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeCapacity, LoadTypeStress, LoadTypeSoak}
-var supportedDestinations = [...]string{"stdout", "timescale"}
+var supportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
 type Hammer struct {
 	// TODO: Do we need this?
@@ -60,7 +63,7 @@ func (h *Hammer) Validate() error {
 		return err
 	}
 
-	if !util.StringInSlice(h.ReportDestination, supportedDestinations[:]) {
+	if !util.StringInSlice(h.ReportDestination, supportedOutputs[:]) {
 		return fmt.Errorf("Unsupported Report Destination: %s", h.ReportDestination)
 	}
 

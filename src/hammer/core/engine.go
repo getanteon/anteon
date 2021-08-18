@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"ddosify.com/hammer/core/proxy"
+	"ddosify.com/hammer/core/report"
 	"ddosify.com/hammer/core/request"
 	"ddosify.com/hammer/core/types"
 )
@@ -27,9 +28,12 @@ type Engine struct {
 
 	proxyService   proxy.ProxyService
 	requestService request.RequestService
+	reportService  report.ReportService
 
 	tickCounter int
 	reqCountArr []int
+
+	responseChan chan *types.Response
 
 	ctx context.Context
 }
@@ -51,6 +55,10 @@ func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err erro
 					return
 				}
 
+				if engine.reportService, err = report.CreateReportService(h.ReportDestination); err != nil {
+					return
+				}
+
 				engine.initReqCountArr()
 			},
 		)
@@ -59,27 +67,24 @@ func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err erro
 }
 
 func (e *Engine) Start() {
-	fmt.Println("Hammerizing...")
-
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
-	e.tickCounter = 0
+	e.responseChan = make(chan *types.Response, e.hammer.TotalReqCount)
+	go e.reportService.Start(e.responseChan)
 
 	defer func() {
-		fmt.Println("Stopping the ticker")
 		ticker.Stop()
 		e.stop()
 	}()
 
+	e.tickCounter = 0
 	for range ticker.C {
 		if e.tickCounter >= len(e.reqCountArr) {
-			fmt.Println("All request has been sent")
 			return
 		}
 
 		for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
 			select {
 			case <-e.ctx.Done():
-				fmt.Println("Stop signal received...")
 				return
 			default:
 				go func() {
@@ -104,12 +109,17 @@ func (e *Engine) runWorker() {
 			}
 		}
 	}
-
-	fmt.Println("Res:", res)
+	e.responseChan <- res
 }
 
 func (e *Engine) stop() {
-	fmt.Println("Engine Finished.")
+	fmt.Println("Closing report chan")
+	close(e.responseChan)
+
+	fmt.Println("Waiting done chan.")
+	<-e.reportService.DoneChan()
+
+	e.reportService.Report()
 }
 
 func (e *Engine) initReqCountArr() {
@@ -129,7 +139,7 @@ func (e *Engine) initReqCountArr() {
 		case types.LoadTypeSoak:
 			e.createSoakReqCountArr()
 		}
-		fmt.Println(e.reqCountArr)
+		// fmt.Println(e.reqCountArr)
 	}
 }
 
