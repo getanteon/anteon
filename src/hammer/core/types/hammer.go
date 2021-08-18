@@ -6,7 +6,14 @@ import (
 	"ddosify.com/hammer/core/util"
 )
 
-var loadTypes = [...]string{"linear", "capacity", "stress", "soak"}
+const (
+	LoadTypeLinear   = "linear"
+	LoadTypeCapacity = "capacity"
+	LoadTypeStress   = "stress"
+	LoadTypeSoak     = "soak"
+)
+
+var loadTypes = [...]string{LoadTypeLinear, LoadTypeCapacity, LoadTypeStress, LoadTypeSoak}
 var supportedDestinations = [...]string{"stdout", "timescale"}
 
 type Hammer struct {

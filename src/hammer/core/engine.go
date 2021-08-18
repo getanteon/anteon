@@ -12,7 +12,9 @@ import (
 )
 
 const (
+	// internval in milisecond
 	tickerInterval = 100
+
 	// QPS?
 	// maxReq?
 )
@@ -49,6 +51,7 @@ func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err erro
 					return
 				}
 
+				engine.initReqCountArr()
 			},
 		)
 	}
@@ -60,7 +63,6 @@ func (e *Engine) Start() {
 
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.tickCounter = 0
-	e.reqCountArr = []int{10, 20, 30, 20, 10, 20, 30, 20, 10}
 
 	defer func() {
 		fmt.Println("Stopping the ticker")
@@ -114,4 +116,53 @@ func (e *Engine) runWorker() {
 
 func (e *Engine) stop() {
 	fmt.Println("Engine Finished.")
+}
+
+func (e *Engine) initReqCountArr() {
+	if e.hammer.TimeReqCountMap != nil {
+		fmt.Println("initReqCountArr from TimeReqCountMap")
+	} else {
+		length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
+		e.reqCountArr = make([]int, length)
+
+		switch e.hammer.LoadType {
+		case types.LoadTypeLinear:
+			e.createLinearReqCountArr()
+		case types.LoadTypeCapacity:
+			e.createCapacityReqCountArr()
+		case types.LoadTypeStress:
+			e.createStressReqCountArr()
+		case types.LoadTypeSoak:
+			e.createSoakReqCountArr()
+		}
+		fmt.Println(e.reqCountArr)
+	}
+}
+
+func (e *Engine) createLinearReqCountArr() {
+	minReqCount := int(e.hammer.TotalReqCount / len(e.reqCountArr))
+	remaining := e.hammer.TotalReqCount - minReqCount*len(e.reqCountArr)
+	for i := range e.reqCountArr {
+		plusOne := 0
+		if i < remaining {
+			plusOne = 1
+		}
+		reqCount := minReqCount + plusOne
+		e.reqCountArr[i] = reqCount
+	}
+}
+
+// TODO
+func (e *Engine) createCapacityReqCountArr() {
+	return
+}
+
+// TODO
+func (e *Engine) createStressReqCountArr() {
+	return
+}
+
+// TODO
+func (e *Engine) createSoakReqCountArr() {
+	return
 }
