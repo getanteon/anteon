@@ -76,23 +76,19 @@ func (e *Engine) Start() {
 			return
 		}
 
-		select {
-		case <-e.ctx.Done():
-			fmt.Println(("Stop signal received.."))
-			return
-		default:
-			e.runWorkers()
+		for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
+			select {
+			case <-e.ctx.Done():
+				fmt.Println("Stop signal received...")
+				return
+			default:
+				go func() {
+					e.runWorker()
+				}()
+			}
 		}
 
 		e.tickCounter++
-	}
-}
-
-func (e *Engine) runWorkers() {
-	for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
-		go func() {
-			e.runWorker()
-		}()
 	}
 }
 
@@ -101,17 +97,15 @@ func (e *Engine) runWorker() {
 	res, err := e.requestService.Send(p)
 
 	if err != nil {
-		if custom_err, ok := err.(*types.Error); ok {
-
-			switch custom_err.Type {
+		if reqError, ok := err.(*types.Error); ok {
+			switch reqError.Type {
 			case types.ErrorProxy:
-				e.proxyService.ReportProxy(p, custom_err.Reason)
+				e.proxyService.ReportProxy(p, reqError.Reason)
 			}
-
 		}
-	} else {
-		fmt.Println("Res:", res)
 	}
+
+	fmt.Println("Res:", res)
 }
 
 func (e *Engine) stop() {
