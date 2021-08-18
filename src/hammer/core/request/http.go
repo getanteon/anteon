@@ -1,7 +1,6 @@
 package request
 
 import (
-	"fmt"
 	"math/rand"
 	"net/url"
 
@@ -16,10 +15,10 @@ type httpRequest struct {
 func (h *httpRequest) init(p types.Packet, s types.Scenario) {
 	h.request.Packet = p
 	h.request.Scenario = s
-	fmt.Println("Http Request Service initialized.")
+	// fmt.Println("Http Request Service initialized.")
 }
 
-func (h *httpRequest) Send(proxyAddr *url.URL) (res types.Response, err error) {
+func (h *httpRequest) Send(proxyAddr *url.URL) (res *types.Response, err error) {
 
 	// DO request
 
@@ -27,10 +26,10 @@ func (h *httpRequest) Send(proxyAddr *url.URL) (res types.Response, err error) {
 		err = &types.Error{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
 	}
 
-	res = types.Response{
+	res = &types.Response{
 		RequestID: uuid.New(),
 	}
-	fmt.Println("[HTTP] Sending request.")
+	// fmt.Println("[HTTP] Sending request.")
 
 	return
 }

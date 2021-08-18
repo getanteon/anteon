@@ -16,7 +16,7 @@ type request struct {
 // TODO: each request should have request_id to trace/debug etc.
 type RequestService interface {
 	init(types.Packet, types.Scenario)
-	Send(proxyAddr *url.URL) (types.Response, error)
+	Send(proxyAddr *url.URL) (*types.Response, error)
 }
 
 var once sync.Once
