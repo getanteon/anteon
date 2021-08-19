@@ -32,6 +32,7 @@ type Engine struct {
 
 	tickCounter int
 	reqCountArr []int
+	wg          sync.WaitGroup
 
 	responseChan chan *types.Response
 
@@ -76,24 +77,30 @@ func (e *Engine) Start() {
 		e.stop()
 	}()
 
-	e.tickCounter = 0
+	e.tickCounter = -1
+	e.wg = sync.WaitGroup{}
 	for range ticker.C {
+		e.tickCounter++
 		if e.tickCounter >= len(e.reqCountArr) {
 			return
 		}
 
-		for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
-			select {
-			case <-e.ctx.Done():
-				return
-			default:
-				go func() {
-					e.runWorker()
-				}()
-			}
+		select {
+		case <-e.ctx.Done():
+			return
+		default:
+			go e.runWorkers()
 		}
+	}
+}
 
-		e.tickCounter++
+func (e *Engine) runWorkers() {
+	for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
+		go func() {
+			e.wg.Add(1)
+			e.runWorker()
+			e.wg.Done()
+		}()
 	}
 }
 
@@ -109,14 +116,18 @@ func (e *Engine) runWorker() {
 			}
 		}
 	}
+	// fmt.Println("Sendin res to response chan.")
 	e.responseChan <- res
 }
 
 func (e *Engine) stop() {
+	fmt.Println("Waiting workers to finish")
+	e.wg.Wait()
+
 	fmt.Println("Closing report chan")
 	close(e.responseChan)
 
-	fmt.Println("Waiting done chan.")
+	fmt.Println("Waiting report done chan.")
 	<-e.reportService.DoneChan()
 
 	e.reportService.Report()
