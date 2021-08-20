@@ -15,8 +15,15 @@ const (
 
 var supportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
 var supportedProtocolMethods = map[string][]string{
-	ProtocolHTTP:  {http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch},
-	ProtocolHTTPS: {http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch}}
+	ProtocolHTTP: {
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
+		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+	},
+	ProtocolHTTPS: {
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
+		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+	},
+}
 
 type Scenario struct {
 	Scenario []ScenarioItem
@@ -59,13 +66,13 @@ type ScenarioItem struct {
 
 func (si *ScenarioItem) validate() error {
 	if !util.StringInSlice(si.Protocol, supportedProtocols[:]) {
-		return fmt.Errorf("Unsupported Protocol: %s", si.Protocol)
+		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
 	}
 	if !util.StringInSlice(si.Method, supportedProtocolMethods[si.Protocol][:]) {
-		return fmt.Errorf("Unsupported Request Method: %s", si.Method)
+		return fmt.Errorf("unsupported Request Method: %s", si.Method)
 	}
 	if si.ID == 0 {
-		return fmt.Errorf("Each scenario item should have an unique ID")
+		return fmt.Errorf("each scenario item should have an unique ID")
 	}
 	return nil
 }
