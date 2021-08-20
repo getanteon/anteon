@@ -20,10 +20,10 @@ const (
 	// maxReq?
 )
 
-var hammer *Engine
+var instance *engine
 var once sync.Once
 
-type Engine struct {
+type engine struct {
 	hammer types.Hammer
 
 	proxyService    proxy.ProxyService
@@ -39,35 +39,39 @@ type Engine struct {
 	ctx context.Context
 }
 
-func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err error) {
-	if engine == nil {
+func CreateEngine(ctx context.Context, h types.Hammer) *engine {
+	if instance == nil {
 		once.Do(
 			func() {
-				engine = &Engine{hammer: h, ctx: ctx}
-				if err := h.Validate(); err != nil {
-					return
-				}
-
-				if engine.proxyService, err = proxy.CreateProxyService(h.Proxy); err != nil {
-					return
-				}
-
-				if engine.scenarioService, err = scenario.CreateScenarioService(h.Scenario); err != nil {
-					return
-				}
-
-				if engine.reportService, err = report.CreateReportService(h.ReportDestination); err != nil {
-					return
-				}
-
-				engine.initReqCountArr()
+				instance = &engine{hammer: h, ctx: ctx}
 			},
 		)
 	}
-	return
+	return instance
 }
 
-func (e *Engine) Start() {
+func (e *engine) Init() (err error) {
+	if err = e.hammer.Validate(); err != nil {
+		return
+	}
+
+	if instance.proxyService, err = proxy.CreateProxyService(e.hammer.Proxy); err != nil {
+		return
+	}
+
+	if instance.scenarioService, err = scenario.CreateScenarioService(e.hammer.Scenario); err != nil {
+		return
+	}
+
+	if instance.reportService, err = report.CreateReportService(e.hammer.ReportDestination); err != nil {
+		return
+	}
+
+	instance.initReqCountArr()
+	return nil
+}
+
+func (e *engine) Start() {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.responseChan = make(chan *types.Response, e.hammer.TotalReqCount)
 	go e.reportService.Start(e.responseChan)
@@ -94,7 +98,7 @@ func (e *Engine) Start() {
 	}
 }
 
-func (e *Engine) runWorkers() {
+func (e *engine) runWorkers() {
 	for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
 		go func() {
 			e.wg.Add(1)
@@ -104,7 +108,7 @@ func (e *Engine) runWorkers() {
 	}
 }
 
-func (e *Engine) runWorker() {
+func (e *engine) runWorker() {
 	p := e.proxyService.GetNewProxy()
 	res, err := e.scenarioService.Do(p)
 
@@ -121,7 +125,7 @@ func (e *Engine) runWorker() {
 	e.responseChan <- res
 }
 
-func (e *Engine) stop() {
+func (e *engine) stop() {
 	fmt.Println("Waiting workers to finish")
 	e.wg.Wait()
 
@@ -134,7 +138,7 @@ func (e *Engine) stop() {
 	e.reportService.Report()
 }
 
-func (e *Engine) initReqCountArr() {
+func (e *engine) initReqCountArr() {
 	if e.hammer.TimeReqCountMap != nil {
 		fmt.Println("initReqCountArr from TimeReqCountMap")
 	} else {
@@ -155,7 +159,7 @@ func (e *Engine) initReqCountArr() {
 	}
 }
 
-func (e *Engine) createLinearReqCountArr() {
+func (e *engine) createLinearReqCountArr() {
 	minReqCount := int(e.hammer.TotalReqCount / len(e.reqCountArr))
 	remaining := e.hammer.TotalReqCount - minReqCount*len(e.reqCountArr)
 	for i := range e.reqCountArr {
@@ -169,16 +173,16 @@ func (e *Engine) createLinearReqCountArr() {
 }
 
 // TODO
-func (e *Engine) createCapacityReqCountArr() {
+func (e *engine) createCapacityReqCountArr() {
 	return
 }
 
 // TODO
-func (e *Engine) createStressReqCountArr() {
+func (e *engine) createStressReqCountArr() {
 	return
 }
 
 // TODO
-func (e *Engine) createSoakReqCountArr() {
+func (e *engine) createSoakReqCountArr() {
 	return
 }
