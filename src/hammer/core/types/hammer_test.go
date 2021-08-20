@@ -1,10 +1,25 @@
 package types_test
 
 import (
+	"net/http"
 	"testing"
 
 	"ddosify.com/hammer/core/types"
 )
+
+var supportedProtocols = [...]string{"HTTP", "HTTPS"}
+var supportedProtocolMethods = map[string][]string{
+	"HTTP": {
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
+		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+	},
+	"HTTPS": {
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
+		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+	},
+}
+var availableProxyStrategies = [...]string{"single"}
+var supportedDestinations = [...]string{"stdout", "timescale"}
 
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
@@ -31,12 +46,11 @@ func TestHammerInValidAttackType(t *testing.T) {
 	h.LoadType = "incremental"
 
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidAttackType should errored")
+		t.Errorf("TestHammerInValidAttackType errored")
 	}
 }
 
 func TestHammerValidReportDestination(t *testing.T) {
-	var supportedDestinations = [...]string{"stdout", "timescale"}
 
 	for _, rd := range supportedDestinations {
 		h := newDummyHammer()
@@ -53,7 +67,7 @@ func TestHammerInValidReportDestination(t *testing.T) {
 	h.ReportDestination = "output_dummy"
 
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidReportDestination should errored")
+		t.Errorf("TestHammerInValidReportDestination errored")
 	}
 }
 
@@ -75,8 +89,161 @@ func TestHammerInValidProxy(t *testing.T) {
 	h.Proxy = types.Proxy{Strategy: "dummy_strategy"}
 
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidProxy should errored")
+		t.Errorf("TestHammerInValidProxy errored")
 	}
 }
 
-//TODO: valid/invalid scenario test cases.
+func TestHammerValidScenario(t *testing.T) {
+	// Single Scenario
+	for _, p := range supportedProtocols {
+		for _, m := range supportedProtocolMethods[p] {
+			h := newDummyHammer()
+			h.Scenario = types.Scenario{
+				Scenario: []types.ScenarioItem{
+					{
+						ID:       1,
+						Protocol: p,
+						Method:   m,
+					},
+				},
+			}
+
+			if err := h.Validate(); err != nil {
+				t.Errorf("TestHammerValidScenario single scenario errored: %v", err)
+			}
+		}
+	}
+
+	// Multiple Scenario
+	for _, p := range supportedProtocols {
+		for _, m := range supportedProtocolMethods[p] {
+			h := newDummyHammer()
+			h.Scenario = types.Scenario{
+				Scenario: []types.ScenarioItem{
+					{
+						ID:       1,
+						Protocol: p,
+						Method:   m,
+					}, {
+						ID:       2,
+						Protocol: p,
+						Method:   m,
+					},
+				},
+			}
+
+			if err := h.Validate(); err != nil {
+				t.Errorf("TestHammerValidScenario multi scenario errored: %v", err)
+			}
+		}
+	}
+}
+
+func TestHammerInvalidScenarioProtocol(t *testing.T) {
+	// Single Scenario
+	h := newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: "HTTPP",
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenario errored")
+	}
+
+	// Multi Scenario
+	h = newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: supportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+			{
+				ID:       1,
+				Protocol: "HTTPP",
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenario errored")
+	}
+}
+
+func TestHammerInvalidScenarioMethod(t *testing.T) {
+	// Single Scenario
+	h := newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: supportedProtocols[0],
+				Method:   "GETT",
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenarioMethod errored")
+	}
+
+	// Multi Scenario
+	h = newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: supportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+			{
+				ID:       1,
+				Protocol: supportedProtocols[0],
+				Method:   "GETT",
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenarioMethod errored")
+	}
+}
+
+func TestHammerEmptyScenarioItemID(t *testing.T) {
+	// Single Scenario
+	h := newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				Protocol: supportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenarioItemID errored")
+	}
+
+	// Multi Scenario
+	h = newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: supportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+			{
+				Protocol: supportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidScenarioItemID errored")
+	}
+}
