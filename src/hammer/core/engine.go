@@ -8,7 +8,7 @@ import (
 
 	"ddosify.com/hammer/core/proxy"
 	"ddosify.com/hammer/core/report"
-	"ddosify.com/hammer/core/request"
+	"ddosify.com/hammer/core/scenario"
 	"ddosify.com/hammer/core/types"
 )
 
@@ -26,9 +26,9 @@ var once sync.Once
 type Engine struct {
 	hammer types.Hammer
 
-	proxyService   proxy.ProxyService
-	requestService request.RequestService
-	reportService  report.ReportService
+	proxyService    proxy.ProxyService
+	scenarioService *scenario.ScenarioService
+	reportService   report.ReportService
 
 	tickCounter int
 	reqCountArr []int
@@ -52,7 +52,7 @@ func CreateEngine(ctx context.Context, h types.Hammer) (engine *Engine, err erro
 					return
 				}
 
-				if engine.requestService, err = request.CreateRequestService(h.Packet, h.Scenario); err != nil {
+				if engine.scenarioService, err = scenario.CreateScenarioService(h.Scenario); err != nil {
 					return
 				}
 
@@ -106,7 +106,7 @@ func (e *Engine) runWorkers() {
 
 func (e *Engine) runWorker() {
 	p := e.proxyService.GetNewProxy()
-	res, err := e.requestService.Send(p)
+	res, err := e.scenarioService.Do(p)
 
 	if err != nil {
 		if reqError, ok := err.(*types.Error); ok {
@@ -115,6 +115,7 @@ func (e *Engine) runWorker() {
 				e.proxyService.ReportProxy(p, reqError.Reason)
 			}
 		}
+		return
 	}
 	// fmt.Println("Sendin res to response chan.")
 	e.responseChan <- res

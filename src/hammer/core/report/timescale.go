@@ -17,7 +17,9 @@ func (t *timescale) init() {
 
 func (t *timescale) Start(input chan *types.Response) {
 	for r := range input {
-		fmt.Printf("Report service resp receieved: %s\n", r.RequestID)
+		for _, rr := range r.ResponseItems {
+			fmt.Printf("[Timescale]Report service resp receieved: %s\n", rr.RequestID)
+		}
 	}
 
 	time.Sleep(2 * time.Second)

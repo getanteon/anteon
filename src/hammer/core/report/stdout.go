@@ -17,7 +17,9 @@ func (s *stdout) init() {
 
 func (s *stdout) Start(input chan *types.Response) {
 	for r := range input {
-		fmt.Printf("Report service resp receieved: %s\n", r.RequestID)
+		for _, rr := range r.ResponseItems {
+			fmt.Printf("[Stdout]Report service resp receieved: %s\n", rr.RequestID)
+		}
 	}
 
 	time.Sleep(2 * time.Second)

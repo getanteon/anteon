@@ -9,7 +9,6 @@ import (
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
 		Proxy:             types.Proxy{Strategy: "single"},
-		Packet:            types.Packet{Protocol: "HTTP", Method: "GET"},
 		ReportDestination: "stdout",
 	}
 }
@@ -80,38 +79,4 @@ func TestHammerInValidProxy(t *testing.T) {
 	}
 }
 
-func TestHammerValidPacket(t *testing.T) {
-	var supportedProtocols = [...]string{"HTTP", "HTTPS"}
-	var supportedProtocolMethods = map[string][]string{
-		"HTTP":  {"GET", "POST", "PUT", "DELETE", "UPDATE", "PATCH"},
-		"HTTPS": {"GET", "POST", "PUT", "DELETE", "UPDATE", "PATCH"}}
-
-	for _, p := range supportedProtocols {
-		for _, m := range supportedProtocolMethods[p] {
-			h := newDummyHammer()
-			h.Packet = types.Packet{Protocol: p, Method: m}
-
-			if err := h.Validate(); err != nil {
-				t.Errorf("TestHammerValidProtocol errored: %v", err)
-			}
-		}
-	}
-}
-
-func TestHammerInValidPacket(t *testing.T) {
-	// Incorrect Protocol
-	h := newDummyHammer()
-	h.Packet = types.Packet{Protocol: "dummy_protocol", Method: "GET"}
-
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidPacket incorrect protocol should errored")
-	}
-
-	// Incorrect Method
-	h = newDummyHammer()
-	h.Packet = types.Packet{Protocol: "HTTP", Method: "dummy_method"}
-
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidPacket incorrect method should errored")
-	}
-}
+//TODO: valid/invalid scenario test cases.

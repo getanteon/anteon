@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"ddosify.com/hammer/core"
@@ -19,11 +18,9 @@ const headerRegexp = `^([\w-]+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
-	concurrency = flag.Int("c", 50, "Concurrency count")
-	cpuCount    = flag.Int("cpus", runtime.GOMAXPROCS(-1), "Number of CPU to be used")
-	reqCount    = flag.Int("n", 1000, "Total request count")
-	loadType    = flag.String("l", "linear", "Type of the load test [linear, capacity, stress, soak")
-	duration    = flag.Int("d", 10, "Test duration in seconds")
+	reqCount = flag.Int("n", 1000, "Total request count")
+	loadType = flag.String("l", "linear", "Type of the load test [linear, capacity, stress, soak")
+	duration = flag.Int("d", 10, "Test duration in seconds")
 
 	protocol = flag.String("p", "HTTP", "[HTTP, HTTPS]")
 	method   = flag.String("m", "GET", "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
@@ -50,9 +47,8 @@ func main() {
 
 	s := createScenario()
 	p := createProxy()
-	pckt := createPacket()
 
-	h := createHammer(s, p, pckt)
+	h := createHammer(s, p)
 	if err := h.Validate(); err != nil {
 		exitWithMsg(err.Error())
 	}
@@ -86,29 +82,16 @@ func run(h types.Hammer) {
 	engine.Start()
 }
 
-func createHammer(s types.Scenario, p types.Proxy, pckt types.Packet) types.Hammer {
+func createHammer(s types.Scenario, p types.Proxy) types.Hammer {
 	h := types.Hammer{
-		Concurrency:       *concurrency,
-		CPUCount:          *cpuCount,
 		TotalReqCount:     *reqCount,
-		LoadType:          *loadType,
+		LoadType:          strings.ToLower(*loadType),
 		TestDuration:      *duration,
 		Scenario:          s,
 		Proxy:             p,
-		Packet:            pckt,
 		ReportDestination: *output,
 	}
 	return h
-}
-
-func createPacket() types.Packet {
-	pckt := types.Packet{
-		Protocol: strings.ToUpper(*protocol),
-		Method:   strings.ToUpper(*method),
-		Payload:  *payload,
-		Headers:  parseHeaders(headers),
-	}
-	return pckt
 }
 
 func createProxy() types.Proxy {
@@ -134,8 +117,13 @@ func createScenario() types.Scenario {
 		s = types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{
-					URL:     *url,
-					Timeout: *timeout,
+					ID:       1,
+					Protocol: strings.ToUpper(*protocol),
+					Method:   strings.ToUpper(*method),
+					Headers:  parseHeaders(headers),
+					Payload:  *payload,
+					URL:      *url,
+					Timeout:  *timeout,
 				},
 			},
 		}

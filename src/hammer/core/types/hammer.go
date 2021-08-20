@@ -20,14 +20,6 @@ var loadTypes = [...]string{LoadTypeLinear, LoadTypeCapacity, LoadTypeStress, Lo
 var supportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
 type Hammer struct {
-	// TODO: Do we need this?
-	// Number of concurrency
-	Concurrency int
-
-	// TODO: Do we need this?
-	// Total CPU count to be used by Hammer.
-	CPUCount int
-
 	// Total request count
 	TotalReqCount int
 
@@ -46,9 +38,6 @@ type Hammer struct {
 	// Proxy/Proxies to use
 	Proxy Proxy
 
-	// Network Packet parameters
-	Packet Packet
-
 	// Destination of the results data.
 	ReportDestination string
 
@@ -59,7 +48,7 @@ func (h *Hammer) Validate() error {
 		return err
 	}
 
-	if err := h.Packet.validate(); err != nil {
+	if err := h.Scenario.validate(); err != nil {
 		return err
 	}
 
