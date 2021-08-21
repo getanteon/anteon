@@ -7,8 +7,7 @@ const (
 	ErrorProxy = "ProxyError"
 
 	// Reasons
-	ReasonProxyFailed  = "proxy failed"
-	ReasonProxyTimeout = "proxy timeout"
+	ReasonProxyFailed = "proxy failed"
 )
 
 type Error struct {

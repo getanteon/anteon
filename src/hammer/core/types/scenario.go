@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"ddosify.com/hammer/core/util"
 )
@@ -16,12 +15,12 @@ const (
 var supportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
 var supportedProtocolMethods = map[string][]string{
 	ProtocolHTTP: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
-		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions,
 	},
 	ProtocolHTTPS: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
-		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions,
 	},
 }
 
@@ -45,7 +44,7 @@ type ScenarioItem struct {
 	// Protocol of the requests.
 	Protocol string
 
-	// Request Method Spesific To Protocol
+	// Request Method
 	Method string
 
 	// Request Headers
@@ -55,9 +54,9 @@ type ScenarioItem struct {
 	Payload string
 
 	// Target URL
-	URL url.URL
+	URL string
 
-	// Connection timeout duration of the request in miliseconds
+	// Connection timeout duration of the request in seconds
 	Timeout int
 
 	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests

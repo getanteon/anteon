@@ -2,7 +2,6 @@ package report
 
 import (
 	"fmt"
-	"time"
 
 	"ddosify.com/hammer/core/types"
 )
@@ -22,7 +21,6 @@ func (s *stdout) Start(input chan *types.Response) {
 		}
 	}
 
-	time.Sleep(2 * time.Second)
 	s.doneChan <- struct{}{}
 }
 
