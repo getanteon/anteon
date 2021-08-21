@@ -14,6 +14,8 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+//TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.
+
 const headerRegexp = `^([\w-]+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
@@ -28,7 +30,7 @@ var (
 	headers  header
 
 	target  = flag.String("t", "", "Target URL")
-	timeout = flag.Int("T", 20, "Request timeout in seconds")
+	timeout = flag.Int("T", 10, "Request timeout in seconds")
 
 	//TODO: read from json file with whole parameters. config.json
 	// scenario = flag.String("s", "", "Test scenario content in json format. Ex: [{url: 'sample.com', timeout: 10}, {url: 'sample.com/t', timeout: 12}]")
@@ -96,10 +98,15 @@ func createHammer(s types.Scenario, p types.Proxy) types.Hammer {
 }
 
 func createProxy() types.Proxy {
-	proxyURL, err := url.Parse(*proxy)
-	if err != nil {
-		exitWithMsg(err.Error())
+	var proxyURL *url.URL
+	if *proxy != "" {
+		var err error
+		proxyURL, err = url.Parse(*proxy)
+		if err != nil {
+			exitWithMsg(err.Error())
+		}
 	}
+
 	p := types.Proxy{
 		Strategy: "single",
 		Addr:     proxyURL,
@@ -110,11 +117,6 @@ func createProxy() types.Proxy {
 func createScenario() types.Scenario {
 	var s types.Scenario
 	if target != nil {
-		url, err := url.Parse(*target)
-		if err != nil {
-			exitWithMsg(err.Error())
-		}
-
 		s = types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{
@@ -123,7 +125,7 @@ func createScenario() types.Scenario {
 					Method:   strings.ToUpper(*method),
 					Headers:  parseHeaders(headers),
 					Payload:  *payload,
-					URL:      *url,
+					URL:      *target,
 					Timeout:  *timeout,
 				},
 			},

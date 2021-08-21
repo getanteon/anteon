@@ -10,12 +10,12 @@ import (
 var supportedProtocols = [...]string{"HTTP", "HTTPS"}
 var supportedProtocolMethods = map[string][]string{
 	"HTTP": {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
-		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions,
 	},
 	"HTTPS": {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch,
-		http.MethodConnect, http.MethodHead, http.MethodOptions, http.MethodTrace,
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions,
 	},
 }
 var availableProxyStrategies = [...]string{"single"}
