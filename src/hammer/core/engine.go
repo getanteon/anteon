@@ -81,10 +81,10 @@ func (e *engine) Start() {
 		e.stop()
 	}()
 
-	e.tickCounter = -1
+	e.tickCounter = 0
 	e.wg = sync.WaitGroup{}
+	var mutex = &sync.Mutex{}
 	for range ticker.C {
-		e.tickCounter++
 		if e.tickCounter >= len(e.reqCountArr) {
 			return
 		}
@@ -93,13 +93,16 @@ func (e *engine) Start() {
 		case <-e.ctx.Done():
 			return
 		default:
-			go e.runWorkers()
+			mutex.Lock()
+			go e.runWorkers(e.tickCounter)
+			e.tickCounter++
+			mutex.Unlock()
 		}
 	}
 }
 
-func (e *engine) runWorkers() {
-	for i := 1; i <= e.reqCountArr[e.tickCounter]; i++ {
+func (e *engine) runWorkers(c int) {
+	for i := 1; i <= e.reqCountArr[c]; i++ {
 		go func() {
 			e.wg.Add(1)
 			e.runWorker()
@@ -112,16 +115,11 @@ func (e *engine) runWorker() {
 	p := e.proxyService.GetNewProxy()
 	res, err := e.scenarioService.Do(p)
 
-	if err != nil {
-		if reqError, ok := err.(*types.Error); ok {
-			switch reqError.Type {
-			case types.ErrorProxy:
-				e.proxyService.ReportProxy(p, reqError.Reason)
-			}
-		}
-		return
+	if err != nil && err.Type == types.ErrorProxy {
+		e.proxyService.ReportProxy(p, err.Reason)
+		fmt.Printf("ProxyErr %s\n", err.Reason)
 	}
-	// fmt.Println("Sendin res to response chan.")
+
 	e.responseChan <- res
 }
 

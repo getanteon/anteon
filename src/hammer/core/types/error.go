@@ -4,17 +4,20 @@ import "fmt"
 
 const (
 	// Type
-	ErrorProxy = "ProxyError"
+	ErrorProxy = "proxyError"
+	ErrorConn  = "connectionError"
 
 	// Reasons
-	ReasonProxyFailed = "proxy failed"
+	ReasonProxyFailed  = "proxy conn refused"
+	ReasonProxyTimeout = "proxy timeout"
+	ReasonConnTimeout  = "conn timeout"
 )
 
-type Error struct {
+type RequestError struct {
 	Type   string
 	Reason string
 }
 
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s - %s", e.Type, e.Reason)
+func (e *RequestError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
 }
