@@ -52,6 +52,5 @@ func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *ty
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
 	}
-	response.EndTime = time.Now()
 	return
 }

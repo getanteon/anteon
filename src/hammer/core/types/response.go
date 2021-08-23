@@ -8,7 +8,6 @@ import (
 
 type Response struct {
 	StartTime   time.Time
-	EndTime     time.Time
 	AvgDuration time.Duration
 	Errors      map[string]int
 	StatusCodes map[int]int
@@ -24,8 +23,10 @@ type ResponseItem struct {
 	RequestID      uuid.UUID
 	StatusCode     int
 
-	RequestTime  time.Time
-	ResponseTime time.Time
+	// Time of the request call.
+	RequestTime time.Time
+
+	//
 	Duration     time.Duration
 	ContentLenth int64
 
