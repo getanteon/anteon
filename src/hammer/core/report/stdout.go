@@ -19,7 +19,7 @@ func (s *stdout) Start(input chan *types.Response) {
 	for r := range input {
 
 		for _, rr := range r.ResponseItems {
-			// fmt.Printf("[Stdout]Report service resp receieved: %s\n", rr.RequestID)
+			fmt.Printf("[Stdout]Report service resp receieved: %v\n", rr)
 			s.result = append(s.result, rr)
 		}
 	}

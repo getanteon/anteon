@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"time"
@@ -79,59 +80,59 @@ func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
 }
 
 func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
-	if proxyAddr != nil {
-		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr) // bind ProxyService.GetNewProxy at init method?
-	}
-	// trace := &httptrace.ClientTrace{
-	// 	GetConn: func(h string) {
-	// 		connStart = now()
-	// 	},
-	// 	GotConn: func(connInfo httptrace.GotConnInfo) {
-	// 		if !connInfo.Reused {
-	// 			connDuration = now() - connStart
-	// 		}
-	// 		reqStart = now()
-	// 	},
-	// 	WroteRequest: func(w httptrace.WroteRequestInfo) {
-	// 		reqDuration = now() - reqStart
-	// 		delayStart = now()
-	// 	},
-	// 	GotFirstResponseByte: func() {
-	// 		delayDuration = now() - delayStart
-	// 		resStart = now()
-	// 	},
-	// }
-	httpReq := h.request.Clone(context.TODO())
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
-
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
+
+	var dnsStart, connStart, resStart, reqStart, delayStart time.Time
+	var dnsDuration, connDuration, resDuration, reqDuration, delayDuration time.Duration
+	trace := &httptrace.ClientTrace{
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			dnsStart = time.Now()
+		},
+		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+			dnsDuration = time.Since(dnsStart)
+		},
+		GetConn: func(h string) {
+			connStart = time.Now()
+		},
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			if !connInfo.Reused {
+				connDuration = time.Since(connStart)
+			}
+			reqStart = time.Now()
+		},
+		WroteRequest: func(w httptrace.WroteRequestInfo) {
+			reqDuration = time.Since(reqStart)
+			delayStart = time.Now()
+		},
+		GotFirstResponseByte: func() {
+			delayDuration = time.Since(delayStart)
+			resStart = time.Now()
+		},
+	}
+
+	if proxyAddr != nil {
+		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr) // bind ProxyService.GetNewProxy at init method?
+	}
+
+	httpReq := h.request.Clone(context.TODO())
+	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
+	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
+	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
+
+	start := time.Now()
 	httpRes, err := h.client.Do(httpReq)
-	// fmt.Println(httpRes.StatusCode)
+	resDuration = time.Since(resStart)
+	duration := time.Since(start)
+
 	if err != nil {
 		ue, ok := err.(*url.Error)
 
-		// TODO:REFACTOR
-		// Currently we can't detect exact error type by returned err.
-		// But we need to find an elegant way instead of this.
 		if ok {
-			if strings.Contains(ue.Err.Error(), "proxyconnect") {
-				if strings.Contains(ue.Err.Error(), "connection refused") {
-					requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
-				} else if strings.Contains(ue.Err.Error(), "Client.Timeout") {
-					requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
-				} else {
-					requestErr = types.RequestError{Type: types.ErrorProxy, Reason: err.Error()}
-				}
-			} else if ok && strings.Contains(ue.Err.Error(), context.DeadlineExceeded.Error()) {
-				requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
-			} else {
-				requestErr = types.RequestError{Type: types.ErrorConn, Reason: ue.Err.Error()}
-			}
+			requestErr = fetchErrType(ok, ue, err)
 		} else {
-			requestErr = types.RequestError{Type: types.ErrorConn, Reason: err.Error()}
+			requestErr = types.RequestError{Type: types.ErrorUnkown, Reason: err.Error()}
 		}
 
 	} else {
@@ -143,13 +144,44 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 	defer func() {
 		h.client.Transport.(*http.Transport).Proxy = nil
 	}()
-	// fmt.Println("S: ", httpRes.StatusCode)
+
 	res = &types.ResponseItem{
 		ScenarioItemID: h.packet.ID,
 		RequestID:      uuid.New(),
 		StatusCode:     statusCode,
+		RequestTime:    start,
+		Duration:       duration,
 		ContentLenth:   contentLength,
 		Err:            requestErr,
+		Custom: map[string]interface{}{
+			"dnsDuration":   dnsDuration,
+			"connDuration":  connDuration,
+			"reqDuration":   reqDuration,
+			"resDuration":   resDuration,
+			"delayDuration": delayDuration,
+		},
 	}
 	return
+}
+
+// TODO:REFACTOR
+// Currently we can't detect exact error type by returned err.
+// But we need to find an elegant way instead of this.
+func fetchErrType(ok bool, ue *url.Error, err error) types.RequestError {
+	var requestErr types.RequestError
+	if strings.Contains(ue.Err.Error(), "proxyconnect") {
+		if strings.Contains(ue.Err.Error(), "connection refused") {
+			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
+		} else if strings.Contains(ue.Err.Error(), "Client.Timeout") {
+			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
+		} else {
+			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: err.Error()}
+		}
+	} else if ok && strings.Contains(ue.Err.Error(), context.DeadlineExceeded.Error()) {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
+	} else {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: ue.Err.Error()}
+	}
+
+	return requestErr
 }

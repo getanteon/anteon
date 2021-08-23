@@ -4,8 +4,9 @@ import "fmt"
 
 const (
 	// Type
-	ErrorProxy = "proxyError"
-	ErrorConn  = "connectionError"
+	ErrorProxy  = "proxyError"
+	ErrorConn   = "connectionError"
+	ErrorUnkown = "unkownError"
 
 	// Reasons
 	ReasonProxyFailed  = "proxy conn refused"
