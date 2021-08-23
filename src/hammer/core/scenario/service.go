@@ -3,6 +3,7 @@ package scenario
 import (
 	"net/url"
 	"sync"
+	"time"
 
 	"ddosify.com/hammer/core/scenario/requester"
 	"ddosify.com/hammer/core/types"
@@ -40,14 +41,17 @@ func (ss *ScenarioService) init(s types.Scenario) (err error) {
 	return
 }
 
-func (ss *ScenarioService) Do(proxy *url.URL) (*types.Response, error) {
-	response := &types.Response{ResponseItems: []*types.ResponseItem{}}
+func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {
+	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
+	response.StartTime = time.Now()
 	for _, r := range ss.requesters {
-		res, err := r.Send(proxy)
-		if err != nil {
-			return nil, err
+		res := r.Send(proxy)
+		if res.Err.Type == types.ErrorProxy {
+			err = &res.Err
+			return
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
 	}
-	return response, nil
+	response.EndTime = time.Now()
+	return
 }

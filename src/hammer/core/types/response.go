@@ -7,9 +7,11 @@ import (
 )
 
 type Response struct {
-	StartTime time.Time
-	EndTime   time.Time
-	Duration  time.Duration
+	StartTime   time.Time
+	EndTime     time.Time
+	AvgDuration time.Duration
+	Errors      map[string]int
+	StatusCodes map[int]int
 
 	ResponseItems []*ResponseItem
 
@@ -26,6 +28,8 @@ type ResponseItem struct {
 	ResponseTime time.Time
 	Duration     time.Duration
 	ContentLenth int64
+
+	Err RequestError
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}

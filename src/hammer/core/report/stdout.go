@@ -8,6 +8,7 @@ import (
 
 type stdout struct {
 	doneChan chan struct{}
+	result   []*types.ResponseItem
 }
 
 func (s *stdout) init() {
@@ -16,8 +17,10 @@ func (s *stdout) init() {
 
 func (s *stdout) Start(input chan *types.Response) {
 	for r := range input {
+
 		for _, rr := range r.ResponseItems {
-			fmt.Printf("[Stdout]Report service resp receieved: %s\n", rr.RequestID)
+			// fmt.Printf("[Stdout]Report service resp receieved: %s\n", rr.RequestID)
+			s.result = append(s.result, rr)
 		}
 	}
 
@@ -25,7 +28,7 @@ func (s *stdout) Start(input chan *types.Response) {
 }
 
 func (s *stdout) Report() {
-	fmt.Println("Reported!")
+	fmt.Printf("Reported! %d items\n", len(s.result))
 }
 
 func (s *stdout) DoneChan() <-chan struct{} {
