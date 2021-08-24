@@ -75,7 +75,6 @@ func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
 	}
 	h.request.Header = header
 
-	// fmt.Println("Http Requester.")
 	return
 }
 

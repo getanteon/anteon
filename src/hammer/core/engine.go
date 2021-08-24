@@ -117,20 +117,20 @@ func (e *engine) runWorker() {
 
 	if err != nil && err.Type == types.ErrorProxy {
 		e.proxyService.ReportProxy(p, err.Reason)
-		fmt.Printf("ProxyErr %s\n", err.Reason)
+		// fmt.Printf("ProxyErr %s\n", err.Reason)
 	}
 
 	e.responseChan <- res
 }
 
 func (e *engine) stop() {
-	fmt.Println("Waiting workers to finish")
+	// fmt.Println("Waiting workers to finish")
 	e.wg.Wait()
 
-	fmt.Println("Closing report chan")
+	// fmt.Println("Closing report chan")
 	close(e.responseChan)
 
-	fmt.Println("Waiting report done chan.")
+	// fmt.Println("Waiting report done chan.")
 	<-e.reportService.DoneChan()
 
 	e.reportService.Report()
