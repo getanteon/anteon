@@ -2,30 +2,28 @@ package report
 
 import (
 	"fmt"
+	"time"
 
 	"ddosify.com/hammer/core/types"
 	"github.com/gosuri/uilive"
 )
 
 type stdout struct {
-	doneChan chan struct{}
-	result   *result
-	writer   *uilive.Writer
+	doneChan    chan struct{}
+	result      *result
+	writer      *uilive.Writer
+	printTicker *time.Ticker
 }
 
 func (s *stdout) init() {
 	s.doneChan = make(chan struct{})
 	s.result = &result{}
-	// s.result.ResponseItems = []*types.ReskponseItem{}
 	s.writer = uilive.New()
 }
 
 func (s *stdout) Start(input chan *types.Response) {
-	s.writer.Start()
-	i := 1
-	delta := 2
-	chunk := 1
-	limit := 1000
+	go s.realTimePrintStart()
+
 	for r := range input {
 
 		var scenarioDuration float32
@@ -39,37 +37,33 @@ func (s *stdout) Start(input chan *types.Response) {
 		s.result.responseCount++
 		s.result.avgDuration = totalDuration / float32(s.result.responseCount)
 
-		if i%chunk == 0 {
-			_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
-			if chunk < limit {
-				chunk *= delta
-			}
-		}
-		i++
 	}
 
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
-	s.writer.Stop() // flush and stop rendering
+	s.realTimePrintStop()
 	s.doneChan <- struct{}{}
 }
 
 func (s *stdout) Report() {
-
-	// for _, f := range [][]string{{"Foo.zip", "Bar.iso"}, {"Baz.tar.gz", "Qux.img"}} {
-	// 	for i := 0; i <= 50; i++ {
-	// 		_, _ = fmt.Fprintf(writer, "Downloading %s.. (%d/%d) GB\n", f[0], i, 50)
-	// 		_, _ = fmt.Fprintf(writer.Newline(), "Downloading %s.. (%d/%d) GB\n", f[1], i, 50)
-	// 		time.Sleep(time.Millisecond * 25)
-	// 	}
-	// 	_, _ = fmt.Fprintf(writer.Bypass(), "Downloaded %s\n", f[0])
-	// 	_, _ = fmt.Fprintf(writer.Bypass(), "Downloaded %s\n", f[1])
-	// }
-	// _, _ = fmt.Fprintln(writer, "Finished: Downloaded 150GB")
-	// fmt.Printf("Reported! %d items\n", len(s.result))
+	fmt.Printf("Reported! %d items\n", s.result.responseCount)
 }
 
 func (s *stdout) DoneChan() <-chan struct{} {
 	return s.doneChan
+}
+
+func (s *stdout) realTimePrintStart() {
+	s.writer.Start()
+	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
+	for range s.printTicker.C {
+		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
+	}
+}
+
+func (s *stdout) realTimePrintStop() {
+	// Last print.
+	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
+	s.printTicker.Stop()
+	s.writer.Stop()
 }
 
 func summaryTemplate() string {

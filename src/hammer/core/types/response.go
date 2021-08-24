@@ -11,6 +11,7 @@ type Response struct {
 	// Response starting time for Scenario
 	StartTime time.Time
 
+	// TODO:REMOVE - We may remove these fields. Looks unnecessary
 	// // Total duration of the all ResponseItem.Duration
 	// Duration time.Duration
 
