@@ -83,8 +83,8 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 	var contentLength int64
 	var requestErr types.RequestError
 
-	var dnsStart, connStart, tlsHandshakeStart, resStart, reqStart, serverProcessStart time.Time
-	var dnsDur, connDur, tlsHandshakeDur, resDur, reqDur, serverProcessDur time.Duration
+	var dnsStart, connStart, tlsStart, resStart, reqStart, serverProcessStart time.Time
+	var dnsDur, connDur, tlsDur, resDur, reqDur, serverProcessDur time.Duration
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = time.Now()
@@ -101,12 +101,10 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 			}
 		},
 		TLSHandshakeStart: func() {
-			tlsHandshakeStart = time.Now()
+			tlsStart = time.Now()
 		},
 		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
-			if cs.HandshakeComplete && !cs.DidResume {
-				tlsHandshakeDur = time.Since(tlsHandshakeStart)
-			}
+			tlsDur = time.Since(tlsStart)
 		},
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			reqStart = time.Now()
@@ -170,7 +168,7 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
-		res.Custom["tlsDuration"] = tlsHandshakeDur
+		res.Custom["tlsDuration"] = tlsDur
 	}
 
 	return

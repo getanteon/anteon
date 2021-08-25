@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -9,10 +10,15 @@ import (
 	"github.com/gosuri/uilive"
 )
 
-var keyToStr = map[string]string{
-	"avgDuration": "Total", "dnsDuration": "DNS", "connDuration": "Connection",
-	"reqDuration": "Request Write", "resDuration": "Response Read",
-	"serverProcessDuration": "Server Processing", "tlsDuration": "TLS"}
+var keyToStr = map[string]duration{
+	"dnsDuration":           duration{name: "DNS", order: 1},
+	"connDuration":          duration{name: "Connection", order: 2},
+	"tlsDuration":           duration{name: "TLS", order: 3},
+	"reqDuration":           duration{name: "Request Write", order: 4},
+	"serverProcessDuration": duration{name: "Server Processing", order: 5},
+	"resDuration":           duration{name: "Response Read", order: 6},
+	"avgDuration":           duration{name: "Total", order: 7},
+}
 
 type stdout struct {
 	doneChan    chan struct{}
@@ -128,22 +134,35 @@ func (s *stdout) printDetails() {
 		fmt.Println("Step", k)
 		fmt.Println("-------------------------------------")
 
-		fmt.Println(" Response Count:", v.responseCount)
-		fmt.Println(" Timeout Count:", v.timeoutCount)
+		fmt.Println("Response Count:", v.responseCount)
+		fmt.Println("Timeout Count:", v.timeoutCount)
 
-		fmt.Println("\n Durations (Avg);")
+		fmt.Println("\nDurations (Avg);")
+		var durationList = make([]duration, 0)
 		for d, s := range v.durations {
-			fmt.Printf("\t%-20s:%.4fs\n", keyToStr[d], s)
+			dur := keyToStr[d]
+			dur.duration = s
+			durationList = append(durationList, dur)
+		}
+		sort.Slice(durationList, func(i, j int) bool {
+			return durationList[i].order < durationList[j].order
+		})
+		for _, v := range durationList {
+			fmt.Printf("\t%-20s:%.4fs\n", v.name, v.duration)
 		}
 
-		fmt.Println("\n Status Codes;")
-		for s, c := range v.statusCodeDist {
-			fmt.Printf("\t%3d : %d\n", s, c)
+		if len(v.statusCodeDist) > 0 {
+			fmt.Println("\nStatus Codes;")
+			for s, c := range v.statusCodeDist {
+				fmt.Printf("\t%3d : %d\n", s, c)
+			}
 		}
 
-		fmt.Println("\n Error Distribution;")
-		for e, c := range v.errorDist {
-			fmt.Printf("\t%-15s:%d\n", e, c)
+		if len(v.errorDist) > 0 {
+			fmt.Println("\nError Distribution;")
+			for e, c := range v.errorDist {
+				fmt.Printf("\t%-15s:%d\n", e, c)
+			}
 		}
 		fmt.Println()
 	}
@@ -162,4 +181,10 @@ type scenarioItemReport struct {
 	durations      map[string]float32
 	timeoutCount   int64
 	responseCount  int64
+}
+
+type duration struct {
+	name     string
+	duration float32
+	order    int
 }
