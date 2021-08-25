@@ -27,34 +27,14 @@ func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
 	h.packet = s
 
 	// TlsConfig
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	if val, ok := s.Custom["hostName"]; ok {
-		tlsConfig.ServerName = val.(string)
-	}
+	tlsConfig := h.initTlsConfig()
 
 	// Transport segment
-	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
-		// MaxIdleConnsPerHost: 100, Let's think about this.
-	}
-	if val, ok := s.Custom["disableKeepAlives"]; ok {
-		tr.DisableKeepAlives = val.(bool)
-	}
-	if val, ok := s.Custom["disableCompression"]; ok {
-		tr.DisableCompression = val.(bool)
-	}
-	if val, ok := s.Custom["h2"]; ok {
-		val := val.(bool)
-		if val {
-			http2.ConfigureTransport(tr)
-		}
-	}
+	tr := h.initTransport(tlsConfig)
 
 	// http client
-	h.client = &http.Client{Transport: tr, Timeout: time.Duration(s.Timeout) * time.Second}
-	if val, ok := s.Custom["disableRedirect"]; ok {
+	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
+	if val, ok := h.packet.Custom["disableRedirect"]; ok {
 		val := val.(bool)
 		if val {
 			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -69,6 +49,7 @@ func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
 		return
 	}
 
+	// Headers
 	header := make(http.Header)
 	for k, v := range h.packet.Headers {
 		header.Set(k, v)
@@ -119,23 +100,28 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 		},
 	}
 
+	// Proxy adjustment
 	if proxyAddr != nil {
 		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr) // bind ProxyService.GetNewProxy at init method?
 	}
 	defer func() {
+		// Never forget to nil setting for the next request
 		h.client.Transport.(*http.Transport).Proxy = nil
 	}()
 
+	// Deep copy the request instance
 	httpReq := h.request.Clone(context.TODO())
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
 	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
-	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
+	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
 
-	start := time.Now()
+	// Action
+	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
+	start := time.Now() // TODO: start can be set at GetConn hook.
 	httpRes, err := h.client.Do(httpReq)
 	resDur = time.Since(resStart)
 	duration := time.Since(start)
 
+	// Error checking
 	if err != nil {
 		ue, ok := err.(*url.Error)
 
@@ -151,6 +137,7 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 		httpRes.Body.Close()
 	}
 
+	// Finalize
 	res = &types.ResponseItem{
 		ScenarioItemID: h.packet.ID,
 		RequestID:      uuid.New(),
@@ -194,4 +181,34 @@ func fetchErrType(ok bool, ue *url.Error, err error) types.RequestError {
 	}
 
 	return requestErr
+}
+
+func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
+	tr := &http.Transport{
+		TLSClientConfig: tlsConfig,
+		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
+	}
+	if val, ok := h.packet.Custom["disableKeepAlives"]; ok {
+		tr.DisableKeepAlives = val.(bool)
+	}
+	if val, ok := h.packet.Custom["disableCompression"]; ok {
+		tr.DisableCompression = val.(bool)
+	}
+	if val, ok := h.packet.Custom["h2"]; ok {
+		val := val.(bool)
+		if val {
+			http2.ConfigureTransport(tr)
+		}
+	}
+	return tr
+}
+
+func (h *httpRequester) initTlsConfig() *tls.Config {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	if val, ok := h.packet.Custom["hostName"]; ok {
+		tlsConfig.ServerName = val.(string)
+	}
+	return tlsConfig
 }
