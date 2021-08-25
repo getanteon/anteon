@@ -18,6 +18,7 @@ import (
 
 const headerRegexp = `^([\w-]+):\s*(.+)`
 
+//TODO: Add ddosify-hammer User-Agent to header config
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
 	reqCount = flag.Int("n", 1000, "Total request count")

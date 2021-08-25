@@ -83,8 +83,8 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 	var contentLength int64
 	var requestErr types.RequestError
 
-	var dnsStart, connStart, tlsHandshakeStart, resStart, reqStart, delayStart time.Time
-	var dnsDur, connDur, tlsHandshakeDur, resDur, reqDur, delayDur time.Duration
+	var dnsStart, connStart, tlsHandshakeStart, resStart, reqStart, serverProcessStart time.Time
+	var dnsDur, connDur, tlsHandshakeDur, resDur, reqDur, serverProcessDur time.Duration
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = time.Now()
@@ -92,14 +92,13 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
 			dnsDur = time.Since(dnsStart)
 		},
-		GetConn: func(h string) {
+		ConnectStart: func(network, addr string) {
 			connStart = time.Now()
 		},
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			if !connInfo.Reused {
+		ConnectDone: func(network, addr string, err error) {
+			if err == nil {
 				connDur = time.Since(connStart)
 			}
-			reqStart = time.Now()
 		},
 		TLSHandshakeStart: func() {
 			tlsHandshakeStart = time.Now()
@@ -109,12 +108,15 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 				tlsHandshakeDur = time.Since(tlsHandshakeStart)
 			}
 		},
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			reqStart = time.Now()
+		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
 			reqDur = time.Since(reqStart)
-			delayStart = time.Now()
+			serverProcessStart = time.Now()
 		},
 		GotFirstResponseByte: func() {
-			delayDur = time.Since(delayStart)
+			serverProcessDur = time.Since(serverProcessStart)
 			resStart = time.Now()
 		},
 	}
@@ -160,11 +162,11 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 		ContentLenth:   contentLength,
 		Err:            requestErr,
 		Custom: map[string]interface{}{
-			"dnsDuration":   dnsDur,
-			"connDuration":  connDur,
-			"reqDuration":   reqDur,
-			"resDuration":   resDur,
-			"delayDuration": delayDur,
+			"dnsDuration":           dnsDur,
+			"connDuration":          connDur,
+			"reqDuration":           reqDur,
+			"resDuration":           resDur,
+			"serverProcessDuration": serverProcessDur,
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {

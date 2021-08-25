@@ -9,8 +9,10 @@ import (
 	"github.com/gosuri/uilive"
 )
 
-var keyToStr = map[string]string{"avgDuration": "Total", "dnsDuration": "DNS", "connDuration": "Connection",
-	"reqDuration": "Request Write", "resDuration": "Response Read", "delayDuration": "Delay", "tlsDuration": "TLS"}
+var keyToStr = map[string]string{
+	"avgDuration": "Total", "dnsDuration": "DNS", "connDuration": "Connection",
+	"reqDuration": "Request Write", "resDuration": "Response Read",
+	"serverProcessDuration": "Server Processing", "tlsDuration": "TLS"}
 
 type stdout struct {
 	doneChan    chan struct{}
@@ -85,7 +87,6 @@ func (s *stdout) Start(input chan *types.Response) {
 
 func (s *stdout) Report() {
 	s.printDetails()
-	fmt.Printf("Reported! %d items\n", s.result.responseCount)
 }
 
 func (s *stdout) DoneChan() <-chan struct{} {
