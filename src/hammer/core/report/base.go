@@ -23,8 +23,7 @@ func CreateReportService(s string) (ReportService, error) {
 			func() {
 				if strings.EqualFold(s, types.OutputTypeStdout) {
 					service = &stdout{}
-				}
-				if strings.EqualFold(s, types.OutputTypeTimescale) {
+				} else if strings.EqualFold(s, types.OutputTypeTimescale) {
 					service = &timescale{}
 				}
 				service.init()

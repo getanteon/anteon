@@ -22,7 +22,7 @@ const headerRegexp = `^([\w-]+):\s*(.+)`
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
 	reqCount = flag.Int("n", 1000, "Total request count")
-	loadType = flag.String("l", "linear", "Type of the load test [linear, capacity, stress, soak")
+	loadType = flag.String("l", types.LoadTypeLinear, "Type of the load test [linear, capacity, stress, soak")
 	duration = flag.Int("d", 10, "Test duration in seconds")
 
 	protocol = flag.String("p", "HTTP", "[HTTP, HTTPS]")

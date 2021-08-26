@@ -55,19 +55,19 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if instance.proxyService, err = proxy.CreateProxyService(e.hammer.Proxy); err != nil {
+	if e.proxyService, err = proxy.CreateProxyService(e.hammer.Proxy); err != nil {
 		return
 	}
 
-	if instance.scenarioService, err = scenario.CreateScenarioService(e.hammer.Scenario); err != nil {
+	if e.scenarioService, err = scenario.CreateScenarioService(e.hammer.Scenario); err != nil {
 		return
 	}
 
-	if instance.reportService, err = report.CreateReportService(e.hammer.ReportDestination); err != nil {
+	if e.reportService, err = report.CreateReportService(e.hammer.ReportDestination); err != nil {
 		return
 	}
 
-	instance.initReqCountArr()
+	e.initReqCountArr()
 	return nil
 }
 
