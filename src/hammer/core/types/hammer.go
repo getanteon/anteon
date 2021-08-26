@@ -48,16 +48,19 @@ func (h *Hammer) Validate() error {
 		return err
 	}
 
+	if len(h.Scenario.Scenario) == 0 {
+		return fmt.Errorf("scenario or target is empty")
+	}
 	if err := h.Scenario.validate(); err != nil {
 		return err
 	}
 
 	if !util.StringInSlice(h.ReportDestination, supportedOutputs[:]) {
-		return fmt.Errorf("Unsupported Report Destination: %s", h.ReportDestination)
+		return fmt.Errorf("unsupported Report Destination: %s", h.ReportDestination)
 	}
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {
-		return fmt.Errorf("Unsupported LoadType: %s", h.LoadType)
+		return fmt.Errorf("unsupported LoadType: %s", h.LoadType)
 	}
 
 	return nil
