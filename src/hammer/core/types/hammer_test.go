@@ -25,6 +25,16 @@ func newDummyHammer() types.Hammer {
 	return types.Hammer{
 		Proxy:             types.Proxy{Strategy: "single"},
 		ReportDestination: "stdout",
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{
+				{
+					ID:       1,
+					Protocol: "HTTP",
+					Method:   "GET",
+					URL:      "http://127.0.0.1",
+				},
+			},
+		},
 	}
 }
 
