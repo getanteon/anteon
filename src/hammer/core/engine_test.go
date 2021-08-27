@@ -7,16 +7,18 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"ddosify.com/hammer/core/types"
 )
-
-var e = NewEngine(context.TODO(), newDummyHammer())
 
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
 		Proxy:             types.Proxy{Strategy: "single"},
 		ReportDestination: "stdout",
+		LoadType:          types.LoadTypeLinear,
+		TestDuration:      1,
+		TotalReqCount:     1,
 		Scenario: types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{
@@ -27,14 +29,6 @@ func newDummyHammer() types.Hammer {
 				},
 			},
 		},
-	}
-}
-
-func TestCreateEngine(t *testing.T) {
-
-	e2 := NewEngine(context.TODO(), newDummyHammer())
-	if e != e2 {
-		t.Errorf("CreateEngine should be singleton")
 	}
 }
 
@@ -56,10 +50,12 @@ func TestReqCountArr(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			e.hammer.LoadType = test.loadType
-			e.hammer.TestDuration = test.duration
-			e.hammer.TotalReqCount = test.reqCount
+			h := newDummyHammer()
+			h.LoadType = test.loadType
+			h.TestDuration = test.duration
+			h.TotalReqCount = test.reqCount
 
+			e := NewEngine(context.TODO(), h)
 			e.Init()
 			if !reflect.DeepEqual(e.reqCountArr, test.expectedReqArr) {
 				t.Errorf("Expected: %v, Found: %v", test.expectedReqArr, e.reqCountArr)
@@ -69,12 +65,13 @@ func TestReqCountArr(t *testing.T) {
 	}
 }
 
-func TestStart(t *testing.T) {
-	var uri, header1, header2, body, protocol string
+func TestStartRequestData(t *testing.T) {
+	var uri, header1, header2, body, protocol, method string
 
 	// Test server
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		protocol = r.Proto
+		method = r.Method
 		uri = r.RequestURI
 		header1 = r.Header.Get("Test1")
 		header2 = r.Header.Get("Test2")
@@ -86,7 +83,8 @@ func TestStart(t *testing.T) {
 	defer server.Close()
 
 	// Prepare
-	e.hammer.Scenario.Scenario[0] = types.ScenarioItem{
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
 		ID:       1,
 		Protocol: "HTTP",
 		Method:   "GET",
@@ -94,17 +92,23 @@ func TestStart(t *testing.T) {
 		Headers:  map[string]string{"Test1": "Test1Value", "Test2": "Test2Value"},
 		Payload:  "Body content",
 	}
-	e.hammer.LoadType = types.LoadTypeLinear
-	e.hammer.TestDuration = 1
-	e.hammer.TotalReqCount = 1
 
 	// Act
+	e := NewEngine(context.TODO(), h)
 	e.Init()
 	e.Start()
 
 	// Assert
 	if uri != "/get_test_data" {
 		t.Errorf("invalid uri recieved: %s", uri)
+	}
+
+	if protocol != "HTTP/1.1" {
+		t.Errorf("invalid protocol recieved: %v", protocol)
+	}
+
+	if method != "GET" {
+		t.Errorf("invalid method recieved: %v", method)
 	}
 
 	if header1 != "Test1Value" {
@@ -119,7 +123,113 @@ func TestStart(t *testing.T) {
 		t.Errorf("invalid body recieved: %v", body)
 	}
 
-	if protocol != "HTTP/1.1" {
-		t.Errorf("invalid protocol recieved: %v", protocol)
+}
+
+func TestStartRequestDataForMultiScenarioStep(t *testing.T) {
+	var uri, header, body, protocol, method = make([]string, 2), make([]string, 2), make([]string, 2),
+		make([]string, 2), make([]string, 2)
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		protocol = append(protocol, r.Proto)
+		method = append(method, r.Method)
+		uri = append(uri, r.RequestURI)
+		header = append(header, r.Header.Get("Test"))
+
+		bodyByte, _ := ioutil.ReadAll(r.Body)
+		body = append(body, string(bodyByte))
 	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario = types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: "HTTP",
+				Method:   "GET",
+				URL:      server.URL + "/api_get",
+				Headers:  map[string]string{"Test": "h1"},
+				Payload:  "Body 1",
+			},
+			{
+				ID:       2,
+				Protocol: "HTTPS",
+				Method:   "POST",
+				URL:      server.URL + "/api_post",
+				Headers:  map[string]string{"Test": "h2"},
+				Payload:  "Body 2",
+			},
+		}}
+
+	// Act
+	e := NewEngine(context.TODO(), h)
+	e.Init()
+	e.Start()
+
+	// Assert
+	if reflect.DeepEqual(uri, []string{"/api_get", "/api_post"}) {
+		t.Errorf("invalid uri recieved: %s", uri)
+	}
+
+	if reflect.DeepEqual(protocol, []string{"HTTP/1.1", "HTTPS/1.1"}) {
+		t.Errorf("invalid protocol receieved: %s", protocol)
+	}
+
+	if reflect.DeepEqual(method, []string{"GET", "POST"}) {
+		t.Errorf("invalid method receieved: %s", method)
+	}
+
+	if reflect.DeepEqual(header, []string{"h1", "h2"}) {
+		t.Errorf("invalid header recieved: %v", header)
+	}
+
+	if reflect.DeepEqual(body, []string{"Body 1", "Body 2"}) {
+		t.Errorf("invalid body recieved: %v", body)
+	}
+}
+
+func TestStartRequestTimeout(t *testing.T) {
+	var result bool
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Duration(1100) * time.Millisecond)
+		result = true
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// Prepare
+	tests := []struct {
+		name     string
+		timeout  int
+		expected bool
+	}{
+		{"Timeout", 1, false},
+		{"NotTimeout", 2, true},
+	}
+
+	// Act
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			result = false
+			h := newDummyHammer()
+			h.Scenario.Scenario[0].Timeout = test.timeout
+			h.Scenario.Scenario[0].URL = server.URL
+
+			e := NewEngine(context.TODO(), h)
+			e.Init()
+			e.Start()
+
+			// Assert
+			if result != test.expected {
+				t.Errorf("Expected %v, Found :%v", test.expected, result)
+			}
+		}
+		t.Run(test.name, tf)
+	}
+
 }
