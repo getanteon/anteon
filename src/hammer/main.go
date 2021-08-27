@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -25,8 +26,8 @@ var (
 	loadType = flag.String("l", types.LoadTypeLinear, "Type of the load test [linear, capacity, stress, soak")
 	duration = flag.Int("d", 10, "Test duration in seconds")
 
-	protocol = flag.String("p", "HTTP", "[HTTP, HTTPS]")
-	method   = flag.String("m", "GET", "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
+	protocol = flag.String("p", types.ProtocolHTTP, "[HTTP, HTTPS]")
+	method   = flag.String("m", http.MethodGet, "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
 	payload  = flag.String("b", "", "Payload of the network packet")
 	headers  header
 
@@ -37,7 +38,7 @@ var (
 	// scenario = flag.String("s", "", "Test scenario content in json format. Ex: [{url: 'sample.com', timeout: 10}, {url: 'sample.com/t', timeout: 12}]")
 
 	proxy  = flag.String("P", "", "Proxy address as host:port")
-	output = flag.String("o", "stdout", "Output destination")
+	output = flag.String("o", types.OutputTypeStdout, "Output destination")
 )
 
 func main() {
@@ -116,25 +117,19 @@ func createProxy() types.Proxy {
 }
 
 func createScenario() types.Scenario {
-	var s types.Scenario
-	if target != nil {
-		s = types.Scenario{
-			Scenario: []types.ScenarioItem{
-				{
-					ID:       1,
-					Protocol: strings.ToUpper(*protocol),
-					Method:   strings.ToUpper(*method),
-					Headers:  parseHeaders(headers),
-					Payload:  *payload,
-					URL:      *target,
-					Timeout:  *timeout,
-				},
+	return types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: strings.ToUpper(*protocol),
+				Method:   strings.ToUpper(*method),
+				Headers:  parseHeaders(headers),
+				Payload:  *payload,
+				URL:      *target,
+				Timeout:  *timeout,
 			},
-		}
-	} else {
-		exitWithMsg("Target is not provided.")
+		},
 	}
-	return s
 }
 
 func exitWithMsg(msg string) {
