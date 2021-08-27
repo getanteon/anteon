@@ -33,6 +33,22 @@ func newDummyHammer() types.Hammer {
 	}
 }
 
+func TestServices(t *testing.T) {
+	h := newDummyHammer()
+	e := NewEngine(context.TODO(), h)
+	e.Init()
+
+	if e.proxyService == nil {
+		t.Errorf("Proxy Service should be initialized")
+	}
+	if e.scenarioService == nil {
+		t.Errorf("Scenario Service should be initialized")
+	}
+	if e.reportService == nil {
+		t.Errorf("Report Service should be initialized")
+	}
+}
+
 // TODO: Add other load types as you implement
 func TestRequestCount(t *testing.T) {
 	var timeReqMap map[int]int
@@ -154,7 +170,6 @@ func TestRequestData(t *testing.T) {
 	if body != "Body content" {
 		t.Errorf("invalid body recieved: %v", body)
 	}
-
 }
 
 func TestRequestDataForMultiScenarioStep(t *testing.T) {
@@ -263,5 +278,4 @@ func TestRequestTimeout(t *testing.T) {
 		}
 		t.Run(test.name, tf)
 	}
-
 }
