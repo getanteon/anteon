@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,7 +34,20 @@ func newDummyHammer() types.Hammer {
 }
 
 // TODO: Add other load types as you implement
-func TestReqCountArr(t *testing.T) {
+func TestRequestCount(t *testing.T) {
+	var timeReqMap map[int]int
+	var now time.Time
+	var mutex = &sync.Mutex{}
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		mutex.Lock()
+		i := time.Since(now).Milliseconds()/tickerInterval - 1
+		timeReqMap[int(i)]++
+		mutex.Unlock()
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
 
 	tests := []struct {
 		name           string
@@ -41,31 +55,49 @@ func TestReqCountArr(t *testing.T) {
 		duration       int
 		reqCount       int
 		expectedReqArr []int
+		delta          int
 	}{
-		{"Linear1", types.LoadTypeLinear, 1, 10, []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
-		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}},
+		{"Linear1", types.LoadTypeLinear, 1, 100, []int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1},
+		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
 		{"Linear3", types.LoadTypeLinear, 2, 23,
-			[]int{2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
+			[]int{2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0},
 	}
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
+			// Prepare
 			h := newDummyHammer()
 			h.LoadType = test.loadType
 			h.TestDuration = test.duration
 			h.TotalReqCount = test.reqCount
+			h.Scenario.Scenario[0].URL = server.URL
+
+			now = time.Now()
+			timeReqMap = make(map[int]int, 0)
 
 			e := NewEngine(context.TODO(), h)
+
+			// Act
 			e.Init()
+			e.Start()
+
+			// Assert create reqCountArr
 			if !reflect.DeepEqual(e.reqCountArr, test.expectedReqArr) {
 				t.Errorf("Expected: %v, Found: %v", test.expectedReqArr, e.reqCountArr)
+			}
+
+			// Assert sent request count
+			for i, v := range test.expectedReqArr {
+				if timeReqMap[i] > v+test.delta || timeReqMap[i] < v-test.delta {
+					t.Errorf("Expected: %v, Recieved: %v, Tick: %v", v, timeReqMap[i], i)
+				}
 			}
 		}
 		t.Run(test.name, tf)
 	}
 }
 
-func TestStartRequestData(t *testing.T) {
+func TestRequestData(t *testing.T) {
 	var uri, header1, header2, body, protocol, method string
 
 	// Test server
@@ -125,7 +157,7 @@ func TestStartRequestData(t *testing.T) {
 
 }
 
-func TestStartRequestDataForMultiScenarioStep(t *testing.T) {
+func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	var uri, header, body, protocol, method = make([]string, 2), make([]string, 2), make([]string, 2),
 		make([]string, 2), make([]string, 2)
 
@@ -191,7 +223,7 @@ func TestStartRequestDataForMultiScenarioStep(t *testing.T) {
 	}
 }
 
-func TestStartRequestTimeout(t *testing.T) {
+func TestRequestTimeout(t *testing.T) {
 	var result bool
 
 	// Test server
