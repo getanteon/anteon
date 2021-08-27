@@ -20,9 +20,6 @@ const (
 	// maxReq?
 )
 
-var instance *engine
-var once sync.Once
-
 type engine struct {
 	hammer types.Hammer
 
@@ -39,15 +36,8 @@ type engine struct {
 	ctx context.Context
 }
 
-func CreateEngine(ctx context.Context, h types.Hammer) *engine {
-	if instance == nil {
-		once.Do(
-			func() {
-				instance = &engine{hammer: h, ctx: ctx}
-			},
-		)
-	}
-	return instance
+func NewEngine(ctx context.Context, h types.Hammer) *engine {
+	return &engine{hammer: h, ctx: ctx}
 }
 
 func (e *engine) Init() (err error) {
@@ -55,15 +45,15 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.proxyService, err = proxy.CreateProxyService(e.hammer.Proxy); err != nil {
+	if e.proxyService, err = proxy.NewProxyService(e.hammer.Proxy); err != nil {
 		return
 	}
 
-	if e.scenarioService, err = scenario.CreateScenarioService(e.hammer.Scenario); err != nil {
+	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario); err != nil {
 		return
 	}
 
-	if e.reportService, err = report.CreateReportService(e.hammer.ReportDestination); err != nil {
+	if e.reportService, err = report.NewReportService(e.hammer.ReportDestination); err != nil {
 		return
 	}
 

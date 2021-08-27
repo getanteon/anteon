@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"net/url"
-	"sync"
 	"time"
 
 	"ddosify.com/hammer/core/scenario/requester"
@@ -14,18 +13,9 @@ type ScenarioService struct {
 	requesters map[int16]requester.Requester
 }
 
-var once sync.Once
-var service *ScenarioService
-
-func CreateScenarioService(s types.Scenario) (service *ScenarioService, err error) {
-	if service == nil {
-		once.Do(
-			func() {
-				service = &ScenarioService{}
-				err = service.init(s)
-			},
-		)
-	}
+func NewScenarioService(s types.Scenario) (service *ScenarioService, err error) {
+	service = &ScenarioService{}
+	err = service.init(s)
 	return
 }
 

@@ -3,7 +3,6 @@ package proxy
 import (
 	"net/url"
 	"strings"
-	"sync"
 
 	"ddosify.com/hammer/core/types"
 )
@@ -14,19 +13,11 @@ type ProxyService interface {
 	ReportProxy(addr *url.URL, reason string)
 }
 
-var once sync.Once
-var service ProxyService
-
-func CreateProxyService(p types.Proxy) (ProxyService, error) {
-	if service == nil {
-		once.Do(
-			func() {
-				if strings.EqualFold(p.Strategy, "single") {
-					service = &singleProxyStrategy{}
-				} 
-				service.init(p)
-			},
-		)
+func NewProxyService(p types.Proxy) (service ProxyService, err error) {
+	if strings.EqualFold(p.Strategy, "single") {
+		service = &singleProxyStrategy{}
 	}
+	service.init(p)
+
 	return service, nil
 }

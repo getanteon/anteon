@@ -2,7 +2,6 @@ package report
 
 import (
 	"strings"
-	"sync"
 
 	"ddosify.com/hammer/core/types"
 )
@@ -14,21 +13,12 @@ type ReportService interface {
 	Report()
 }
 
-var once sync.Once
-var service ReportService
-
-func CreateReportService(s string) (ReportService, error) {
-	if service == nil {
-		once.Do(
-			func() {
-				if strings.EqualFold(s, types.OutputTypeStdout) {
-					service = &stdout{}
-				} else if strings.EqualFold(s, types.OutputTypeTimescale) {
-					service = &timescale{}
-				}
-				service.init()
-			},
-		)
+func NewReportService(s string) (service ReportService, err error) {
+	if strings.EqualFold(s, types.OutputTypeStdout) {
+		service = &stdout{}
+	} else if strings.EqualFold(s, types.OutputTypeTimescale) {
+		service = &timescale{}
 	}
-	return service, nil
+	service.init()
+	return
 }
