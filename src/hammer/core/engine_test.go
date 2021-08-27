@@ -11,7 +11,7 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
-var e = CreateEngine(context.TODO(), newDummyHammer())
+var e = NewEngine(context.TODO(), newDummyHammer())
 
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
@@ -32,7 +32,7 @@ func newDummyHammer() types.Hammer {
 
 func TestCreateEngine(t *testing.T) {
 
-	e2 := CreateEngine(context.TODO(), newDummyHammer())
+	e2 := NewEngine(context.TODO(), newDummyHammer())
 	if e != e2 {
 		t.Errorf("CreateEngine should be singleton")
 	}
