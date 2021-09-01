@@ -102,7 +102,8 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 
 	// Proxy adjustment
 	if proxyAddr != nil {
-		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr) // bind ProxyService.GetNewProxy at init method?
+		// TODO: bind ProxyService.GetNewProxy at init method?
+		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr)
 	}
 	defer func() {
 		// Never forget to nil setting for the next request
