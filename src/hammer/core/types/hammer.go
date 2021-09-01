@@ -50,8 +50,7 @@ func (h *Hammer) Validate() error {
 
 	if len(h.Scenario.Scenario) == 0 {
 		return fmt.Errorf("scenario or target is empty")
-	}
-	if err := h.Scenario.validate(); err != nil {
+	} else if err := h.Scenario.validate(); err != nil {
 		return err
 	}
 
