@@ -102,7 +102,7 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 
 	// Proxy adjustment
 	if proxyAddr != nil {
-		// TODO: bind ProxyService.GetNewProxy at init method?
+		// TODO: bind proxy just before request.DO and use mutex.
 		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr)
 	}
 	defer func() {
