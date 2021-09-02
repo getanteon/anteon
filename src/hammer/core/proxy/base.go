@@ -8,16 +8,16 @@ import (
 )
 
 type ProxyService interface {
-	init(types.Proxy, int)
+	init(types.Proxy)
 	GetNewProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string)
 }
 
-func NewProxyService(p types.Proxy, reqCount int) (service ProxyService, err error) {
+func NewProxyService(p types.Proxy) (service ProxyService, err error) {
 	if strings.EqualFold(p.Strategy, "single") {
 		service = &singleProxyStrategy{}
 	}
-	service.init(p, reqCount)
+	service.init(p)
 
 	return service, nil
 }
