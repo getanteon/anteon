@@ -45,7 +45,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.proxyService, err = proxy.NewProxyService(e.hammer.Proxy, e.hammer.TotalReqCount); err != nil {
+	if e.proxyService, err = proxy.NewProxyService(e.hammer.Proxy); err != nil {
 		return
 	}
 

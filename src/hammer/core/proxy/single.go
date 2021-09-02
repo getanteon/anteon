@@ -10,7 +10,7 @@ type singleProxyStrategy struct {
 	proxyAddr *url.URL
 }
 
-func (sp *singleProxyStrategy) init(p types.Proxy, reqCount int) {
+func (sp *singleProxyStrategy) init(p types.Proxy) {
 	sp.proxyAddr = p.Addr
 }
 
