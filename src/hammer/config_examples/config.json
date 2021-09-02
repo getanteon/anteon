@@ -1,0 +1,40 @@
+{
+    "reqCount": 20,
+    "loadType": "linear",
+    "duration": 5,
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "protocol": "https",
+            "method": "GET",
+            "headers": {
+                "ContenType": "application/xml",
+                "X-ddosify-key": "ajkndalnasd"
+            },
+            "payload": "body yt kanl adnlandlandaln",
+            "payloadBody": "123",
+            "timeout": 3,
+            "others": {
+                "keep-alive": true
+            }
+        },
+        {
+            "id": 2,
+            "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
+            "protocol": "https",
+            "method": "GET",
+            "headers": {
+                "ContenType": "application/xml",
+                "X-ddosify-key": "ajkndalnasd"
+            },
+            "payloadFile": "config_examples/payload.txt",
+            "timeout": 2,
+            "others": {
+                "keep-alive": false
+            }
+        }
+    ],
+    "proxy": "http://arkaatwf-1:6euurhrcaf2k@e3.p.webshare.io:80",
+    "output": "stdout"
+}

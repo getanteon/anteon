@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"ddosify.com/hammer/configReader"
 	"ddosify.com/hammer/core"
 	"ddosify.com/hammer/core/types"
 )
@@ -34,25 +35,40 @@ var (
 	target  = flag.String("t", "", "Target URL")
 	timeout = flag.Int("T", 10, "Request timeout in seconds")
 
-	//TODO: read from json file with whole parameters. config.json
-	// scenario = flag.String("s", "", "Test scenario content in json format. Ex: [{url: 'sample.com', timeout: 10}, {url: 'sample.com/t', timeout: 12}]")
-
 	proxy  = flag.String("P", "", "Proxy address as host:port")
 	output = flag.String("o", types.OutputTypeStdout, "Output destination")
+
+	configPath = flag.String("config", "",
+		"Json config file path. If a config file is provided, other flag values will be ignored.")
 )
 
 func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
 	flag.Parse()
 
-	if *target == "" {
-		exitWithMsg("Please provide the target url")
+	var h types.Hammer
+
+	if *configPath != "" {
+		c, err := configReader.NewConfigReader(*configPath, "jsonReader")
+		if err != nil {
+			exitWithMsg(err.Error())
+		}
+
+		h, err = c.CreateHammer()
+		if err != nil {
+			exitWithMsg(err.Error())
+		}
+	} else {
+		if *target == "" {
+			exitWithMsg("Please provide the target url")
+		}
+
+		s := createScenario()
+		p := createProxy()
+
+		h = createHammer(s, p)
 	}
 
-	s := createScenario()
-	p := createProxy()
-
-	h := createHammer(s, p)
 	if err := h.Validate(); err != nil {
 		exitWithMsg(err.Error())
 	}
