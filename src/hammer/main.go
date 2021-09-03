@@ -49,7 +49,7 @@ func main() {
 	var h types.Hammer
 
 	if *configPath != "" {
-		c, err := configReader.NewConfigReader(*configPath, "jsonReader")
+		c, err := configReader.NewConfigReaderFromFile(*configPath, "jsonReader")
 		if err != nil {
 			exitWithMsg(err.Error())
 		}

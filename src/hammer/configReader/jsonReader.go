@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/url"
-	"os"
 	"strings"
 
 	"ddosify.com/hammer/core/types"
@@ -31,18 +30,8 @@ type jsonReader struct {
 	Proxy    string `json:"proxy"`
 }
 
-func (c *jsonReader) init(path string) (err error) {
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		return
-	}
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(byteValue, &c)
+func (c *jsonReader) init(jsonByte []byte) (err error) {
+	err = json.Unmarshal(jsonByte, &c)
 	if err != nil {
 		return
 	}
