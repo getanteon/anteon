@@ -13,7 +13,6 @@
                 "X-ddosify-key": "ajkndalnasd"
             },
             "payload": "body yt kanl adnlandlandaln",
-            "payloadBody": "123",
             "timeout": 3,
             "others": {
                 "keep-alive": true
