@@ -111,12 +111,9 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 	}()
 
 	// Deep copy the request instance
-	httpReq := h.request.Clone(context.TODO())
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
+	httpReq := h.prepareReq(trace)
 
 	// Action
-	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
 	start := time.Now() // TODO: start can be set at GetConn hook.
 	httpRes, err := h.client.Do(httpReq)
 	resDur = time.Since(resStart)
@@ -162,6 +159,14 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 	return
 }
 
+func (h *httpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
+	httpReq := h.request.Clone(context.TODO())
+	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
+	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
+	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
+	return httpReq
+}
+
 // TODO:REFACTOR
 // Currently we can't detect exact error type by returned err.
 // But we need to find an elegant way instead of this.
@@ -189,6 +194,8 @@ func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 		TLSClientConfig: tlsConfig,
 		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
 	}
+
+	tr.DisableKeepAlives = true
 	if val, ok := h.packet.Custom["disableKeepAlives"]; ok {
 		tr.DisableKeepAlives = val.(bool)
 	}
