@@ -49,7 +49,8 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario); err != nil {
+	proxies := e.proxyService.GetAll()
+	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario, proxies); err != nil {
 		return
 	}
 

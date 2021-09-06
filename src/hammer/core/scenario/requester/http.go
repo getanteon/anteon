@@ -17,14 +17,16 @@ import (
 )
 
 type httpRequester struct {
-	packet  types.ScenarioItem
-	client  *http.Client
-	request *http.Request
+	proxyAddr *url.URL
+	packet    types.ScenarioItem
+	client    *http.Client
+	request   *http.Request
 }
 
 // Create a client with scenarioItem and use same client for each request
-func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
+func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL) (err error) {
 	h.packet = s
+	h.proxyAddr = proxyAddr
 
 	// TlsConfig
 	tlsConfig := h.initTlsConfig()
@@ -59,7 +61,7 @@ func (h *httpRequester) Init(s types.ScenarioItem) (err error) {
 	return
 }
 
-func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
+func (h *httpRequester) Send() (res *types.ResponseItem) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -99,16 +101,6 @@ func (h *httpRequester) Send(proxyAddr *url.URL) (res *types.ResponseItem) {
 			resStart = time.Now()
 		},
 	}
-
-	// Proxy adjustment
-	if proxyAddr != nil {
-		// TODO: bind proxy just before request.DO and use mutex.
-		h.client.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyAddr)
-	}
-	defer func() {
-		// Never forget to nil setting for the next request
-		h.client.Transport.(*http.Transport).Proxy = nil
-	}()
 
 	// Deep copy the request instance
 	httpReq := h.prepareReq(trace)
@@ -192,6 +184,7 @@ func fetchErrType(ok bool, ue *url.Error, err error) types.RequestError {
 func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	tr := &http.Transport{
 		TLSClientConfig: tlsConfig,
+		Proxy:           http.ProxyURL(h.proxyAddr),
 		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
 	}
 
