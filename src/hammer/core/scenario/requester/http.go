@@ -66,50 +66,14 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	var contentLength int64
 	var requestErr types.RequestError
 
-	var dnsStart, connStart, tlsStart, resStart, reqStart, serverProcessStart time.Time
-	var dnsDur, connDur, tlsDur, resDur, reqDur, serverProcessDur time.Duration
-	trace := &httptrace.ClientTrace{
-		DNSStart: func(info httptrace.DNSStartInfo) {
-			dnsStart = time.Now()
-		},
-		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
-			dnsDur = time.Since(dnsStart)
-		},
-		ConnectStart: func(network, addr string) {
-			connStart = time.Now()
-		},
-		ConnectDone: func(network, addr string, err error) {
-			if err == nil {
-				connDur = time.Since(connStart)
-			}
-		},
-		TLSHandshakeStart: func() {
-			tlsStart = time.Now()
-		},
-		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
-			tlsDur = time.Since(tlsStart)
-		},
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			reqStart = time.Now()
-		},
-		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			reqDur = time.Since(reqStart)
-			serverProcessStart = time.Now()
-		},
-		GotFirstResponseByte: func() {
-			serverProcessDur = time.Since(serverProcessStart)
-			resStart = time.Now()
-		},
-	}
-
-	// Deep copy the request instance
+	durations := &duration{}
+	trace := h.newTrace(durations)
 	httpReq := h.prepareReq(trace)
 
 	// Action
-	start := time.Now() // TODO: start can be set at GetConn hook.
 	httpRes, err := h.client.Do(httpReq)
-	resDur = time.Since(resStart)
-	duration := time.Since(start)
+	resDur := time.Since(durations.resStart)
+	totalDuration := time.Since(durations.start)
 
 	// Error checking
 	if err != nil {
@@ -132,20 +96,20 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		ScenarioItemID: h.packet.ID,
 		RequestID:      uuid.New(),
 		StatusCode:     statusCode,
-		RequestTime:    start,
-		Duration:       duration,
+		RequestTime:    durations.start,
+		Duration:       totalDuration,
 		ContentLenth:   contentLength,
 		Err:            requestErr,
 		Custom: map[string]interface{}{
-			"dnsDuration":           dnsDur,
-			"connDuration":          connDur,
-			"reqDuration":           reqDur,
+			"dnsDuration":           durations.dnsDur,
+			"connDuration":          durations.connDur,
+			"reqDuration":           durations.reqDur,
 			"resDuration":           resDur,
-			"serverProcessDuration": serverProcessDur,
+			"serverProcessDuration": durations.serverProcessDur,
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
-		res.Custom["tlsDuration"] = tlsDur
+		res.Custom["tlsDuration"] = durations.tlsDur
 	}
 
 	return
@@ -212,4 +176,71 @@ func (h *httpRequester) initTlsConfig() *tls.Config {
 		tlsConfig.ServerName = val.(string)
 	}
 	return tlsConfig
+}
+
+func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
+	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
+
+	return &httptrace.ClientTrace{
+		GetConn: func(h string) {
+			duration.start = time.Now()
+		},
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			dnsStart = time.Now()
+		},
+		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+			duration.dnsDur = time.Since(dnsStart)
+		},
+		ConnectStart: func(network, addr string) {
+			connStart = time.Now()
+		},
+		ConnectDone: func(network, addr string, err error) {
+			// if err == nil {
+			duration.connDur = time.Since(connStart)
+			// }
+		},
+		TLSHandshakeStart: func() {
+			tlsStart = time.Now()
+		},
+		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
+			duration.tlsDur = time.Since(tlsStart)
+		},
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			reqStart = time.Now()
+		},
+		WroteRequest: func(w httptrace.WroteRequestInfo) {
+			duration.reqDur = time.Since(reqStart)
+			serverProcessStart = time.Now()
+		},
+		GotFirstResponseByte: func() {
+			duration.serverProcessDur = time.Since(serverProcessStart)
+			duration.resStart = time.Now()
+		},
+	}
+}
+
+type duration struct {
+	// Time at just before the connection start on OS level.
+	start time.Time
+
+	// Time at response reading start
+	resStart time.Time
+
+	// DNS lookup duration. If IP:Port porvided instead of domain, this will be 0
+	dnsDur time.Duration
+
+	// TCP connection setup duration
+	connDur time.Duration
+
+	// TLS handshake duration. For HTTP this will be 0
+	tlsDur time.Duration
+
+	// Request write duration
+	reqDur time.Duration
+
+	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
+	serverProcessDur time.Duration
+
+	// Resposne read duration
+	resDur time.Duration
 }
