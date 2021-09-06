@@ -1,6 +1,7 @@
 package types
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,23 +9,11 @@ import (
 
 //Equivalent to Scenario. Each Scenario has a Response after request is done.
 type Response struct {
-	// Response starting time for Scenario
+	// First request start time for the Scenario
 	StartTime time.Time
 
-	// TODO:REMOVE - We may remove these fields. Looks unnecessary
-	// // Total duration of the all ResponseItem.Duration
-	// Duration time.Duration
-
-	// // Error distributation of ResponseItems. Ex: map[scenario_item_id][conn_err:conn_timeout] = 3
-	// ErrorDist map[int]map[string]int
-
-	// // Status code distribution of the ResponseItems. Ex: map[scenario_item_id][200] = 12
-	// StatusCodes map[int]map[int]int
-
+	ProxyAddr     *url.URL
 	ResponseItems []*ResponseItem
-
-	// // Protocol spesific total metrics
-	// Custom map[string]interface{}
 }
 
 //Equivalent to ScenarioItem.

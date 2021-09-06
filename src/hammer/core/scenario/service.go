@@ -45,6 +45,7 @@ func (ss *ScenarioService) init(s types.Scenario, proxies []*url.URL) (err error
 func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {
 	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
 	response.StartTime = time.Now()
+	response.ProxyAddr = proxy
 	for _, r := range ss.clients[proxy] {
 		res := r.Send()
 		if res.Err.Type == types.ErrorProxy {
