@@ -10,16 +10,6 @@ import (
 	"github.com/gosuri/uilive"
 )
 
-var keyToStr = map[string]duration{
-	"dnsDuration":           duration{name: "DNS", order: 1},
-	"connDuration":          duration{name: "Connection", order: 2},
-	"tlsDuration":           duration{name: "TLS", order: 3},
-	"reqDuration":           duration{name: "Request Write", order: 4},
-	"serverProcessDuration": duration{name: "Server Processing", order: 5},
-	"resDuration":           duration{name: "Response Read", order: 6},
-	"avgDuration":           duration{name: "Total", order: 7},
-}
-
 type stdout struct {
 	doneChan    chan struct{}
 	result      *result
@@ -39,10 +29,8 @@ func (s *stdout) Start(input chan *types.Response) {
 	go s.realTimePrintStart()
 
 	for r := range input {
-		s.result.responseCount++
-
 		var scenarioDuration float32
-		timeout := 0
+		errOccured := false
 		for _, rr := range r.ResponseItems {
 			scenarioDuration += float32(rr.Duration.Seconds())
 
@@ -56,33 +44,32 @@ func (s *stdout) Start(input chan *types.Response) {
 			item := s.result.itemReports[rr.ScenarioItemID]
 
 			if rr.Err.Type != "" {
-				if rr.Err.Reason == types.ReasonConnTimeout {
-					timeout++
-					item.timeoutCount++
-				}
+				errOccured = true
+				item.failedCount++
 				item.errorDist[rr.Err.Reason]++
 			} else {
 				item.statusCodeDist[rr.StatusCode]++
-				item.responseCount++
+				item.successCount++
 
-				totalDur := float32(item.responseCount-1)*item.durations["avgDuration"] + float32(rr.Duration.Seconds())
-				item.durations["avgDuration"] = totalDur / float32(item.responseCount)
+				totalDur := float32(item.successCount-1)*item.durations["duration"] + float32(rr.Duration.Seconds())
+				item.durations["duration"] = totalDur / float32(item.successCount)
 				for k, v := range rr.Custom {
 					if strings.Contains(k, "Duration") {
-						totalDur := float32(item.responseCount-1)*item.durations[k] + float32(v.(time.Duration).Seconds())
-						item.durations[k] = totalDur / float32(item.responseCount)
+						totalDur := float32(item.successCount-1)*item.durations[k] + float32(v.(time.Duration).Seconds())
+						item.durations[k] = totalDur / float32(item.successCount)
 					}
 				}
 			}
 
 		}
 
-		// Don't change avg duration if there is a timeout
-		if timeout == 0 {
-			totalDuration := float32(s.result.responseCount-1)*s.result.avgDuration + scenarioDuration
-			s.result.avgDuration = totalDuration / float32(s.result.responseCount)
-		} else {
-			s.result.timeoutCount += int64(timeout)
+		// Don't change avg duration if there is a error
+		if !errOccured {
+			totalDuration := float32(s.result.successCount)*s.result.avgDuration + scenarioDuration
+			s.result.successCount++
+			s.result.avgDuration = totalDuration / float32(s.result.successCount)
+		} else if errOccured {
+			s.result.failedCount++
 		}
 
 	}
@@ -104,15 +91,15 @@ func (s *stdout) realTimePrintStart() {
 	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
 
 	// First print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
+	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
 	for range s.printTicker.C {
-		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
+		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
 	}
 }
 
 func (s *stdout) realTimePrintStop() {
 	// Last print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.responseCount, s.result.avgDuration, s.result.timeoutCount)
+	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
 	s.printTicker.Stop()
 	s.writer.Stop()
 }
@@ -121,8 +108,11 @@ func summaryTemplate() string {
 	return `
 SUMMARY
 ----------------------------------------------------
-Run Count  -  Average Duration (s)  -  Timeout Count
-%d %20f %20d
+Successful Run Count: %d
+Failed Run Count    : %d
+Average Duration(s) : %.3f
+
+*Average duration calculated only for successful runs.
 `
 }
 
@@ -134,8 +124,8 @@ func (s *stdout) printDetails() {
 		fmt.Println("Step", k)
 		fmt.Println("-------------------------------------")
 
-		fmt.Println("Response Count:", v.responseCount)
-		fmt.Println("Timeout Count:", v.timeoutCount)
+		fmt.Println("Success Count:", v.successCount)
+		fmt.Println("Failed Count :", v.failedCount)
 
 		fmt.Println("\nDurations (Avg);")
 		var durationList = make([]duration, 0)
@@ -169,22 +159,32 @@ func (s *stdout) printDetails() {
 }
 
 type result struct {
-	responseCount int64
-	avgDuration   float32
-	timeoutCount  int64
-	itemReports   map[int16]*scenarioItemReport
+	successCount int64
+	avgDuration  float32
+	failedCount  int64
+	itemReports  map[int16]*scenarioItemReport
 }
 
 type scenarioItemReport struct {
 	statusCodeDist map[int]int
 	errorDist      map[string]int
 	durations      map[string]float32
-	timeoutCount   int64
-	responseCount  int64
+	failedCount    int64
+	successCount   int64
 }
 
 type duration struct {
 	name     string
 	duration float32
 	order    int
+}
+
+var keyToStr = map[string]duration{
+	"dnsDuration":           duration{name: "DNS", order: 1},
+	"connDuration":          duration{name: "Connection", order: 2},
+	"tlsDuration":           duration{name: "TLS", order: 3},
+	"reqDuration":           duration{name: "Request Write", order: 4},
+	"serverProcessDuration": duration{name: "Server Processing", order: 5},
+	"resDuration":           duration{name: "Response Read", order: 6},
+	"duration":              duration{name: "Total", order: 7},
 }
