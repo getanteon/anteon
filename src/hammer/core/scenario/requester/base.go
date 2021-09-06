@@ -9,8 +9,8 @@ import (
 )
 
 type Requester interface {
-	Init(types.ScenarioItem) error
-	Send(proxyAddr *url.URL) *types.ResponseItem
+	Init(types.ScenarioItem, *url.URL) error
+	Send() *types.ResponseItem
 }
 
 func NewRequester(s types.ScenarioItem) (Requester, error) {
