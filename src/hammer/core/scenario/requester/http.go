@@ -65,6 +65,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
+	var reqStartTime = time.Now()
 
 	durations := &duration{}
 	trace := h.newTrace(durations)
@@ -73,7 +74,6 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	// Action
 	httpRes, err := h.client.Do(httpReq)
 	resDur := time.Since(durations.resStart)
-	totalDuration := time.Since(durations.start)
 
 	// Error checking
 	if err != nil {
@@ -96,8 +96,8 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		ScenarioItemID: h.packet.ID,
 		RequestID:      uuid.New(),
 		StatusCode:     statusCode,
-		RequestTime:    durations.start,
-		Duration:       totalDuration,
+		RequestTime:    reqStartTime,
+		Duration:       durations.totalDuration(),
 		ContentLenth:   contentLength,
 		Err:            requestErr,
 		Custom: map[string]interface{}{
@@ -182,9 +182,6 @@ func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
 	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	return &httptrace.ClientTrace{
-		GetConn: func(h string) {
-			duration.start = time.Now()
-		},
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = time.Now()
 		},
@@ -195,9 +192,7 @@ func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
 			connStart = time.Now()
 		},
 		ConnectDone: func(network, addr string, err error) {
-			// if err == nil {
 			duration.connDur = time.Since(connStart)
-			// }
 		},
 		TLSHandshakeStart: func() {
 			tlsStart = time.Now()
@@ -220,9 +215,6 @@ func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
 }
 
 type duration struct {
-	// Time at just before the connection start on OS level.
-	start time.Time
-
 	// Time at response reading start
 	resStart time.Time
 
@@ -243,4 +235,8 @@ type duration struct {
 
 	// Resposne read duration
 	resDur time.Duration
+}
+
+func (d *duration) totalDuration() time.Duration {
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
 }
