@@ -50,7 +50,6 @@ func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *ty
 		res := r.Send()
 		if res.Err.Type == types.ErrorProxy {
 			err = &res.Err
-			return
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
 	}
