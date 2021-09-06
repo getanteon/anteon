@@ -102,7 +102,7 @@ func (e *engine) runWorkers(c int) {
 }
 
 func (e *engine) runWorker() {
-	p := e.proxyService.GetNewProxy()
+	p := e.proxyService.GetProxy()
 	res, err := e.scenarioService.Do(p)
 
 	if err != nil && err.Type == types.ErrorProxy {
