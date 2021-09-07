@@ -52,11 +52,7 @@ func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL) (err erro
 	}
 
 	// Headers
-	header := make(http.Header)
-	for k, v := range h.packet.Headers {
-		header.Set(k, v)
-	}
-	h.request.Header = header
+	h.initHeaders()
 
 	return
 }
@@ -239,4 +235,21 @@ type duration struct {
 
 func (d *duration) totalDuration() time.Duration {
 	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+}
+
+func (h *httpRequester) initHeaders() {
+	header := make(http.Header)
+	for k, v := range h.packet.Headers {
+		header.Set(k, v)
+	}
+
+	ua := header.Get("User-Agent")
+	if ua == "" {
+		ua = types.DdosifyUserAgent
+	} else {
+		ua += " " + types.DdosifyUserAgent
+	}
+	header.Set("User-Agent", ua)
+
+	h.request.Header = header
 }

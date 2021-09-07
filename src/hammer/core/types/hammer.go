@@ -14,6 +14,8 @@ const (
 
 	OutputTypeStdout    = "stdout"
 	OutputTypeTimescale = "timescale"
+
+	DdosifyUserAgent = "DdosifyHammer"
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeCapacity, LoadTypeStress, LoadTypeSoak}
