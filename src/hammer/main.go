@@ -30,6 +30,7 @@ var (
 	protocol = flag.String("p", types.ProtocolHTTP, "[HTTP, HTTPS]")
 	method   = flag.String("m", http.MethodGet, "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
 	payload  = flag.String("b", "", "Payload of the network packet")
+	auth     = flag.String("a", "", "Basic authentication, username:password")
 	headers  header
 
 	target  = flag.String("t", "", "Target URL")
@@ -133,12 +134,27 @@ func createProxy() types.Proxy {
 }
 
 func createScenario() types.Scenario {
+	var a types.Auth
+	if *auth != "" {
+		creds := strings.Split(*auth, ":")
+		if len(creds) != 2 {
+			exitWithMsg("auth credentials couldn't parsed")
+		}
+
+		a = types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: creds[0],
+			Password: creds[1],
+		}
+	}
+
 	return types.Scenario{
 		Scenario: []types.ScenarioItem{
 			{
 				ID:       1,
 				Protocol: strings.ToUpper(*protocol),
 				Method:   strings.ToUpper(*method),
+				Auth:     a,
 				Headers:  parseHeaders(headers),
 				Payload:  *payload,
 				URL:      *target,
@@ -150,6 +166,7 @@ func createScenario() types.Scenario {
 
 func exitWithMsg(msg string) {
 	if msg != "" {
+		msg = "err: " + msg
 		fmt.Fprintln(os.Stderr, msg)
 	}
 	os.Exit(1)

@@ -9,10 +9,17 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+type auth struct {
+	Type     string `json:"type"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type step struct {
 	Id          int16                  `json:"id"`
 	Url         string                 `json:"url"`
 	Protocol    string                 `json:"protocol"`
+	Auth        auth                   `json:"auth"`
 	Method      string                 `json:"method"`
 	Headers     map[string]string      `json:"headers"`
 	Payload     string                 `json:"payload"`
@@ -89,10 +96,16 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		payload = s.Payload
 	}
 
+	// Set default Auth type if not set
+	if s.Auth != (auth{}) && s.Auth.Type == "" {
+		s.Auth.Type = types.AuthHttpBasic
+	}
+
 	return types.ScenarioItem{
 		ID:       s.Id,
 		URL:      s.Url,
 		Protocol: strings.ToUpper(s.Protocol),
+		Auth:     types.Auth(s.Auth),
 		Method:   strings.ToUpper(s.Method),
 		Headers:  s.Headers,
 		Payload:  payload,
