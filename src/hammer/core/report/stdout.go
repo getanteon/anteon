@@ -120,7 +120,19 @@ Average Duration(s) : %.3f
 func (s *stdout) printDetails() {
 	fmt.Println("\nDETAILS")
 	fmt.Println("----------------------------------------------------")
-	for k, v := range s.result.itemReports {
+
+	keys := make([]int, 0)
+	for k, _ := range s.result.itemReports {
+		keys = append(keys, int(k))
+	}
+
+	// Since map is not a ordered data structure,
+	// We should sort scenarioItemIDs to traverse itemReports
+	sort.Ints(keys)
+
+	for _, k := range keys {
+		v := s.result.itemReports[int16(k)]
+
 		fmt.Println("Step", k)
 		fmt.Println("-------------------------------------")
 
