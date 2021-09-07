@@ -46,13 +46,10 @@ func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL) (err erro
 	}
 
 	// Request instance
-	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
+	err = h.initRequestInstance()
 	if err != nil {
 		return
 	}
-
-	// Headers
-	h.initHeaders()
 
 	return
 }
@@ -210,6 +207,39 @@ func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
 	}
 }
 
+func (d *duration) totalDuration() time.Duration {
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+}
+
+func (h *httpRequester) initRequestInstance() (err error) {
+	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
+	if err != nil {
+		return
+	}
+
+	// Headers
+	header := make(http.Header)
+	for k, v := range h.packet.Headers {
+		header.Set(k, v)
+	}
+
+	ua := header.Get("User-Agent")
+	if ua == "" {
+		ua = types.DdosifyUserAgent
+	} else {
+		ua += " " + types.DdosifyUserAgent
+	}
+	header.Set("User-Agent", ua)
+
+	h.request.Header = header
+
+	// Auth should be set after header assignment.
+	if h.packet.Auth != (types.Auth{}) {
+		h.request.SetBasicAuth(h.packet.Auth.Username, h.packet.Auth.Password)
+	}
+	return
+}
+
 type duration struct {
 	// Time at response reading start
 	resStart time.Time
@@ -231,25 +261,4 @@ type duration struct {
 
 	// Resposne read duration
 	resDur time.Duration
-}
-
-func (d *duration) totalDuration() time.Duration {
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
-}
-
-func (h *httpRequester) initHeaders() {
-	header := make(http.Header)
-	for k, v := range h.packet.Headers {
-		header.Set(k, v)
-	}
-
-	ua := header.Get("User-Agent")
-	if ua == "" {
-		ua = types.DdosifyUserAgent
-	} else {
-		ua += " " + types.DdosifyUserAgent
-	}
-	header.Set("User-Agent", ua)
-
-	h.request.Header = header
 }

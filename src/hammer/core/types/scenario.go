@@ -10,6 +10,8 @@ import (
 const (
 	ProtocolHTTP  = "HTTP"
 	ProtocolHTTPS = "HTTPS"
+
+	AuthHttpBasic = "basic"
 )
 
 var supportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
@@ -21,6 +23,14 @@ var supportedProtocolMethods = map[string][]string{
 	ProtocolHTTPS: {
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
 		http.MethodPatch, http.MethodHead, http.MethodOptions,
+	},
+}
+var supportedAuthentications = map[string][]string{
+	ProtocolHTTP: {
+		AuthHttpBasic,
+	},
+	ProtocolHTTPS: {
+		AuthHttpBasic,
 	},
 }
 
@@ -47,6 +57,9 @@ type ScenarioItem struct {
 	// Request Method
 	Method string
 
+	// Authenticaiton
+	Auth Auth
+
 	// Request Headers
 	Headers map[string]string
 
@@ -63,6 +76,12 @@ type ScenarioItem struct {
 	Custom map[string]interface{}
 }
 
+type Auth struct {
+	Type     string
+	Username string
+	Password string
+}
+
 func (si *ScenarioItem) validate() error {
 	if !util.StringInSlice(si.Protocol, supportedProtocols[:]) {
 		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
@@ -70,8 +89,11 @@ func (si *ScenarioItem) validate() error {
 	if !util.StringInSlice(si.Method, supportedProtocolMethods[si.Protocol][:]) {
 		return fmt.Errorf("unsupported Request Method: %s", si.Method)
 	}
+	if si.Auth != (Auth{}) && !util.StringInSlice(si.Auth.Type, supportedAuthentications[si.Protocol][:]) {
+		return fmt.Errorf("unsupported Authentication Method (%s) For Protocol (%s) ", si.Auth.Type, si.Protocol)
+	}
 	if si.ID == 0 {
-		return fmt.Errorf("each scenario item should have an unique ID")
+		return fmt.Errorf("each scenario item should have an ordered unique ID")
 	}
 	return nil
 }
