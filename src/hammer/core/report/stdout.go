@@ -91,29 +91,20 @@ func (s *stdout) realTimePrintStart() {
 	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
 
 	// First print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
+	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
 	for range s.printTicker.C {
-		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
+		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+			s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
 	}
 }
 
 func (s *stdout) realTimePrintStop() {
 	// Last print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.failedCount, s.result.avgDuration)
+	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
 	s.printTicker.Stop()
 	s.writer.Stop()
-}
-
-func summaryTemplate() string {
-	return `
-SUMMARY
-----------------------------------------------------
-Successful Run Count: %d
-Failed Run Count    : %d
-Average Duration(s) : %.3f
-
-*Average duration calculated only for successful runs.
-`
 }
 
 // TODO:REFACTOR use template
@@ -136,8 +127,8 @@ func (s *stdout) printDetails() {
 		fmt.Println("Step", k)
 		fmt.Println("-------------------------------------")
 
-		fmt.Println("Success Count:", v.successCount)
-		fmt.Println("Failed Count :", v.failedCount)
+		fmt.Printf("Success Count: %-5d (%d%%)\n", v.successCount, v.successPercentage())
+		fmt.Printf("Failed Count:  %-5d (%d%%)\n", v.failedCount, v.failedPercentage())
 
 		fmt.Println("\nDurations (Avg);")
 		var durationList = make([]duration, 0)
@@ -170,11 +161,38 @@ func (s *stdout) printDetails() {
 	}
 }
 
+func summaryTemplate() string {
+	return `
+SUMMARY
+----------------------------------------------------
+Successful Run Count: %-5d (%d%%)
+Failed Run Count    : %-5d (%d%%)
+Average Duration(s) : %.3f
+
+*Average duration calculated only for successful runs.
+`
+}
+
 type result struct {
 	successCount int64
 	avgDuration  float32
 	failedCount  int64
 	itemReports  map[int16]*scenarioItemReport
+}
+
+func (r *result) successPercentage() int {
+	if r.successCount+r.failedCount == 0 {
+		return 0
+	}
+	t := float32(r.successCount) / float32(r.successCount+r.failedCount)
+	return int(t * 100)
+}
+
+func (r *result) failedPercentage() int {
+	if r.successCount+r.failedCount == 0 {
+		return 0
+	}
+	return 100 - r.successPercentage()
 }
 
 type scenarioItemReport struct {
@@ -183,6 +201,21 @@ type scenarioItemReport struct {
 	durations      map[string]float32
 	failedCount    int64
 	successCount   int64
+}
+
+func (s *scenarioItemReport) successPercentage() int {
+	if s.successCount+s.failedCount == 0 {
+		return 0
+	}
+	t := float32(s.successCount) / float32(s.successCount+s.failedCount)
+	return int(t * 100)
+}
+
+func (s *scenarioItemReport) failedPercentage() int {
+	if s.successCount+s.failedCount == 0 {
+		return 0
+	}
+	return 100 - s.successPercentage()
 }
 
 type duration struct {
