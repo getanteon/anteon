@@ -137,12 +137,10 @@ func (e *engine) initReqCountArr() {
 		switch e.hammer.LoadType {
 		case types.LoadTypeLinear:
 			e.createLinearReqCountArr()
-		case types.LoadTypeCapacity:
-			e.createCapacityReqCountArr()
-		case types.LoadTypeStress:
-			e.createStressReqCountArr()
-		case types.LoadTypeSoak:
-			e.createSoakReqCountArr()
+		case types.LoadTypeIncremental:
+			e.createIncrementalReqCountArr()
+		case types.LoadTypeWaved:
+			e.createWavedReqCountArr()
 		}
 		// fmt.Println(e.reqCountArr)
 	}
@@ -162,16 +160,11 @@ func (e *engine) createLinearReqCountArr() {
 }
 
 // TODO
-func (e *engine) createCapacityReqCountArr() {
+func (e *engine) createIncrementalReqCountArr() {
 	return
 }
 
 // TODO
-func (e *engine) createStressReqCountArr() {
-	return
-}
-
-// TODO
-func (e *engine) createSoakReqCountArr() {
+func (e *engine) createWavedReqCountArr() {
 	return
 }

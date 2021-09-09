@@ -7,6 +7,8 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+// TODO: Auth struct tests
+
 var supportedProtocols = [...]string{"HTTP", "HTTPS"}
 var supportedProtocolMethods = map[string][]string{
 	"HTTP": {
@@ -39,7 +41,7 @@ func newDummyHammer() types.Hammer {
 }
 
 func TestHammerValidAttackType(t *testing.T) {
-	var loadTypes = [...]string{"linear", "capacity", "stress", "soak"}
+	var loadTypes = [...]string{"linear", "incremental", "waved"}
 
 	for _, l := range loadTypes {
 		h := newDummyHammer()
@@ -53,7 +55,7 @@ func TestHammerValidAttackType(t *testing.T) {
 
 func TestHammerInValidAttackType(t *testing.T) {
 	h := newDummyHammer()
-	h.LoadType = "incremental"
+	h.LoadType = "strees"
 
 	if err := h.Validate(); err == nil {
 		t.Errorf("TestHammerInValidAttackType errored")
