@@ -7,10 +7,9 @@ import (
 )
 
 const (
-	LoadTypeLinear   = "linear"
-	LoadTypeCapacity = "capacity"
-	LoadTypeStress   = "stress"
-	LoadTypeSoak     = "soak"
+	LoadTypeLinear      = "linear"
+	LoadTypeIncremental = "incremental"
+	LoadTypeWaved       = "waved"
 
 	OutputTypeStdout    = "stdout"
 	OutputTypeTimescale = "timescale"
@@ -18,7 +17,7 @@ const (
 	DdosifyUserAgent = "DdosifyHammer"
 )
 
-var loadTypes = [...]string{LoadTypeLinear, LoadTypeCapacity, LoadTypeStress, LoadTypeSoak}
+var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 var supportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
 type Hammer struct {
