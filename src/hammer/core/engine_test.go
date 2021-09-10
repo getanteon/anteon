@@ -13,6 +13,8 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+//TODO: Engine stop channel close order test
+
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
 		Proxy:             types.Proxy{Strategy: "single"},
@@ -77,6 +79,15 @@ func TestRequestCount(t *testing.T) {
 		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
 		{"Linear3", types.LoadTypeLinear, 2, 23,
 			[]int{2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0},
+		{"Incremental1", types.LoadTypeIncremental, 3, 1022,
+			[]int{17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 35, 34, 34, 34,
+				34, 34, 34, 34, 34, 34, 52, 51, 51, 51, 51, 51, 51, 51, 51, 51}, 2},
+		{"Incremental2", types.LoadTypeIncremental, 5, 10,
+			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+				0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
+		{"Incremental3", types.LoadTypeIncremental, 4, 10,
+			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+				0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
 	}
 
 	for _, test := range tests {

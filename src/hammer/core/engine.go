@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -13,11 +14,8 @@ import (
 )
 
 const (
-	// internval in milisecond
+	// interval in milisecond
 	tickerInterval = 100
-
-	// QPS?
-	// maxReq?
 )
 
 type engine struct {
@@ -108,22 +106,15 @@ func (e *engine) runWorker() {
 
 	if err != nil && err.Type == types.ErrorProxy {
 		e.proxyService.ReportProxy(p, err.Reason)
-		// fmt.Printf("ProxyErr %s\n", err.Reason)
 	}
 
 	e.responseChan <- res
 }
 
 func (e *engine) stop() {
-	// fmt.Println("Waiting workers to finish")
 	e.wg.Wait()
-
-	// fmt.Println("Closing report chan")
 	close(e.responseChan)
-
-	// fmt.Println("Waiting report done chan.")
 	<-e.reportService.DoneChan()
-
 	e.reportService.Report()
 }
 
@@ -147,21 +138,59 @@ func (e *engine) initReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
-	minReqCount := int(e.hammer.TotalReqCount / len(e.reqCountArr))
-	remaining := e.hammer.TotalReqCount - minReqCount*len(e.reqCountArr)
-	for i := range e.reqCountArr {
+	createLinearDistArr(e.hammer.TotalReqCount, e.reqCountArr)
+}
+
+func createLinearDistArr(count int, arr []int) {
+	len := len(arr)
+	minReqCount := int(count / len)
+	remaining := count - minReqCount*len
+	for i := range arr {
 		plusOne := 0
 		if i < remaining {
 			plusOne = 1
 		}
 		reqCount := minReqCount + plusOne
-		e.reqCountArr[i] = reqCount
+		arr[i] = reqCount
 	}
 }
 
-// TODO
 func (e *engine) createIncrementalReqCountArr() {
-	return
+	steps := make([]int, e.hammer.TestDuration)
+	sum := (e.hammer.TestDuration * (e.hammer.TestDuration + 1)) / 2
+	incrementStep := int(math.Ceil(float64(sum) / float64(e.hammer.TotalReqCount)))
+	val := 0
+	for i := range steps {
+		if i > 0 {
+			val = steps[i-1]
+		}
+
+		if i%incrementStep == 0 {
+			steps[i] = val + 1
+		} else {
+			steps[i] = val
+		}
+	}
+
+	sum = 0
+	for i := range steps {
+		sum += steps[i]
+	}
+
+	factor := e.hammer.TotalReqCount / sum
+	remaining := e.hammer.TotalReqCount - (sum * factor)
+	plus := remaining / len(steps)
+	lastRemaining := remaining - (plus * len(steps))
+	for i := range steps {
+		steps[i] = steps[i]*factor + plus
+		if len(steps)-i-1 < lastRemaining {
+			steps[i]++
+		}
+
+		tickArrStartIndex := i * 10
+		createLinearDistArr(steps[i], e.reqCountArr[tickArrStartIndex:tickArrStartIndex+10])
+	}
+
 }
 
 // TODO
