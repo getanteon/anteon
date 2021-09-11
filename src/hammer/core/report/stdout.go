@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"ddosify.com/hammer/core/types"
@@ -15,6 +16,7 @@ type stdout struct {
 	result      *result
 	writer      *uilive.Writer
 	printTicker *time.Ticker
+	mu          sync.Mutex
 }
 
 func (s *stdout) init() {
@@ -29,6 +31,7 @@ func (s *stdout) Start(input chan *types.Response) {
 	go s.realTimePrintStart()
 
 	for r := range input {
+		s.mu.Lock()
 		var scenarioDuration float32
 		errOccured := false
 		for _, rr := range r.ResponseItems {
@@ -71,7 +74,7 @@ func (s *stdout) Start(input chan *types.Response) {
 		} else if errOccured {
 			s.result.failedCount++
 		}
-
+		s.mu.Unlock()
 	}
 
 	s.realTimePrintStop()
@@ -90,12 +93,11 @@ func (s *stdout) realTimePrintStart() {
 	s.writer.Start()
 	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
 
-	// First print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
 	for range s.printTicker.C {
+		s.mu.Lock()
 		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
 			s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
+		s.mu.Unlock()
 	}
 }
 
