@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
@@ -81,6 +82,11 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	} else {
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
+
+		// From the DOC: If the Body is not both read to EOF and closed,
+		// the Client's underlying RoundTripper (typically Transport)
+		// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+		io.Copy(ioutil.Discard, httpRes.Body)
 		httpRes.Body.Close()
 	}
 
