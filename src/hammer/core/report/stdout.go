@@ -94,17 +94,20 @@ func (s *stdout) realTimePrintStart() {
 	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
 
 	for range s.printTicker.C {
-		s.mu.Lock()
-		_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-			s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
-		s.mu.Unlock()
+		go func() {
+			s.mu.Lock()
+			_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+				s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "\nCTRL+C to gracefully stop.")
+			s.mu.Unlock()
+		}()
+
 	}
 }
 
 func (s *stdout) realTimePrintStop() {
 	// Last print.
 	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration)
+		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
 	s.printTicker.Stop()
 	s.writer.Stop()
 }
@@ -154,9 +157,9 @@ func (s *stdout) printDetails() {
 		}
 
 		if len(v.errorDist) > 0 {
-			fmt.Println("\nError Distribution;")
+			fmt.Println("\nError Distribution (Count:Reason);")
 			for e, c := range v.errorDist {
-				fmt.Printf("\t%-15s:%d\n", e, c)
+				fmt.Printf("\t%-5d : %s\n", c, e)
 			}
 		}
 		fmt.Println()
@@ -172,6 +175,7 @@ Failed Run Count    : %-5d (%d%%)
 Average Duration(s) : %.3f
 
 *Average duration calculated only for successful runs.
+%s
 `
 }
 
