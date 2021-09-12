@@ -74,7 +74,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		ue, ok := err.(*url.Error)
 
 		if ok {
-			requestErr = fetchErrType(ok, ue, err)
+			requestErr = fetchErrType(ue.Err.Error())
 		} else {
 			requestErr = types.RequestError{Type: types.ErrorUnkown, Reason: err.Error()}
 		}
@@ -125,20 +125,24 @@ func (h *httpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 // TODO:REFACTOR
 // Currently we can't detect exact error type by returned err.
 // But we need to find an elegant way instead of this.
-func fetchErrType(ok bool, ue *url.Error, err error) types.RequestError {
+func fetchErrType(err string) types.RequestError {
 	var requestErr types.RequestError
-	if strings.Contains(ue.Err.Error(), "proxyconnect") {
-		if strings.Contains(ue.Err.Error(), "connection refused") {
+	if strings.Contains(err, "proxyconnect") {
+		if strings.Contains(err, "connection refused") {
 			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
-		} else if strings.Contains(ue.Err.Error(), "Client.Timeout") {
+		} else if strings.Contains(err, "Client.Timeout") {
 			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
 		} else {
-			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: err.Error()}
+			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: err}
 		}
-	} else if ok && strings.Contains(ue.Err.Error(), context.DeadlineExceeded.Error()) {
+	} else if strings.Contains(err, context.DeadlineExceeded.Error()) {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
+	} else if strings.Contains(err, "i/o timeout") {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
+	} else if strings.Contains(err, "connection refused") {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
 	} else {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: ue.Err.Error()}
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: err}
 	}
 
 	return requestErr
@@ -152,8 +156,8 @@ func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	}
 
 	tr.DisableKeepAlives = true
-	if val, ok := h.packet.Custom["disableKeepAlives"]; ok {
-		tr.DisableKeepAlives = val.(bool)
+	if val, ok := h.packet.Custom["keepAlive"]; ok {
+		tr.DisableKeepAlives = !val.(bool)
 	}
 	if val, ok := h.packet.Custom["disableCompression"]; ok {
 		tr.DisableCompression = val.(bool)
@@ -242,6 +246,13 @@ func (h *httpRequester) initRequestInstance() (err error) {
 	// Auth should be set after header assignment.
 	if h.packet.Auth != (types.Auth{}) {
 		h.request.SetBasicAuth(h.packet.Auth.Username, h.packet.Auth.Password)
+	}
+
+	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
+	if val, ok := h.packet.Custom["keep-alive"]; ok {
+		if !val.(bool) {
+			h.request.Close = true
+		}
 	}
 	return
 }

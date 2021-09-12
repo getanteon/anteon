@@ -9,9 +9,11 @@ const (
 	ErrorUnkown = "unkownError"
 
 	// Reasons
-	ReasonProxyFailed  = "proxy conn refused"
+	ReasonProxyFailed  = "proxy connection refused"
 	ReasonProxyTimeout = "proxy timeout"
-	ReasonConnTimeout  = "conn timeout"
+	ReasonConnTimeout  = "connection timeout"
+	ReasonReadTimeout  = "read timeout"
+	ReasonConnRefused  = "connection refused"
 )
 
 type RequestError struct {
