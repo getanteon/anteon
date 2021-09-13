@@ -138,7 +138,7 @@ func createScenario() types.Scenario {
 	if *auth != "" {
 		creds := strings.Split(*auth, ":")
 		if len(creds) != 2 {
-			exitWithMsg("auth credentials couldn't parsed")
+			exitWithMsg("auth credentials couldn't be parsed")
 		}
 
 		a = types.Auth{
