@@ -10,6 +10,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"ddosify.com/hammer/core/types"
@@ -62,12 +63,12 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	var reqStartTime = time.Now()
 
 	durations := &duration{}
-	trace := h.newTrace(durations)
+	trace := newTrace(durations)
 	httpReq := h.prepareReq(trace)
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
-	resDur := time.Since(durations.resStart)
+	durations.setResDur()
 
 	// Error checking
 	if err != nil {
@@ -100,15 +101,15 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		ContentLenth:   contentLength,
 		Err:            requestErr,
 		Custom: map[string]interface{}{
-			"dnsDuration":           durations.dnsDur,
-			"connDuration":          durations.connDur,
-			"reqDuration":           durations.reqDur,
-			"resDuration":           resDur,
-			"serverProcessDuration": durations.serverProcessDur,
+			"dnsDuration":           durations.getDnsDur(),
+			"connDuration":          durations.getConnDur(),
+			"reqDuration":           durations.getReqDur(),
+			"resDuration":           durations.getResDur(),
+			"serverProcessDuration": durations.getServerProcessDur(),
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
-		res.Custom["tlsDuration"] = durations.tlsDur
+		res.Custom["tlsDuration"] = durations.getTlsDur()
 	}
 
 	return
@@ -181,46 +182,6 @@ func (h *httpRequester) initTlsConfig() *tls.Config {
 	return tlsConfig
 }
 
-func (h *httpRequester) newTrace(duration *duration) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
-
-	return &httptrace.ClientTrace{
-		DNSStart: func(info httptrace.DNSStartInfo) {
-			dnsStart = time.Now()
-		},
-		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
-			duration.dnsDur = time.Since(dnsStart)
-		},
-		ConnectStart: func(network, addr string) {
-			connStart = time.Now()
-		},
-		ConnectDone: func(network, addr string, err error) {
-			duration.connDur = time.Since(connStart)
-		},
-		TLSHandshakeStart: func() {
-			tlsStart = time.Now()
-		},
-		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
-			duration.tlsDur = time.Since(tlsStart)
-		},
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			reqStart = time.Now()
-		},
-		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			duration.reqDur = time.Since(reqStart)
-			serverProcessStart = time.Now()
-		},
-		GotFirstResponseByte: func() {
-			duration.serverProcessDur = time.Since(serverProcessStart)
-			duration.resStart = time.Now()
-		},
-	}
-}
-
-func (d *duration) totalDuration() time.Duration {
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
-}
-
 func (h *httpRequester) initRequestInstance() (err error) {
 	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
@@ -257,6 +218,88 @@ func (h *httpRequester) initRequestInstance() (err error) {
 	return
 }
 
+func newTrace(duration *duration) *httptrace.ClientTrace {
+	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
+
+	// According to the doc in the trace.go;
+	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
+	// Also, some of the hooks can be triggered after the TCP roundtrip if the request is not successfully finished.
+	// To fetch the time only at the first trigger and prevent data race we need to use the mutex mechanism.
+	// For start times, except resStart, this mutex is been using.
+	// For duration calculations, "duration" struct internally uses another mutex.
+	var m sync.Mutex
+
+	return &httptrace.ClientTrace{
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			m.Lock()
+			if dnsStart.IsZero() {
+				dnsStart = time.Now()
+			}
+			m.Unlock()
+		},
+		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+			m.Lock()
+			// no need to handle error in here. We can detect it at http.Client.Do return.
+			if dnsInfo.Err == nil {
+				duration.setDnsDur(time.Since(dnsStart))
+			}
+			m.Unlock()
+		},
+		ConnectStart: func(network, addr string) {
+			m.Lock()
+			if connStart.IsZero() {
+				connStart = time.Now()
+			}
+			m.Unlock()
+		},
+		ConnectDone: func(network, addr string, err error) {
+			m.Lock()
+			// no need to handle error in here. We can detect it at http.Client.Do return.
+			if err == nil {
+				duration.setConnDur(time.Since(connStart))
+			}
+			m.Unlock()
+		},
+		TLSHandshakeStart: func() {
+			m.Lock()
+			if tlsStart.IsZero() {
+				tlsStart = time.Now()
+			}
+			m.Unlock()
+		},
+		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
+			m.Lock()
+			// no need to handle error in here. We can detect it at http.Client.Do return.
+			if e == nil {
+				duration.setTlsDur(time.Since(tlsStart))
+			}
+			m.Unlock()
+		},
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			m.Lock()
+			if reqStart.IsZero() {
+				reqStart = time.Now()
+			}
+			m.Unlock()
+		},
+		WroteRequest: func(w httptrace.WroteRequestInfo) {
+			m.Lock()
+			// no need to handle error in here. We can detect it at http.Client.Do return.
+			if w.Err == nil {
+				duration.setReqDur(time.Since(reqStart))
+				serverProcessStart = time.Now()
+			}
+			m.Unlock()
+		},
+		GotFirstResponseByte: func() {
+			m.Lock()
+			duration.setServerProcessDur(time.Since(serverProcessStart))
+			duration.setResStartTime(time.Now())
+			m.Unlock()
+		},
+	}
+}
+
 type duration struct {
 	// Time at response reading start
 	resStart time.Time
@@ -278,4 +321,102 @@ type duration struct {
 
 	// Resposne read duration
 	resDur time.Duration
+
+	mu sync.Mutex
+}
+
+func (d *duration) setResStartTime(t time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.resStart.IsZero() {
+		d.resStart = t
+	}
+}
+
+func (d *duration) setDnsDur(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.dnsDur == 0 {
+		d.dnsDur = t
+	}
+}
+
+func (d *duration) getDnsDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.dnsDur
+}
+
+func (d *duration) setTlsDur(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.tlsDur == 0 {
+		d.tlsDur = t
+	}
+}
+
+func (d *duration) getTlsDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.tlsDur
+}
+
+func (d *duration) setConnDur(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.connDur == 0 {
+		d.connDur = t
+	}
+}
+
+func (d *duration) getConnDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.connDur
+}
+
+func (d *duration) setReqDur(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.reqDur == 0 {
+		d.reqDur = t
+	}
+}
+
+func (d *duration) getReqDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.reqDur
+}
+
+func (d *duration) setServerProcessDur(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.serverProcessDur == 0 {
+		d.serverProcessDur = t
+	}
+}
+
+func (d *duration) getServerProcessDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.serverProcessDur
+}
+
+func (d *duration) setResDur() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.resDur = time.Since(d.resStart)
+}
+
+func (d *duration) getResDur() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.resDur
+}
+
+func (d *duration) totalDuration() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
 }
