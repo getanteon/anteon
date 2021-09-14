@@ -91,8 +91,9 @@ func TestRequestCount(t *testing.T) {
 				11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16}, 1},
 	}
 
-	for _, test := range tests {
-		tf := func(t *testing.T) {
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			var timeReqMap map[int]int
@@ -136,8 +137,7 @@ func TestRequestCount(t *testing.T) {
 					t.Errorf("Expected: %v, Recieved: %v, Tick: %v", v, timeReqMap[i], i)
 				}
 			}
-		}
-		t.Run(test.name, tf)
+		})
 	}
 }
 
@@ -284,8 +284,9 @@ func TestRequestTimeout(t *testing.T) {
 	}
 
 	// Act
-	for _, test := range tests {
-		tf := func(t *testing.T) {
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			result := false
 
@@ -309,7 +310,6 @@ func TestRequestTimeout(t *testing.T) {
 			if result != test.expected {
 				t.Errorf("Expected %v, Found :%v", test.expected, result)
 			}
-		}
-		t.Run(test.name, tf)
+		})
 	}
 }
