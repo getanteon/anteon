@@ -98,14 +98,14 @@ func TestRequestCount(t *testing.T) {
 
 			var timeReqMap map[int]int
 			var now time.Time
-			var mutex = &sync.Mutex{}
+			var m sync.Mutex
 
 			// Test server
 			handler := func(w http.ResponseWriter, r *http.Request) {
-				mutex.Lock()
+				m.Lock()
 				i := time.Since(now).Milliseconds()/tickerInterval - 1
 				timeReqMap[int(i)]++
-				mutex.Unlock()
+				m.Unlock()
 			}
 			server := httptest.NewServer(http.HandlerFunc(handler))
 			defer server.Close()
@@ -126,6 +126,7 @@ func TestRequestCount(t *testing.T) {
 			e.Init()
 			e.Start()
 
+			m.Lock()
 			// Assert create reqCountArr
 			if !reflect.DeepEqual(e.reqCountArr, test.expectedReqArr) {
 				t.Errorf("Expected: %v, Found: %v", test.expectedReqArr, e.reqCountArr)
@@ -137,6 +138,7 @@ func TestRequestCount(t *testing.T) {
 					t.Errorf("Expected: %v, Recieved: %v, Tick: %v", v, timeReqMap[i], i)
 				}
 			}
+			m.Unlock()
 		})
 	}
 }
@@ -289,11 +291,15 @@ func TestRequestTimeout(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			result := false
+			var m sync.Mutex
 
 			// Test server
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				time.Sleep(time.Duration(1100) * time.Millisecond)
+
+				m.Lock()
 				result = true
+				m.Unlock()
 			}
 			server := httptest.NewServer(http.HandlerFunc(handler))
 			defer server.Close()
@@ -307,9 +313,11 @@ func TestRequestTimeout(t *testing.T) {
 			e.Start()
 
 			// Assert
+			m.Lock()
 			if result != test.expected {
 				t.Errorf("Expected %v, Found :%v", test.expected, result)
 			}
+			m.Unlock()
 		})
 	}
 }
