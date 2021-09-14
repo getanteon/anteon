@@ -36,6 +36,8 @@ func newDummyHammer() types.Hammer {
 }
 
 func TestServices(t *testing.T) {
+	t.Parallel()
+
 	h := newDummyHammer()
 	e := NewEngine(context.TODO(), h)
 	e.Init()
@@ -53,19 +55,7 @@ func TestServices(t *testing.T) {
 
 // TODO: Add other load types as you implement
 func TestRequestCount(t *testing.T) {
-	var timeReqMap map[int]int
-	var now time.Time
-	var mutex = &sync.Mutex{}
-
-	// Test server
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		mutex.Lock()
-		i := time.Since(now).Milliseconds()/tickerInterval - 1
-		timeReqMap[int(i)]++
-		mutex.Unlock()
-	}
-	server := httptest.NewServer(http.HandlerFunc(handler))
-	defer server.Close()
+	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -103,6 +93,22 @@ func TestRequestCount(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
+			t.Parallel()
+
+			var timeReqMap map[int]int
+			var now time.Time
+			var mutex = &sync.Mutex{}
+
+			// Test server
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				mutex.Lock()
+				i := time.Since(now).Milliseconds()/tickerInterval - 1
+				timeReqMap[int(i)]++
+				mutex.Unlock()
+			}
+			server := httptest.NewServer(http.HandlerFunc(handler))
+			defer server.Close()
+
 			// Prepare
 			h := newDummyHammer()
 			h.LoadType = test.loadType
@@ -136,6 +142,8 @@ func TestRequestCount(t *testing.T) {
 }
 
 func TestRequestData(t *testing.T) {
+	t.Parallel()
+
 	var uri, header1, header2, body, protocol, method string
 
 	// Test server
@@ -195,6 +203,8 @@ func TestRequestData(t *testing.T) {
 }
 
 func TestRequestDataForMultiScenarioStep(t *testing.T) {
+	t.Parallel()
+
 	var uri, header, body, protocol, method = make([]string, 2), make([]string, 2), make([]string, 2),
 		make([]string, 2), make([]string, 2)
 
@@ -261,15 +271,7 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 }
 
 func TestRequestTimeout(t *testing.T) {
-	var result bool
-
-	// Test server
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(time.Duration(1100) * time.Millisecond)
-		result = true
-	}
-	server := httptest.NewServer(http.HandlerFunc(handler))
-	defer server.Close()
+	t.Parallel()
 
 	// Prepare
 	tests := []struct {
@@ -284,7 +286,17 @@ func TestRequestTimeout(t *testing.T) {
 	// Act
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			result = false
+			t.Parallel()
+			result := false
+
+			// Test server
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(time.Duration(1100) * time.Millisecond)
+				result = true
+			}
+			server := httptest.NewServer(http.HandlerFunc(handler))
+			defer server.Close()
+
 			h := newDummyHammer()
 			h.Scenario.Scenario[0].Timeout = test.timeout
 			h.Scenario.Scenario[0].URL = server.URL
