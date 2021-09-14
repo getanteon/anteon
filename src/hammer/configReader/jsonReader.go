@@ -2,6 +2,7 @@ package configReader
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"strings"
@@ -101,10 +102,19 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		s.Auth.Type = types.AuthHttpBasic
 	}
 
+	// Protocol & URL
+	url, err := url.Parse(s.Url)
+	if err != nil {
+		return types.ScenarioItem{}, fmt.Errorf("invalid target url")
+	}
+	if url.Scheme == "" {
+		url.Scheme = s.Protocol
+	}
+
 	return types.ScenarioItem{
 		ID:       s.Id,
-		URL:      s.Url,
-		Protocol: strings.ToUpper(s.Protocol),
+		URL:      url.String(),
+		Protocol: strings.ToUpper(url.Scheme),
 		Auth:     types.Auth(s.Auth),
 		Method:   strings.ToUpper(s.Method),
 		Headers:  s.Headers,

@@ -134,6 +134,7 @@ func createProxy() types.Proxy {
 }
 
 func createScenario() types.Scenario {
+	// Auth
 	var a types.Auth
 	if *auth != "" {
 		creds := strings.Split(*auth, ":")
@@ -148,16 +149,25 @@ func createScenario() types.Scenario {
 		}
 	}
 
+	// Protocol & URL
+	url, err := url.Parse(*target)
+	if err != nil {
+		exitWithMsg("invalid target url")
+	}
+	if url.Scheme == "" {
+		url.Scheme = *protocol
+	}
+
 	return types.Scenario{
 		Scenario: []types.ScenarioItem{
 			{
 				ID:       1,
-				Protocol: strings.ToUpper(*protocol),
+				Protocol: strings.ToUpper(url.Scheme),
 				Method:   strings.ToUpper(*method),
 				Auth:     a,
 				Headers:  parseHeaders(headers),
 				Payload:  *payload,
-				URL:      *target,
+				URL:      url.String(),
 				Timeout:  *timeout,
 			},
 		},
