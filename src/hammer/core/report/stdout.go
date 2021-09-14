@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"ddosify.com/hammer/core/types"
+	"ddosify.com/hammer/core/util"
 	"github.com/gosuri/uilive"
 )
 
@@ -24,7 +25,10 @@ func (s *stdout) init() {
 	s.result = &result{
 		itemReports: make(map[int16]*scenarioItemReport),
 	}
-	s.writer = uilive.New()
+
+	if !util.IsSystemInTestMode() {
+		s.writer = uilive.New()
+	}
 }
 
 func (s *stdout) Start(input chan *types.Response) {
@@ -90,6 +94,10 @@ func (s *stdout) DoneChan() <-chan struct{} {
 }
 
 func (s *stdout) realTimePrintStart() {
+	if util.IsSystemInTestMode() {
+		return
+	}
+
 	s.writer.Start()
 	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
 
@@ -105,6 +113,10 @@ func (s *stdout) realTimePrintStart() {
 }
 
 func (s *stdout) realTimePrintStop() {
+	if util.IsSystemInTestMode() {
+		return
+	}
+
 	// Last print.
 	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
 		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
@@ -114,6 +126,10 @@ func (s *stdout) realTimePrintStop() {
 
 // TODO:REFACTOR use template
 func (s *stdout) printDetails() {
+	if util.IsSystemInTestMode() {
+		return
+	}
+
 	fmt.Println("\nDETAILS")
 	fmt.Println("----------------------------------------------------")
 
