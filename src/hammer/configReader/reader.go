@@ -33,7 +33,7 @@ type ConfigReader interface {
 	CreateHammer() (types.Hammer, error)
 }
 
-func NewConfigReaderFromFile(path string, configType string) (reader ConfigReader, err error) {
+func NewConfigFileReader(path string, configType string) (reader ConfigReader, err error) {
 	if strings.EqualFold(configType, "jsonReader") {
 		reader = &jsonReader{}
 	} 
@@ -43,7 +43,7 @@ func NewConfigReaderFromFile(path string, configType string) (reader ConfigReade
 		return
 	}
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
 		return
 	}
