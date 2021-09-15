@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"context"
 	"net/url"
 	"time"
 
@@ -17,13 +18,16 @@ type ScenarioService struct {
 	clients map[*url.URL][]scenarioItemRequester
 }
 
-func NewScenarioService(s types.Scenario, proxies []*url.URL) (service *ScenarioService, err error) {
+func NewScenarioService(
+	s types.Scenario,
+	proxies []*url.URL,
+	ctx context.Context) (service *ScenarioService, err error) {
 	service = &ScenarioService{}
-	err = service.init(s, proxies)
+	err = service.init(s, proxies, ctx)
 	return
 }
 
-func (ss *ScenarioService) init(s types.Scenario, proxies []*url.URL) (err error) {
+func (ss *ScenarioService) init(s types.Scenario, proxies []*url.URL, ctx context.Context) (err error) {
 	ss.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
 		ss.clients[p] = []scenarioItemRequester{}
@@ -35,7 +39,7 @@ func (ss *ScenarioService) init(s types.Scenario, proxies []*url.URL) (err error
 			}
 			ss.clients[p] = append(ss.clients[p], scenarioItemRequester{scenarioItemID: si.ID, requester: r})
 
-			err = r.Init(si, p)
+			err = r.Init(si, p, ctx)
 			if err != nil {
 				return
 			}
@@ -50,7 +54,7 @@ func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *ty
 	response.ProxyAddr = proxy
 	for _, sr := range ss.clients[proxy] {
 		res := sr.requester.Send()
-		if res.Err.Type == types.ErrorProxy {
+		if res.Err.Type == types.ErrorProxy || res.Err.Reason == types.ReasonCtxCanceled {
 			err = &res.Err
 		}
 		response.ResponseItems = append(response.ResponseItems, res)

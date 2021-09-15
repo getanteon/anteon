@@ -1,6 +1,7 @@
 package requester
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
@@ -9,7 +10,7 @@ import (
 )
 
 type Requester interface {
-	Init(types.ScenarioItem, *url.URL) error
+	Init(types.ScenarioItem, *url.URL, context.Context) error
 	Send() *types.ResponseItem
 }
 

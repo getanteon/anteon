@@ -14,6 +14,10 @@ const (
 	ReasonConnTimeout  = "connection timeout"
 	ReasonReadTimeout  = "read timeout"
 	ReasonConnRefused  = "connection refused"
+
+	// In gracefully stop, engine cancels the ongoing requests.
+	// We can detect the canceled requests with the help of this.
+	ReasonCtxCanceled = "context canceled"
 )
 
 type RequestError struct {
