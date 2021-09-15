@@ -22,6 +22,7 @@ package types
 
 import (
 	"fmt"
+	"net/http"
 
 	"ddosify.com/hammer/core/util"
 )
@@ -35,6 +36,15 @@ const (
 	OutputTypeTimescale = "timescale"
 
 	DdosifyUserAgent = "DdosifyHammer"
+
+	// Default Values
+	DefaultReqCount   = 100
+	DefaultLoadType   = LoadTypeLinear
+	DefaultDuration   = 10
+	DefaultTimeout    = 5
+	DefaultProtocol   = ProtocolHTTPS
+	DefaultMethod     = http.MethodGet
+	DefaultOutputType = OutputTypeStdout
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}

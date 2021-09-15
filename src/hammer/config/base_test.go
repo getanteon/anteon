@@ -47,7 +47,6 @@ func TestNewConfigReaderInvalidConfigType(t *testing.T) {
 	if err == nil {
 		t.Errorf("TestNewConfigReaderInvalidConfigType errored")
 	}
-
 }
 
 func TestNewConfigReaderInvalidFilePath(t *testing.T) {

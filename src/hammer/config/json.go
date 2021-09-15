@@ -52,9 +52,9 @@ type step struct {
 func (s *step) UnmarshalJSON(data []byte) error {
 	type stepAlias step
 	defaultFields := &stepAlias{
-		Protocol: "https",
-		Method:   "get",
-		Timeout:  10,
+		Protocol: types.DefaultProtocol,
+		Method:   types.DefaultMethod,
+		Timeout:  types.DefaultTimeout,
 	}
 
 	err := json.Unmarshal(data, defaultFields)
@@ -78,10 +78,10 @@ type jsonReader struct {
 func (j *jsonReader) UnmarshalJSON(data []byte) error {
 	type jsonReaderAlias jsonReader
 	defaultFields := &jsonReaderAlias{
-		ReqCount: 1000,
-		LoadType: types.LoadTypeLinear,
-		Duration: 10,
-		Output:   types.OutputTypeStdout,
+		ReqCount: types.DefaultReqCount,
+		LoadType: types.DefaultLoadType,
+		Duration: types.DefaultDuration,
+		Output:   types.DefaultOutputType,
 	}
 
 	err := json.Unmarshal(data, defaultFields)
