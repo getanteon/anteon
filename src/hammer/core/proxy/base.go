@@ -28,7 +28,7 @@ import (
 )
 
 type ProxyService interface {
-	init(types.Proxy)
+	init(types.Proxy) error
 	GetAll() []*url.URL
 	GetProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string) *url.URL
