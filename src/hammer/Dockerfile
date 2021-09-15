@@ -9,7 +9,7 @@ WORKDIR /workspace
 
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.0
 
-RUN go get -v golang.org/x/tools/gopls@v0.7.1
+RUN go get -v golang.org/x/tools/gopls@v0.7.2
 RUN go get -v github.com/rogpeppe/godef@v1.1.2
 RUN go get -v github.com/rakyll/gotest@v0.0.6
 RUN go get -v github.com/cweill/gotests@v1.6.0
