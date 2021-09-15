@@ -24,7 +24,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -43,21 +42,21 @@ const headerRegexp = `^([\w-]+):\s*(.+)`
 //TODO: Add ddosify-hammer User-Agent to header config
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
-	reqCount = flag.Int("n", 1000, "Total request count")
-	loadType = flag.String("l", types.LoadTypeLinear, "Type of the load test [linear, capacity, stress, soak")
-	duration = flag.Int("d", 10, "Test duration in seconds")
+	reqCount = flag.Int("n", types.DefaultReqCount, "Total request count")
+	loadType = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, capacity, stress, soak")
+	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
 
-	protocol = flag.String("p", types.ProtocolHTTP, "[HTTP, HTTPS]")
-	method   = flag.String("m", http.MethodGet, "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
+	protocol = flag.String("p", types.DefaultProtocol, "[HTTP, HTTPS]")
+	method   = flag.String("m", types.DefaultMethod, "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
 	payload  = flag.String("b", "", "Payload of the network packet")
 	auth     = flag.String("a", "", "Basic authentication, username:password")
 	headers  header
 
 	target  = flag.String("t", "", "Target URL")
-	timeout = flag.Int("T", 10, "Request timeout in seconds")
+	timeout = flag.Int("T", types.DefaultTimeout, "Request timeout in seconds")
 
 	proxy  = flag.String("P", "", "Proxy address as host:port")
-	output = flag.String("o", types.OutputTypeStdout, "Output destination")
+	output = flag.String("o", types.DefaultOutputType, "Output destination")
 
 	configPath = flag.String("config", "",
 		"Json config file path. If a config file is provided, other flag values will be ignored.")
