@@ -31,7 +31,7 @@ import (
 	"regexp"
 	"strings"
 
-	"ddosify.com/hammer/configReader"
+	"ddosify.com/hammer/config"
 	"ddosify.com/hammer/core"
 	"ddosify.com/hammer/core/types"
 )
@@ -70,7 +70,7 @@ func main() {
 	var h types.Hammer
 
 	if *configPath != "" {
-		c, err := configReader.NewConfigReader(*configPath, configReader.ConfigTypeJson)
+		c, err := config.NewConfigReader(*configPath, config.ConfigTypeJson)
 		if err != nil {
 			exitWithMsg(err.Error())
 		}

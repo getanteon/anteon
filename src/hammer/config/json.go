@@ -18,7 +18,7 @@
 *
  */
 
-package configReader
+package config
 
 import (
 	"encoding/json"
