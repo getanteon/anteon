@@ -18,7 +18,7 @@
 *
  */
 
-package configReader
+package config
 
 import (
 	"reflect"
@@ -27,7 +27,7 @@ import (
 
 func TestNewConfigReader(t *testing.T) {
 	t.Parallel()
-	config_path := "reader_testdata/config.json"
+	config_path := "config_testdata/config.json"
 	reader, err := NewConfigReader(config_path, ConfigTypeJson)
 
 	if err != nil {
@@ -41,7 +41,7 @@ func TestNewConfigReader(t *testing.T) {
 
 func TestNewConfigReaderInvalidConfigType(t *testing.T) {
 	t.Parallel()
-	config_path := "reader_testdata/config.json"
+	config_path := "config_testdata/config.json"
 	_, err := NewConfigReader(config_path, "invalidConfigType")
 
 	if err == nil {
@@ -52,7 +52,7 @@ func TestNewConfigReaderInvalidConfigType(t *testing.T) {
 
 func TestNewConfigReaderInvalidFilePath(t *testing.T) {
 	t.Parallel()
-	config_path := "reader_testdata/invalid_file_path.json"
+	config_path := "config_testdata/invalid_file_path.json"
 	_, err := NewConfigReader(config_path, ConfigTypeJson)
 
 	if err == nil {
@@ -62,7 +62,7 @@ func TestNewConfigReaderInvalidFilePath(t *testing.T) {
 
 func TestNewConfigReaderIncorrectJsonFile(t *testing.T) {
 	t.Parallel()
-	config_path := "reader_testdata/incorrect_formatted.json"
+	config_path := "config_testdata/incorrect_formatted.json"
 	_, err := NewConfigReader(config_path, ConfigTypeJson)
 
 	if err == nil {
