@@ -20,3 +20,9 @@ RUN GOBIN=/tmp/ go install github.com/go-delve/delve/cmd/dlv@master && mv /tmp/d
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
+
+
+# Aliases
+RUN echo "alias ll='ls -alF'" >> /etc/bash.bashrc
+RUN echo "alias hammer-race-check='go run -race main.go -t https://proxytest.ddosifytech.com/ -p https -d 1 -n 1500 -a testuser:rp6RHlNMaOneEN1Inr5ZcQd8F'" >> /etc/bash.bashrc
+RUN echo "alias hammer-test-n-cover='gotest -race -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -func coverage.out'" >> /etc/bash.bashrc
