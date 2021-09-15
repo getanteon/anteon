@@ -54,7 +54,7 @@ func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *ty
 	response.ProxyAddr = proxy
 	for _, sr := range ss.clients[proxy] {
 		res := sr.requester.Send()
-		if res.Err.Type == types.ErrorProxy || res.Err.Reason == types.ReasonCtxCanceled {
+		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
 		}
 		response.ResponseItems = append(response.ResponseItems, res)

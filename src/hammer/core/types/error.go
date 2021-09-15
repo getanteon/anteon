@@ -8,6 +8,9 @@ const (
 	ErrorConn   = "connectionError"
 	ErrorUnkown = "unkownError"
 
+	// Errors for created intentionally
+	ErrorIntented = "intentedError"
+
 	// Reasons
 	ReasonProxyFailed  = "proxy connection refused"
 	ReasonProxyTimeout = "proxy timeout"
