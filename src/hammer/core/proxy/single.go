@@ -45,8 +45,8 @@ func (sp *singleProxyStrategy) GetProxy() *url.URL {
 	return sp.proxyAddr
 }
 
-func (sp *singleProxyStrategy) ReportProxy(addr *url.URL, reason string) *url.URL {
-	return sp.proxyAddr
+func (sp *singleProxyStrategy) ReportProxy(addr *url.URL, reason string) (*url.URL, error) {
+	return sp.proxyAddr, nil
 }
 
 func (sp *singleProxyStrategy) GetProxyCountry(addr *url.URL) string {
