@@ -29,6 +29,23 @@ type step struct {
 	Others      map[string]interface{} `json:"others"`
 }
 
+func (s *step) UnmarshalJSON(data []byte) error {
+	type stepAlias step
+	defaultFields := &stepAlias{
+		Protocol: "https",
+		Method:   "get",
+		Timeout:  10,
+	}
+
+	err := json.Unmarshal(data, defaultFields)
+	if err != nil {
+		return err
+	}
+
+	*s = step(*defaultFields)
+	return nil
+}
+
 type jsonReader struct {
 	ReqCount int    `json:"reqCount"`
 	LoadType string `json:"loadType"`
@@ -36,6 +53,24 @@ type jsonReader struct {
 	Steps    []step `json:"steps"`
 	Output   string `json:"output"`
 	Proxy    string `json:"proxy"`
+}
+
+func (j *jsonReader) UnmarshalJSON(data []byte) error {
+	type jsonReaderAlias jsonReader
+	defaultFields := &jsonReaderAlias{
+		ReqCount: 1000,
+		LoadType: types.LoadTypeLinear,
+		Duration: 10,
+		Output:   types.OutputTypeStdout,
+	}
+
+	err := json.Unmarshal(data, defaultFields)
+	if err != nil {
+		return err
+	}
+
+	*j = jsonReader(*defaultFields)
+	return nil
 }
 
 func (c *jsonReader) init(jsonByte []byte) (err error) {
