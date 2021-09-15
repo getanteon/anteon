@@ -21,23 +21,34 @@
 package configReader
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"ddosify.com/hammer/core/types"
+	"ddosify.com/hammer/core/util"
 )
+
+const (
+	ConfigTypeJson    = "jsonReader"
+)
+
+var availableConfigTypes = []string{ConfigTypeJson}
 
 type ConfigReader interface {
 	init([]byte) error
 	CreateHammer() (types.Hammer, error)
 }
 
-func NewConfigFileReader(path string, configType string) (reader ConfigReader, err error) {
-	if strings.EqualFold(configType, "jsonReader") {
-		reader = &jsonReader{}
-	} 
+func NewConfigReader(path string, configType string) (reader ConfigReader, err error) {
+	if !util.StringInSlice(configType, availableConfigTypes) {
+		return nil, fmt.Errorf("unsupported config type %s", configType)
+	}
 
+	if strings.EqualFold(configType, ConfigTypeJson) {
+		reader = &jsonReader{}
+	}
 	jsonFile, err := os.Open(path)
 	if err != nil {
 		return

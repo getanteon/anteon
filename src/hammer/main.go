@@ -70,7 +70,7 @@ func main() {
 	var h types.Hammer
 
 	if *configPath != "" {
-		c, err := configReader.NewConfigFileReader(*configPath, "jsonReader")
+		c, err := configReader.NewConfigReader(*configPath, configReader.ConfigTypeJson)
 		if err != nil {
 			exitWithMsg(err.Error())
 		}
