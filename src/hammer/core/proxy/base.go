@@ -39,7 +39,9 @@ func NewProxyService(p types.Proxy) (service ProxyService, err error) {
 	if strings.EqualFold(p.Strategy, "single") {
 		service = &singleProxyStrategy{}
 	}
-	service.init(p)
+	if err = service.init(p); err != nil {
+		return
+	}
 
-	return service, nil
+	return
 }
