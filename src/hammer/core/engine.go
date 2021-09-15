@@ -49,7 +49,7 @@ func (e *engine) Init() (err error) {
 	}
 
 	proxies := e.proxyService.GetAll()
-	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario, proxies); err != nil {
+	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario, proxies, e.ctx); err != nil {
 		return
 	}
 
@@ -107,6 +107,10 @@ func (e *engine) runWorker() {
 
 	if err != nil && err.Type == types.ErrorProxy {
 		e.proxyService.ReportProxy(p, err.Reason)
+	}
+	if err != nil && err.Type == types.ErrorConn && err.Reason == types.ReasonCtxCanceled {
+		// Don't report intentionally canceled requests.
+		return
 	}
 
 	e.responseChan <- res

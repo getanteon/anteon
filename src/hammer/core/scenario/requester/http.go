@@ -19,6 +19,7 @@ import (
 )
 
 type httpRequester struct {
+	ctx       context.Context
 	proxyAddr *url.URL
 	packet    types.ScenarioItem
 	client    *http.Client
@@ -26,7 +27,8 @@ type httpRequester struct {
 }
 
 // Create a client with scenarioItem and use same client for each request
-func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL) (err error) {
+func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL, ctx context.Context) (err error) {
+	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
 
@@ -116,7 +118,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 }
 
 func (h *httpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
-	httpReq := h.request.Clone(context.TODO())
+	httpReq := h.request.Clone(h.ctx)
 	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
 	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
@@ -142,6 +144,8 @@ func fetchErrType(err string) types.RequestError {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
 	} else if strings.Contains(err, "connection refused") {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
+	} else if strings.Contains(err, context.Canceled.Error()) {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonCtxCanceled}
 	} else {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: err}
 	}
