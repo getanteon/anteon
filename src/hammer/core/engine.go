@@ -108,8 +108,8 @@ func (e *engine) runWorker() {
 	if err != nil && err.Type == types.ErrorProxy {
 		e.proxyService.ReportProxy(p, err.Reason)
 	}
-	if err != nil && err.Type == types.ErrorConn && err.Reason == types.ReasonCtxCanceled {
-		// Don't report intentionally canceled requests.
+	if err != nil && err.Type == types.ErrorIntented {
+		// Don't report intentionally created errors. Like canceled requests.
 		return
 	}
 

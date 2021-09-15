@@ -145,7 +145,7 @@ func fetchErrType(err string) types.RequestError {
 	} else if strings.Contains(err, "connection refused") {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
 	} else if strings.Contains(err, context.Canceled.Error()) {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonCtxCanceled}
+		requestErr = types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
 	} else {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: err}
 	}
