@@ -1,44 +1,31 @@
 {
-    "reqCount": 100,
-    "loadType": "linear",
-    "duration": 10,
+    "reqCount": 1555,
+    "loadType": "waved",
+    "duration": 21,
     "steps": [
         {
             "id": 1,
             "url": "https://app.servdown.com/accounts/login/?next=/",
-            "protocol": "http",
-            "auth": {
-                "type": "basic",
-                "username": "kursat",
-                "password": "12345"
-            },
+            "protocol": "https",
             "method": "GET",
-            "headers": {
-                "ContenType": "application/xml",
-                "User-Agent": "chrome5"
-            },
-            "payload": "body yt kanl adnlandlandaln",
-            "timeout": 1,
+            "payload": "payload str",
+            "timeout": 3,
             "others": {
                 "keep-alive": true
             }
         },
         {
             "id": 2,
-            "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
+            "url": "http://test.com",
             "protocol": "https",
-            "method": "GET",
+            "method": "PUT",
             "headers": {
                 "ContenType": "application/xml",
                 "X-ddosify-key": "ajkndalnasd"
             },
-            "payloadFile": "config_testdata/payload.txt",
-            "timeout": 1,
-            "others": {
-                "keep-alive": false
-            }
+            "timeout": 2
         }
     ],
-    "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279",
-    "output": "stdout"
+    "output": "timescale",
+    "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279"
 }

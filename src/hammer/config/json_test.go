@@ -21,6 +21,7 @@
 package config
 
 import (
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -55,6 +56,58 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("TestCreateHammerDefaultValues error occured: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammer(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config.json", ConfigTypeJson)
+	addr, _ := url.Parse("http://lothygyo:vezpdbtjk731@209.127.191.180:9279")
+	expectedHammer := types.Hammer{
+		TotalReqCount:     1555,
+		LoadType:          types.LoadTypeWaved,
+		TestDuration:      21,
+		ReportDestination: types.OutputTypeTimescale,
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{
+				{
+					ID:       1,
+					URL:      "https://app.servdown.com/accounts/login/?next=/",
+					Protocol: types.ProtocolHTTPS,
+					Method:   http.MethodGet,
+					Timeout:  3,
+					Payload:  "payload str",
+					Custom: map[string]interface{}{
+						"keep-alive": true,
+					},
+				},
+				{
+					ID:       2,
+					URL:      "http://test.com",
+					Protocol: types.ProtocolHTTP,
+					Method:   http.MethodPut,
+					Timeout:  2,
+					Headers: map[string]string{
+						"ContenType":    "application/xml",
+						"X-ddosify-key": "ajkndalnasd",
+					},
+				},
+			},
+		},
+		Proxy: types.Proxy{
+			Strategy: "single",
+			Addr:     addr,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammerPro error occured: %v", err)
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
