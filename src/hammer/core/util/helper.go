@@ -21,8 +21,12 @@
 package util
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"strings"
+
+	validator "github.com/asaskevich/govalidator"
 )
 
 func StringInSlice(a string, list []string) bool {
@@ -41,4 +45,22 @@ func IsSystemInTestMode() bool {
 		}
 	}
 	return false
+}
+
+func StrToUrl(defaultProtocol string, str string) (*url.URL, error) {
+	u, err := url.Parse(str)
+	if err != nil {
+		return nil, fmt.Errorf("invalid target url")
+	}
+
+	// Without protocol, url.Parse returns Host empty and pass the whole value to Path.
+	// If the protocol empty we should add default scheme then create new URL then check again.
+	if u.Scheme == "" {
+		u.Scheme = strings.ToLower(defaultProtocol)
+		if !validator.IsURL(u.String()) {
+			return nil, fmt.Errorf("invalid target url")
+		}
+	}
+
+	return u, nil
 }

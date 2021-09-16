@@ -32,12 +32,12 @@
                 "ContenType": "application/xml",
                 "X-ddosify-key": "ajkndalnasd"
             },
-            "payloadFile": "config_testdata/payload.txt",
+            "payloadFile": "config_examples/payload.txt",
             "timeout": 1,
             "others": {
                 "keep-alive": false
             }
-        }
+        },
     ],
     "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279",
     "output": "stdout"

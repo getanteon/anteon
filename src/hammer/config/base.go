@@ -21,6 +21,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -58,6 +59,11 @@ func NewConfigReader(path string, configType string) (reader ConfigReader, err e
 	if err != nil {
 		return
 	}
+
+	if !json.Valid(byteValue) {
+		return nil, fmt.Errorf("json is invalid")
+	}
+
 	err = reader.init(byteValue)
 
 	return

@@ -1,0 +1,17 @@
+{
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "auth": {
+                "type": "basic",
+                "username": "kursat",
+                "password": "12345"
+            }
+        },
+        {
+            "id": 2,
+            "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f"
+        }
+    ]
+}

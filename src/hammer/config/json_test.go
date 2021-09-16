@@ -21,14 +21,17 @@
 package config
 
 import (
+	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"ddosify.com/hammer/core/types"
 )
 
 func TestCreateHammerDefaultValues(t *testing.T) {
-	jsonReader, _ := NewConfigReader("config_testdata/empty.json", ConfigTypeJson)
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config_empty.json", ConfigTypeJson)
 	expectedHammer := types.Hammer{
 		TotalReqCount:     types.DefaultReqCount,
 		LoadType:          types.DefaultLoadType,
@@ -37,7 +40,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		Scenario: types.Scenario{
 			Scenario: []types.ScenarioItem{{
 				ID:       1,
-				URL:      types.DefaultProtocol + "://test.com",
+				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				Timeout:  types.DefaultTimeout,
@@ -56,5 +59,89 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 
 	if !reflect.DeepEqual(expectedHammer, h) {
 		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerPayload(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config_payload.json", ConfigTypeJson)
+	expectedPayloads := []string{"payload from string", "Payloaf from file."}
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammerPayload error occured: %v", err)
+	}
+
+	steps := h.Scenario.Scenario
+
+	if steps[0].Payload != expectedPayloads[0] {
+		t.Errorf("Expected: %v, Found: %v", expectedPayloads[0], steps[0].Payload)
+	}
+
+	if steps[1].Payload != expectedPayloads[1] {
+		t.Errorf("Expected: %v, Found: %v", expectedPayloads[1], steps[1].Payload)
+	}
+}
+
+func TestCreateHammerAuth(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config_auth.json", ConfigTypeJson)
+	expectedAuths := []types.Auth{
+		{
+			Type:     types.AuthHttpBasic,
+			Username: "kursat",
+			Password: "12345",
+		},
+		{}}
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerAuth error occured: %v", err)
+	}
+
+	steps := h.Scenario.Scenario
+	if steps[0].Auth != expectedAuths[0] {
+		t.Errorf("Expected: %v, Found: %v", expectedAuths[0], steps[0].Auth)
+	}
+
+	if steps[1].Auth != expectedAuths[1] {
+		t.Errorf("Expected: %v, Found: %v", expectedAuths[1], steps[1].Auth)
+	}
+}
+
+func TestCreateHammerProtocol(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config_protocol.json", ConfigTypeJson)
+	expectedProtocols := []string{"HTTPS", "HTTP", types.DefaultProtocol, "HTTP"}
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerProtocol error occured: %v", err)
+	}
+
+	steps := h.Scenario.Scenario
+	for i := 0; i < len(steps); i++ {
+		if steps[i].Protocol != expectedProtocols[i] {
+			t.Errorf("1: Expected: %v, Found: %v", expectedProtocols[i], steps[0].Protocol)
+		}
+
+		url, err := url.Parse(steps[i].URL)
+		if err != nil {
+			t.Errorf("TestCreateHammerProtocol-SchemeCheck error occured: %v", err)
+		}
+
+		if strings.ToUpper(url.Scheme) != expectedProtocols[i] {
+			t.Errorf("2: Expected: %v, Found: %v", expectedProtocols[i], url.Scheme)
+		}
+	}
+}
+
+func TestCreateHammerInvalidTarget(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader("config_testdata/config_invalid_target.json", ConfigTypeJson)
+
+	_, err := jsonReader.CreateHammer()
+	if err == nil {
+		t.Errorf("TestCreateHammerProtocol error occured")
 	}
 }
