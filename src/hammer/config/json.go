@@ -22,12 +22,12 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"strings"
 
 	"ddosify.com/hammer/core/types"
+	"ddosify.com/hammer/core/util"
 )
 
 type auth struct {
@@ -158,12 +158,9 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	}
 
 	// Protocol & URL
-	url, err := url.Parse(s.Url)
+	url, err := util.StrToUrl(s.Protocol, s.Url)
 	if err != nil {
-		return types.ScenarioItem{}, fmt.Errorf("invalid target url")
-	}
-	if url.Scheme == "" {
-		url.Scheme = s.Protocol
+		return types.ScenarioItem{}, err
 	}
 
 	return types.ScenarioItem{

@@ -33,6 +33,7 @@ import (
 	"ddosify.com/hammer/config"
 	"ddosify.com/hammer/core"
 	"ddosify.com/hammer/core/types"
+	"ddosify.com/hammer/core/util"
 )
 
 //TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.
@@ -47,10 +48,11 @@ var (
 	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
 
 	protocol = flag.String("p", types.DefaultProtocol, "[HTTP, HTTPS]")
-	method   = flag.String("m", types.DefaultMethod, "Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
-	payload  = flag.String("b", "", "Payload of the network packet")
-	auth     = flag.String("a", "", "Basic authentication, username:password")
-	headers  header
+	method   = flag.String("m", types.DefaultMethod,
+		"Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
+	payload = flag.String("b", "", "Payload of the network packet")
+	auth    = flag.String("a", "", "Basic authentication, username:password")
+	headers header
 
 	target  = flag.String("t", "", "Target URL")
 	timeout = flag.Int("T", types.DefaultTimeout, "Request timeout in seconds")
@@ -169,12 +171,9 @@ func createScenario() types.Scenario {
 	}
 
 	// Protocol & URL
-	url, err := url.Parse(*target)
+	url, err := util.StrToUrl(*protocol, *target)
 	if err != nil {
-		exitWithMsg("invalid target url")
-	}
-	if url.Scheme == "" {
-		url.Scheme = *protocol
+		exitWithMsg(err.Error())
 	}
 
 	return types.Scenario{

@@ -61,7 +61,7 @@ func TestNewConfigReaderInvalidFilePath(t *testing.T) {
 
 func TestNewConfigReaderIncorrectJsonFile(t *testing.T) {
 	t.Parallel()
-	config_path := "config_testdata/incorrect_formatted.json"
+	config_path := "config_testdata/config_incorrect.json"
 	_, err := NewConfigReader(config_path, ConfigTypeJson)
 
 	if err == nil {
