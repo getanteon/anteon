@@ -21,6 +21,7 @@
 package proxy
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -28,19 +29,18 @@ import (
 )
 
 type ProxyService interface {
-	init(types.Proxy) error
+	Init(types.Proxy) error
 	GetAll() []*url.URL
 	GetProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string) *url.URL
 	GetProxyCountry(*url.URL) string
 }
 
-func NewProxyService(p types.Proxy) (service ProxyService, err error) {
-	if strings.EqualFold(p.Strategy, "single") {
+func NewProxyService(s string) (service ProxyService, err error) {
+	if strings.EqualFold(s, "single") {
 		service = &singleProxyStrategy{}
-	}
-	if err = service.init(p); err != nil {
-		return
+	} else {
+		err = fmt.Errorf("unsupported proxy strategy")
 	}
 
 	return

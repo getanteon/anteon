@@ -31,8 +31,9 @@ type timescale struct {
 	doneChan chan struct{}
 }
 
-func (t *timescale) init() {
+func (t *timescale) Init() (err error) {
 	t.doneChan = make(chan struct{})
+	return
 }
 
 func (t *timescale) Start(input chan *types.Response) {

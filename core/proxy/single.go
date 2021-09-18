@@ -30,7 +30,7 @@ type singleProxyStrategy struct {
 	proxyAddr *url.URL
 }
 
-func (sp *singleProxyStrategy) init(p types.Proxy) error {
+func (sp *singleProxyStrategy) Init(p types.Proxy) error {
 	sp.proxyAddr = p.Addr
 	return nil
 }

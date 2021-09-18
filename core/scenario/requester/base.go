@@ -34,10 +34,12 @@ type Requester interface {
 	Send() *types.ResponseItem
 }
 
-func NewRequester(s types.ScenarioItem) (Requester, error) {
+func NewRequester(s types.ScenarioItem) (requester Requester, err error) {
 	if strings.EqualFold(s.Protocol, "http") ||
 		strings.EqualFold(s.Protocol, "https") {
-		return &httpRequester{}, nil
+		requester = &httpRequester{}
+	} else {
+		err = fmt.Errorf("unsupported requester")
 	}
-	return nil, fmt.Errorf("No proper requester")
+	return
 }

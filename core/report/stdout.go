@@ -40,7 +40,7 @@ type stdout struct {
 	mu          sync.Mutex
 }
 
-func (s *stdout) init() {
+func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &result{
 		itemReports: make(map[int16]*scenarioItemReport),
@@ -49,6 +49,7 @@ func (s *stdout) init() {
 	if !util.IsSystemInTestMode() {
 		s.writer = uilive.New()
 	}
+	return
 }
 
 func (s *stdout) Start(input chan *types.Response) {
@@ -204,15 +205,15 @@ func (s *stdout) printDetails() {
 
 func summaryTemplate() string {
 	return `
-SUMMARY
-----------------------------------------------------
-Successful Run Count: %-5d (%d%%)
-Failed Run Count    : %-5d (%d%%)
-Average Duration(s) : %.3f
-
-*Average duration calculated only for successful runs.
-%s
-`
+ SUMMARY
+ ----------------------------------------------------
+ Successful Run Count: %-5d (%d%%)
+ Failed Run Count    : %-5d (%d%%)
+ Average Duration(s) : %.3f
+ 
+ *Average duration calculated only for successful runs.
+ %s
+ `
 }
 
 type result struct {

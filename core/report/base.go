@@ -21,6 +21,7 @@
 package report
 
 import (
+	"fmt"
 	"strings"
 
 	"ddosify.com/hammer/core/types"
@@ -28,7 +29,7 @@ import (
 
 type ReportService interface {
 	DoneChan() <-chan struct{}
-	init()
+	Init() error
 	Start(input chan *types.Response)
 	Report()
 }
@@ -38,7 +39,8 @@ func NewReportService(s string) (service ReportService, err error) {
 		service = &stdout{}
 	} else if strings.EqualFold(s, types.OutputTypeTimescale) {
 		service = &timescale{}
+	} else {
+		err = fmt.Errorf("unsupported output type")
 	}
-	service.init()
 	return
 }
