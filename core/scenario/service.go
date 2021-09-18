@@ -30,24 +30,17 @@ import (
 )
 
 type ScenarioService struct {
-	scenario types.Scenario
-
 	// Client map structure [proxy_addr][]scenarioItemRequester
 	// Each proxy represents a client.
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 }
 
-func NewScenarioService(
-	s types.Scenario,
-	proxies []*url.URL,
-	ctx context.Context) (service *ScenarioService, err error) {
-	service = &ScenarioService{}
-	err = service.init(s, proxies, ctx)
-	return
+func NewScenarioService() *ScenarioService {
+	return &ScenarioService{}
 }
 
-func (ss *ScenarioService) init(s types.Scenario, proxies []*url.URL, ctx context.Context) (err error) {
+func (ss *ScenarioService) Init(s types.Scenario, proxies []*url.URL, ctx context.Context) (err error) {
 	ss.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
 		ss.clients[p] = []scenarioItemRequester{}
