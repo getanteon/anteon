@@ -101,8 +101,12 @@ func main() {
 func run(h types.Hammer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	engine := core.NewEngine(ctx, h)
-	err := engine.Init()
+	engine, err := core.NewEngine(ctx, h)
+	if err != nil {
+		exitWithMsg(err.Error())
+	}
+
+	err = engine.Init()
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
