@@ -205,15 +205,15 @@ func (s *stdout) printDetails() {
 
 func summaryTemplate() string {
 	return `
- SUMMARY
- ----------------------------------------------------
- Successful Run Count: %-5d (%d%%)
- Failed Run Count    : %-5d (%d%%)
- Average Duration(s) : %.3f
- 
- *Average duration calculated only for successful runs.
- %s
- `
+SUMMARY
+----------------------------------------------------
+Successful Run Count: %-5d (%d%%)
+Failed Run Count    : %-5d (%d%%)
+Average Duration(s) : %.3f
+
+*Average duration calculated only for successful runs.
+%s
+`
 }
 
 type result struct {
