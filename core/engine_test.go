@@ -55,21 +55,23 @@ func newDummyHammer() types.Hammer {
 	}
 }
 
-func TestServices(t *testing.T) {
+func TestCreateEngine(t *testing.T) {
 	t.Parallel()
 
 	h := newDummyHammer()
-	e := NewEngine(context.TODO(), h)
-	e.Init()
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestServices error occured %v", err)
+	}
 
 	if e.proxyService == nil {
-		t.Errorf("Proxy Service should be initialized")
+		t.Errorf("Proxy Service should be created")
 	}
 	if e.scenarioService == nil {
-		t.Errorf("Scenario Service should be initialized")
+		t.Errorf("Scenario Service should be created")
 	}
 	if e.reportService == nil {
-		t.Errorf("Report Service should be initialized")
+		t.Errorf("Report Service should be created")
 	}
 }
 
@@ -140,10 +142,17 @@ func TestRequestCount(t *testing.T) {
 			now = time.Now()
 			timeReqMap = make(map[int]int, 0)
 
-			e := NewEngine(context.TODO(), h)
+			e, err := NewEngine(context.TODO(), h)
+			if err != nil {
+				t.Errorf("TestRequestCount error occured %v", err)
+			}
 
 			// Act
-			e.Init()
+			err = e.Init()
+			if err != nil {
+				t.Errorf("TestRequestCount error occured %v", err)
+			}
+
 			e.Start()
 
 			m.Lock()
@@ -194,8 +203,16 @@ func TestRequestData(t *testing.T) {
 	}
 
 	// Act
-	e := NewEngine(context.TODO(), h)
-	e.Init()
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occured %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occured %v", err)
+	}
+
 	e.Start()
 
 	// Assert
@@ -227,11 +244,13 @@ func TestRequestData(t *testing.T) {
 func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	t.Parallel()
 
-	var uri, header, body, protocol, method = make([]string, 2), make([]string, 2), make([]string, 2),
-		make([]string, 2), make([]string, 2)
+	var uri, header, body, protocol, method []string
+
+	var m sync.Mutex
 
 	// Test server
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		m.Lock()
 		protocol = append(protocol, r.Proto)
 		method = append(method, r.Method)
 		uri = append(uri, r.RequestURI)
@@ -239,6 +258,7 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 
 		bodyByte, _ := ioutil.ReadAll(r.Body)
 		body = append(body, string(bodyByte))
+		m.Unlock()
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	defer server.Close()
@@ -257,7 +277,7 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 			},
 			{
 				ID:       2,
-				Protocol: "HTTPS",
+				Protocol: "HTTP",
 				Method:   "POST",
 				URL:      server.URL + "/api_post",
 				Headers:  map[string]string{"Test": "h2"},
@@ -266,29 +286,43 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 		}}
 
 	// Act
-	e := NewEngine(context.TODO(), h)
-	e.Init()
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestDataForMultiScenarioStep error occured %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestDataForMultiScenarioStep error occured %v", err)
+	}
+
 	e.Start()
 
 	// Assert
-	if reflect.DeepEqual(uri, []string{"/api_get", "/api_post"}) {
-		t.Errorf("invalid uri recieved: %s", uri)
+	expected := []string{"/api_get", "/api_post"}
+	if !reflect.DeepEqual(uri, expected) {
+		t.Logf("%#v - %#v", uri, expected)
+		t.Errorf("invalid uri receieved: %#v expected %#v", uri, expected)
 	}
 
-	if reflect.DeepEqual(protocol, []string{"HTTP/1.1", "HTTPS/1.1"}) {
-		t.Errorf("invalid protocol receieved: %s", protocol)
+	expected = []string{"HTTP/1.1", "HTTP/1.1"}
+	if !reflect.DeepEqual(protocol, expected) {
+		t.Errorf("invalid protocol receieved: %#v expected %#v", protocol, expected)
 	}
 
-	if reflect.DeepEqual(method, []string{"GET", "POST"}) {
-		t.Errorf("invalid method receieved: %s", method)
+	expected = []string{"GET", "POST"}
+	if !reflect.DeepEqual(method, expected) {
+		t.Errorf("invalid method receieved: %#v expected %#v", method, expected)
 	}
 
-	if reflect.DeepEqual(header, []string{"h1", "h2"}) {
-		t.Errorf("invalid header recieved: %v", header)
+	expected = []string{"h1", "h2"}
+	if !reflect.DeepEqual(header, expected) {
+		t.Errorf("invalid header receieved: %#v expected %#v", header, expected)
 	}
 
-	if reflect.DeepEqual(body, []string{"Body 1", "Body 2"}) {
-		t.Errorf("invalid body recieved: %v", body)
+	expected = []string{"Body 1", "Body 2"}
+	if !reflect.DeepEqual(body, expected) {
+		t.Errorf("invalid body receieved: %#v expected %#v", body, expected)
 	}
 }
 
@@ -328,8 +362,16 @@ func TestRequestTimeout(t *testing.T) {
 			h.Scenario.Scenario[0].Timeout = test.timeout
 			h.Scenario.Scenario[0].URL = server.URL
 
-			e := NewEngine(context.TODO(), h)
-			e.Init()
+			e, err := NewEngine(context.TODO(), h)
+			if err != nil {
+				t.Errorf("TestRequestTimeout error occured %v", err)
+			}
+
+			err = e.Init()
+			if err != nil {
+				t.Errorf("TestRequestTimeout error occured %v", err)
+			}
+
 			e.Start()
 
 			// Assert

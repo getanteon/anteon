@@ -55,30 +55,50 @@ type engine struct {
 	ctx context.Context
 }
 
-func NewEngine(ctx context.Context, h types.Hammer) *engine {
-	return &engine{hammer: h, ctx: ctx}
+func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
+	err = h.Validate()
+	if err != nil {
+		return
+	}
+
+	ps, err := proxy.NewProxyService(h.Proxy.Strategy)
+	if err != nil {
+		return
+	}
+
+	rs, err := report.NewReportService(h.ReportDestination)
+	if err != nil {
+		return
+	}
+
+	ss := scenario.NewScenarioService()
+
+	e = &engine{
+		hammer:          h,
+		ctx:             ctx,
+		proxyService:    ps,
+		scenarioService: ss,
+		reportService:   rs,
+	}
+
+	return
 }
 
 func (e *engine) Init() (err error) {
-	if err = e.hammer.Validate(); err != nil {
+	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
 		return
 	}
 
-	if e.proxyService, err = proxy.NewProxyService(e.hammer.Proxy); err != nil {
+	if err = e.scenarioService.Init(e.hammer.Scenario, e.proxyService.GetAll(), e.ctx); err != nil {
 		return
 	}
 
-	proxies := e.proxyService.GetAll()
-	if e.scenarioService, err = scenario.NewScenarioService(e.hammer.Scenario, proxies, e.ctx); err != nil {
-		return
-	}
-
-	if e.reportService, err = report.NewReportService(e.hammer.ReportDestination); err != nil {
+	if err = e.reportService.Init(); err != nil {
 		return
 	}
 
 	e.initReqCountArr()
-	return nil
+	return
 }
 
 func (e *engine) Start() {
