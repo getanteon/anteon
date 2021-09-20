@@ -40,7 +40,6 @@ import (
 
 const headerRegexp = `^([\w-]+):\s*(.+)`
 
-//TODO: Add ddosify-hammer User-Agent to header config
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
 	reqCount = flag.Int("n", types.DefaultReqCount, "Total request count")
@@ -66,7 +65,7 @@ var (
 
 func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
-	flag.Parse()
+	parseFlags()
 
 	var h types.Hammer
 
@@ -98,7 +97,9 @@ func main() {
 	run(h)
 }
 
-func run(h types.Hammer) {
+// To make this function mockable we need to assign it to a global variable
+// Check main_test.go/TestMain
+var run = func(h types.Hammer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	engine, err := core.NewEngine(ctx, h)
@@ -202,6 +203,10 @@ func exitWithMsg(msg string) {
 		fmt.Fprintln(os.Stderr, msg)
 	}
 	os.Exit(1)
+}
+
+func parseFlags() {
+	flag.Parse()
 }
 
 func parseHeaders(headersArr []string) map[string]string {
