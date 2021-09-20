@@ -22,6 +22,7 @@ package main
 
 import (
 	"flag"
+	"net/url"
 	"os"
 	"os/exec"
 	"reflect"
@@ -47,7 +48,7 @@ func resetFlags() {
 	*method = types.DefaultMethod
 	*payload = ""
 	*auth = ""
-	headers = []string{}
+	headers = header{}
 
 	*target = ""
 	*timeout = types.DefaultTimeout
@@ -114,8 +115,7 @@ func TestCreateHammer(t *testing.T) {
 		{"File", "-config=dummy.json -t=", false, true},
 	}
 
-	for _, tc := range tests {
-		test := tc
+	for _, test := range tests {
 		tf := func(t *testing.T) {
 			// Arrange
 			resetFlags()
@@ -157,9 +157,223 @@ func TestCreateHammer(t *testing.T) {
 	}
 }
 
+func TestCreateScenario(t *testing.T) {
+	url := "https://test.com"
+	valid := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      url,
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	validWithAuth := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      url,
+				Timeout:  types.DefaultDuration,
+				Auth: types.Auth{
+					Type:     types.AuthHttpBasic,
+					Username: "testuser",
+					Password: "pass",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		args      []string
+		shouldErr bool
+		expected  types.Scenario
+	}{
+		{"InvalidAuth", []string{"-t=https://test.com", "-a=no_pass_included"}, true, types.Scenario{}},
+		{"InvalidTarget", []string{"-t=asds.x.x.x"}, true, types.Scenario{}},
+		{"Valid", []string{"-t=https://test.com"}, false, valid},
+		{"ValidWithAuth", []string{"-t=https://test.com", "-a=testuser:pass"}, false, validWithAuth},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			os.Args = []string{"cmd"}
+			for _, a := range test.args {
+				os.Args = append(os.Args, a)
+			}
+
+			// Act
+			flag.Parse()
+			s, err := createScenario()
+
+			// Assert
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Errored: %v", err)
+				}
+				if reflect.DeepEqual(test.expected, s) {
+					t.Errorf("Expected %v, Found %v", test.expected, s)
+				}
+			}
+
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
+func TestCreateProxy(t *testing.T) {
+	addr, _ := url.Parse("http://127.0.0.1:80")
+	withAddr := types.Proxy{
+		Strategy: "single",
+		Addr:     addr,
+	}
+	withoutAddr := types.Proxy{
+		Strategy: "single",
+		Addr:     nil,
+	}
+
+	tests := []struct {
+		name      string
+		args      []string
+		shouldErr bool
+		expected  types.Proxy
+	}{
+		{"InvalidProxy", []string{"-t=https://test.com", "-P=127.0.0.1:09"}, true, types.Proxy{}},
+		{"ValidWithAddr", []string{"-t=https://test.com", "-P=http://127.0.0.1:80"}, false, withAddr},
+		{"ValidWithoutAddr", []string{"-t=https://test.com"}, false, withoutAddr},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			os.Args = []string{"cmd"}
+			for _, a := range test.args {
+				os.Args = append(os.Args, a)
+			}
+
+			// Act
+			flag.Parse()
+			p, err := createProxy()
+
+			// Assert
+			t.Log(test.args)
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Errored: %v", err)
+				}
+				if test.expected.Strategy != p.Strategy {
+					t.Errorf("Expected Strategy %v, Found %v", test.expected.Strategy, p.Strategy)
+				}
+				if (test.expected.Addr != nil && *test.expected.Addr != *p.Addr) || (test.expected.Addr == nil && p.Addr != nil) {
+					t.Errorf("Expected Addr %v, Found %v", test.expected.Addr, p.Addr)
+				}
+			}
+
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
+func TestParseHeaders(t *testing.T) {
+	validSingleHeader := map[string]string{"header": "value"}
+	validMultiHeader := map[string]string{"header-1": "value-1", "header-2": "value-2"}
+
+	invalidHeader := header{}
+	invalidHeader.Set("invalid|header?: value-1")
+
+	tests := []struct {
+		name      string
+		args      header
+		shouldErr bool
+		expected  map[string]string
+	}{
+		{"ValidSingleHeder", []string{"header: value"}, false, validSingleHeader},
+		{"ValidMultiHeader", []string{"header-1: value-1", "header-2: value-2"}, false, validMultiHeader},
+		{"InvalidHeader", []string{"-t=https://test.com"}, true, map[string]string{}},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			headers := header{}
+			for _, h := range test.args {
+				headers.Set(h)
+			}
+
+			// Arrange
+			h, err := parseHeaders(headers)
+
+			// Assert
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Errored: %v", err)
+				}
+				if !reflect.DeepEqual(test.expected, h) {
+					t.Errorf("Expected  %#v, Found %#v", test.expected, h)
+				}
+			}
+
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
+func TestRun(t *testing.T) {
+	// Arrange
+	resetFlags()
+	runCalled := false
+	run = func(h types.Hammer) {
+		runCalled = true
+	}
+
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	// Act
+	os.Args = []string{"cmd", "-t=test.com"}
+	main()
+
+	// Assert
+	if !runCalled {
+		t.Errorf("Run should be called")
+	}
+}
+
 func TestTargetEmpty(t *testing.T) {
 	// Below cmd code triggers this block
 	if os.Getenv("TARGET_EMPTY") == "1" {
+		resetFlags()
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = []string{"cmd", "asd"}
