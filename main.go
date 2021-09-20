@@ -64,7 +64,7 @@ var (
 )
 
 func main() {
-	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
+	flag.Var(&headers, "h", "Request Headers. Ex: -h 'Accept: text/html' -h 'Content-Type: application/xml'")
 	flag.Parse()
 
 	h, err := createHammer()
@@ -199,6 +199,11 @@ func createScenario() (s types.Scenario, err error) {
 		return
 	}
 
+	h, err := parseHeaders(headers)
+	if err != nil {
+		return
+	}
+
 	s = types.Scenario{
 		Scenario: []types.ScenarioItem{
 			{
@@ -206,7 +211,7 @@ func createScenario() (s types.Scenario, err error) {
 				Protocol: strings.ToUpper(url.Scheme),
 				Method:   strings.ToUpper(*method),
 				Auth:     a,
-				Headers:  parseHeaders(headers),
+				Headers:  h,
 				Payload:  *payload,
 				URL:      url.String(),
 				Timeout:  *timeout,
@@ -225,17 +230,18 @@ func exitWithMsg(msg string) {
 	os.Exit(1)
 }
 
-func parseHeaders(headersArr []string) map[string]string {
+func parseHeaders(headersArr []string) (headersMap map[string]string, err error) {
 	re := regexp.MustCompile(headerRegexp)
-	headersMap := make(map[string]string)
+	headersMap = make(map[string]string)
 	for _, h := range headersArr {
 		matches := re.FindStringSubmatch(h)
 		if len(matches) < 1 {
-			exitWithMsg(fmt.Sprintf("invalid header:  %v", h))
+			err = fmt.Errorf("invalid header:  %v", h)
+			return
 		}
 		headersMap[matches[1]] = matches[2]
 	}
-	return headersMap
+	return
 }
 
 type header []string
