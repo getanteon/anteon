@@ -95,7 +95,7 @@ func TestHammerInValidAuth(t *testing.T) {
 
 func TestHammerValidReportDestination(t *testing.T) {
 
-	for _, rd := range supportedOutputs {
+	for _, rd := range SupportedOutputs {
 		h := newDummyHammer()
 		h.ReportDestination = rd
 
