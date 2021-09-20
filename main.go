@@ -65,29 +65,12 @@ var (
 
 func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -H 'Accept: text/html' -H 'Content-Type: application/xml'")
-	parseFlags()
+	flag.Parse()
 
-	var h types.Hammer
+	h, err := createHammer()
 
-	if *configPath != "" {
-		c, err := config.NewConfigReader(*configPath, config.ConfigTypeJson)
-		if err != nil {
-			exitWithMsg(err.Error())
-		}
-
-		h, err = c.CreateHammer()
-		if err != nil {
-			exitWithMsg(err.Error())
-		}
-	} else {
-		if *target == "" {
-			exitWithMsg("Please provide the target url")
-		}
-
-		s := createScenario()
-		p := createProxy()
-
-		h = createHammer(s, p)
+	if err != nil {
+		exitWithMsg(err.Error())
 	}
 
 	if err := h.Validate(); err != nil {
@@ -97,8 +80,28 @@ func main() {
 	run(h)
 }
 
-// To make this function mockable we need to assign it to a global variable
-// Check main_test.go/TestMain
+func createHammer() (h types.Hammer, err error) {
+	if *configPath != "" {
+		h, err = createHammerFromConfigFile()
+	} else {
+		h, err = createHammerFromFlags()
+	}
+	return h, err
+}
+
+var createHammerFromConfigFile = func() (h types.Hammer, err error) {
+	c, err := config.NewConfigReader(*configPath, config.ConfigTypeJson)
+	if err != nil {
+		return
+	}
+
+	h, err = c.CreateHammer()
+	if err != nil {
+		return
+	}
+	return
+}
+
 var run = func(h types.Hammer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -130,8 +133,23 @@ var run = func(h types.Hammer) {
 	engine.Start()
 }
 
-func createHammer(s types.Scenario, p types.Proxy) types.Hammer {
-	h := types.Hammer{
+var createHammerFromFlags = func() (h types.Hammer, err error) {
+	if *target == "" {
+		err = fmt.Errorf("Please provide the target url")
+		return
+	}
+
+	s, err := createScenario()
+	if err != nil {
+		return
+	}
+
+	p, err := createProxy()
+	if err != nil {
+		return
+	}
+
+	h = types.Hammer{
 		TotalReqCount:     *reqCount,
 		LoadType:          strings.ToLower(*loadType),
 		TestDuration:      *duration,
@@ -139,33 +157,33 @@ func createHammer(s types.Scenario, p types.Proxy) types.Hammer {
 		Proxy:             p,
 		ReportDestination: *output,
 	}
-	return h
+	return
 }
 
-func createProxy() types.Proxy {
+func createProxy() (p types.Proxy, err error) {
 	var proxyURL *url.URL
 	if *proxy != "" {
-		var err error
 		proxyURL, err = url.Parse(*proxy)
 		if err != nil {
-			exitWithMsg(err.Error())
+			return
 		}
 	}
 
-	p := types.Proxy{
+	p = types.Proxy{
 		Strategy: "single",
 		Addr:     proxyURL,
 	}
-	return p
+	return
 }
 
-func createScenario() types.Scenario {
+func createScenario() (s types.Scenario, err error) {
 	// Auth
 	var a types.Auth
 	if *auth != "" {
 		creds := strings.Split(*auth, ":")
 		if len(creds) != 2 {
-			exitWithMsg("auth credentials couldn't be parsed")
+			err = fmt.Errorf("auth credentials couldn't be parsed")
+			return
 		}
 
 		a = types.Auth{
@@ -178,10 +196,10 @@ func createScenario() types.Scenario {
 	// Protocol & URL
 	url, err := util.StrToUrl(*protocol, *target)
 	if err != nil {
-		exitWithMsg(err.Error())
+		return
 	}
 
-	return types.Scenario{
+	s = types.Scenario{
 		Scenario: []types.ScenarioItem{
 			{
 				ID:       1,
@@ -195,6 +213,8 @@ func createScenario() types.Scenario {
 			},
 		},
 	}
+
+	return
 }
 
 func exitWithMsg(msg string) {
@@ -203,10 +223,6 @@ func exitWithMsg(msg string) {
 		fmt.Fprintln(os.Stderr, msg)
 	}
 	os.Exit(1)
-}
-
-func parseFlags() {
-	flag.Parse()
 }
 
 func parseHeaders(headersArr []string) map[string]string {
