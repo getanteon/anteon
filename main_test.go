@@ -21,6 +21,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"os/exec"
 	"reflect"
@@ -37,12 +38,32 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func resetFlags() {
+	*reqCount = types.DefaultReqCount
+	*loadType = types.DefaultLoadType
+	*duration = types.DefaultDuration
+
+	*protocol = types.DefaultProtocol
+	*method = types.DefaultMethod
+	*payload = ""
+	*auth = ""
+	headers = []string{}
+
+	*target = ""
+	*timeout = types.DefaultTimeout
+
+	*proxy = ""
+	*output = types.DefaultOutputType
+
+	*configPath = ""
+}
+
 func TestDefaultFlagValues(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 	os.Args = []string{"cmd", "-t=example.com"}
 
-	parseFlags()
+	flag.Parse()
 
 	if *reqCount != types.DefaultReqCount {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultReqCount, *reqCount)
@@ -82,12 +103,66 @@ func TestDefaultFlagValues(t *testing.T) {
 	}
 }
 
+func TestCreateHammer(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      string
+		fromFlags bool
+		fromFile  bool
+	}{
+		{"Flag", "-t=dummy.com -config=", true, false},
+		{"File", "-config=dummy.json -t=", false, true},
+	}
+
+	for _, tc := range tests {
+		test := tc
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			oldFileFunc := createHammerFromConfigFile
+			oldFlagFunc := createHammerFromFlags
+			defer func() {
+				os.Args = oldArgs
+				createHammerFromConfigFile = oldFileFunc
+				createHammerFromFlags = oldFlagFunc
+			}()
+
+			fromFileCalled := false
+			fromFlagsCalled := false
+			createHammerFromConfigFile = func() (h types.Hammer, err error) {
+				fromFileCalled = true
+				return
+			}
+			createHammerFromFlags = func() (h types.Hammer, err error) {
+				fromFlagsCalled = true
+				return
+			}
+
+			// Act
+			os.Args = []string{"cmd", test.args}
+			flag.Parse()
+			createHammer()
+
+			// Assert
+			if fromFileCalled != test.fromFile {
+				t.Errorf("createHammerFromConfigFileCalled expected %v found %v", test.fromFile, fromFileCalled)
+			}
+			if fromFlagsCalled != test.fromFlags {
+				t.Errorf("createHammerFromFlagsCalled expected %v found %v", test.fromFlags, fromFlagsCalled)
+			}
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
 func TestTargetEmpty(t *testing.T) {
-	// Below cmd codes triggers this block
+	// Below cmd code triggers this block
 	if os.Getenv("TARGET_EMPTY") == "1" {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"cmd", ""}
+		os.Args = []string{"cmd", "asd"}
 		main()
 		return
 	}
@@ -104,38 +179,25 @@ func TestTargetEmpty(t *testing.T) {
 	t.Errorf("TestTargetEmpty should be failed with exit code 1 found: %v", err)
 }
 
-func TestCreateHammerFromConfigFile(t *testing.T) {
-	expectedHammer := types.Hammer{
-		TotalReqCount:     20,
-		LoadType:          types.LoadTypeLinear,
-		TestDuration:      5,
-		ReportDestination: types.OutputTypeTimescale,
-		Proxy:             types.Proxy{Strategy: "single"},
-		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{
-				{
-					ID:       1,
-					Protocol: "HTTPS",
-					Method:   "GET",
-					Timeout:  5,
-					URL:      "https://test.com",
-				},
-			},
-		},
-	}
-
-	var createdHammer types.Hammer
-	run = func(h types.Hammer) {
-		createdHammer = h
+func TestTargetInvalidHammer(t *testing.T) {
+	// Below cmd code triggers this block
+	if os.Getenv("TARGET_EMPTY") == "1" {
+		resetFlags()
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"cmd", "-t=dummy.com -l invalidLoadType"}
+		main()
 		return
 	}
 
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-	os.Args = []string{"cmd", "-config=main_testdata/config.json"}
-	main()
+	// Since we reexecute the test here, this test case doesnt' increment the coverage.
+	cmd := exec.Command(os.Args[0], "-test.run=TestTargetEmpty")
+	cmd.Env = append(os.Environ(), "TARGET_EMPTY=1")
+	err := cmd.Run()
 
-	if !reflect.DeepEqual(expectedHammer, createdHammer) {
-		t.Errorf("TestCreateHammerFromConfigFile failed, expected %v, found %v", expectedHammer, createdHammer)
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
 	}
+
+	t.Errorf("TestTargetEmpty should be failed with exit code 1 found: %v", err)
 }
