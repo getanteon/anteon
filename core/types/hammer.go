@@ -48,7 +48,7 @@ const (
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
-var supportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
+var SupportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
 type Hammer struct {
 	// Total request count
@@ -85,7 +85,7 @@ func (h *Hammer) Validate() error {
 		return err
 	}
 
-	if !util.StringInSlice(h.ReportDestination, supportedOutputs[:]) {
+	if !util.StringInSlice(h.ReportDestination, SupportedOutputs[:]) {
 		return fmt.Errorf("unsupported Report Destination: %s", h.ReportDestination)
 	}
 

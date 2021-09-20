@@ -84,7 +84,7 @@ func (s *stdout) Start(input chan *types.Response) {
 				for k, v := range rr.Custom {
 					if strings.Contains(k, "Duration") {
 						totalDur := float32(item.successCount-1)*item.durations[k] + float32(v.(time.Duration).Seconds())
-						item.durations[k] = totalDur / float32(item.successCount)
+						item.durations[k] = float32(totalDur / float32(item.successCount))
 					}
 				}
 			}
