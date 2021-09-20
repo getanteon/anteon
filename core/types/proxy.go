@@ -39,7 +39,7 @@ type Proxy struct {
 
 func (p *Proxy) validate() error {
 	if !util.StringInSlice(p.Strategy, availableProxyStrategies[:]) {
-		return fmt.Errorf("Unsupported Porxy Strategy: %s", p.Strategy)
+		return fmt.Errorf("Unsupported Proxy Strategy: %s", p.Strategy)
 	}
 	return nil
 }
