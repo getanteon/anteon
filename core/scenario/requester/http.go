@@ -234,9 +234,10 @@ func (h *httpRequester) initRequestInstance() (err error) {
 	}
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		if !val.(bool) {
-			h.request.Close = true
+	h.request.Close = true
+	if val, ok := h.packet.Custom["keepAlive"]; ok {
+		if val.(bool) {
+			h.request.Close = false
 		}
 	}
 	return
