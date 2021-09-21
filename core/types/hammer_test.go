@@ -137,7 +137,7 @@ func TestHammerInValidProxy(t *testing.T) {
 
 func TestHammerValidScenario(t *testing.T) {
 	// Single Scenario
-	for _, p := range supportedProtocols {
+	for _, p := range SupportedProtocols {
 		for _, m := range supportedProtocolMethods[p] {
 			h := newDummyHammer()
 			h.Scenario = Scenario{
@@ -157,7 +157,7 @@ func TestHammerValidScenario(t *testing.T) {
 	}
 
 	// Multiple Scenario
-	for _, p := range supportedProtocols {
+	for _, p := range SupportedProtocols {
 		for _, m := range supportedProtocolMethods[p] {
 			h := newDummyHammer()
 			h.Scenario = Scenario{
@@ -211,7 +211,7 @@ func TestHammerInvalidScenarioProtocol(t *testing.T) {
 		Scenario: []ScenarioItem{
 			{
 				ID:       1,
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
 			},
 			{
@@ -233,7 +233,7 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 		Scenario: []ScenarioItem{
 			{
 				ID:       1,
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   "GETT",
 			},
 		},
@@ -248,12 +248,12 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 		Scenario: []ScenarioItem{
 			{
 				ID:       1,
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
 			},
 			{
 				ID:       1,
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   "GETT",
 			},
 		},
@@ -269,7 +269,7 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 	h.Scenario = Scenario{
 		Scenario: []ScenarioItem{
 			{
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
 			},
 		},
@@ -284,11 +284,11 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		Scenario: []ScenarioItem{
 			{
 				ID:       1,
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
 			},
 			{
-				Protocol: supportedProtocols[0],
+				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
 			},
 		},
