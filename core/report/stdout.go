@@ -155,7 +155,7 @@ func (s *stdout) printDetails() {
 	fmt.Println("----------------------------------------------------")
 
 	keys := make([]int, 0)
-	for k, _ := range s.result.itemReports {
+	for k := range s.result.itemReports {
 		keys = append(keys, int(k))
 	}
 
