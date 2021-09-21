@@ -34,7 +34,7 @@ const (
 	AuthHttpBasic = "basic"
 )
 
-var supportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
+var SupportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
 var supportedProtocolMethods = map[string][]string{
 	ProtocolHTTP: {
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
@@ -103,7 +103,7 @@ type Auth struct {
 }
 
 func (si *ScenarioItem) validate() error {
-	if !util.StringInSlice(si.Protocol, supportedProtocols[:]) {
+	if !util.StringInSlice(si.Protocol, SupportedProtocols[:]) {
 		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
 	}
 	if !util.StringInSlice(si.Method, supportedProtocolMethods[si.Protocol][:]) {
