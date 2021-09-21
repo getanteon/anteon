@@ -26,8 +26,8 @@ import (
 
 func newDummyHammer() Hammer {
 	return Hammer{
-		Proxy:             Proxy{Strategy: "single"},
-		ReportDestination: "stdout",
+		Proxy:             Proxy{Strategy: ProxyTypeSingle},
+		ReportDestination: OutputTypeStdout,
 		Scenario: Scenario{
 			Scenario: []ScenarioItem{
 				{
@@ -116,7 +116,7 @@ func TestHammerInValidReportDestination(t *testing.T) {
 
 func TestHammerValidProxy(t *testing.T) {
 
-	for _, ps := range availableProxyStrategies {
+	for _, ps := range AvailableProxyStrategies {
 		h := newDummyHammer()
 		h.Proxy = Proxy{Strategy: ps}
 

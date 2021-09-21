@@ -170,7 +170,7 @@ func createProxy() (p types.Proxy, err error) {
 	}
 
 	p = types.Proxy{
-		Strategy: "single",
+		Strategy: types.ProxyTypeSingle,
 		Addr:     proxyURL,
 	}
 	return

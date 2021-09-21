@@ -27,7 +27,11 @@ import (
 	"ddosify.com/hammer/core/util"
 )
 
-var availableProxyStrategies = [...]string{"single"}
+const (
+	ProxyTypeSingle        = "single"
+)
+
+var AvailableProxyStrategies = [...]string{ProxyTypeSingle}
 
 type Proxy struct {
 	// Stragy of the proxy usage.
@@ -38,7 +42,7 @@ type Proxy struct {
 }
 
 func (p *Proxy) validate() error {
-	if !util.StringInSlice(p.Strategy, availableProxyStrategies[:]) {
+	if !util.StringInSlice(p.Strategy, AvailableProxyStrategies[:]) {
 		return fmt.Errorf("Unsupported Proxy Strategy: %s", p.Strategy)
 	}
 	return nil
