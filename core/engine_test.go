@@ -37,8 +37,8 @@ import (
 
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
-		Proxy:             types.Proxy{Strategy: "single"},
-		ReportDestination: "stdout",
+		Proxy:             types.Proxy{Strategy: types.ProxyTypeSingle},
+		ReportDestination: types.OutputTypeStdout,
 		LoadType:          types.LoadTypeLinear,
 		TestDuration:      1,
 		TotalReqCount:     1,

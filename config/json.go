@@ -123,7 +123,7 @@ func (c *jsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 	p := types.Proxy{
-		Strategy: "single",
+		Strategy: types.ProxyTypeSingle,
 		Addr:     proxyURL,
 	}
 

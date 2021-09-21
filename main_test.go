@@ -240,11 +240,11 @@ func TestCreateScenario(t *testing.T) {
 func TestCreateProxy(t *testing.T) {
 	addr, _ := url.Parse("http://127.0.0.1:80")
 	withAddr := types.Proxy{
-		Strategy: "single",
+		Strategy: types.ProxyTypeSingle,
 		Addr:     addr,
 	}
 	withoutAddr := types.Proxy{
-		Strategy: "single",
+		Strategy: types.ProxyTypeSingle,
 		Addr:     nil,
 	}
 

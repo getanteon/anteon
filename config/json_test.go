@@ -48,7 +48,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 			}},
 		},
 		Proxy: types.Proxy{
-			Strategy: "single",
+			Strategy: types.ProxyTypeSingle,
 		},
 	}
 

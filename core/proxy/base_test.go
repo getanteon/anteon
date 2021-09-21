@@ -21,27 +21,34 @@
 package proxy
 
 import (
-	"fmt"
-	"net/url"
-	"strings"
+	"reflect"
+	"testing"
 
 	"ddosify.com/hammer/core/types"
 )
 
-type ProxyService interface {
-	Init(types.Proxy) error
-	GetAll() []*url.URL
-	GetProxy() *url.URL
-	ReportProxy(addr *url.URL, reason string) *url.URL
-	GetProxyCountry(*url.URL) string
+var proxyStrategiesStructMap = map[string]reflect.Type{
+	types.ProxyTypeSingle:        reflect.TypeOf(&singleProxyStrategy{}),
 }
 
-func NewProxyService(s string) (service ProxyService, err error) {
-	if strings.EqualFold(s, types.ProxyTypeSingle) {
-		service = &singleProxyStrategy{}
-	} else {
-		err = fmt.Errorf("unsupported proxy strategy")
+func TestNewProxyService(t *testing.T) {
+
+	// Valid proxy types
+	for _, o := range types.AvailableProxyStrategies {
+		service, err := NewProxyService(o)
+
+		if err != nil {
+			t.Errorf("TestNewProxyService errored %v", err)
+		}
+
+		if reflect.TypeOf(service) != proxyStrategiesStructMap[o] {
+			t.Errorf("Expected %v, Found %v", proxyStrategiesStructMap[o], reflect.TypeOf(service))
+		}
 	}
 
-	return
+	// Invalid proxy type
+	_, err := NewProxyService("invalid_proxy_type")
+	if err == nil {
+		t.Errorf("TestNewProxyService invalid proxy should errored")
+	}
 }
