@@ -261,8 +261,9 @@ func TestInitRequest(t *testing.T) {
 			Password: "123",
 		},
 		Headers: map[string]string{
-			"Header1": "Value1",
-			"Header2": "Value2",
+			"Header1":    "Value1",
+			"Header2":    "Value2",
+			"User-Agent": "Firefox",
 		},
 	}
 	expectedWithHeaders, _ := http.NewRequest(sWithHeaders.Method,
@@ -271,7 +272,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.Header = make(http.Header)
 	expectedWithHeaders.Header.Set("Header1", "Value1")
 	expectedWithHeaders.Header.Set("Header2", "Value2")
-	expectedWithHeaders.Header.Set("User-Agent", types.DdosifyUserAgent)
+	expectedWithHeaders.Header.Set("User-Agent", "Firefox "+types.DdosifyUserAgent)
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
 	// Request keep-alive condition
