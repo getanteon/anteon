@@ -21,6 +21,7 @@
 package requester
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"net/http"
@@ -58,7 +59,7 @@ func TestInit(t *testing.T) {
 	}
 }
 
-func TestClient(t *testing.T) {
+func TestInitClient(t *testing.T) {
 	p, _ := url.Parse("https://127.0.0.1:80")
 	ctx := context.TODO()
 
@@ -204,18 +205,150 @@ func TestClient(t *testing.T) {
 	}
 }
 
-// func TestRequest(t *testing.T) {
-// 	// Basic request
-// 	s := types.ScenarioItem{
-// 		ID:       1,
-// 		Protocol: types.ProtocolHTTPS,
-// 		Method:   http.MethodGet,
-// 		URL:      "https://test.com",
-// 		Payload:  "payloadtest",
-// 	}
-// 	expectedRequest := &http.Request{
-// 		Method: s.Method,
-// 		Proto:  s.Protocol,
-// 		Body:   bytes.NewBufferString(s.Payload),
-// 	}
-// }
+func TestInitRequest(t *testing.T) {
+	p, _ := url.Parse("https://127.0.0.1:80")
+	ctx := context.TODO()
+
+	// Invalid request
+	sInvalid := types.ScenarioItem{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   ":31:31:#",
+		URL:      "https://test.com",
+		Payload:  "payloadtest",
+	}
+
+	// Basic request
+	s := types.ScenarioItem{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://test.com",
+		Payload:  "payloadtest",
+	}
+	expected, _ := http.NewRequest(s.Method, s.URL, bytes.NewBufferString(s.Payload))
+	expected.Close = true
+	expected.Header = make(http.Header)
+	expected.Header.Set("User-Agent", types.DdosifyUserAgent)
+
+	// Request with auth
+	sWithAuth := types.ScenarioItem{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://test.com",
+		Payload:  "payloadtest",
+		Auth: types.Auth{
+			Username: "test",
+			Password: "123",
+		},
+	}
+	expectedWithAuth, _ := http.NewRequest(sWithAuth.Method, sWithAuth.URL, bytes.NewBufferString(sWithAuth.Payload))
+	expectedWithAuth.Close = true
+	expectedWithAuth.Header = make(http.Header)
+	expectedWithAuth.Header.Set("User-Agent", types.DdosifyUserAgent)
+	expectedWithAuth.SetBasicAuth(sWithAuth.Auth.Username, sWithAuth.Auth.Password)
+
+	// Request With Headers
+	sWithHeaders := types.ScenarioItem{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://test.com",
+		Payload:  "payloadtest",
+		Auth: types.Auth{
+			Username: "test",
+			Password: "123",
+		},
+		Headers: map[string]string{
+			"Header1": "Value1",
+			"Header2": "Value2",
+		},
+	}
+	expectedWithHeaders, _ := http.NewRequest(sWithHeaders.Method,
+		sWithHeaders.URL, bytes.NewBufferString(sWithHeaders.Payload))
+	expectedWithHeaders.Close = true
+	expectedWithHeaders.Header = make(http.Header)
+	expectedWithHeaders.Header.Set("Header1", "Value1")
+	expectedWithHeaders.Header.Set("Header2", "Value2")
+	expectedWithHeaders.Header.Set("User-Agent", types.DdosifyUserAgent)
+	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
+
+	// Request keep-alive condition
+	sWithKeepAlive := types.ScenarioItem{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://test.com",
+		Payload:  "payloadtest",
+		Auth: types.Auth{
+			Username: "test",
+			Password: "123",
+		},
+		Headers: map[string]string{
+			"Header1": "Value1",
+			"Header2": "Value2",
+		},
+		Custom: map[string]interface{}{
+			"keepAlive": true,
+		},
+	}
+	expectedWithKeepAlive, _ := http.NewRequest(sWithKeepAlive.Method,
+		sWithKeepAlive.URL, bytes.NewBufferString(sWithKeepAlive.Payload))
+	expectedWithKeepAlive.Close = false
+	expectedWithKeepAlive.Header = make(http.Header)
+	expectedWithKeepAlive.Header.Set("Header1", "Value1")
+	expectedWithKeepAlive.Header.Set("Header2", "Value2")
+	expectedWithKeepAlive.Header.Set("User-Agent", types.DdosifyUserAgent)
+	expectedWithKeepAlive.SetBasicAuth(sWithKeepAlive.Auth.Username, sWithKeepAlive.Auth.Password)
+
+	// Sub Tests
+	tests := []struct {
+		name         string
+		scenarioItem types.ScenarioItem
+		shouldErr    bool
+		request      *http.Request
+	}{
+		{"Invalid", sInvalid, true, nil},
+		{"Basic", s, false, expected},
+		{"WithAuth", sWithAuth, false, expectedWithAuth},
+		{"WithHeaders", sWithHeaders, false, expectedWithHeaders},
+		{"WithKeepAlive", sWithKeepAlive, false, expectedWithKeepAlive},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			h := &httpRequester{}
+			err := h.Init(test.scenarioItem, p, ctx)
+
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Errored: %v", err)
+				}
+
+				if !reflect.DeepEqual(h.request.URL, test.request.URL) {
+					t.Errorf("URL Expected: %#v, Found: \n%#v", test.request.URL, h.request.URL)
+				}
+				if !reflect.DeepEqual(h.request.Body, test.request.Body) {
+					t.Errorf("Body Expected: %#v, Found: \n%#v", test.request.Body, h.request.Body)
+				}
+				if !reflect.DeepEqual(h.request.Header, test.request.Header) {
+					t.Errorf("Header Expected: %#v, Found: \n%#v", test.request.Header, h.request.Header)
+				}
+				if !reflect.DeepEqual(h.request.Close, test.request.Close) {
+					t.Errorf("Close Expected: %#v, Found: \n%#v", test.request.Close, h.request.Close)
+				}
+
+				// if !reflect.DeepEqual(test.request, h.request) {
+				// 	t.Errorf("\nExpected: \n%#v, \nFound: \n%#v", test.request, h.request)
+				// }
+			}
+
+		}
+		t.Run(test.name, tf)
+	}
+}
