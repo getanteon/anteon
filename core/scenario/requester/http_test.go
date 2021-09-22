@@ -170,9 +170,8 @@ func TestInitClient(t *testing.T) {
 			}
 
 			// Transport Assert
-
-			// Compare HTTP2 configured transport vs HTTP transport
 			if reflect.TypeOf(test.transport) != reflect.TypeOf(transport) {
+				// Compare HTTP2 configured transport vs HTTP transport
 				t.Errorf("Transport Type Expected %#v, Found %#v", test.transport, transport)
 			}
 
@@ -343,12 +342,7 @@ func TestInitRequest(t *testing.T) {
 				if !reflect.DeepEqual(h.request.Close, test.request.Close) {
 					t.Errorf("Close Expected: %#v, Found: \n%#v", test.request.Close, h.request.Close)
 				}
-
-				// if !reflect.DeepEqual(test.request, h.request) {
-				// 	t.Errorf("\nExpected: \n%#v, \nFound: \n%#v", test.request, h.request)
-				// }
 			}
-
 		}
 		t.Run(test.name, tf)
 	}
