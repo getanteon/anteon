@@ -77,6 +77,10 @@ func TestCreateEngine(t *testing.T) {
 
 // TODO: Add other load types as you implement
 func TestRequestCount(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	t.Parallel()
 
 	tests := []struct {
@@ -327,6 +331,10 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 }
 
 func TestRequestTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	t.Parallel()
 
 	// Prepare
