@@ -362,7 +362,7 @@ func TestRequestTimeout(t *testing.T) {
 
 			// Test server
 			handler := func(w http.ResponseWriter, r *http.Request) {
-				time.Sleep(time.Duration(1100) * time.Millisecond)
+				time.Sleep(time.Duration(2) * time.Second)
 
 				m.Lock()
 				result = true

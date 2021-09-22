@@ -7,7 +7,7 @@ TODO: GIF KOY
 ## Installation
 TODO:Fatih
 
-# Easy Start
+## Easy Start
 This section aims to show how to use Ddosify without deepig dive into its details. TODO: 
 1. Simple load test
 
@@ -21,7 +21,7 @@ This section aims to show how to use Ddosify without deepig dive into its detail
 
 		attack with config file
 		
-# Details
+## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example you can't create scenario based load test with CLI options.
 
@@ -89,15 +89,11 @@ You can configure your load test by the CLI options or a config file. Config fil
 
         Basic authentication. 
 
-        Usage;
-
             ddosify -t target_site.com -a username:password
 
     8. `-h`
 
         Request headers. You can provide multiple headers.
-
-        Usage;
 
             ddosify -t target_site.com -h 'Accept: text/html' -h 'Content-Type: application/xml'
     
@@ -108,8 +104,6 @@ You can configure your load test by the CLI options or a config file. Config fil
     10. `-P`
 
         Proxy address as host:port. 
-
-        Usage;
 
             ddosify -t target_site.com -P http://proxy_host.com:port'
 
@@ -131,23 +125,17 @@ You can configure your load test by the CLI options or a config file. Config fil
 
         ddosify -config <json_config_path>
 
-    Ddosify accepts only JSON file as a config input.
+    Supported format for the config file is only Json for now.
 
   
 
-Usage;
 
-ddosify -config <config_file_path>
+    1. reqCount
 
-  
-
-4.2.1- "reqCount"
-
-This is the equilevent of the -n option. The difference is that if you have multiple steps in your scenario than
-
-this value represent the iteration count of your steps.
+        This is the equilevent of the -n option. The difference is that if you have multiple steps in your scenario than this value represents the iteration count of your steps.
 
   
 
-5- **Future**
+## Future
+TODO: Our motivation & future of the ddosify.
 
