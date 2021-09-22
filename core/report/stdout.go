@@ -40,6 +40,8 @@ type stdout struct {
 	mu          sync.Mutex
 }
 
+var realTimePrintInterval = time.Duration(1) * time.Second
+
 func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &result{
@@ -47,6 +49,7 @@ func (s *stdout) Init() (err error) {
 	}
 
 	if !util.IsSystemInTestMode() {
+		uilive.RefreshInterval = realTimePrintInterval - time.Duration(200)*time.Millisecond
 		s.writer = uilive.New()
 	}
 	return
@@ -120,7 +123,7 @@ func (s *stdout) realTimePrintStart() {
 	}
 
 	s.writer.Start()
-	s.printTicker = time.NewTicker(time.Duration(1) * time.Second)
+	s.printTicker = time.NewTicker(realTimePrintInterval)
 
 	for range s.printTicker.C {
 		go func() {
