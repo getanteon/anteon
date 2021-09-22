@@ -80,38 +80,37 @@ func TestRequestCount(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name            string
-		loadType        string
-		duration        int
-		reqCount        int
-		expectedReqArr  []int
-		delta           int
-		runOnLowMachine bool
+		name           string
+		loadType       string
+		duration       int
+		reqCount       int
+		expectedReqArr []int
+		delta          int
 	}{
-		{"Linear1", types.LoadTypeLinear, 1, 100, []int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1, true},
-		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0, false},
+		{"Linear1", types.LoadTypeLinear, 1, 100, []int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1},
+		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
 		{"Linear3", types.LoadTypeLinear, 2, 23,
-			[]int{2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0, false},
+			[]int{2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0},
 		{"Incremental1", types.LoadTypeIncremental, 3, 1022,
 			[]int{17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 35, 34, 34, 34,
-				34, 34, 34, 34, 34, 34, 52, 51, 51, 51, 51, 51, 51, 51, 51, 51}, 2, true},
+				34, 34, 34, 34, 34, 34, 52, 51, 51, 51, 51, 51, 51, 51, 51, 51}, 2},
 		{"Incremental2", types.LoadTypeIncremental, 5, 10,
 			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
-				0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0, false},
+				0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
 		{"Incremental3", types.LoadTypeIncremental, 4, 10,
 			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-				0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0, false},
+				0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
 		{"Waved1", types.LoadTypeWaved, 4, 32,
 			[]int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1,
-				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0, false},
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
 		{"Waved2", types.LoadTypeWaved, 5, 10,
 			[]int{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-				0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, false},
+				0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0},
 		{"Waved3", types.LoadTypeWaved, 9, 1000,
 			[]int{6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17,
 				17, 17, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 16, 16, 16, 16, 12, 11, 11, 11, 11, 11,
 				11, 11, 11, 11, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 12, 11, 11,
-				11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16}, 1, true},
+				11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16}, 1},
 	}
 
 	for _, tc := range tests {
@@ -164,13 +163,14 @@ func TestRequestCount(t *testing.T) {
 
 			// Assert sent request count
 			if testing.Short() {
-				if test.runOnLowMachine {
-					// Poor machine's test case assertions are special since they can't run the test fast.
-					for i, v := range test.expectedReqArr {
-						if timeReqMap[i] > v+test.delta+1 || timeReqMap[i] < v-test.delta-1 {
-							t.Errorf("Poor Machine Expected: %v, Recieved: %v, Tick: %v", v, timeReqMap[i], i)
-						}
-					}
+				// Poor machine's test case assertions are special since they can't run the test fast.
+				totalRecieved := 0
+				for _, v := range timeReqMap {
+					totalRecieved += v
+				}
+				expected := arraySum(test.expectedReqArr)
+				if totalRecieved != expected {
+					t.Errorf("Poor Machine Expected: %v, Recieved: %v", totalRecieved, expected)
 				}
 			} else {
 				for i, v := range test.expectedReqArr {
