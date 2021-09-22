@@ -1,8 +1,12 @@
 # **Ddosify** - High-performance load testing tool
 
-Ddosify is a high-performance load testing tool. It is protocol agnostic, able to run scenarios, supports different load types.
+## Features
+- [:heavy_check_mark:] Protocol Agnostic - Currently supporting HTTP, HTTPS, HTTP2. Other protocols are on the way.
+- [:heavy_check_mark:] Scenario Based - Create your flow with a Json file. Without a line of code!
+- [:heavy_check_mark:] Different Load Types - Test your system's limits under different [linear, incremental, waved] load types.
 
 TODO: GIF KOY
+
 
 ## Installation
 TODO:Fatih
