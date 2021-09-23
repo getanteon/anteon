@@ -127,9 +127,9 @@ func (s *stdout) realTimePrintStart() {
 			s.mu.Lock()
 			// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
 			// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "\nCTRL+C to gracefully stop.")
-			fmt.Printf("%s - %s - %s\n",
-				green("Success Run: "+fmt.Sprint(s.result.successCount)),
-				red("Failed Run: "+fmt.Sprint(s.result.failedCount)),
+			fmt.Printf("%s %s %s\n",
+				green(fmt.Sprintf("Success Run: %-5d", s.result.successCount)),
+				red(fmt.Sprintf("Failed Run: %-5d", s.result.failedCount)),
 				blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
 			s.mu.Unlock()
 		}()
@@ -145,9 +145,9 @@ func (s *stdout) realTimePrintStop() {
 	// Last print.
 	// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
 	// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
-	fmt.Printf("%s - %s - %s\n",
-		green("Success Run: "+fmt.Sprint(s.result.successCount)),
-		red("Failed Run: "+fmt.Sprint(s.result.failedCount)),
+	fmt.Printf("%s %s %s\n",
+		green(fmt.Sprintf("Success Run: %-5d", s.result.successCount)),
+		red(fmt.Sprintf("Failed Run: %-5d", s.result.failedCount)),
 		blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
 	s.printTicker.Stop()
 }
