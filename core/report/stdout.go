@@ -29,18 +29,20 @@ import (
 
 	"ddosify.com/hammer/core/types"
 	"ddosify.com/hammer/core/util"
-	"github.com/gosuri/uilive"
+	"github.com/fatih/color"
 )
 
 type stdout struct {
 	doneChan    chan struct{}
 	result      *result
-	writer      *uilive.Writer
 	printTicker *time.Ticker
 	mu          sync.Mutex
 }
 
-var realTimePrintInterval = time.Duration(1) * time.Second
+var blue = color.New(color.FgBlue).SprintFunc()
+var green = color.New(color.FgGreen).SprintFunc()
+var red = color.New(color.FgRed).SprintFunc()
+var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
@@ -48,10 +50,6 @@ func (s *stdout) Init() (err error) {
 		itemReports: make(map[int16]*scenarioItemReport),
 	}
 
-	if !util.IsSystemInTestMode() {
-		uilive.RefreshInterval = realTimePrintInterval - time.Duration(200)*time.Millisecond
-		s.writer = uilive.New()
-	}
 	return
 }
 
@@ -122,14 +120,17 @@ func (s *stdout) realTimePrintStart() {
 		return
 	}
 
-	s.writer.Start()
 	s.printTicker = time.NewTicker(realTimePrintInterval)
 
 	for range s.printTicker.C {
 		go func() {
 			s.mu.Lock()
-			_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-				s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "\nCTRL+C to gracefully stop.")
+			// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+			// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "\nCTRL+C to gracefully stop.")
+			fmt.Printf("%s - %s - %s\n",
+				green("Success Run: "+fmt.Sprint(s.result.successCount)),
+				red("Failed Run: "+fmt.Sprint(s.result.failedCount)),
+				blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
 			s.mu.Unlock()
 		}()
 
@@ -142,10 +143,13 @@ func (s *stdout) realTimePrintStop() {
 	}
 
 	// Last print.
-	_, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-		s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
+	// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
+	// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
+	fmt.Printf("%s - %s - %s\n",
+		green("Success Run: "+fmt.Sprint(s.result.successCount)),
+		red("Failed Run: "+fmt.Sprint(s.result.failedCount)),
+		blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
 	s.printTicker.Stop()
-	s.writer.Stop()
 }
 
 // TODO:REFACTOR use template
