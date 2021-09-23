@@ -1,3 +1,5 @@
+#!/bin/sh
+
 uname_arch() {
   arch=$(uname -m)
   case $arch in
