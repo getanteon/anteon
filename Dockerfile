@@ -8,6 +8,7 @@ ENV GOBIN /go/bin
 WORKDIR /workspace
 
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.0
+RUN curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh -s -- -b /usr/bin
 
 RUN go get -v golang.org/x/tools/gopls@v0.7.2
 RUN go get -v github.com/rogpeppe/godef@v1.1.2
