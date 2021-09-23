@@ -1,5 +1,8 @@
 # **Ddosify** - High-performance load testing tool
 
+TODO: Logo
+TODO: Badges
+
 ## Features
 - [:heavy_check_mark:] Protocol Agnostic - Currently supporting HTTP, HTTPS, HTTP2. Other protocols are on the way.
 - [:heavy_check_mark:] Scenario Based - Create your flow with a Json file. Without a line of code!
@@ -9,7 +12,41 @@ TODO: GIF KOY
 
 
 ## Installation
-TODO:Fatih
+
+### Docker
+
+```bash
+docker run -it --rm --name ddosify ddosify/ddosify
+```
+
+### Homebrew for MacOS
+
+```bash
+brew install ddosify
+```
+
+### Pre-compiled Binaries
+
+You can download pre-compiled binaries (.tar.gz or zip) from [ddosify github releases](https://github.com/ddosify/ddosify/releases) assets for your operating system.
+
+#### Linux & MacOS
+
+For Linux and MacOS you can download this script and run. This script downloads latest version of ddosify pre-compiled binary and puts it on `/usr/bin/`
+
+TODO: Change URL
+```bash
+curl -sSfL https://raw.githubusercontent.com/ddosify/hammer/master/scripts/install.sh | sh
+```
+
+Or you can download and untar pre-compiled binaries: 
+ - For MacOS: `ddosify_<VERSION>_darwin_<ARCHITECTURE>.tar.gz`
+ - For Linux: `ddosify_<VERSION>_linux_<ARCHITECTURE>.tar.gz`
+
+#### Windows
+
+For windows you can download `ddosify_<VERSION>_windows_<ARCHITECTURE>.zip` and unzip to `ddosify.exe` from [ddosify github releases](https://github.com/ddosify/ddosify/releases) assets.
+
+
 
 ## Easy Start
 This section aims to show how to use Ddosify without deepig dive into its details. TODO: 
