@@ -16,3 +16,5 @@
 __debug*
 coverage.html
 main
+
+dist/
