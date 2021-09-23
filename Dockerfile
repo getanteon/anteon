@@ -1,4 +1,4 @@
-FROM golang:1.16.6
+FROM golang:1.17.1
 
 RUN apt update && apt install -y git gcc musl-dev curl iputils-ping telnet && rm -rf /var/lib/apt/lists/*
 
