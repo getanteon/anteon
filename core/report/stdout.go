@@ -275,11 +275,11 @@ type duration struct {
 }
 
 var keyToStr = map[string]duration{
-	"dnsDuration":           duration{name: "DNS", order: 1},
-	"connDuration":          duration{name: "Connection", order: 2},
-	"tlsDuration":           duration{name: "TLS", order: 3},
-	"reqDuration":           duration{name: "Request Write", order: 4},
-	"serverProcessDuration": duration{name: "Server Processing", order: 5},
-	"resDuration":           duration{name: "Response Read", order: 6},
-	"duration":              duration{name: "Total", order: 7},
+	"dnsDuration":           {name: "DNS", order: 1},
+	"connDuration":          {name: "Connection", order: 2},
+	"tlsDuration":           {name: "TLS", order: 3},
+	"reqDuration":           {name: "Request Write", order: 4},
+	"serverProcessDuration": {name: "Server Processing", order: 5},
+	"resDuration":           {name: "Response Read", order: 6},
+	"duration":              {name: "Total", order: 7},
 }
