@@ -160,6 +160,7 @@ func (s *stdout) printDetails() {
 		return
 	}
 
+	color.Set(color.FgHiCyan)
 	fmt.Println("\nRESULT")
 	fmt.Println("-------------------------------------")
 
@@ -212,6 +213,7 @@ func (s *stdout) printDetails() {
 		}
 		fmt.Println()
 	}
+	color.Unset()
 }
 
 type result struct {
