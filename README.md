@@ -3,7 +3,7 @@
 ## Features
 - [:heavy_check_mark:] Protocol Agnostic - Currently supporting HTTP, HTTPS, HTTP2. Other protocols are on the way.
 - [:heavy_check_mark:] Scenario Based - Create your flow with a Json file. Without a line of code!
-- [:heavy_check_mark:] Different Load Types - Test your system's limits under different [linear, incremental, waved] load types.
+- [:heavy_check_mark:] Different Load Types - Test your system's limits across different load types.
 
 TODO: GIF KOY
 
@@ -117,13 +117,13 @@ You can configure your load test by the CLI options or a config file. Config fil
 
 2. **Config File**
 
-    Config file is more flexible than the CLI usage and it lets you to use all capabilities of the Ddosify. 
+    Config file  lets you to use all capabilities of the Ddosify. 
     
-    The features only can be used by a config file;
+    The features that can only usable by a config file;
     - Scneario creation.
     - Payload from a file.
     - Extra connection configuration, like *keep-alive* enable/disable logic.
-    - Supports HTTP2. 
+    - HTTP2 support. 
 
     Usage;
 
