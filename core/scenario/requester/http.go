@@ -166,6 +166,8 @@ func fetchErrType(err string) types.RequestError {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
 	} else if strings.Contains(err, context.Canceled.Error()) {
 		requestErr = types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
+	} else if strings.Contains(err, "connection reset by peer") {
+		requestErr = types.RequestError{Type: types.ErrorConn, Reason: "connection reset by peer"}
 	} else {
 		requestErr = types.RequestError{Type: types.ErrorConn, Reason: err}
 	}
