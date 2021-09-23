@@ -29,6 +29,7 @@ import (
 
 	"ddosify.com/hammer/core/types"
 	"ddosify.com/hammer/core/util"
+	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 )
 
@@ -39,9 +40,9 @@ type stdout struct {
 	mu          sync.Mutex
 }
 
-var blue = color.New(color.FgBlue).SprintFunc()
-var green = color.New(color.FgGreen).SprintFunc()
-var red = color.New(color.FgRed).SprintFunc()
+var blue = color.New(color.FgHiBlue).SprintFunc()
+var green = color.New(color.FgHiGreen).SprintFunc()
+var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init() (err error) {
@@ -50,6 +51,7 @@ func (s *stdout) Init() (err error) {
 		itemReports: make(map[int16]*scenarioItemReport),
 	}
 
+	color.Cyan("%s  Initializing... \n", emoji.Gear)
 	return
 }
 
@@ -122,33 +124,33 @@ func (s *stdout) realTimePrintStart() {
 
 	s.printTicker = time.NewTicker(realTimePrintInterval)
 
+	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
+	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+
 	for range s.printTicker.C {
 		go func() {
 			s.mu.Lock()
-			// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-			// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "\nCTRL+C to gracefully stop.")
-			fmt.Printf("%s %s %s\n",
-				green(fmt.Sprintf("Success Run: %-5d", s.result.successCount)),
-				red(fmt.Sprintf("Failed Run: %-5d", s.result.failedCount)),
-				blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
+			s.liveResultPrint()
 			s.mu.Unlock()
 		}()
-
 	}
+}
+
+func (s *stdout) liveResultPrint() {
+	fmt.Printf("%s %s %s\n",
+		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
+			emoji.CheckMark, s.result.successCount, s.result.successPercentage(), "")),
+		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
+			emoji.CrossMark, s.result.failedCount, s.result.failedPercentage(), "")),
+		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.avgDuration)))
 }
 
 func (s *stdout) realTimePrintStop() {
 	if util.IsSystemInTestMode() {
 		return
 	}
-
 	// Last print.
-	// _, _ = fmt.Fprintf(s.writer, summaryTemplate(), s.result.successCount, s.result.successPercentage(),
-	// 	s.result.failedCount, s.result.failedPercentage(), s.result.avgDuration, "")
-	fmt.Printf("%s %s %s\n",
-		green(fmt.Sprintf("Success Run: %-5d", s.result.successCount)),
-		red(fmt.Sprintf("Failed Run: %-5d", s.result.failedCount)),
-		blue("Avg. Duration(s): "+fmt.Sprint(s.result.avgDuration)))
+	s.liveResultPrint()
 	s.printTicker.Stop()
 }
 
@@ -158,8 +160,8 @@ func (s *stdout) printDetails() {
 		return
 	}
 
-	fmt.Println("\nDETAILS")
-	fmt.Println("----------------------------------------------------")
+	fmt.Println("\nRESULT")
+	fmt.Println("-------------------------------------")
 
 	keys := make([]int, 0)
 	for k := range s.result.itemReports {
@@ -173,8 +175,10 @@ func (s *stdout) printDetails() {
 	for _, k := range keys {
 		v := s.result.itemReports[int16(k)]
 
-		fmt.Println("Step", k)
-		fmt.Println("-------------------------------------")
+		if len(keys) > 1 {
+			fmt.Println("Step", k)
+			fmt.Println("-------------------------------------")
+		}
 
 		fmt.Printf("Success Count: %-5d (%d%%)\n", v.successCount, v.successPercentage())
 		fmt.Printf("Failed Count:  %-5d (%d%%)\n", v.failedCount, v.failedPercentage())
@@ -208,19 +212,6 @@ func (s *stdout) printDetails() {
 		}
 		fmt.Println()
 	}
-}
-
-func summaryTemplate() string {
-	return `
-SUMMARY
-----------------------------------------------------
-Successful Run Count: %-5d (%d%%)
-Failed Run Count    : %-5d (%d%%)
-Average Duration(s) : %.3f
-
-*Average duration calculated only for successful runs.
-%s
-`
 }
 
 type result struct {
