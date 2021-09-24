@@ -4,9 +4,9 @@ TODO: Logo
 TODO: Badges
 
 ## Features
-- :heavy_check_mark: Protocol Agnostic - Currently supporting HTTP, HTTPS, HTTP/2. Other protocols are on the way.
-- :heavy_check_mark: Scenario Based - Create your flow with a Json file. Without a line of code!
-- :heavy_check_mark: Different Load Types - Test your system's limits across different load types.
+:heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
+:heavy_check_mark: Scenario-Based - Create your flow in a JSON file. Without a line of code!
+:heavy_check_mark: Different Load Types - Test your system's limits across different load types.
 
 TODO: GIF KOY
 
@@ -49,217 +49,204 @@ curl -sSfL https://raw.githubusercontent.com/ddosify/hammer/master/scripts/insta
 ```
 
 ## Easy Start
-This section aims to show how to use Ddosify without deepig dive into its details. TODO: 
+This section aims to show you how to easily use Ddosify without deep dive into its details.
     
 1. ### Simple load test
 
 		ddosify -t target_site.com
 
-    Above command runs a load test with the default values that is 200 requests in 10 seconds.
+    The above command runs a load test with the default value that is 200 requests in 10 seconds.
 
-2. ### Using some of the features.
+2. ### Using some of the features
 
 		ddosify -t target_site.com -n 1000 -d 20 -p HTTPS -m PUT -T 7 -P http://proxy_server.com:80
 
-    Above command tells Ddosify to send total *1000* PUT request to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with timeout *7* seconds. 
+    Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
 
 3. ### Scenario based load test
 
 		ddosify -t config_examples/config.json
     
-    Ddosify first send *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with timeout *3* sconds. Once the response recieved, HTTPS GET request will be send to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with timeout 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
+    Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
 		
 ## Details
 
-You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example you can't create scenario based load test with CLI options.
+You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
 
-### CLI Flags
+- ### CLI Flags
 
-    ddosify -t <target_website> [options...]
+        ddosify -t <target_website> [options...]
 
-1. `-n`
+    1. `-n`
 
-    Total request count. Default is 200.
-2. `-d`
+        Total request count. Default is 200.
+    2. `-d`
 
-    Test duration in seconds. Default is 10 second.
-3. `-l`
+        Test duration in seconds. Default is 10 second.
+    3. `-l`
 
-    Type of the load test. Default is "linear". Ddosify supports 3 load types;
-    1. `-l linear`
+        Type of the load test. Default is *linear*. Ddosify supports 3 load types;
+        1. `-l linear`
 
-        Example; 
+            Example; 
 
-            ddosify -t target_site.com -n 200 -d 10 -l linear
+                ddosify -t target_site.com -n 200 -d 10 -l linear
 
-        Result;
+            Result;
 
-        ![enter image description here](assets/linear.gif)
+            ![enter image description here](assets/linear.gif)
 
-        *Note:* If the request count is too low for the given duration, the test would be finished earlier than you expect. 10 request per second is the lower limit to run this load type smoothly.
+            *Note:* If the request count is too low for the given duration, the test might be finished earlier than you expect.
 
-    2. `-l incremental`
-    
-        Example;
-
-            ddosify -t target_site.com -n 200 -d 10 -l incremental
-
-        Result;
-
-        ![enter image description here](assets/incremental.gif)
+        2. `-l incremental`
         
-    3. `-l waved`
+            Example;
+
+                ddosify -t target_site.com -n 200 -d 10 -l incremental
+
+            Result;
+
+            ![enter image description here](assets/incremental.gif)
+            
+        3. `-l waved`
+            
+            Example;
+
+                ddosify -t target_site.com -n 400 -d 16 -l waved
+
+            Result;
+
+            ![enter image description here](assets/waved.gif)
+
+    4. `-p`
+
+        Protocol of the request. Default is HTTPS. Supported protocols are *HTTP, HTTPS*. HTTP/2 support is only available by using a config file as described. More protocols will be added.
         
-        Example;
+        *Note:* If the target URL passed with `-t` option includes protocol inside of it, then the value of the `-p` will be ignored.
 
-            ddosify -t target_site.com -n 400 -d 16 -l waved
+    5. `-m`
 
-        Result;
+        Request method. Default is *GET*. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, UPDATE, PATCH*
 
-        ![enter image description here](assets/waved.gif)
+    6. `-b` 
 
-        *Note:* Wave count equals to `log2(duration) / 2`.
-4. `-p`
+        The payload of the network packet. AKA body for the HTTP.
 
-    Protocol of the request. Defaul is HTTPS. Supported protocols [HTTP, HTTPS]. HTTP/2 support only available by using config file as described here.(TODO: href).More protocols will be added.
-    
-    *Note:* If the target url passed with `-t` option includes protocol inside of it, then the value of the `-p` will be ignored.
+    7. `-a`
 
-5. `-m`
+        Basic authentication. 
 
-    Request method. Default is GET. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]
+            ddosify -t target_site.com -a username:password
 
-6. `-b` 
+    8. `-h`
 
-    Payload of the network packet. AKA body for the HTTP.
+        Headers of the request. You can provide multiple headers.
 
-7. `-a`
+            ddosify -t target_site.com -h 'Accept: text/html' -h 'Content-Type: application/xml'
 
-    Basic authentication. 
+    9. `-T`
 
-        ddosify -t target_site.com -a username:password
+        Timeout of the request in seconds. Default is 5 seconds.
 
-8. `-h`
+    10. `-P`
 
-    Request headers. You can provide multiple headers.
+        Proxy address as host:port. 
 
-        ddosify -t target_site.com -h 'Accept: text/html' -h 'Content-Type: application/xml'
+            ddosify -t target_site.com -P http://proxy_host.com:port'
 
-9. `-T`
+    11. `-o`
 
-    Request timeout in seconds. Default is 5 second.
+        Test result output destination. Default is *stdout*. Other output types will be added.
 
-10. `-P`
+- ### Config File
 
-    Proxy address as host:port. 
+    Config file lets you use all capabilities of Ddosify. 
 
-        ddosify -t target_site.com -P http://proxy_host.com:port'
+    The features you can use by config file;
+    - Scenario creation
+    - Payload from a file
+    - Extra connection configuration, like *keep-alive* enable/disable logic
+    - HTTP2 support
 
-11. `-o`
+    Usage;
 
-    Test result output destination. Default is *stdout*. Other output types will be added.
-
-### Config File
-
-Config file  lets you to use all capabilities of the Ddosify. 
-
-The features that can only usable by a config file;
-- Scneario creation.
-- Payload from a file.
-- Extra connection configuration, like *keep-alive* enable/disable logic.
-- HTTP2 support. 
-
-Usage;
-
-    ddosify -config <json_config_path>
+        ddosify -config <json_config_path>
 
 
-Only Json formatted file is supported for now. There is an example config file at config_examples/config.json (TODO: link koy). This file contains all of the parameters you can use. Details of the each parameters;
+    There is an example config file at [config_examples/config.json](/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
 
-1. `request_count` *optional*
+    1. `request_count` *optional*
 
-    This is the equilevent of the `-n` flag. The difference is that if you have multiple steps in your scenario than this value represents the iteration count of your steps.
+        This is the equivalent of the `-n` flag. The difference is that if you have multiple steps in your scenario then this value represents the iteration count of the steps.
 
-2. `load_type` *optional*
+    2. `load_type` *optional*
 
-    This is the equilevent of the `-l` flag.
+        This is the equivalent of the `-l` flag.
 
-3. `duration` *optional*
+    3. `duration` *optional*
 
-    This is the equilevent of the `-d` flag.
+        This is the equivalent of the `-d` flag.
 
-4. `proxy` *optional*
+    4. `proxy` *optional*
 
-    This is the equilevent of the `-P` flag.
+        This is the equivalent of the `-P` flag.
 
-5. `output` *optional*
+    5. `output` *optional*
 
-    This is the equilevent of the `-o` flag.
+        This is the equivalent of the `-o` flag.
 
-6. `steps` *mandatory*
+    6. `steps` *mandatory*
 
-    This parameter lets you create your own scenario. Ddosify runs the provided steps sync. For the given example file step with ID:2 will be executed immediately after the response of step with ID:1 recieved. The order of the execution is same as the order of the steps in the config file.
-    
-    Details of the each parameters for a step;
-    1. `id` *mandatory*
-    
-        Each step must have a unique integer id.
-
-    2. `url` *mandatory*
-
-        This is the equilevent of the `-t` flag.
-    
-    3. `protocol` *optional*
-
-        This is the equilevent of the `-p` flag.
-
-    4. `method` *optional*
-
-        This is the equilevent of the `-m` flag.
-
-    5. `headers` *optional*
-
-        List of headers with key:value format.
-
-    6. `payload` *optional*
-
-        This is the equilevent of the `-b` flag.
-
-    7. `payload_file` *optional*
-
-        If you need a long payload, we suggests to use this parameter instead of `payload`.  
-
-    7. `auth` *optional*
+        This parameter lets you create your own scenario. Ddosify runs the provided steps respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
         
-        Basic authentication.
-        ```json
-        "auth": {
-            "username": "test_user",
-            "password": "12345"
-        }
-        ```
-    8. `others` *optional*
-
-        This parameter accepts dynamic *key:value* pairs to configure connection details of the protocol in use.
+         Details of each parameter for a step;
+        1. `id` *mandatory*
         
-        ```json
-        "others": {
-            "keep-alive": true,              // Default false
-            "disable-compression": false,    // Default true
-            "h2": true,                      // Enables HTTP/2. Default is false.
-            "disable-redirect": true         // Default false
-        }
-        ```
+            Each step must have a unique integer id.
 
+        2. `url` *mandatory*
 
+            This is the equivalent of the `-t` flag.
+        
+        3. `protocol` *optional*
 
+            This is the equivalent of the `-p` flag.
 
-    
+        4. `method` *optional*
 
+            This is the equivalent of the `-m` flag.
 
-  
+        5. `headers` *optional*
 
-## Future
-TODO: Our motivation & future of the ddosify.
+            List of headers with key:value format.
 
+        6. `payload` *optional*
+
+            This is the equivalent of the `-b` flag.
+
+        7. `payload_file` *optional*
+
+            If you need a long payload, we suggest using this parameter instead of `payload`.  
+
+        7. `auth` *optional*
+            
+            Basic authentication.
+            ```
+            "auth": {
+                "username": "test_user",
+                "password": "12345"
+            }
+            ```
+        8. `others` *optional*
+
+            This parameter accepts dynamic *key: value* pairs to configure connection details of the protocol in use.
+
+            ```
+            "others": {
+                "keep-alive": true,              // Default false
+                "disable-compression": false,    // Default true
+                "h2": true,                      // Enables HTTP/2. Default false.
+                "disable-redirect": true         // Default false
+            }
+            ```
