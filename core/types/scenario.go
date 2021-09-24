@@ -113,7 +113,7 @@ func (si *ScenarioItem) validate() error {
 		return fmt.Errorf("unsupported Authentication Method (%s) For Protocol (%s) ", si.Auth.Type, si.Protocol)
 	}
 	if si.ID == 0 {
-		return fmt.Errorf("each scenario item should have an ordered unique ID")
+		return fmt.Errorf("each scenario item should have an unique ID")
 	}
 	return nil
 }
