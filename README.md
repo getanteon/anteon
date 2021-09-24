@@ -1,5 +1,4 @@
-![](https://ddosify.com/assets/img/ddosify-orange-logo.svg)
-<h3 align="center">High-performance load testing tool</h3>
+# **Ddosify** - High-performance load testing tool
 
 TODO: Badges
 
