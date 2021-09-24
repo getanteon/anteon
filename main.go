@@ -135,7 +135,7 @@ var run = func(h types.Hammer) {
 
 var createHammerFromFlags = func() (h types.Hammer, err error) {
 	if *target == "" {
-		err = fmt.Errorf("Please provide the target url")
+		err = fmt.Errorf("Please provide the target url with -t flag")
 		return
 	}
 
