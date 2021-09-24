@@ -43,9 +43,14 @@ conda install ddosify --channel conda-forge
 - The script attempts to detect your operating system (macos or linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 - By default, the scripts installs the latest version of `ddosify`. 
 
-TODO: Change URL
 ```bash
-curl -sSfL https://raw.githubusercontent.com/ddosify/hammer/master/scripts/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
+```
+
+### Go install from source (macOS, Linux, Windows)
+
+```bash
+go install -v github.com/ddosify/ddosify@latest
 ```
 
 ## Easy Start
