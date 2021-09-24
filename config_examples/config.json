@@ -1,6 +1,6 @@
 {
-    "reqCount": 20,
-    "loadType": "linear",
+    "request_count": 20,
+    "load_type": "linear",
     "duration": 5,
     "proxy": "http://proxy_host.com:proxy_port",
     "output": "stdout",
@@ -21,18 +21,17 @@
                 "password": "12345"
             },
             "others": {
-                "keepAlive": true,
+                "keep-alive": true,
                 "disableCompression": false,
-                "hostName": "test_site1.com",
                 "h2": true,
-                "disableRedirect": true
+                "disable-redirect": true
             }
         },
         {
             "id": 2,
             "url": "https://test_site1.com/endpoint_2",
             "method": "GET",
-            "payloadFile": "config_examples/payload.txt",
+            "payload_file": "config_examples/payload.txt",
             "timeout": 2
         }
     ]

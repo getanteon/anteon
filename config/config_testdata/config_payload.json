@@ -9,7 +9,7 @@
         {
             "id": 2,
             "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
-            "payloadFile": "config_testdata/payload.txt"
+            "payload_file": "config_testdata/payload.txt"
         }
     ]
 }

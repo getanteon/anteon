@@ -177,11 +177,11 @@ Usage;
 
 Only Json formatted file is supported for now. There is an example config file at config_examples/config.json (TODO: link koy). This file contains all of the parameters you can use. Details of the each parameters;
 
-1. `reqCount` *optional*
+1. `request_count` *optional*
 
     This is the equilevent of the `-n` flag. The difference is that if you have multiple steps in your scenario than this value represents the iteration count of your steps.
 
-2. `loadType` *optional*
+2. `load_type` *optional*
 
     This is the equilevent of the `-l` flag.
 
@@ -226,7 +226,7 @@ Only Json formatted file is supported for now. There is an example config file a
 
         This is the equilevent of the `-b` flag.
 
-    7. `payloadFile` *optional*
+    7. `payload_file` *optional*
 
         If you need a long payload, we suggests to use this parameter instead of `payload`.  
 
@@ -245,11 +245,10 @@ Only Json formatted file is supported for now. There is an example config file a
         
         ```json
         "others": {
-            "keepAlive": true,              // Default false
-            "disableCompression": false,    // Default true
-            "hostName": "test_site1.com",   // Default empty
-            "h2": true,                     // Enables HTTP/2. Default is false.
-            "disableRedirect": true         // Default false
+            "keep-alive": true,              // Default false
+            "disable-compression": false,    // Default true
+            "h2": true,                      // Enables HTTP/2. Default is false.
+            "disable-redirect": true         // Default false
         }
         ```
 

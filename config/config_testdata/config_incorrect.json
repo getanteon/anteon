@@ -1,6 +1,6 @@
 {
-    "reqCount": 100,
-    "loadType": "linear",
+    "request_count": 100,
+    "load_type": "linear",
     "duration": 10,
     "steps": [
         {
@@ -32,7 +32,7 @@
                 "ContenType": "application/xml",
                 "X-ddosify-key": "ajkndalnasd"
             },
-            "payloadFile": "config_examples/payload.txt",
+            "payload_file": "config_examples/payload.txt",
             "timeout": 1,
             "others": {
                 "keep-alive": false

@@ -60,7 +60,7 @@ func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL, ctx conte
 
 	// http client
 	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
-	if val, ok := h.packet.Custom["disableRedirect"]; ok {
+	if val, ok := h.packet.Custom["disable-redirect"]; ok {
 		val := val.(bool)
 		if val {
 			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -183,10 +183,10 @@ func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	}
 
 	tr.DisableKeepAlives = true
-	if val, ok := h.packet.Custom["keepAlive"]; ok {
+	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		tr.DisableKeepAlives = !val.(bool)
 	}
-	if val, ok := h.packet.Custom["disableCompression"]; ok {
+	if val, ok := h.packet.Custom["disable-compression"]; ok {
 		tr.DisableCompression = val.(bool)
 	}
 	if val, ok := h.packet.Custom["h2"]; ok {
@@ -202,7 +202,7 @@ func (h *httpRequester) initTlsConfig() *tls.Config {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
-	if val, ok := h.packet.Custom["hostName"]; ok {
+	if val, ok := h.packet.Custom["hostname"]; ok {
 		tlsConfig.ServerName = val.(string)
 	}
 	return tlsConfig
@@ -237,7 +237,7 @@ func (h *httpRequester) initRequestInstance() (err error) {
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
 	h.request.Close = true
-	if val, ok := h.packet.Custom["keepAlive"]; ok {
+	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		if val.(bool) {
 			h.request.Close = false
 		}
