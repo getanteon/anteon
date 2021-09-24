@@ -1,6 +1,6 @@
-# **Ddosify** - High-performance load testing tool
+![](https://ddosify.com/assets/img/ddosify-orange-logo.svg)
+<h3 align="center">High-performance load testing tool</h3>
 
-TODO: Logo
 TODO: Badges
 
 ## Features
@@ -100,7 +100,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 
             Result;
 
-            ![enter image description here](assets/linear.gif)
+            ![linear load](assets/linear.gif)
 
             *Note:* If the request count is too low for the given duration, the test might be finished earlier than you expect.
 
@@ -112,7 +112,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 
             Result;
 
-            ![enter image description here](assets/incremental.gif)
+            ![incremental load](assets/incremental.gif)
             
         3. `-l waved`
             
@@ -122,7 +122,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 
             Result;
 
-            ![enter image description here](assets/waved.gif)
+            ![waved load](assets/waved.gif)
 
     4. `-p`
 
