@@ -10,8 +10,9 @@ TODO: Badges
 
 TODO: GIF KOY
 
-
 ## Installation
+
+`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify), [Homebrew](https://formulae.brew.sh/formula/ddosify), [Homebrew Tap](), [Conda]() and as a downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 
 ### Docker
 
@@ -19,34 +20,34 @@ TODO: GIF KOY
 docker run -it --rm --name ddosify ddosify/ddosify
 ```
 
-### Homebrew for MacOS
+### Homebrew (macOS and Linux)
 
 ```bash
 brew install ddosify
 ```
 
-### Pre-compiled Binaries
+### Homebrew Tap (macOS and Linux)
 
-You can download pre-compiled binaries (.tar.gz or zip) from [ddosify github releases](https://github.com/ddosify/ddosify/releases) assets for your operating system.
+```bash
+brew install ddosify/ddosify
+```
 
-#### Linux & MacOS
+### Conda (macOS, Linux and Windows)
 
-For Linux and MacOS you can download this script and run. This script downloads latest version of ddosify pre-compiled binary and puts it on `/usr/bin/`
+```bash
+conda install ddosify --channel conda-forge
+```
+### Using the convenience script (macOS and Linux)
+
+- The script requires root or sudo privileges to move ddosify binary to `/usr/bin`.
+- The script attempts to detect your operating system (macos or linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+- By default, the scripts installs the latest version of `ddosify`. 
+- 
 
 TODO: Change URL
 ```bash
 curl -sSfL https://raw.githubusercontent.com/ddosify/hammer/master/scripts/install.sh | sh
 ```
-
-Or you can download and untar pre-compiled binaries: 
- - For MacOS: `ddosify_<VERSION>_darwin_<ARCHITECTURE>.tar.gz`
- - For Linux: `ddosify_<VERSION>_linux_<ARCHITECTURE>.tar.gz`
-
-#### Windows
-
-For windows you can download `ddosify_<VERSION>_windows_<ARCHITECTURE>.zip` and unzip to `ddosify.exe` from [ddosify github releases](https://github.com/ddosify/ddosify/releases) assets.
-
-
 
 ## Easy Start
 This section aims to show how to use Ddosify without deepig dive into its details. TODO: 
