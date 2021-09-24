@@ -44,7 +44,7 @@ type step struct {
 	Method      string                 `json:"method"`
 	Headers     map[string]string      `json:"headers"`
 	Payload     string                 `json:"payload"`
-	PayloadFile string                 `json:"payloadFile"`
+	PayloadFile string                 `json:"payload_file"`
 	Timeout     int                    `json:"timeout"`
 	Others      map[string]interface{} `json:"others"`
 }
@@ -67,8 +67,8 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type jsonReader struct {
-	ReqCount int    `json:"reqCount"`
-	LoadType string `json:"loadType"`
+	ReqCount int    `json:"request_count"`
+	LoadType string `json:"load_type"`
 	Duration int    `json:"duration"`
 	Steps    []step `json:"steps"`
 	Output   string `json:"output"`

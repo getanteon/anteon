@@ -92,10 +92,10 @@ func TestInitClient(t *testing.T) {
 		URL:      "https://test.com",
 		Timeout:  types.DefaultTimeout,
 		Custom: map[string]interface{}{
-			"disableRedirect":    true,
-			"keepAlive":          true,
-			"disableCompression": true,
-			"hostName":           "dummy.com",
+			"disable-redirect":    true,
+			"keep-alive":          true,
+			"disable-compression": true,
+			"hostname":            "dummy.com",
 		},
 	}
 	expectedTLSCustomData := &tls.Config{
@@ -290,7 +290,7 @@ func TestInitRequest(t *testing.T) {
 			"Header2": "Value2",
 		},
 		Custom: map[string]interface{}{
-			"keepAlive": true,
+			"keep-alive": true,
 		},
 	}
 	expectedWithKeepAlive, _ := http.NewRequest(sWithKeepAlive.Method,
