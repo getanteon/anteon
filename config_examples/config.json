@@ -2,38 +2,38 @@
     "reqCount": 20,
     "loadType": "linear",
     "duration": 5,
+    "proxy": "http://proxy_host.com:proxy_port",
+    "output": "stdout",
     "steps": [
         {
             "id": 1,
-            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "url": "https://test_site1.com/endpoint_1",
             "protocol": "https",
-            "method": "GET",
+            "method": "POST",
             "headers": {
                 "ContenType": "application/xml",
-                "X-ddosify-key": "ajkndalnasd"
+                "header1": "header2"
             },
-            "payload": "body yt kanl adnlandlandaln",
+            "payload": "Body content 1",
             "timeout": 3,
+            "auth": {
+                "username": "test_user",
+                "password": "12345"
+            },
             "others": {
-                "keep-alive": true
+                "keepAlive": true,
+                "disableCompression": false,
+                "hostName": "test_site1.com",
+                "h2": true,
+                "disableRedirect": true
             }
         },
         {
             "id": 2,
-            "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
-            "protocol": "https",
+            "url": "https://test_site1.com/endpoint_2",
             "method": "GET",
-            "headers": {
-                "ContenType": "application/xml",
-                "X-ddosify-key": "ajkndalnasd"
-            },
             "payloadFile": "config_examples/payload.txt",
-            "timeout": 2,
-            "others": {
-                "keep-alive": false
-            }
+            "timeout": 2
         }
-    ],
-    "proxy": "http://arkaatwf-1:6euurhrcaf2k@e3.p.webshare.io:80",
-    "output": "stdout"
+    ]
 }
