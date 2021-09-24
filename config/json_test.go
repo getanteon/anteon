@@ -107,7 +107,7 @@ func TestCreateHammer(t *testing.T) {
 	h, err := jsonReader.CreateHammer()
 
 	if err != nil {
-		t.Errorf("TestCreateHammerPro error occured: %v", err)
+		t.Errorf("TestCreateHammer error occured: %v", err)
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
