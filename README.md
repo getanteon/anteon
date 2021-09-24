@@ -4,7 +4,9 @@ TODO: Badges
 
 ## Features
 :heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
+
 :heavy_check_mark: Scenario-Based - Create your flow in a JSON file. Without a line of code!
+
 :heavy_check_mark: Different Load Types - Test your system's limits across different load types.
 
 TODO: GIF KOY
