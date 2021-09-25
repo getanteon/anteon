@@ -1,6 +1,18 @@
-# **Ddosify** - High-performance load testing tool
+<h1 align="center">
+    <img src="assets/ddosify-logo.svg"
+        width="336px" /><br />
+    Ddosify - High-performance load testing tool
+</h1>
+<p align="center">Ddosify is a multi location based load testing and DDOS attack simulation tool written in Golang. 
+</p>
 
-TODO: Badges
+<p align="center">
+    <a href="https://github.com/create-go-app/cli/releases" target="_blank"><img src="https://img.shields.io/badge/version-v0.0.1-orange?style=for-the-badge&logo=none" alt="ddosify version" /></a>&nbsp;
+    <a href="https://pkg.go.dev/github.com/create-go-app/cli/v3?tab=doc" target="_blank"><img src="https://img.shields.io/badge/Go-1.17+-00ADD8?style=for-the-badge&logo=go" alt="go version" /></a>&nbsp;
+    <a href="https://gocover.io/github.com/ddosify/ddosify/pkg/cgapp" target="_blank"><img src="https://img.shields.io/badge/Go_Cover-89.2%25-success?style=for-the-badge&logo=none" alt="go cover" /></a>&nbsp;
+    <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/badge/Go_report-A+-success?style=for-the-badge&logo=none" alt="go report" /></a>&nbsp;
+    <img src="https://img.shields.io/github/license/ddosify/ddosify?style=for-the-badge&logo=none" alt="license" />
+</p>
 
 ## Features
 :heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
