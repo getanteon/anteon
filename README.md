@@ -91,92 +91,65 @@ This section aims to show you how to easily use Ddosify without deep dive into i
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
+### CLI Flags
 
-- ### CLI Flags
+```bash
+ddosify [FLAG]
+```
 
-        ddosify -t <target_website> [options...]
+| Flag | Description                                              | Type     | Default | Required?  |
+| ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+| `-t`   | Target website URL. Example: https://ddosify.com         | `string` | - | Yes        |
+| `-n`   | Total request count                                      | `int`    | `200`   | No         |
+| `-d`   | Test duration in seconds.                                | `int`    | `10`    | No         |
+| `-p`   | Protocol of the request. Supported protocols are *HTTP, HTTPS*. HTTP/2 support is only available by using a config file as described. More protocols will be added.                                | `string`    | `HTTPS`    | No         |
+| `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, UPDATE, PATCH* | `string`    | `GET`    | No  |
+| `-b`   | The payload of the network packet. AKA body for the HTTP.  | `string`    | -    | No         |
+| `-a`   | Basic authentication. Usage: `-a username:password`        | `string`    | -    | No         |
+| `-h`   | Headers of the request. You can provide multiple headers with multiple `-h` flag.  | `string`| -    | No         |
+| `-T`   | Timeout of the request in seconds.                       | `int`    | `5`    | No         |
+| `-P`   | Proxy address as host:port. `-P http://user:pass@proxy_host.com:port'` | `string`    | -    | No |
+| `-o`   | Test result output destination. Other output types will be added. | `string`    | `stdout`    | No |
+| `-l`   | [Type](#load-types) of the load test. Ddosify supports 3 load types; | `string`    | `linear`    | No |
 
-    1. `-n`
 
-        Total request count. Default is 200.
-    2. `-d`
+### Load Types
 
-        Test duration in seconds. Default is 10 second.
-    3. `-l`
+#### Linear
 
-        Type of the load test. Default is *linear*. Ddosify supports 3 load types;
-        1. `-l linear`
+```bash
+ddosify -t target_site.com -l linear
+```
 
-            Example; 
+Result:
 
-                ddosify -t target_site.com -n 200 -d 10 -l linear
+![linear load](assets/linear.gif)
 
-            Result;
+*Note:* If the request count is too low for the given duration, the test might be finished earlier than you expect.
 
-            ![linear load](assets/linear.gif)
+#### Incremental
 
-            *Note:* If the request count is too low for the given duration, the test might be finished earlier than you expect.
+```bash
+ddosify -t target_site.com -l incremental
+```
 
-        2. `-l incremental`
-        
-            Example;
+Result:
 
-                ddosify -t target_site.com -n 200 -d 10 -l incremental
+![incremental load](assets/incremental.gif)
 
-            Result;
 
-            ![incremental load](assets/incremental.gif)
-            
-        3. `-l waved`
-            
-            Example;
+#### Waved
 
-                ddosify -t target_site.com -n 400 -d 16 -l waved
+```bash
+ddosify -t target_site.com -l waved
+```
 
-            Result;
+Result:
 
-            ![waved load](assets/waved.gif)
+![waved load](assets/waved.gif)
 
-    4. `-p`
 
-        Protocol of the request. Default is HTTPS. Supported protocols are *HTTP, HTTPS*. HTTP/2 support is only available by using a config file as described. More protocols will be added.
-        
-        *Note:* If the target URL passed with `-t` option includes protocol inside of it, then the value of the `-p` will be ignored.
-
-    5. `-m`
-
-        Request method. Default is *GET*. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, UPDATE, PATCH*
-
-    6. `-b` 
-
-        The payload of the network packet. AKA body for the HTTP.
-
-    7. `-a`
-
-        Basic authentication. 
-
-            ddosify -t target_site.com -a username:password
-
-    8. `-h`
-
-        Headers of the request. You can provide multiple headers.
-
-            ddosify -t target_site.com -h 'Accept: text/html' -h 'Content-Type: application/xml'
-
-    9. `-T`
-
-        Timeout of the request in seconds. Default is 5 seconds.
-
-    10. `-P`
-
-        Proxy address as host:port. 
-
-            ddosify -t target_site.com -P http://proxy_host.com:port'
-
-    11. `-o`
-
-        Test result output destination. Default is *stdout*. Other output types will be added.
-
+TODO: Update config file
 - ### Config File
 
     Config file lets you use all capabilities of Ddosify. 
