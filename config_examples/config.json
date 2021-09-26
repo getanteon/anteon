@@ -1,0 +1,38 @@
+{
+    "request_count": 20,
+    "load_type": "linear",
+    "duration": 5,
+    "proxy": "http://proxy_host.com:proxy_port",
+    "output": "stdout",
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://test_site1.com/endpoint_1",
+            "protocol": "https",
+            "method": "POST",
+            "headers": {
+                "ContenType": "application/xml",
+                "header1": "header2"
+            },
+            "payload": "Body content 1",
+            "timeout": 3,
+            "auth": {
+                "username": "test_user",
+                "password": "12345"
+            },
+            "others": {
+                "keep-alive": true,
+                "disableCompression": false,
+                "h2": true,
+                "disable-redirect": true
+            }
+        },
+        {
+            "id": 2,
+            "url": "https://test_site1.com/endpoint_2",
+            "method": "GET",
+            "payload_file": "config_examples/payload.txt",
+            "timeout": 2
+        }
+    ]
+}

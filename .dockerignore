@@ -1,0 +1,6 @@
+dist/
+*.yml
+*.out
+Jenkinsfile
+README.md
+.*

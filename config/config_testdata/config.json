@@ -1,0 +1,31 @@
+{
+    "request_count": 1555,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "protocol": "https",
+            "method": "GET",
+            "payload": "payload str",
+            "timeout": 3,
+            "others": {
+                "keep-alive": true
+            }
+        },
+        {
+            "id": 2,
+            "url": "http://test.com",
+            "protocol": "https",
+            "method": "PUT",
+            "headers": {
+                "ContenType": "application/xml",
+                "X-ddosify-key": "ajkndalnasd"
+            },
+            "timeout": 2
+        }
+    ],
+    "output": "timescale",
+    "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279"
+}

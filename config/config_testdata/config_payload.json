@@ -1,0 +1,15 @@
+{
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "method": "GET",
+            "payload": "payload from string"
+        },
+        {
+            "id": 2,
+            "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
+            "payload_file": "config_testdata/payload.txt"
+        }
+    ]
+}
