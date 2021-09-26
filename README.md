@@ -13,6 +13,8 @@
     <img src="https://img.shields.io/github/license/ddosify/ddosify?style=for-the-badge&logo=none" alt="license" />
 </p>
 
+<img src="assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start"/>
+
 ## Features
 :heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
@@ -20,7 +22,6 @@
 
 :heavy_check_mark: Different Load Types - Test your system's limits across different load types.
 
-TODO: GIF KOY
 
 ## Installation
 
