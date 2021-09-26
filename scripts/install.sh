@@ -61,7 +61,8 @@ binary=$tmpfolder/$GITHUB_REPO
 if [ "$OS" = "windows" ]; then
   binary="${binary}.exe"
 fi
-install "$binary" $INSTALL_DIR
+echo "Installing $GITHUB_REPO to $INSTALL_DIR"
+sudo install "$binary" $INSTALL_DIR
 echo "Installed $GITHUB_REPO to $INSTALL_DIR"
 
 rm -rf "${tmpdir}"
