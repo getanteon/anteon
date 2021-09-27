@@ -156,10 +156,6 @@ func (s *stdout) realTimePrintStop() {
 
 // TODO:REFACTOR use template
 func (s *stdout) printDetails() {
-	if util.IsSystemInTestMode() {
-		return
-	}
-
 	color.Set(color.FgHiCyan)
 	fmt.Println("\nRESULT")
 	fmt.Println("-------------------------------------")

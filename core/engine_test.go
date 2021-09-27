@@ -58,20 +58,48 @@ func newDummyHammer() types.Hammer {
 func TestCreateEngine(t *testing.T) {
 	t.Parallel()
 
-	h := newDummyHammer()
-	e, err := NewEngine(context.TODO(), h)
-	if err != nil {
-		t.Errorf("TestServices error occured %v", err)
+	hInvalidProxy := newDummyHammer()
+	hInvalidProxy.Proxy = types.Proxy{Strategy: "invalidProxy"}
+
+	hInvalidReport := newDummyHammer()
+	hInvalidReport.ReportDestination = "invalidReport"
+
+	tests := []struct {
+		name      string
+		hammer    types.Hammer
+		shouldErr bool
+	}{
+		{"Normal", newDummyHammer(), false},
+		{"InvalidProxy", hInvalidProxy, true},
+		{"InvalidReport", hInvalidReport, true},
 	}
 
-	if e.proxyService == nil {
-		t.Errorf("Proxy Service should be created")
-	}
-	if e.scenarioService == nil {
-		t.Errorf("Scenario Service should be created")
-	}
-	if e.reportService == nil {
-		t.Errorf("Report Service should be created")
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			e, err := NewEngine(context.TODO(), test.hammer)
+
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Error occured %v", err)
+				}
+
+				if e.proxyService == nil {
+					t.Errorf("Proxy Service should be created")
+				}
+				if e.scenarioService == nil {
+					t.Errorf("Scenario Service should be created")
+				}
+				if e.reportService == nil {
+					t.Errorf("Report Service should be created")
+				}
+			}
+		})
 	}
 }
 
