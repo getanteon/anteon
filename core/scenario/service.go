@@ -25,8 +25,8 @@ import (
 	"net/url"
 	"time"
 
-	"ddosify.com/hammer/core/scenario/requester"
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/scenario/requester"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.

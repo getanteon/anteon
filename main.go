@@ -30,10 +30,10 @@ import (
 	"regexp"
 	"strings"
 
-	"ddosify.com/hammer/config"
-	"ddosify.com/hammer/core"
-	"ddosify.com/hammer/core/types"
-	"ddosify.com/hammer/core/util"
+	"go.ddosify.com/ddosify/config"
+	"go.ddosify.com/ddosify/core"
+	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 //TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.

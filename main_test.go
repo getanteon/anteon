@@ -28,7 +28,7 @@ import (
 	"reflect"
 	"testing"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 func TestMain(m *testing.M) {

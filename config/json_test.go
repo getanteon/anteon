@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 func TestCreateHammerDefaultValues(t *testing.T) {

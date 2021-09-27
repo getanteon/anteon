@@ -25,7 +25,7 @@ import (
 	"net/url"
 	"strings"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 // ProvideService is the interface that abstracts different proxy implementations.

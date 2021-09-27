@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 	"golang.org/x/net/http2"
 )
 

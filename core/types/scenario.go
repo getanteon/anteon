@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"ddosify.com/hammer/core/util"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 const (

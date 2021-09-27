@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 //TODO: Engine stop channel close order test

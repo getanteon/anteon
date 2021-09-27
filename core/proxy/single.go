@@ -23,7 +23,7 @@ package proxy
 import (
 	"net/url"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 type singleProxyStrategy struct {

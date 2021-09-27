@@ -28,10 +28,10 @@ import (
 	"sync"
 	"time"
 
-	"ddosify.com/hammer/core/proxy"
-	"ddosify.com/hammer/core/report"
-	"ddosify.com/hammer/core/scenario"
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/proxy"
+	"go.ddosify.com/ddosify/core/report"
+	"go.ddosify.com/ddosify/core/scenario"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 const (

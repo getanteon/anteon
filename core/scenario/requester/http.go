@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	"ddosify.com/hammer/core/types"
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/types"
 	"golang.org/x/net/http2"
 )
 

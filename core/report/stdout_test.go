@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 func TestScenarioItemReport(t *testing.T) {

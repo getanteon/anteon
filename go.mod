@@ -1,4 +1,4 @@
-module ddosify.com/hammer
+module go.ddosify.com/ddosify
 
 go 1.17
 

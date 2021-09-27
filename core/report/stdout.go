@@ -27,10 +27,10 @@ import (
 	"sync"
 	"time"
 
-	"ddosify.com/hammer/core/types"
-	"ddosify.com/hammer/core/util"
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
+	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 type stdout struct {

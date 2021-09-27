@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"strings"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 // Requester is the interface that abstracts different protocols' request sending implementations.

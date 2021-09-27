@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 type timescale struct {

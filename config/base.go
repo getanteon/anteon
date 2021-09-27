@@ -27,8 +27,8 @@ import (
 	"os"
 	"strings"
 
-	"ddosify.com/hammer/core/types"
-	"ddosify.com/hammer/core/util"
+	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 const (

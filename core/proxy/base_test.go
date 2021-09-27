@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"testing"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 var proxyStrategiesStructMap = map[string]reflect.Type{

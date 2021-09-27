@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ddosify.com/hammer/core/types"
+	"go.ddosify.com/ddosify/core/types"
 )
 
 // ReportService is the interface that abstracts different report implementations.
