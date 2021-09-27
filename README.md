@@ -35,6 +35,7 @@ docker run -it --rm --name ddosify ddosify/ddosify
 - The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
 - The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 - By default, the script installs the latest version of `ddosify`.
+- If you have problems, check [common issues](#common-issues)
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/main/scripts/install.sh | sh
@@ -221,6 +222,23 @@ There is an example config file at [config_examples/config.json](/config_example
             "disable-redirect": true         // Default false
         }
         ```
+
+## Common Issues
+
+### macOS Security Issue
+
+```
+"ddosify" can’t be opened because Apple cannot check it for malicious software.
+```
+
+- Open `/usr/local/bin`
+```bash
+open /usr/local/bin
+```
+
+- Right click `ddosify` and select Open
+- Select Open
+- Close the opened terminal
 
 ## License
 
