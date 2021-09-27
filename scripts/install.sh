@@ -17,11 +17,6 @@ uname_arch() {
 
 uname_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
-  case "$os" in
-    cygwin_nt*) os="windows" ;;
-    mingw*) os="windows" ;;
-    msys_nt*) os="windows" ;;
-  esac
   echo "$os"
 }
 
@@ -29,7 +24,7 @@ uname_os() {
 GITHUB_OWNER="ddosify"
 GITHUB_REPO="ddosify"
 TAG="latest"
-INSTALL_DIR="/usr/bin/"
+INSTALL_DIR="/usr/local/bin/"
 ARCH=$(uname_arch)
 OS=$(uname_os)
 PLATFORM="${OS}/${ARCH}"
@@ -57,10 +52,6 @@ if [ ! -f $tmpfolder/$GITHUB_REPO ]; then
 fi
 
 binary=$tmpfolder/$GITHUB_REPO
-
-if [ "$OS" = "windows" ]; then
-  binary="${binary}.exe"
-fi
 echo "Installing $GITHUB_REPO to $INSTALL_DIR"
 sudo install "$binary" $INSTALL_DIR
 echo "Installed $GITHUB_REPO to $INSTALL_DIR"

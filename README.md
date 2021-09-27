@@ -32,12 +32,12 @@ docker run -it --rm --name ddosify ddosify/ddosify
 ```
 ### Using the convenience script (macOS and Linux)
 
-- The script requires root or sudo privileges to move ddosify binary to `/usr/bin`.
+- The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
 - The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 - By default, the script installs the latest version of `ddosify`.
 
 ```bash
-curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/main/scripts/install.sh | sh
 ```
 
 ### Go install from source (macOS, Linux, Windows)
@@ -221,3 +221,7 @@ There is an example config file at [config_examples/config.json](/config_example
             "disable-redirect": true         // Default false
         }
         ```
+
+## License
+
+Licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
