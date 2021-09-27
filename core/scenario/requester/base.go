@@ -36,7 +36,7 @@ type Requester interface {
 	Send() *types.ResponseItem
 }
 
-// Factory method of the Requester.
+// NewRequester is the factory method of the Requester.
 func NewRequester(s types.ScenarioItem) (requester Requester, err error) {
 	if strings.EqualFold(s.Protocol, types.ProtocolHTTP) ||
 		strings.EqualFold(s.Protocol, types.ProtocolHTTPS) {

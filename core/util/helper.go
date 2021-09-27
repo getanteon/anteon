@@ -29,7 +29,7 @@ import (
 	validator "github.com/asaskevich/govalidator"
 )
 
-// Checks if the given string is in the given list of strings
+// StringInSlice checks if the given string is in the given list of strings
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -39,7 +39,7 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
-// Checks if the system is running for tests.
+// IsSystemInTestMode checks if the system is running for tests.
 func IsSystemInTestMode() bool {
 	for _, arg := range os.Args {
 		if strings.HasPrefix(arg, "-test.") {
@@ -49,7 +49,7 @@ func IsSystemInTestMode() bool {
 	return false
 }
 
-// Converts the given str to *url.URL.
+// StrToURL creates *url.URL from the given parameters.
 // If the str does not have a Scheme segment then defaultProtocol parameter is used as a Scheme.
 // Returns error if the given str is not a URL.
 func StrToURL(defaultProtocol string, str string) (*url.URL, error) {

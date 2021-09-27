@@ -35,7 +35,7 @@ type ReportService interface {
 	Report()
 }
 
-// Factory method of the ProxyService.
+// NewReportService is the factory method of the ProxyService.
 // Available strategies are in types.SupportedOutputs.
 func NewReportService(s string) (service ReportService, err error) {
 	if strings.EqualFold(s, types.OutputTypeStdout) {

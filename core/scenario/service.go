@@ -37,12 +37,12 @@ type ScenarioService struct {
 	clients map[*url.URL][]scenarioItemRequester
 }
 
-// Constructor of the ScenarioService.
+// NewScenarioService is the constructor of the ScenarioService.
 func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
 }
 
-// Initialize the ScenarioService.clients with the given types.Scenario and proxies.
+// Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control to the life of each request.
 func (ss *ScenarioService) Init(ctx context.Context, s types.Scenario, proxies []*url.URL) (err error) {
 	ss.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
@@ -65,7 +65,7 @@ func (ss *ScenarioService) Init(ctx context.Context, s types.Scenario, proxies [
 	return
 }
 
-// Executes the scenario for the given proxy.
+// Do executes the scenario for the given proxy.
 // Returns "types.Response" filled by the requester of the given Proxy
 // Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
 func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {

@@ -38,7 +38,7 @@ type ProxyService interface {
 	GetProxyCountry(*url.URL) string
 }
 
-// Factory method of the ProxyService.
+// NewProxyService is the factory method of the ProxyService.
 // Available proxy strategies are in types.AvailableProxyStrategies.
 func NewProxyService(s string) (service ProxyService, err error) {
 	if strings.EqualFold(s, types.ProxyTypeSingle) {

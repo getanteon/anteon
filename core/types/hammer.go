@@ -27,6 +27,7 @@ import (
 	"go.ddosify.com/ddosify/core/util"
 )
 
+// Constants for Hammer field values
 const (
 	// Constants of the Load Types
 	LoadTypeLinear      = "linear"
@@ -81,7 +82,7 @@ type Hammer struct {
 
 }
 
-// Validates attack metadata and executes the validation methods of the services.
+// Validate validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
 	if err := h.Proxy.validate(); err != nil {
 		return err

@@ -11,6 +11,6 @@ linters-settings:
     # tab width in spaces. Default to 1.
     tab-width: 1
   golint:
-    min-confidence: 0
+    min-confidence: 0.85
   misspell:
     locale: US

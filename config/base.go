@@ -31,8 +31,8 @@ import (
 	"go.ddosify.com/ddosify/core/util"
 )
 
+// Costants of the Supported Config Types
 const (
-	// Costants of the Supported Config Types
 	ConfigTypeJson    = "jsonReader"
 )
 
@@ -44,7 +44,7 @@ type ConfigReader interface {
 	CreateHammer() (types.Hammer, error)
 }
 
-// Factory method of the ConfigReader.
+// NewConfigReader is the factory method of the ConfigReader.
 func NewConfigReader(path string, configType string) (reader ConfigReader, err error) {
 	if !util.StringInSlice(configType, availableConfigTypes) {
 		return nil, fmt.Errorf("unsupported config type %s", configType)

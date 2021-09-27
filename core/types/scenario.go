@@ -27,6 +27,7 @@ import (
 	"go.ddosify.com/ddosify/core/util"
 )
 
+// Constants for Scenario field values
 const (
 	// Constants of the Protocol types
 	ProtocolHTTP  = "HTTP"
@@ -102,7 +103,7 @@ type ScenarioItem struct {
 	Custom map[string]interface{}
 }
 
-// This struct should be able to include all necessary authentication realated data for supportedAuthentications.
+// Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.
 type Auth struct {
 	Type     string
 	Username string
