@@ -3,8 +3,6 @@
         width="336px" /><br />
     Ddosify - High-performance load testing tool
 </h1>
-<p align="center">Ddosify is a multi location based load testing and DDOS attack simulation tool written in Golang. 
-</p>
 
 <p align="center">
     <a href="https://github.com/create-go-app/cli/releases" target="_blank"><img src="https://img.shields.io/badge/version-v0.0.1-orange?style=for-the-badge&logo=none" alt="ddosify version" /></a>&nbsp;
@@ -25,7 +23,7 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify and as a downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 
 ### Docker
 
@@ -35,8 +33,8 @@ docker run -it --rm --name ddosify ddosify/ddosify
 ### Using the convenience script (macOS and Linux)
 
 - The script requires root or sudo privileges to move ddosify binary to `/usr/bin`.
-- The script attempts to detect your operating system (macos or linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
-- By default, the scripts installs the latest version of `ddosify`.
+- The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, x8664, i386) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+- By default, the script installs the latest version of `ddosify`.
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
@@ -49,7 +47,7 @@ go install -v github.com/ddosify/ddosify@latest
 ```
 
 ## Easy Start
-This section aims to show you how to easily use Ddosify without deep dive into its details.
+This section aims to show you how to use Ddosify without deep dive into its details easily.
     
 1. ### Simple load test
 
@@ -151,7 +149,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `request_count` *optional*
 
-    This is the equivalent of the `-n` flag. The difference is that if you have multiple steps in your scenario then this value represents the iteration count of the steps.
+    This is the equivalent of the `-n` flag. The difference is that if you have multiple steps in your scenario, this value represents the iteration count of the steps.
 
 - `load_type` *optional*
 
@@ -171,7 +169,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `steps` *mandatory*
 
-    This parameter lets you create your own scenario. Ddosify runs the provided steps respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
+    This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
     
         Details of each parameter for a step;
     - `id` *mandatory*
