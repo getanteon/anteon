@@ -1,13 +1,12 @@
 <h1 align="center">
-    <img src="assets/ddosify-logo.svg"
-        width="336px" /><br />
+    <img src="assets/ddosify-logo.svg" alt="Ddosify logo" width="336px" /><br />
     Ddosify - High-performance load testing tool
 </h1>
 
 <p align="center">
     <a href="https://github.com/create-go-app/cli/releases" target="_blank"><img src="https://img.shields.io/badge/version-v0.0.1-orange?style=for-the-badge&logo=none" alt="ddosify version" /></a>&nbsp;
     <a href="https://pkg.go.dev/github.com/create-go-app/cli/v3?tab=doc" target="_blank"><img src="https://img.shields.io/badge/Go-1.17+-00ADD8?style=for-the-badge&logo=go" alt="go version" /></a>&nbsp;
-    <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/badge/Go_report-A+-success?style=for-the-badge&logo=none" alt="go report" /></a>&nbsp;
+    <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/ddosify/ddosify?style=for-the-badge&logo=none" alt="go report" /></a>&nbsp;
     <a href="https://github.com/ddosify/ddosify/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="go report" /></a>
 </p>
 
@@ -44,7 +43,7 @@ curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/inst
 ### Go install from source (macOS, Linux, Windows)
 
 ```bash
-go install -v github.com/ddosify/ddosify@latest
+go install -v go.ddosify.com/ddosify@latest
 ```
 
 ## Easy Start
