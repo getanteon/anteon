@@ -35,6 +35,7 @@ docker run -it --rm --name ddosify ddosify/ddosify
 - The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, amd64) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 - By default, the script installs the latest version of `ddosify`.
 - If you have problems, check [common issues](#common-issues)
+- Required packages: `curl` and `sudo`
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
