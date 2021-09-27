@@ -8,9 +8,9 @@ uname_arch() {
     i686) arch="386" ;;
     i386) arch="386" ;;
     aarch64) arch="arm64" ;;
-    armv5*) arch="armv5" ;;
-    armv6*) arch="armv6" ;;
-    armv7*) arch="armv7" ;;
+    armv5*) arch="armvx" ;;
+    armv6*) arch="armvx" ;;
+    armv7*) arch="armvx" ;;
   esac
   echo ${arch}
 }
