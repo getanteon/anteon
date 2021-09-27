@@ -8,7 +8,7 @@
     <a href="https://github.com/create-go-app/cli/releases" target="_blank"><img src="https://img.shields.io/badge/version-v0.0.1-orange?style=for-the-badge&logo=none" alt="ddosify version" /></a>&nbsp;
     <a href="https://pkg.go.dev/github.com/create-go-app/cli/v3?tab=doc" target="_blank"><img src="https://img.shields.io/badge/Go-1.17+-00ADD8?style=for-the-badge&logo=go" alt="go version" /></a>&nbsp;
     <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/badge/Go_report-A+-success?style=for-the-badge&logo=none" alt="go report" /></a>&nbsp;
-    <img src="https://img.shields.io/github/license/ddosify/ddosify?style=for-the-badge&logo=none" alt="license" />
+    <a href="https://github.com/ddosify/ddosify/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/ddosify/ddosify?style=for-the-badge&logo=none" alt="go report" /></a>
 </p>
 
 <img src="assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start"/>
@@ -23,7 +23,7 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify) and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
 
 ### Docker
 
