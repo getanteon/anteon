@@ -17,6 +17,9 @@ uname_arch() {
 
 uname_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  case $os in
+    darwin) os="macos" ;;
+  esac
   echo "$os"
 }
 
@@ -34,7 +37,7 @@ VERSION=$(curl $GITHUB_RELEASES_PAGE/$TAG -sL -H 'Accept:application/json' | tr 
 NAME=${GITHUB_REPO}_${VERSION}_${OS}_${ARCH}
 
 TARBALL=${NAME}.tar.gz
-TARBALL_URL=${GITHUB_RELEASES_PAGE}/download/${VERSION}/${TARBALL}
+TARBALL_URL=${GITHUB_RELEASES_PAGE}/download/v${VERSION}/${TARBALL}
 
 echo "Downloading latest $GITHUB_REPO binary from $TARBALL_URL"
 tmpfolder=$(mktemp -d)
