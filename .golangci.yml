@@ -1,6 +1,8 @@
 linters:
   enable:
     - lll
+    - golint
+    - misspell
 linters-settings:
   lll:
     # max line length, lines longer will be reported. Default is 120.
@@ -8,3 +10,7 @@ linters-settings:
     line-length: 120
     # tab width in spaces. Default to 1.
     tab-width: 1
+  golint:
+    min-confidence: 0
+  misspell:
+    locale: US
