@@ -14,6 +14,22 @@ builds:
       - amd64
       - arm
       - arm64
+    goarm:
+      - 5
+      - 6
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: darwin
+        goarch: arm
+        goarm: 7
+      - goos: darwin
+        goarch: arm
+        goarm: 6
+      - goos: darwin
+        goarch: arm
+        goarm: 5
 archives:
   - replacements:
       darwin: macos
