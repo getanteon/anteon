@@ -28,13 +28,16 @@ import (
 )
 
 const (
+	// Constants of the Load Types
 	LoadTypeLinear      = "linear"
 	LoadTypeIncremental = "incremental"
 	LoadTypeWaved       = "waved"
 
+	// Constants of the Output Types
 	OutputTypeStdout    = "stdout"
 	OutputTypeTimescale = "timescale"
 
+	// To distinguish the received requests on the server side we are adding this special User-Agent to all requests
 	DdosifyUserAgent = "DdosifyHammer"
 
 	// Default Values
@@ -48,8 +51,12 @@ const (
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
+
+// SupportedOutputs should be updated whenever a new report.ReportService interface implemented
 var SupportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
+// Hammer is like a lighter for the engine.
+// It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
 	// Total request count
 	TotalReqCount int
@@ -74,6 +81,7 @@ type Hammer struct {
 
 }
 
+// Validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
 	if err := h.Proxy.validate(); err != nil {
 		return err

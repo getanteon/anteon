@@ -50,5 +50,5 @@ func (sp *singleProxyStrategy) ReportProxy(addr *url.URL, reason string) *url.UR
 }
 
 func (sp *singleProxyStrategy) GetProxyCountry(addr *url.URL) string {
-	return "unkown"
+	return "unknown"
 }

@@ -28,6 +28,8 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+// ProvideService is the interface that abstracts different proxy implementations.
+// Strategy field in types.Proxy determines which implementation to use.
 type ProxyService interface {
 	Init(types.Proxy) error
 	GetAll() []*url.URL
@@ -36,6 +38,8 @@ type ProxyService interface {
 	GetProxyCountry(*url.URL) string
 }
 
+// Factory method of the ProxyService.
+// Available proxy strategies are in types.AvailableProxyStrategies.
 func NewProxyService(s string) (service ProxyService, err error) {
 	if strings.EqualFold(s, types.ProxyTypeSingle) {
 		service = &singleProxyStrategy{}

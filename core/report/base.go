@@ -27,6 +27,7 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+// ReportService is the interface that abstracts different report implementations.
 type ReportService interface {
 	DoneChan() <-chan struct{}
 	Init() error
@@ -34,6 +35,8 @@ type ReportService interface {
 	Report()
 }
 
+// Factory method of the ProxyService.
+// Available strategies are in types.SupportedOutputs.
 func NewReportService(s string) (service ReportService, err error) {
 	if strings.EqualFold(s, types.OutputTypeStdout) {
 		service = &stdout{}

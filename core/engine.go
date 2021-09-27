@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	// interval in milisecond
+	// interval in millisecond
 	tickerInterval = 100
 )
 
@@ -55,6 +55,9 @@ type engine struct {
 	ctx context.Context
 }
 
+// Constructor of the engine.
+// Hammer is using for initializing the engine itself and its' external services.
+// Engine can be stopped by canceling the given ctx.
 func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	err = h.Validate()
 	if err != nil {
@@ -89,7 +92,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.hammer.Scenario, e.proxyService.GetAll(), e.ctx); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll()); err != nil {
 		return
 	}
 

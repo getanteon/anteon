@@ -93,19 +93,19 @@ func (j *jsonReader) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *jsonReader) init(jsonByte []byte) (err error) {
-	err = json.Unmarshal(jsonByte, &c)
+func (j *jsonReader) init(jsonByte []byte) (err error) {
+	err = json.Unmarshal(jsonByte, &j)
 	if err != nil {
 		return
 	}
 	return
 }
 
-func (c *jsonReader) CreateHammer() (h types.Hammer, err error) {
+func (j *jsonReader) CreateHammer() (h types.Hammer, err error) {
 	// Scenario
 	s := types.Scenario{}
 	var si types.ScenarioItem
-	for _, step := range c.Steps {
+	for _, step := range j.Steps {
 		si, err = stepToScenarioItem(step)
 		if err != nil {
 			return
@@ -116,8 +116,8 @@ func (c *jsonReader) CreateHammer() (h types.Hammer, err error) {
 
 	// Proxy
 	var proxyURL *url.URL
-	if c.Proxy != "" {
-		proxyURL, err = url.Parse(c.Proxy)
+	if j.Proxy != "" {
+		proxyURL, err = url.Parse(j.Proxy)
 		if err != nil {
 			return
 		}
@@ -129,12 +129,12 @@ func (c *jsonReader) CreateHammer() (h types.Hammer, err error) {
 
 	// Hammer
 	h = types.Hammer{
-		TotalReqCount:     c.ReqCount,
-		LoadType:          strings.ToLower(c.LoadType),
-		TestDuration:      c.Duration,
+		TotalReqCount:     j.ReqCount,
+		LoadType:          strings.ToLower(j.LoadType),
+		TestDuration:      j.Duration,
 		Scenario:          s,
 		Proxy:             p,
-		ReportDestination: c.Output,
+		ReportDestination: j.Output,
 	}
 	return
 }
@@ -158,7 +158,7 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	}
 
 	// Protocol & URL
-	url, err := util.StrToUrl(s.Protocol, s.Url)
+	url, err := util.StrToURL(s.Protocol, s.Url)
 	if err != nil {
 		return types.ScenarioItem{}, err
 	}

@@ -29,11 +29,14 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+// Requester is the interface that abstracts different protocols' request sending implementations.
+// Protocol field in the types.ScenarioItem determines which requester implementation to use.
 type Requester interface {
-	Init(types.ScenarioItem, *url.URL, context.Context) error
+	Init(context.Context, types.ScenarioItem, *url.URL) error
 	Send() *types.ResponseItem
 }
 
+// Factory method of the Requester.
 func NewRequester(s types.ScenarioItem) (requester Requester, err error) {
 	if strings.EqualFold(s.Protocol, types.ProtocolHTTP) ||
 		strings.EqualFold(s.Protocol, types.ProtocolHTTPS) {

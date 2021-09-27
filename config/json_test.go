@@ -55,7 +55,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 	h, err := jsonReader.CreateHammer()
 
 	if err != nil {
-		t.Errorf("TestCreateHammerDefaultValues error occured: %v", err)
+		t.Errorf("TestCreateHammerDefaultValues error occurred: %v", err)
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
@@ -107,7 +107,7 @@ func TestCreateHammer(t *testing.T) {
 	h, err := jsonReader.CreateHammer()
 
 	if err != nil {
-		t.Errorf("TestCreateHammer error occured: %v", err)
+		t.Errorf("TestCreateHammer error occurred: %v", err)
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
@@ -122,7 +122,7 @@ func TestCreateHammerPayload(t *testing.T) {
 	h, err := jsonReader.CreateHammer()
 
 	if err != nil {
-		t.Errorf("TestCreateHammerPayload error occured: %v", err)
+		t.Errorf("TestCreateHammerPayload error occurred: %v", err)
 	}
 
 	steps := h.Scenario.Scenario
@@ -149,7 +149,7 @@ func TestCreateHammerAuth(t *testing.T) {
 
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
-		t.Errorf("TestCreateHammerAuth error occured: %v", err)
+		t.Errorf("TestCreateHammerAuth error occurred: %v", err)
 	}
 
 	steps := h.Scenario.Scenario
@@ -169,7 +169,7 @@ func TestCreateHammerProtocol(t *testing.T) {
 
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
-		t.Errorf("TestCreateHammerProtocol error occured: %v", err)
+		t.Errorf("TestCreateHammerProtocol error occurred: %v", err)
 	}
 
 	steps := h.Scenario.Scenario
@@ -180,7 +180,7 @@ func TestCreateHammerProtocol(t *testing.T) {
 
 		url, err := url.Parse(steps[i].URL)
 		if err != nil {
-			t.Errorf("TestCreateHammerProtocol-SchemeCheck error occured: %v", err)
+			t.Errorf("TestCreateHammerProtocol-SchemeCheck error occurred: %v", err)
 		}
 
 		if strings.ToUpper(url.Scheme) != expectedProtocols[i] {
@@ -195,6 +195,6 @@ func TestCreateHammerInvalidTarget(t *testing.T) {
 
 	_, err := jsonReader.CreateHammer()
 	if err == nil {
-		t.Errorf("TestCreateHammerProtocol error occured")
+		t.Errorf("TestCreateHammerProtocol error occurred")
 	}
 }

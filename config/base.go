@@ -32,16 +32,19 @@ import (
 )
 
 const (
+	// Costants of the Supported Config Types
 	ConfigTypeJson    = "jsonReader"
 )
 
 var availableConfigTypes = []string{ConfigTypeJson}
 
+// ConfigReader is the interface that abstracts different config reader implementations.
 type ConfigReader interface {
 	init([]byte) error
 	CreateHammer() (types.Hammer, error)
 }
 
+// Factory method of the ConfigReader.
 func NewConfigReader(path string, configType string) (reader ConfigReader, err error) {
 	if !util.StringInSlice(configType, availableConfigTypes) {
 		return nil, fmt.Errorf("unsupported config type %s", configType)

@@ -28,11 +28,14 @@ import (
 )
 
 const (
+	// Constants of the proxy strategy types
 	ProxyTypeSingle        = "single"
 )
 
+// AvailableProxyStrategies should be updated whenever a new proxy.ProxyService interface implemented
 var AvailableProxyStrategies = [...]string{ProxyTypeSingle}
 
+// Proxy struct is used for initializing the proxy.ProxyService implementations.
 type Proxy struct {
 	// Stragy of the proxy usage.
 	Strategy string
@@ -45,5 +48,6 @@ func (p *Proxy) validate() error {
 	if !util.StringInSlice(p.Strategy, AvailableProxyStrategies[:]) {
 		return fmt.Errorf("Unsupported Proxy Strategy: %s", p.Strategy)
 	}
+
 	return nil
 }

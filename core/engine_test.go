@@ -86,7 +86,7 @@ func TestCreateEngine(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Error occured %v", err)
+					t.Errorf("Error occurred %v", err)
 				}
 
 				if e.proxyService == nil {
@@ -172,13 +172,13 @@ func TestRequestCount(t *testing.T) {
 
 			e, err := NewEngine(context.TODO(), h)
 			if err != nil {
-				t.Errorf("TestRequestCount error occured %v", err)
+				t.Errorf("TestRequestCount error occurred %v", err)
 			}
 
 			// Act
 			err = e.Init()
 			if err != nil {
-				t.Errorf("TestRequestCount error occured %v", err)
+				t.Errorf("TestRequestCount error occurred %v", err)
 			}
 
 			e.Start()
@@ -198,12 +198,12 @@ func TestRequestCount(t *testing.T) {
 				}
 				expected := arraySum(test.expectedReqArr)
 				if totalRecieved != expected {
-					t.Errorf("Poor Machine Expected: %v, Recieved: %v", totalRecieved, expected)
+					t.Errorf("Poor Machine Expected: %v, Received: %v", totalRecieved, expected)
 				}
 			} else {
 				for i, v := range test.expectedReqArr {
 					if timeReqMap[i] > v+test.delta || timeReqMap[i] < v-test.delta {
-						t.Errorf("Expected: %v, Recieved: %v, Tick: %v", v, timeReqMap[i], i)
+						t.Errorf("Expected: %v, Received: %v, Tick: %v", v, timeReqMap[i], i)
 					}
 				}
 			}
@@ -246,27 +246,27 @@ func TestRequestData(t *testing.T) {
 	// Act
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
-		t.Errorf("TestRequestData error occured %v", err)
+		t.Errorf("TestRequestData error occurred %v", err)
 	}
 
 	err = e.Init()
 	if err != nil {
-		t.Errorf("TestRequestData error occured %v", err)
+		t.Errorf("TestRequestData error occurred %v", err)
 	}
 
 	e.Start()
 
 	// Assert
 	if uri != "/get_test_data" {
-		t.Errorf("invalid uri recieved: %s", uri)
+		t.Errorf("invalid uri received: %s", uri)
 	}
 
 	if protocol != "HTTP/1.1" {
-		t.Errorf("invalid protocol recieved: %v", protocol)
+		t.Errorf("invalid protocol received: %v", protocol)
 	}
 
 	if method != "GET" {
-		t.Errorf("invalid method recieved: %v", method)
+		t.Errorf("invalid method received: %v", method)
 	}
 
 	if header1 != "Test1Value" {
@@ -278,7 +278,7 @@ func TestRequestData(t *testing.T) {
 	}
 
 	if body != "Body content" {
-		t.Errorf("invalid body recieved: %v", body)
+		t.Errorf("invalid body received: %v", body)
 	}
 }
 
@@ -329,12 +329,12 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	// Act
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
-		t.Errorf("TestRequestDataForMultiScenarioStep error occured %v", err)
+		t.Errorf("TestRequestDataForMultiScenarioStep error occurred %v", err)
 	}
 
 	err = e.Init()
 	if err != nil {
-		t.Errorf("TestRequestDataForMultiScenarioStep error occured %v", err)
+		t.Errorf("TestRequestDataForMultiScenarioStep error occurred %v", err)
 	}
 
 	e.Start()
@@ -405,12 +405,12 @@ func TestRequestTimeout(t *testing.T) {
 
 			e, err := NewEngine(context.TODO(), h)
 			if err != nil {
-				t.Errorf("TestRequestTimeout error occured %v", err)
+				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
 
 			err = e.Init()
 			if err != nil {
-				t.Errorf("TestRequestTimeout error occured %v", err)
+				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
 
 			e.Start()

@@ -47,13 +47,13 @@ type httpRequester struct {
 }
 
 // Create a client with scenarioItem and use same client for each request
-func (h *httpRequester) Init(s types.ScenarioItem, proxyAddr *url.URL, ctx context.Context) (err error) {
+func (h *httpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
 
 	// TlsConfig
-	tlsConfig := h.initTlsConfig()
+	tlsConfig := h.initTLSConfig()
 
 	// Transport segment
 	tr := h.initTransport(tlsConfig)
@@ -123,7 +123,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		ContentLenth:   contentLength,
 		Err:            requestErr,
 		Custom: map[string]interface{}{
-			"dnsDuration":           durations.getDnsDur(),
+			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),
 			"reqDuration":           durations.getReqDur(),
 			"resDuration":           durations.getResDur(),
@@ -131,7 +131,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
-		res.Custom["tlsDuration"] = durations.getTlsDur()
+		res.Custom["tlsDuration"] = durations.getTLSDur()
 	}
 
 	return
@@ -198,7 +198,7 @@ func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	return tr
 }
 
-func (h *httpRequester) initTlsConfig() *tls.Config {
+func (h *httpRequester) initTLSConfig() *tls.Config {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
@@ -268,7 +268,7 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 			m.Lock()
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if dnsInfo.Err == nil {
-				duration.setDnsDur(time.Since(dnsStart))
+				duration.setDNSDur(time.Since(dnsStart))
 			}
 			m.Unlock()
 		},
@@ -298,7 +298,7 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 			m.Lock()
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if e == nil {
-				duration.setTlsDur(time.Since(tlsStart))
+				duration.setTLSDur(time.Since(tlsStart))
 			}
 			m.Unlock()
 		},
@@ -360,7 +360,7 @@ func (d *duration) setResStartTime(t time.Time) {
 	}
 }
 
-func (d *duration) setDnsDur(t time.Duration) {
+func (d *duration) setDNSDur(t time.Duration) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.dnsDur == 0 {
@@ -368,13 +368,13 @@ func (d *duration) setDnsDur(t time.Duration) {
 	}
 }
 
-func (d *duration) getDnsDur() time.Duration {
+func (d *duration) getDNSDur() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.dnsDur
 }
 
-func (d *duration) setTlsDur(t time.Duration) {
+func (d *duration) setTLSDur(t time.Duration) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.tlsDur == 0 {
@@ -382,7 +382,7 @@ func (d *duration) setTlsDur(t time.Duration) {
 	}
 }
 
-func (d *duration) getTlsDur() time.Duration {
+func (d *duration) getTLSDur() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.tlsDur

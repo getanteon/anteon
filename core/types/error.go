@@ -22,14 +22,13 @@ package types
 
 import "fmt"
 
+// Constants for custom error types and reasons
 const (
-	// Type
-	ErrorProxy  = "proxyError"
-	ErrorConn   = "connectionError"
-	ErrorUnkown = "unkownError"
-
-	// Errors for created intentionally
-	ErrorIntented = "intentedError"
+	// Types
+	ErrorProxy    = "proxyError"
+	ErrorConn     = "connectionError"
+	ErrorUnkown   = "unkownError"
+	ErrorIntented = "intentedError" // Errors for created intentionally
 
 	// Reasons
 	ReasonProxyFailed  = "proxy connection refused"
@@ -43,11 +42,13 @@ const (
 	ReasonCtxCanceled = "context canceled"
 )
 
+// RequestError is our custom error struct created in the requester.Requester implementations.
 type RequestError struct {
 	Type   string
 	Reason string
 }
 
+// Custom error message method of RequestError
 func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
 }

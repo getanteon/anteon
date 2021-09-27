@@ -28,12 +28,15 @@ import (
 )
 
 const (
+	// Constants of the Protocol types
 	ProtocolHTTP  = "HTTP"
 	ProtocolHTTPS = "HTTPS"
 
+	// Constants of the Auth types
 	AuthHttpBasic = "basic"
 )
 
+// SupportedProtocols should be updated whenever a new requester.Requester interface implemented
 var SupportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
 var supportedProtocolMethods = map[string][]string{
 	ProtocolHTTP: {
@@ -54,6 +57,7 @@ var supportedAuthentications = map[string][]string{
 	},
 }
 
+// Scenario struct contains a list of ScenarioItem so scenario.ScenarioService can execute the scenario step by step.
 type Scenario struct {
 	Scenario []ScenarioItem
 }
@@ -67,6 +71,8 @@ func (s *Scenario) validate() error {
 	return nil
 }
 
+// ScenarioItem represents one step of a Scenario.
+// This struct should be able to include all necessary data in a network packet for SupportedProtocols.
 type ScenarioItem struct {
 	// ID of the Item. Should be given by the client.
 	ID int16
@@ -77,7 +83,7 @@ type ScenarioItem struct {
 	// Request Method
 	Method string
 
-	// Authenticaiton
+	// Authentication
 	Auth Auth
 
 	// Request Headers
@@ -96,6 +102,7 @@ type ScenarioItem struct {
 	Custom map[string]interface{}
 }
 
+// This struct should be able to include all necessary authentication realated data for supportedAuthentications.
 type Auth struct {
 	Type     string
 	Username string

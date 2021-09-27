@@ -194,7 +194,7 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	// Protocol & URL
-	url, err := util.StrToUrl(*protocol, *target)
+	url, err := util.StrToURL(*protocol, *target)
 	if err != nil {
 		return
 	}

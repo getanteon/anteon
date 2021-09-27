@@ -27,7 +27,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//Equivalent to Scenario. Each Scenario has a Response after request is done.
+// Response is corresponding to Scenario. Each Scenario has a Response after the request is done.
 type Response struct {
 	// First request start time for the Scenario
 	StartTime time.Time
@@ -36,7 +36,7 @@ type Response struct {
 	ResponseItems []*ResponseItem
 }
 
-//Equivalent to ScenarioItem.
+// ResponseItem is corresponding to ScenarioItem.
 type ResponseItem struct {
 	// ID of the ScenarioItem
 	ScenarioItemID int16
@@ -50,13 +50,13 @@ type ResponseItem struct {
 	// Time of the request call.
 	RequestTime time.Time
 
-	// Total duration. From request sending to full response recieving.
+	// Total duration. From request sending to full response receiving.
 	Duration time.Duration
 
 	// Response content length
 	ContentLenth int64
 
-	// Error occured at request time.
+	// Error occurred at request time.
 	Err RequestError
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP

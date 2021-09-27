@@ -29,6 +29,7 @@ import (
 	"ddosify.com/hammer/core/types"
 )
 
+// ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
 type ScenarioService struct {
 	// Client map structure [proxy_addr][]scenarioItemRequester
 	// Each proxy represents a client.
@@ -36,11 +37,14 @@ type ScenarioService struct {
 	clients map[*url.URL][]scenarioItemRequester
 }
 
+// Constructor of the ScenarioService.
 func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
 }
 
-func (ss *ScenarioService) Init(s types.Scenario, proxies []*url.URL, ctx context.Context) (err error) {
+// Initialize the ScenarioService.clients with the given types.Scenario and proxies.
+// Passes the given ctx to the underlying requestor so we are able to control to the life of each request.
+func (ss *ScenarioService) Init(ctx context.Context, s types.Scenario, proxies []*url.URL) (err error) {
 	ss.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
 		ss.clients[p] = []scenarioItemRequester{}
@@ -52,7 +56,7 @@ func (ss *ScenarioService) Init(s types.Scenario, proxies []*url.URL, ctx contex
 			}
 			ss.clients[p] = append(ss.clients[p], scenarioItemRequester{scenarioItemID: si.ID, requester: r})
 
-			err = r.Init(si, p, ctx)
+			err = r.Init(ctx, si, p)
 			if err != nil {
 				return
 			}
@@ -61,6 +65,9 @@ func (ss *ScenarioService) Init(s types.Scenario, proxies []*url.URL, ctx contex
 	return
 }
 
+// Executes the scenario for the given proxy.
+// Returns "types.Response" filled by the requester of the given Proxy
+// Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
 func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {
 	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
 	response.StartTime = time.Now()
