@@ -35,7 +35,6 @@ archives:
       windows: windows
       386: 386
       amd64: amd64
-      armv6: armvx
     format_overrides:
       - goos: windows
         format: zip
