@@ -17,5 +17,6 @@ __debug*
 coverage.html
 main
 
+.devcontainer/
 dist/
 ddosify
