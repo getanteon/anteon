@@ -21,6 +21,7 @@ uname_os() {
 }
 
 
+
 GITHUB_OWNER="ddosify"
 GITHUB_REPO="ddosify"
 TAG="latest"
@@ -28,15 +29,14 @@ INSTALL_DIR="/usr/local/bin/"
 ARCH=$(uname_arch)
 OS=$(uname_os)
 PLATFORM="${OS}/${ARCH}"
-NAME=${GITHUB_REPO}_${OS}_${ARCH}
-TARBALL=${NAME}.tar.gz
 GITHUB_RELEASES_PAGE=https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases
-
 VERSION=$(curl $GITHUB_RELEASES_PAGE/$TAG -sL -H 'Accept:application/json' | tr -s '\n' ' ' | sed 's/.*"tag_name":"//' | sed 's/".*//')
+NAME=${GITHUB_REPO}_${VERSION}_${OS}_${ARCH}
+
+TARBALL=${NAME}.tar.gz
 TARBALL_URL=${GITHUB_RELEASES_PAGE}/download/${VERSION}/${TARBALL}
 
 echo "Downloading latest $GITHUB_REPO binary from $TARBALL_URL"
-
 tmpfolder=$(mktemp -d)
 $(curl $TARBALL_URL -sL -o $tmpfolder/$TARBALL)
 
