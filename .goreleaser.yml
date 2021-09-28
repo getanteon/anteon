@@ -51,3 +51,21 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+  - tap:
+      owner: ddosify
+      name: homebrew-tap
+    folder: Formula
+    homepage:  https://ddosify.com
+    description: High-performance load testing tool, written in Golang.
+    license: AGPL-3.0-only
+    test: |
+      system "#{bin}/ddosify --help"
+    dependencies:
+    - name: go
+      type: optional
+    install: |-
+      bin.install "ddosify"
+    commit_author:
+      name: ddosifyadmin
+      email: admin@ddosify.com
