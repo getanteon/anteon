@@ -1,16 +1,22 @@
 <h1 align="center">
-    <img src="assets/ddosify-logo.svg" alt="Ddosify logo" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo.svg" alt="Ddosify logo" width="336px" /><br />
     Ddosify - High-performance load testing tool
 </h1>
 
 <p align="center">
-    <a href="https://github.com/ddosify/ddosify/releases" target="_blank"><img src="https://img.shields.io/github/v/release/ddosify/ddosify?style=for-the-badge&logo=none&color=orange" alt="ddosify latest version" /></a>&nbsp;
+    <a href="https://github.com/ddosify/ddosify/releases" target="_blank"><img src="https://img.shields.io/github/v/release/ddosify/ddosify?style=for-the-badge&logo=github&color=orange" alt="ddosify latest version" /></a>&nbsp;
+    <a href="https://github.com/ddosify/ddosify/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/workflow/status/ddosify/ddosify/Test?style=for-the-badge&logo=github" alt="ddosify build result" /></a>&nbsp;
     <a href="https://pkg.go.dev/go.ddosify.com/ddosify" target="_blank"><img src="https://img.shields.io/github/go-mod/go-version/ddosify/ddosify?style=for-the-badge&logo=go" alt="golang version" /></a>&nbsp;
+    <a href="https://app.codecov.io/gh/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/codecov/c/github/ddosify/ddosify?style=for-the-badge&logo=none" alt="go coverage" /></a>&nbsp;
     <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/ddosify/ddosify?style=for-the-badge&logo=none" alt="go report" /></a>&nbsp;
-    <a href="https://github.com/ddosify/ddosify/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
+    <a href="https://github.com/ddosify/ddosify/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
 </p>
 
-<img src="assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start"/>
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start"  width="900px" />
+</p>
+
 
 ## Features
 :heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
@@ -105,7 +111,7 @@ ddosify -t target_site.com -l linear
 
 Result:
 
-![linear load](assets/linear.gif)
+![linear load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/linear.gif)
 
 *Note:* If the request count is too low for the given duration, the test might be finished earlier than you expect.
 
@@ -117,7 +123,7 @@ ddosify -t target_site.com -l incremental
 
 Result:
 
-![incremental load](assets/incremental.gif)
+![incremental load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/incremental.gif)
 
 
 #### Waved
@@ -128,7 +134,7 @@ ddosify -t target_site.com -l waved
 
 Result:
 
-![waved load](assets/waved.gif)
+![waved load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/waved.gif)
 
 
 ### Config File
