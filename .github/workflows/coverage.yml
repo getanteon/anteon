@@ -1,0 +1,30 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17.x
+
+    - name: Test
+      run: go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./... && go tool cover -func coverage.txt
+  
+    - uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.txt
+        name: codecov-ddosify # optional
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)
