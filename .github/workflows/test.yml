@@ -28,8 +28,10 @@ jobs:
     - name: Test
       run: go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./...
   
-  upload:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Upload coverage to Codecov
-      run: bash <(curl -s https://codecov.io/bash)
+    - uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.txt
+        name: codecov-ddosify # optional
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)
