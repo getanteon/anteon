@@ -53,7 +53,7 @@ changelog:
       - '^test:'
 dockers:
 - image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}'
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
   dockerfile: Dockerfile.release
   use: buildx
   build_flag_templates:
@@ -63,16 +63,20 @@ dockers:
   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
-  - "--platform=linux/amd64,linux/arm64"
-
-docker_manifests:
-- name_template: 'ddosify/ddosify:{{ .Tag }}'
-  image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}'
-- name_template: 'ddosify/ddosify:latest'
-  image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}'
-
+  - "--platform=linux/amd64"
+- image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
+  dockerfile: Dockerfile.release
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/arm64"
+  goarch: arm64
 brews:
   - tap:
       owner: ddosify
@@ -91,3 +95,13 @@ brews:
     commit_author:
       name: ddosifyadmin
       email: admin@ddosify.com
+
+docker_manifests:
+- name_template: 'ddosify/ddosify:{{ .Tag }}'
+  image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
+- name_template: 'ddosify/ddosify:latest'
+  image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
