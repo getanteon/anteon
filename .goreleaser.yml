@@ -51,6 +51,34 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+dockers:
+- image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
+  dockerfile: Dockerfile.release
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/amd64"
+- image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
+  dockerfile: Dockerfile.release
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/arm64"
+  goarch: arm64
+  extra_files:
+  - scripts/entrypoint.sh
 brews:
   - tap:
       owner: ddosify

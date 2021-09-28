@@ -1,0 +1,4 @@
+FROM alpine:3.14.2
+COPY ddosify /bin/
+
+ENTRYPOINT ["ddosify"]
