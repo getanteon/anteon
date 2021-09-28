@@ -95,3 +95,13 @@ brews:
     commit_author:
       name: ddosifyadmin
       email: admin@ddosify.com
+
+docker_manifests:
+- name_template: 'ddosify/ddosify:{{ .Tag }}'
+  image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
+- name_template: 'ddosify/ddosify:latest'
+  image_templates:
+  - 'ddosify/ddosify:{{ .Tag }}-amd64'
+  - 'ddosify/ddosify:{{ .Tag }}-arm64'
