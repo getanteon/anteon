@@ -85,7 +85,6 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
-  skip_push: true
 - image_templates:
   - 'ddosify/ddosify:{{ .Tag }}-arm64'
   dockerfile: Dockerfile.release
@@ -99,7 +98,6 @@ dockers:
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/arm64"
   goarch: arm64
-  skip_push: true
 
 docker_manifests:
 - name_template: 'ddosify/ddosify:{{ .Tag }}'
@@ -110,3 +108,16 @@ docker_manifests:
   image_templates:
   - 'ddosify/ddosify:{{ .Tag }}-amd64'
   - 'ddosify/ddosify:{{ .Tag }}-arm64'
+
+nfpms:
+  - file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    id: packages
+    homepage:  https://ddosify.com
+    description: High-performance load testing tool, written in Golang.
+    maintainer: Ddosify <admin@ddosify.com>
+    license: AGPL-3.0-only
+    vendor: Ddosify
+    formats:
+    - apk
+    - deb
+    - rpm
