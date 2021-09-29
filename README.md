@@ -28,13 +28,35 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify) and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+`ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows.
 
 ### Docker
 
 ```bash
-docker run -it --rm --name ddosify ddosify/ddosify
+docker run -it --rm ddosify/ddosify
 ```
+
+### Homebrew Tap (macOS and Linux)
+
+```bash
+brew install ddosify/tap/ddosify
+```
+
+### apk, deb, rpm packages
+
+```bash
+# For Redhat based (Fedora, CentOS, RHEL, etc.)
+rpm -i https://github.com/ddosify/ddosify/releases/download/v0.1.1/ddosify_amd64.rpm
+
+# For Debian based (Ubuntu, Linux Mint, etc.)
+wget https://github.com/ddosify/ddosify/releases/download/v0.1.1/ddosify_amd64.deb
+dpkg -i ddosify_amd64.deb
+
+# For Alpine
+wget https://github.com/ddosify/ddosify/releases/download/v0.1.1/ddosify_amd64.apk
+apk add --allow-untrusted ddosify_amd64.apk
+```
+
 ### Using the convenience script (macOS and Linux)
 
 - The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
