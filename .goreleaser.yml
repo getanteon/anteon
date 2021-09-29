@@ -64,6 +64,7 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
+  skip_push: true
 - image_templates:
   - 'ddosify/ddosify:{{ .Tag }}-arm64'
   dockerfile: Dockerfile.release
@@ -77,6 +78,7 @@ dockers:
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/arm64"
   goarch: arm64
+  skip_push: true
 brews:
   - tap:
       owner: ddosify
