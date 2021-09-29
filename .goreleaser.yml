@@ -51,6 +51,27 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+brews:
+  - tap:
+      owner: ddosify
+      name: homebrew-tap
+    folder: Formula
+    homepage:  https://ddosify.com
+    description: High-performance load testing tool, written in Golang.
+    license: AGPL-3.0-only
+    skip_upload: false
+    test: |
+      system "#{bin}/ddosify --help"
+    dependencies:
+    - name: go
+      type: optional
+    install: |-
+      bin.install "ddosify"
+    commit_author:
+      name: ddosifyadmin
+      email: admin@ddosify.com
+
 dockers:
 - image_templates:
   - 'ddosify/ddosify:{{ .Tag }}-amd64'
@@ -79,24 +100,6 @@ dockers:
   - "--platform=linux/arm64"
   goarch: arm64
   skip_push: true
-brews:
-  - tap:
-      owner: ddosify
-      name: homebrew-tap
-    folder: Formula
-    homepage:  https://ddosify.com
-    description: High-performance load testing tool, written in Golang.
-    license: AGPL-3.0-only
-    test: |
-      system "#{bin}/ddosify --help"
-    dependencies:
-    - name: go
-      type: optional
-    install: |-
-      bin.install "ddosify"
-    commit_author:
-      name: ddosifyadmin
-      email: admin@ddosify.com
 
 docker_manifests:
 - name_template: 'ddosify/ddosify:{{ .Tag }}'

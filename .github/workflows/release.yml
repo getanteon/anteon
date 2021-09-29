@@ -11,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_CLI_EXPERIMENTAL: "enabled"
     steps:
       -
         name: Checkout
@@ -18,10 +20,22 @@ jobs:
         with:
           fetch-depth: 0
       -
+        name: QEMU
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
         name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
+      -
+        name: Docker Hub Login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -31,4 +45,3 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          
