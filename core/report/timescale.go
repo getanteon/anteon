@@ -27,6 +27,10 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
+func init() {
+	AvailableOutputServices["timescale"] = &timescale{}
+}
+
 type timescale struct {
 	doneChan chan struct{}
 }

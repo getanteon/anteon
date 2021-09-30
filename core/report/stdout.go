@@ -33,6 +33,10 @@ import (
 	"go.ddosify.com/ddosify/core/util"
 )
 
+func init() {
+	AvailableOutputServices["stdout"] = &stdout{}
+}
+
 type stdout struct {
 	doneChan    chan struct{}
 	result      *result

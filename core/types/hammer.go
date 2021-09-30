@@ -53,9 +53,6 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
-// SupportedOutputs should be updated whenever a new report.ReportService interface implemented
-var SupportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
-
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
@@ -79,7 +76,6 @@ type Hammer struct {
 
 	// Destination of the results data.
 	ReportDestination string
-
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
@@ -92,10 +88,6 @@ func (h *Hammer) Validate() error {
 		return fmt.Errorf("scenario or target is empty")
 	} else if err := h.Scenario.validate(); err != nil {
 		return err
-	}
-
-	if !util.StringInSlice(h.ReportDestination, SupportedOutputs[:]) {
-		return fmt.Errorf("unsupported Report Destination: %s", h.ReportDestination)
 	}
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {

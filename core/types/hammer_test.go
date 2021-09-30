@@ -93,27 +93,6 @@ func TestHammerInValidAuth(t *testing.T) {
 	}
 }
 
-func TestHammerValidReportDestination(t *testing.T) {
-
-	for _, rd := range SupportedOutputs {
-		h := newDummyHammer()
-		h.ReportDestination = rd
-
-		if err := h.Validate(); err != nil {
-			t.Errorf("TestHammerValidReportDestination errored: %v", err)
-		}
-	}
-}
-
-func TestHammerInValidReportDestination(t *testing.T) {
-	h := newDummyHammer()
-	h.ReportDestination = "output_dummy"
-
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidReportDestination errored")
-	}
-}
-
 func TestHammerValidProxy(t *testing.T) {
 
 	for _, ps := range AvailableProxyStrategies {
