@@ -43,7 +43,7 @@ func TestNewConfigReader(t *testing.T) {
 		t.Errorf("TestNewConfigReader errored: %v", err)
 	}
 
-	if reflect.TypeOf(reader) != reflect.TypeOf(&jsonReader{}) {
+	if reflect.TypeOf(reader) != reflect.TypeOf(&JsonReader{}) {
 		t.Errorf("Expected jsonReader found: %v", reflect.TypeOf(reader))
 	}
 }

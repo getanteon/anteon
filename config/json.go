@@ -35,7 +35,7 @@ import (
 const ConfigTypeJson = "jsonReader"
 
 func init() {
-	AvailableConfigReader[ConfigTypeJson] = &jsonReader{}
+	AvailableConfigReader[ConfigTypeJson] = &JsonReader{}
 }
 
 type auth struct {
@@ -74,7 +74,7 @@ func (s *step) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type jsonReader struct {
+type JsonReader struct {
 	ReqCount int    `json:"request_count"`
 	LoadType string `json:"load_type"`
 	Duration int    `json:"duration"`
@@ -83,8 +83,8 @@ type jsonReader struct {
 	Proxy    string `json:"proxy"`
 }
 
-func (j *jsonReader) UnmarshalJSON(data []byte) error {
-	type jsonReaderAlias jsonReader
+func (j *JsonReader) UnmarshalJSON(data []byte) error {
+	type jsonReaderAlias JsonReader
 	defaultFields := &jsonReaderAlias{
 		ReqCount: types.DefaultReqCount,
 		LoadType: types.DefaultLoadType,
@@ -97,11 +97,11 @@ func (j *jsonReader) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*j = jsonReader(*defaultFields)
+	*j = JsonReader(*defaultFields)
 	return nil
 }
 
-func (j *jsonReader) init(jsonByte []byte) (err error) {
+func (j *JsonReader) init(jsonByte []byte) (err error) {
 	if !json.Valid(jsonByte) {
 		err = fmt.Errorf("provided json is invalid")
 		return
@@ -114,7 +114,7 @@ func (j *jsonReader) init(jsonByte []byte) (err error) {
 	return
 }
 
-func (j *jsonReader) CreateHammer() (h types.Hammer, err error) {
+func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	// Scenario
 	s := types.Scenario{}
 	var si types.ScenarioItem
