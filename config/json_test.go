@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"go.ddosify.com/ddosify/core/proxy"
+	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -67,12 +68,12 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 func TestCreateHammer(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader("config_testdata/config.json", ConfigTypeJson)
-	addr, _ := url.Parse("http://lothygyo:vezpdbtjk731@209.127.191.180:9279")
+	addr, _ := url.Parse("http://proxy_host:80")
 	expectedHammer := types.Hammer{
 		TotalReqCount:     1555,
 		LoadType:          types.LoadTypeWaved,
 		TestDuration:      21,
-		ReportDestination: types.OutputTypeTimescale,
+		ReportDestination: report.OutputTypeStdout,
 		Scenario: types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{

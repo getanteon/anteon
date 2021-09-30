@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"go.ddosify.com/ddosify/core/proxy"
+	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -39,7 +40,7 @@ import (
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
 		Proxy:             proxy.Proxy{Strategy: proxy.ProxyTypeSingle},
-		ReportDestination: types.OutputTypeStdout,
+		ReportDestination: report.OutputTypeStdout,
 		LoadType:          types.LoadTypeLinear,
 		TestDuration:      1,
 		TotalReqCount:     1,

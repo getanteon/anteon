@@ -29,7 +29,7 @@ import (
 func newDummyHammer() Hammer {
 	return Hammer{
 		Proxy:             proxy.Proxy{Strategy: proxy.ProxyTypeSingle},
-		ReportDestination: OutputTypeStdout,
+		ReportDestination: DefaultOutputType,
 		Scenario: Scenario{
 			Scenario: []ScenarioItem{
 				{

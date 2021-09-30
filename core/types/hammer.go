@@ -35,10 +35,6 @@ const (
 	LoadTypeIncremental = "incremental"
 	LoadTypeWaved       = "waved"
 
-	// Constants of the Output Types
-	OutputTypeStdout    = "stdout"
-	OutputTypeTimescale = "timescale"
-
 	// To distinguish the received requests on the server side we are adding this special User-Agent to all requests
 	DdosifyUserAgent = "DdosifyHammer"
 
@@ -49,7 +45,7 @@ const (
 	DefaultTimeout    = 5
 	DefaultProtocol   = ProtocolHTTPS
 	DefaultMethod     = http.MethodGet
-	DefaultOutputType = OutputTypeStdout
+	DefaultOutputType = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}

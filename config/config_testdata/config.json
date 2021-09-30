@@ -26,6 +26,6 @@
             "timeout": 2
         }
     ],
-    "output": "timescale",
-    "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279"
+    "output": "stdout",
+    "proxy": "http://proxy_host:80"
 }
