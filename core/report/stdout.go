@@ -33,8 +33,10 @@ import (
 	"go.ddosify.com/ddosify/core/util"
 )
 
+const OutputTypeStdout = "stdout"
+
 func init() {
-	AvailableOutputServices["stdout"] = &stdout{}
+	AvailableOutputServices[OutputTypeStdout] = &stdout{}
 }
 
 type stdout struct {

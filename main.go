@@ -32,6 +32,7 @@ import (
 
 	"go.ddosify.com/ddosify/config"
 	"go.ddosify.com/ddosify/core"
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
@@ -56,8 +57,8 @@ var (
 	target  = flag.String("t", "", "Target URL")
 	timeout = flag.Int("T", types.DefaultTimeout, "Request timeout in seconds")
 
-	proxy  = flag.String("P", "", "Proxy address as host:port")
-	output = flag.String("o", types.DefaultOutputType, "Output destination")
+	proxyFlag = flag.String("P", "", "Proxy address as host:port")
+	output    = flag.String("o", types.DefaultOutputType, "Output destination")
 
 	configPath = flag.String("config", "",
 		"Json config file path. If a config file is provided, other flag values will be ignored.")
@@ -160,17 +161,17 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 	return
 }
 
-func createProxy() (p types.Proxy, err error) {
+func createProxy() (p proxy.Proxy, err error) {
 	var proxyURL *url.URL
-	if *proxy != "" {
-		proxyURL, err = url.Parse(*proxy)
+	if *proxyFlag != "" {
+		proxyURL, err = url.Parse(*proxyFlag)
 		if err != nil {
 			return
 		}
 	}
 
-	p = types.Proxy{
-		Strategy: types.ProxyTypeSingle,
+	p = proxy.Proxy{
+		Strategy: proxy.ProxyTypeSingle,
 		Addr:     proxyURL,
 	}
 	return

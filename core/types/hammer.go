@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/util"
 )
 
@@ -72,7 +73,7 @@ type Hammer struct {
 	Scenario Scenario
 
 	// Proxy/Proxies to use
-	Proxy Proxy
+	Proxy proxy.Proxy
 
 	// Destination of the results data.
 	ReportDestination string
@@ -80,10 +81,6 @@ type Hammer struct {
 
 // Validate validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
-	if err := h.Proxy.validate(); err != nil {
-		return err
-	}
-
 	if len(h.Scenario.Scenario) == 0 {
 		return fmt.Errorf("scenario or target is empty")
 	} else if err := h.Scenario.validate(); err != nil {

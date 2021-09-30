@@ -27,8 +27,10 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
+const OutputTypeTimescale = "timescale"
+
 func init() {
-	AvailableOutputServices["timescale"] = &timescale{}
+	AvailableOutputServices[OutputTypeTimescale] = &timescale{}
 }
 
 type timescale struct {

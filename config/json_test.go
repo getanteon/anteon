@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -47,8 +48,8 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 				Timeout:  types.DefaultTimeout,
 			}},
 		},
-		Proxy: types.Proxy{
-			Strategy: types.ProxyTypeSingle,
+		Proxy: proxy.Proxy{
+			Strategy: proxy.ProxyTypeSingle,
 		},
 	}
 
@@ -98,7 +99,7 @@ func TestCreateHammer(t *testing.T) {
 				},
 			},
 		},
-		Proxy: types.Proxy{
+		Proxy: proxy.Proxy{
 			Strategy: "single",
 			Addr:     addr,
 		},

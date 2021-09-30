@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"strings"
 
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
@@ -122,8 +123,8 @@ func (j *jsonReader) CreateHammer() (h types.Hammer, err error) {
 			return
 		}
 	}
-	p := types.Proxy{
-		Strategy: types.ProxyTypeSingle,
+	p := proxy.Proxy{
+		Strategy: proxy.ProxyTypeSingle,
 		Addr:     proxyURL,
 	}
 
