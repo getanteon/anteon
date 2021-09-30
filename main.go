@@ -24,6 +24,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/signal"
@@ -91,7 +92,17 @@ func createHammer() (h types.Hammer, err error) {
 }
 
 var createHammerFromConfigFile = func() (h types.Hammer, err error) {
-	c, err := config.NewConfigReader(*configPath, config.ConfigTypeJson)
+	f, err := os.Open(*configPath)
+	if err != nil {
+		return
+	}
+
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+
+	c, err := config.NewConfigReader(byteValue, config.ConfigTypeJson)
 	if err != nil {
 		return
 	}

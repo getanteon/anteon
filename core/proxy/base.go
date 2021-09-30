@@ -56,7 +56,7 @@ func NewProxyService(s string) (service ProxyService, err error) {
 		// Create a new object from the service type
 		service = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ProxyService)
 	} else {
-		err = fmt.Errorf("unsupported proxy strategy")
+		err = fmt.Errorf("unsupported proxy strategy: %s", s)
 	}
 
 	return

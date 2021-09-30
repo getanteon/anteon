@@ -21,22 +21,13 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
+	"reflect"
 
 	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
 )
 
-// Costants of the Supported Config Types
-const (
-	ConfigTypeJson    = "jsonReader"
-)
-
-var availableConfigTypes = []string{ConfigTypeJson}
+var AvailableConfigReader = make(map[string]ConfigReader)
 
 // ConfigReader is the interface that abstracts different config reader implementations.
 type ConfigReader interface {
@@ -45,29 +36,13 @@ type ConfigReader interface {
 }
 
 // NewConfigReader is the factory method of the ConfigReader.
-func NewConfigReader(path string, configType string) (reader ConfigReader, err error) {
-	if !util.StringInSlice(configType, availableConfigTypes) {
-		return nil, fmt.Errorf("unsupported config type %s", configType)
+func NewConfigReader(config []byte, configType string) (reader ConfigReader, err error) {
+	if val, ok := AvailableConfigReader[configType]; ok {
+		// Create a new object from the service type
+		reader = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ConfigReader)
+		err = reader.init(config)
+	} else {
+		err = fmt.Errorf("unsupported config reader type: %s", configType)
 	}
-
-	if strings.EqualFold(configType, ConfigTypeJson) {
-		reader = &jsonReader{}
-	}
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		return
-	}
-
-	byteValue, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return
-	}
-
-	if !json.Valid(byteValue) {
-		return nil, fmt.Errorf("json is invalid")
-	}
-
-	err = reader.init(byteValue)
-
 	return
 }

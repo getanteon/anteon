@@ -34,7 +34,7 @@ import (
 
 func TestCreateHammerDefaultValues(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config_empty.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_empty.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
 		TotalReqCount:     types.DefaultReqCount,
 		LoadType:          types.DefaultLoadType,
@@ -67,7 +67,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 
 func TestCreateHammer(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config.json"), ConfigTypeJson)
 	addr, _ := url.Parse("http://proxy_host:80")
 	expectedHammer := types.Hammer{
 		TotalReqCount:     1555,
@@ -119,7 +119,7 @@ func TestCreateHammer(t *testing.T) {
 
 func TestCreateHammerPayload(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config_payload.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_payload.json"), ConfigTypeJson)
 	expectedPayloads := []string{"payload from string", "Payloaf from file."}
 	h, err := jsonReader.CreateHammer()
 
@@ -140,7 +140,7 @@ func TestCreateHammerPayload(t *testing.T) {
 
 func TestCreateHammerAuth(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config_auth.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_auth.json"), ConfigTypeJson)
 	expectedAuths := []types.Auth{
 		{
 			Type:     types.AuthHttpBasic,
@@ -166,7 +166,7 @@ func TestCreateHammerAuth(t *testing.T) {
 
 func TestCreateHammerProtocol(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config_protocol.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_protocol.json"), ConfigTypeJson)
 	expectedProtocols := []string{"HTTPS", "HTTP", types.DefaultProtocol, "HTTP"}
 
 	h, err := jsonReader.CreateHammer()
@@ -193,7 +193,7 @@ func TestCreateHammerProtocol(t *testing.T) {
 
 func TestCreateHammerInvalidTarget(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader("config_testdata/config_invalid_target.json", ConfigTypeJson)
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_invalid_target.json"), ConfigTypeJson)
 
 	_, err := jsonReader.CreateHammer()
 	if err == nil {

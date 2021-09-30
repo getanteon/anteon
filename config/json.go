@@ -22,6 +22,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"strings"
@@ -30,6 +31,12 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
+
+const ConfigTypeJson = "jsonReader"
+
+func init() {
+	AvailableConfigReader[ConfigTypeJson] = &jsonReader{}
+}
 
 type auth struct {
 	Type     string `json:"type"`
@@ -95,6 +102,11 @@ func (j *jsonReader) UnmarshalJSON(data []byte) error {
 }
 
 func (j *jsonReader) init(jsonByte []byte) (err error) {
+	if !json.Valid(jsonByte) {
+		err = fmt.Errorf("provided json is invalid")
+		return
+	}
+
 	err = json.Unmarshal(jsonByte, &j)
 	if err != nil {
 		return
