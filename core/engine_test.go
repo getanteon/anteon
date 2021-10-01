@@ -30,6 +30,8 @@ import (
 	"testing"
 	"time"
 
+	"go.ddosify.com/ddosify/core/proxy"
+	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -37,8 +39,8 @@ import (
 
 func newDummyHammer() types.Hammer {
 	return types.Hammer{
-		Proxy:             types.Proxy{Strategy: types.ProxyTypeSingle},
-		ReportDestination: types.OutputTypeStdout,
+		Proxy:             proxy.Proxy{Strategy: proxy.ProxyTypeSingle},
+		ReportDestination: report.OutputTypeStdout,
 		LoadType:          types.LoadTypeLinear,
 		TestDuration:      1,
 		TotalReqCount:     1,
@@ -59,7 +61,7 @@ func TestCreateEngine(t *testing.T) {
 	t.Parallel()
 
 	hInvalidProxy := newDummyHammer()
-	hInvalidProxy.Proxy = types.Proxy{Strategy: "invalidProxy"}
+	hInvalidProxy.Proxy = proxy.Proxy{Strategy: "invalidProxy"}
 
 	hInvalidReport := newDummyHammer()
 	hInvalidReport.ReportDestination = "invalidReport"

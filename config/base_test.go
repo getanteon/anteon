@@ -21,20 +21,29 @@
 package config
 
 import (
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
 
+func readConfigFile(path string) []byte {
+	f, _ := os.Open(path)
+
+	byteValue, _ := ioutil.ReadAll(f)
+	return byteValue
+}
+
 func TestNewConfigReader(t *testing.T) {
 	t.Parallel()
 	configPath := "config_testdata/config.json"
-	reader, err := NewConfigReader(configPath, ConfigTypeJson)
+	reader, err := NewConfigReader(readConfigFile(configPath), ConfigTypeJson)
 
 	if err != nil {
 		t.Errorf("TestNewConfigReader errored: %v", err)
 	}
 
-	if reflect.TypeOf(reader) != reflect.TypeOf(&jsonReader{}) {
+	if reflect.TypeOf(reader) != reflect.TypeOf(&JsonReader{}) {
 		t.Errorf("Expected jsonReader found: %v", reflect.TypeOf(reader))
 	}
 }
@@ -42,27 +51,17 @@ func TestNewConfigReader(t *testing.T) {
 func TestNewConfigReaderInvalidConfigType(t *testing.T) {
 	t.Parallel()
 	configPath := "config_testdata/config.json"
-	_, err := NewConfigReader(configPath, "invalidConfigType")
+	_, err := NewConfigReader(readConfigFile(configPath), "invalidConfigType")
 
 	if err == nil {
 		t.Errorf("TestNewConfigReaderInvalidConfigType errored")
 	}
 }
 
-func TestNewConfigReaderInvalidFilePath(t *testing.T) {
-	t.Parallel()
-	configPath := "config_testdata/invalid_file_path.json"
-	_, err := NewConfigReader(configPath, ConfigTypeJson)
-
-	if err == nil {
-		t.Errorf("TestNewConfigReaderInvalidFilePath errored")
-	}
-}
-
 func TestNewConfigReaderIncorrectJsonFile(t *testing.T) {
 	t.Parallel()
 	configPath := "config_testdata/config_incorrect.json"
-	_, err := NewConfigReader(configPath, ConfigTypeJson)
+	_, err := NewConfigReader(readConfigFile(configPath), ConfigTypeJson)
 
 	if err == nil {
 		t.Errorf("TestNewConfigReaderInvalidFilePath errored")

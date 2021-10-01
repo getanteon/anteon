@@ -21,30 +21,19 @@
 package report
 
 import (
-	"reflect"
 	"testing"
-
-	"go.ddosify.com/ddosify/core/types"
 )
-
-var outputStrategiesStructMap = map[string]reflect.Type{
-	types.OutputTypeStdout:    reflect.TypeOf(&stdout{}),
-	types.OutputTypeTimescale: reflect.TypeOf(&timescale{}),
-}
 
 func TestNewReportService(t *testing.T) {
 
 	// Valid output types
-	for _, o := range types.SupportedOutputs {
-		service, err := NewReportService(o)
+	for k := range AvailableOutputServices {
+		_, err := NewReportService(k)
 
 		if err != nil {
 			t.Errorf("TestNewReportService %v", err)
 		}
 
-		if reflect.TypeOf(service) != outputStrategiesStructMap[o] {
-			t.Errorf("Expected %v, Found %v", outputStrategiesStructMap[o], reflect.TypeOf(service))
-		}
 	}
 
 	// Invalid output type

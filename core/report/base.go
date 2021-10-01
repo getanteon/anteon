@@ -22,10 +22,12 @@ package report
 
 import (
 	"fmt"
-	"strings"
+	"reflect"
 
 	"go.ddosify.com/ddosify/core/types"
 )
+
+var AvailableOutputServices = make(map[string]ReportService)
 
 // ReportService is the interface that abstracts different report implementations.
 type ReportService interface {
@@ -35,15 +37,14 @@ type ReportService interface {
 	Report()
 }
 
-// NewReportService is the factory method of the ProxyService.
-// Available strategies are in types.SupportedOutputs.
+// NewReportService is the factory method of the ReportService.
 func NewReportService(s string) (service ReportService, err error) {
-	if strings.EqualFold(s, types.OutputTypeStdout) {
-		service = &stdout{}
-	} else if strings.EqualFold(s, types.OutputTypeTimescale) {
-		service = &timescale{}
+	if val, ok := AvailableOutputServices[s]; ok {
+		// Create a new object from the service type
+		service = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ReportService)
 	} else {
-		err = fmt.Errorf("unsupported output type")
+		err = fmt.Errorf("unsupported output type: %s", s)
 	}
+
 	return
 }

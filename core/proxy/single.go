@@ -22,15 +22,19 @@ package proxy
 
 import (
 	"net/url"
-
-	"go.ddosify.com/ddosify/core/types"
 )
+
+const ProxyTypeSingle = "single"
+
+func init() {
+	AvailableProxyServices[ProxyTypeSingle] = &singleProxyStrategy{}
+}
 
 type singleProxyStrategy struct {
 	proxyAddr *url.URL
 }
 
-func (sp *singleProxyStrategy) Init(p types.Proxy) error {
+func (sp *singleProxyStrategy) Init(p Proxy) error {
 	sp.proxyAddr = p.Addr
 	return nil
 }

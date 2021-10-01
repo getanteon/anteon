@@ -39,6 +39,6 @@
             }
         },
     ],
-    "proxy": "http://lothygyo:vezpdbtjk731@209.127.191.180:9279",
+    "proxy": "http://proxy_host:80",
     "output": "stdout"
 }

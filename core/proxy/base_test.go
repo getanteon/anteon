@@ -21,29 +21,19 @@
 package proxy
 
 import (
-	"reflect"
 	"testing"
-
-	"go.ddosify.com/ddosify/core/types"
 )
-
-var proxyStrategiesStructMap = map[string]reflect.Type{
-	types.ProxyTypeSingle:        reflect.TypeOf(&singleProxyStrategy{}),
-}
 
 func TestNewProxyService(t *testing.T) {
 
 	// Valid proxy types
-	for _, o := range types.AvailableProxyStrategies {
-		service, err := NewProxyService(o)
+	for k := range AvailableProxyServices {
+		_, err := NewProxyService(k)
 
 		if err != nil {
 			t.Errorf("TestNewProxyService errored %v", err)
 		}
 
-		if reflect.TypeOf(service) != proxyStrategiesStructMap[o] {
-			t.Errorf("Expected %v, Found %v", proxyStrategiesStructMap[o], reflect.TypeOf(service))
-		}
 	}
 
 	// Invalid proxy type

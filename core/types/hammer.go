@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/util"
 )
 
@@ -33,10 +34,6 @@ const (
 	LoadTypeLinear      = "linear"
 	LoadTypeIncremental = "incremental"
 	LoadTypeWaved       = "waved"
-
-	// Constants of the Output Types
-	OutputTypeStdout    = "stdout"
-	OutputTypeTimescale = "timescale"
 
 	// To distinguish the received requests on the server side we are adding this special User-Agent to all requests
 	DdosifyUserAgent = "DdosifyHammer"
@@ -48,13 +45,10 @@ const (
 	DefaultTimeout    = 5
 	DefaultProtocol   = ProtocolHTTPS
 	DefaultMethod     = http.MethodGet
-	DefaultOutputType = OutputTypeStdout
+	DefaultOutputType = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
-
-// SupportedOutputs should be updated whenever a new report.ReportService interface implemented
-var SupportedOutputs = [...]string{OutputTypeStdout, OutputTypeTimescale}
 
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
@@ -75,27 +69,21 @@ type Hammer struct {
 	Scenario Scenario
 
 	// Proxy/Proxies to use
-	Proxy Proxy
+	Proxy proxy.Proxy
 
 	// Destination of the results data.
 	ReportDestination string
 
+	// Dynamic field for extra parameters.
+	Others map[interface{}]interface{}
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
-	if err := h.Proxy.validate(); err != nil {
-		return err
-	}
-
 	if len(h.Scenario.Scenario) == 0 {
 		return fmt.Errorf("scenario or target is empty")
 	} else if err := h.Scenario.validate(); err != nil {
 		return err
-	}
-
-	if !util.StringInSlice(h.ReportDestination, SupportedOutputs[:]) {
-		return fmt.Errorf("unsupported Report Destination: %s", h.ReportDestination)
 	}
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {

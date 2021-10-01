@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"testing"
 
+	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -53,7 +54,7 @@ func resetFlags() {
 	*target = ""
 	*timeout = types.DefaultTimeout
 
-	*proxy = ""
+	*proxyFlag = ""
 	*output = types.DefaultOutputType
 
 	*configPath = ""
@@ -93,8 +94,8 @@ func TestDefaultFlagValues(t *testing.T) {
 	if *timeout != types.DefaultTimeout {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultTimeout, *timeout)
 	}
-	if *proxy != "" {
-		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *proxy)
+	if *proxyFlag != "" {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *proxyFlag)
 	}
 	if *output != types.DefaultOutputType {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultOutputType, *output)
@@ -239,12 +240,12 @@ func TestCreateScenario(t *testing.T) {
 
 func TestCreateProxy(t *testing.T) {
 	addr, _ := url.Parse("http://127.0.0.1:80")
-	withAddr := types.Proxy{
-		Strategy: types.ProxyTypeSingle,
+	withAddr := proxy.Proxy{
+		Strategy: proxy.ProxyTypeSingle,
 		Addr:     addr,
 	}
-	withoutAddr := types.Proxy{
-		Strategy: types.ProxyTypeSingle,
+	withoutAddr := proxy.Proxy{
+		Strategy: proxy.ProxyTypeSingle,
 		Addr:     nil,
 	}
 
@@ -252,9 +253,9 @@ func TestCreateProxy(t *testing.T) {
 		name      string
 		args      []string
 		shouldErr bool
-		expected  types.Proxy
+		expected  proxy.Proxy
 	}{
-		{"InvalidProxy", []string{"-t=https://test.com", "-P=127.0.0.1:09"}, true, types.Proxy{}},
+		{"InvalidProxy", []string{"-t=https://test.com", "-P=127.0.0.1:09"}, true, proxy.Proxy{}},
 		{"ValidWithAddr", []string{"-t=https://test.com", "-P=http://127.0.0.1:80"}, false, withAddr},
 		{"ValidWithoutAddr", []string{"-t=https://test.com"}, false, withoutAddr},
 	}

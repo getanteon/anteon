@@ -23,15 +23,27 @@ package proxy
 import (
 	"fmt"
 	"net/url"
-	"strings"
-
-	"go.ddosify.com/ddosify/core/types"
+	"reflect"
 )
+
+var AvailableProxyServices = make(map[string]ProxyService)
+
+// Proxy struct is used for initializing the ProxyService implementations.
+type Proxy struct {
+	// Stragy of the proxy usage.
+	Strategy string
+
+	// Set this field if ProxyStrategy is single
+	Addr *url.URL
+
+	// Dynamic field for other proxy strategies.
+	Others map[interface{}]interface{}
+}
 
 // ProvideService is the interface that abstracts different proxy implementations.
 // Strategy field in types.Proxy determines which implementation to use.
 type ProxyService interface {
-	Init(types.Proxy) error
+	Init(Proxy) error
 	GetAll() []*url.URL
 	GetProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string) *url.URL
@@ -39,12 +51,12 @@ type ProxyService interface {
 }
 
 // NewProxyService is the factory method of the ProxyService.
-// Available proxy strategies are in types.AvailableProxyStrategies.
 func NewProxyService(s string) (service ProxyService, err error) {
-	if strings.EqualFold(s, types.ProxyTypeSingle) {
-		service = &singleProxyStrategy{}
+	if val, ok := AvailableProxyServices[s]; ok {
+		// Create a new object from the service type
+		service = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ProxyService)
 	} else {
-		err = fmt.Errorf("unsupported proxy strategy")
+		err = fmt.Errorf("unsupported proxy strategy: %s", s)
 	}
 
 	return

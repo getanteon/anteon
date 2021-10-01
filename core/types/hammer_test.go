@@ -22,12 +22,14 @@ package types
 
 import (
 	"testing"
+
+	"go.ddosify.com/ddosify/core/proxy"
 )
 
 func newDummyHammer() Hammer {
 	return Hammer{
-		Proxy:             Proxy{Strategy: ProxyTypeSingle},
-		ReportDestination: OutputTypeStdout,
+		Proxy:             proxy.Proxy{Strategy: proxy.ProxyTypeSingle},
+		ReportDestination: DefaultOutputType,
 		Scenario: Scenario{
 			Scenario: []ScenarioItem{
 				{
@@ -90,48 +92,6 @@ func TestHammerInValidAuth(t *testing.T) {
 
 	if err := h.Validate(); err == nil {
 		t.Errorf("TestHammerInValidReportDestination errored")
-	}
-}
-
-func TestHammerValidReportDestination(t *testing.T) {
-
-	for _, rd := range SupportedOutputs {
-		h := newDummyHammer()
-		h.ReportDestination = rd
-
-		if err := h.Validate(); err != nil {
-			t.Errorf("TestHammerValidReportDestination errored: %v", err)
-		}
-	}
-}
-
-func TestHammerInValidReportDestination(t *testing.T) {
-	h := newDummyHammer()
-	h.ReportDestination = "output_dummy"
-
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidReportDestination errored")
-	}
-}
-
-func TestHammerValidProxy(t *testing.T) {
-
-	for _, ps := range AvailableProxyStrategies {
-		h := newDummyHammer()
-		h.Proxy = Proxy{Strategy: ps}
-
-		if err := h.Validate(); err != nil {
-			t.Errorf("TestHammerValidProxy errored: %v", err)
-		}
-	}
-}
-
-func TestHammerInValidProxy(t *testing.T) {
-	h := newDummyHammer()
-	h.Proxy = Proxy{Strategy: "dummy_strategy"}
-
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInValidProxy errored")
 	}
 }
 
