@@ -73,6 +73,9 @@ type Hammer struct {
 
 	// Destination of the results data.
 	ReportDestination string
+
+	// Dynamic field for extra parameters.
+	Others map[interface{}]interface{}
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
