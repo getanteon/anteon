@@ -1,5 +1,9 @@
 FROM alpine:3.14.2
+ENV ENV="/root/.ashrc"
+ENV TERM="xterm-256color"
+WORKDIR /root
 RUN apk --no-cache add ca-certificates
 COPY ddosify /bin/
 
-ENTRYPOINT ["ddosify"]
+COPY assets/ddosify.profile /tmp/profile
+RUN cat /tmp/profile >> "$ENV"
