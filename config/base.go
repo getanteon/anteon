@@ -31,7 +31,7 @@ var AvailableConfigReader = make(map[string]ConfigReader)
 
 // ConfigReader is the interface that abstracts different config reader implementations.
 type ConfigReader interface {
-	init([]byte) error
+	Init([]byte) error
 	CreateHammer() (types.Hammer, error)
 }
 
@@ -40,7 +40,7 @@ func NewConfigReader(config []byte, configType string) (reader ConfigReader, err
 	if val, ok := AvailableConfigReader[configType]; ok {
 		// Create a new object from the service type
 		reader = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ConfigReader)
-		err = reader.init(config)
+		err = reader.Init(config)
 	} else {
 		err = fmt.Errorf("unsupported config reader type: %s", configType)
 	}

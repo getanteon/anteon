@@ -101,7 +101,7 @@ func (j *JsonReader) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (j *JsonReader) init(jsonByte []byte) (err error) {
+func (j *JsonReader) Init(jsonByte []byte) (err error) {
 	if !json.Valid(jsonByte) {
 		err = fmt.Errorf("provided json is invalid")
 		return
