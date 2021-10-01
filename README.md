@@ -82,7 +82,7 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
 		ddosify -t target_site.com
 
-    The above command runs a load test with the default value that is 200 requests in 10 seconds.
+    The above command runs a load test with the default value that is 100 requests in 10 seconds.
 
 2. ### Using some of the features
 
@@ -109,7 +109,7 @@ ddosify [FLAG]
 | Flag | Description                                              | Type     | Default | Required?  |
 | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
 | `-t`   | Target website URL. Example: https://ddosify.com         | `string` | - | Yes        |
-| `-n`   | Total request count                                      | `int`    | `200`   | No         |
+| `-n`   | Total request count                                      | `int`    | `100`   | No         |
 | `-d`   | Test duration in seconds.                                | `int`    | `10`    | No         |
 | `-p`   | Protocol of the request. Supported protocols are *HTTP, HTTPS*. HTTP/2 support is only available by using a config file as described. More protocols will be added.                                | `string`    | `HTTPS`    | No         |
 | `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, UPDATE, PATCH* | `string`    | `GET`    | No  |
