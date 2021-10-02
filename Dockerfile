@@ -7,7 +7,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/ddosify main.go
 
 FROM alpine:3.14.2
 ENV ENV="/root/.ashrc"
-ENV TERM="xterm-256color"
 WORKDIR /root
 RUN apk --no-cache add ca-certificates
 
