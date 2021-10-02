@@ -85,6 +85,8 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
+  extra_files:
+  - assets/ddosify.profile
 - image_templates:
   - 'ddosify/ddosify:{{ .Tag }}-arm64'
   dockerfile: Dockerfile.release
@@ -97,6 +99,8 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/arm64"
+  extra_files:
+  - assets/ddosify.profile
   goarch: arm64
 
 docker_manifests:
