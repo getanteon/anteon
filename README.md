@@ -200,7 +200,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
     This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
     
-        Details of each parameter for a step;
+    **Details of each parameter for a step;**
     - `id` *mandatory*
     
         Each step must have a unique integer id.
@@ -260,10 +260,6 @@ There is an example config file at [config_examples/config.json](/config_example
 ```
 
 - Open `/usr/local/bin`
-```bash
-open /usr/local/bin
-```
-
 - Right click `ddosify` and select Open
 - Select Open
 - Close the opened terminal
