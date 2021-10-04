@@ -69,6 +69,8 @@ func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -h 'Accept: text/html' -h 'Content-Type: application/xml'")
 	flag.Parse()
 
+	race()
+
 	h, err := createHammer()
 
 	if err != nil {
@@ -80,6 +82,18 @@ func main() {
 	}
 
 	run(h)
+}
+
+func race() {
+	wait := make(chan struct{})
+	n := 0
+	go func() {
+		n++ // read, increment, write
+		close(wait)
+	}()
+	n++ // conflicting access
+	<-wait
+	fmt.Println(n) // Output: <unspecified>
 }
 
 func createHammer() (h types.Hammer, err error) {
