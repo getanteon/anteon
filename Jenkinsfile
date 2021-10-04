@@ -3,7 +3,10 @@ pipeline {
     dockerfile {
       filename 'Dockerfile.dev'
     }
-
+  }
+  environment {
+    PROXY_TEST_USERNAME     = credentials('proxy-test-username')
+    PROXY_TEST_PASSWORD = credentials('proxy-test-password')
   }
   stages {
     stage('Unit Test') {
