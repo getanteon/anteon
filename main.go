@@ -29,7 +29,10 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"runtime"
 	"strings"
+	"text/tabwriter"
+	"time"
 
 	"go.ddosify.com/ddosify/config"
 	"go.ddosify.com/ddosify/core"
@@ -62,12 +65,24 @@ var (
 	output    = flag.String("o", types.DefaultOutputType, "Output destination")
 
 	configPath = flag.String("config", "",
-		"Json config file path. If a config file is provided, other flag values will be ignored.")
+		"Json config file path. If a config file is provided, other flag values will be ignored")
+
+	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
+)
+
+var (
+	GitVersion = "development"
+	GitCommit  = "unknown"
+	BuildDate  = time.Now().UTC().Format(time.RFC3339)
 )
 
 func main() {
 	flag.Var(&headers, "h", "Request Headers. Ex: -h 'Accept: text/html' -h 'Content-Type: application/xml'")
 	flag.Parse()
+
+	if *version {
+		printVersionAndExit()
+	}
 
 	h, err := createHammer()
 
@@ -232,6 +247,24 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	return
+}
+
+func versionTemplate() string {
+	b := strings.Builder{}
+	w := tabwriter.NewWriter(&b, 0, 0, 5, ' ', 0)
+	fmt.Fprintf(w, "Version:\t%s\n", GitVersion)
+	fmt.Fprintf(w, "Git commit:\t%s\n", GitCommit)
+	fmt.Fprintf(w, "Built\t%s\n", BuildDate)
+	fmt.Fprintf(w, "Go version:\t%s\n", runtime.Version())
+	fmt.Fprintf(w, "OS/Arch:\t%s\n", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
+	w.Flush()
+
+	return b.String()
+}
+
+func printVersionAndExit() {
+	fmt.Println(versionTemplate())
+	os.Exit(0)
 }
 
 func exitWithMsg(msg string) {

@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 
 	"go.ddosify.com/ddosify/core/proxy"
@@ -415,4 +416,46 @@ func TestTargetInvalidHammer(t *testing.T) {
 	}
 
 	t.Errorf("TestTargetEmpty should be failed with exit code 1 found: %v", err)
+}
+
+func TestVersion(t *testing.T) {
+	// Below cmd code triggers this block
+	if os.Getenv("VERSION") == "1" {
+		resetFlags()
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"cmd", "-version"}
+		main()
+		return
+	}
+
+	// Since we reexecute the test here, this test case doesnt' increment the coverage.
+	cmd := exec.Command(os.Args[0], "-test.run=TestVersion")
+	cmd.Env = append(os.Environ(), "VERSION=1")
+	err := cmd.Run()
+
+	if err == nil {
+		return
+	}
+
+	t.Errorf("TestVersion should not be failed")
+}
+
+func Test_versionTemplate(t *testing.T) {
+	GitVersion = "v0.0.2"
+	GitCommit = "akjsghsajghas"
+	BuildDate = "2021-10-03T15:16:52Z"
+	tests := []struct {
+		name string
+		want string
+	}{
+		{name: "version", want: "Version:        v0.0.2\nGit commit:     akjsghsajghas\nBuilt           2021-10-03T15:16:52Z\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := versionTemplate(); !strings.Contains(got, tt.want) {
+				t.Errorf("versionTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
