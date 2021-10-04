@@ -8,6 +8,11 @@ pipeline {
     PROXY_TEST_USERNAME     = credentials('proxy-test-username')
     PROXY_TEST_PASSWORD = credentials('proxy-test-password')
   }
+
+  options { 
+    disableConcurrentBuilds() 
+  }
+
   stages {
     stage('Unit Test') {
       steps {
@@ -27,6 +32,7 @@ if [ "${t%.*}" -lt 80 ]; then
 fi'''
       }
     }
+
     stage('Main Race Condition') {
       steps {
         sh 'go run --race main.go -t https://proxytest.ddosifytech.com/ -d 1 -n 1500 -a ${PROXY_TEST_USERNAME}:${PROXY_TEST_PASSWORD} -p https'
