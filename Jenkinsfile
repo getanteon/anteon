@@ -24,6 +24,11 @@ if [ "${t%.*}" -lt 80 ]; then
 fi'''
       }
     }
+    stage('Main Race Condition') {
+      steps {
+        sh 'go run --race main.go -t https://proxytest.ddosifytech.com/ -d 1 -n 1500 -a ${PROXY_TEST_USERNAME}:${PROXY_TEST_PASSWORD} -p https'
+      }
+    }
 
   }
   post {
