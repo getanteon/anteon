@@ -34,8 +34,8 @@ fi'''
     }
 
     stage('Main Race Condition') {
-      lock('multi_branch_server') {
-        steps {
+      steps {
+        lock('multi_branch_server') {
           sh 'go run --race main.go -t https://proxytest.ddosifytech.com/ -d 1 -n 1500 -a ${PROXY_TEST_USERNAME}:${PROXY_TEST_PASSWORD} -p https'
         }
       }
