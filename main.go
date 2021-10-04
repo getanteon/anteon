@@ -81,17 +81,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		b := strings.Builder{}
-		w := tabwriter.NewWriter(&b, 0, 0, 5, ' ', 0)
-		fmt.Fprintf(w, "Version:\t%s\n", GitVersion)
-		fmt.Fprintf(w, "Git commit:\t%s\n", GitCommit)
-		fmt.Fprintf(w, "Built\t%s\n", BuildDate)
-		fmt.Fprintf(w, "Go version:\t%s\n", runtime.Version())
-		fmt.Fprintf(w, "OS/Arch:\t%s\n", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
-
-		w.Flush()
-		fmt.Println(b.String())
-		os.Exit(0)
+		printVersionAndExit()
 	}
 
 	h, err := createHammer()
@@ -257,6 +247,24 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	return
+}
+
+func versionTemplate() string {
+	b := strings.Builder{}
+	w := tabwriter.NewWriter(&b, 0, 0, 5, ' ', 0)
+	fmt.Fprintf(w, "Version:\t%s\n", GitVersion)
+	fmt.Fprintf(w, "Git commit:\t%s\n", GitCommit)
+	fmt.Fprintf(w, "Built\t%s\n", BuildDate)
+	fmt.Fprintf(w, "Go version:\t%s\n", runtime.Version())
+	fmt.Fprintf(w, "OS/Arch:\t%s\n", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH))
+	w.Flush()
+
+	return b.String()
+}
+
+func printVersionAndExit() {
+	fmt.Println(versionTemplate())
+	os.Exit(0)
 }
 
 func exitWithMsg(msg string) {
