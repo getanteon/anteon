@@ -442,11 +442,14 @@ func TestVersion(t *testing.T) {
 }
 
 func Test_versionTemplate(t *testing.T) {
+	GitVersion = "v0.0.2"
+	GitCommit = "akjsghsajghas"
+	BuildDate = "2021-10-03T15:16:52Z"
 	tests := []struct {
 		name string
 		want string
 	}{
-		{name: "version", want: "Version:        development\nGit commit:     unknown\n"},
+		{name: "version", want: "Version:        v0.0.2\nGit commit:     akjsghsajghas\nBuilt           2021-10-03T15:16:52Z\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
