@@ -1,0 +1,39 @@
+pipeline {
+  agent {
+    dockerfile {
+      filename 'Dockerfile.dev'
+    }
+
+  }
+  stages {
+    stage('Unit Test') {
+      steps {
+        sh 'go test -coverpkg=./... -coverprofile=coverage.out ./... -timeout 100s -parallel 4'
+      }
+    }
+
+    stage('Coverage') {
+      steps {
+        sh 'go tool cover -html=coverage.out -o coverage.html'
+        archiveArtifacts '*.html'
+        sh 'echo "Coverage Report: ${BUILD_URL}artifact/coverage.html"'
+        sh '''t=$(go tool cover -func coverage.out | grep total | tail -1 | awk \'{print substr($3, 1, length($3)-1)}\')
+if [ "${t%.*}" -lt 80 ]; then 
+    echo "Coverage failed ${t}/80"
+    exit 1
+fi'''
+      }
+    }
+
+  }
+  post {
+    unstable {
+      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+    }
+
+    failure {
+      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+    }
+
+  }
+}
