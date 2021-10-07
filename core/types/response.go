@@ -34,6 +34,9 @@ type Response struct {
 
 	ProxyAddr     *url.URL
 	ResponseItems []*ResponseItem
+
+	// Dynamic field for extra data needs in response object consumers.
+	Others map[interface{}]interface{}
 }
 
 // ResponseItem is corresponding to ScenarioItem.
