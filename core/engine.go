@@ -37,6 +37,10 @@ import (
 const (
 	// interval in millisecond
 	tickerInterval = 100
+
+	// test result status
+	resultDone    = "done"
+	resultStopped = "stopped"
 )
 
 type engine struct {
@@ -104,7 +108,7 @@ func (e *engine) Init() (err error) {
 	return
 }
 
-func (e *engine) Start() {
+func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.responseChan = make(chan *types.Response, e.hammer.TotalReqCount)
 	go e.reportService.Start(e.responseChan)
@@ -119,12 +123,12 @@ func (e *engine) Start() {
 	var mutex = &sync.Mutex{}
 	for range ticker.C {
 		if e.tickCounter >= len(e.reqCountArr) {
-			return
+			return resultDone
 		}
 
 		select {
 		case <-e.ctx.Done():
-			return
+			return resultStopped
 		default:
 			mutex.Lock()
 			e.wg.Add(e.reqCountArr[e.tickCounter])
@@ -133,6 +137,7 @@ func (e *engine) Start() {
 			mutex.Unlock()
 		}
 	}
+	return resultDone
 }
 
 func (e *engine) runWorkers(c int) {

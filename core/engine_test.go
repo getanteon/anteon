@@ -426,3 +426,64 @@ func TestRequestTimeout(t *testing.T) {
 		})
 	}
 }
+
+func TestEngineResult(t *testing.T) {
+	t.Parallel()
+
+	// Prepare
+	tests := []struct {
+		name           string
+		cancelCtx      bool
+		expectedStatus string
+	}{
+		{"CtxCancel", true, "stopped"},
+		{"Normal", false, "done"},
+	}
+
+	// Act
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			var m sync.Mutex
+
+			// Test server
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				return
+			}
+			server := httptest.NewServer(http.HandlerFunc(handler))
+			defer server.Close()
+
+			h := newDummyHammer()
+			h.TestDuration = 2
+			h.Scenario.Scenario[0].URL = server.URL
+
+			ctx, cancel := context.WithCancel(context.Background())
+			e, err := NewEngine(ctx, h)
+			if err != nil {
+				t.Errorf("TestRequestTimeout error occurred %v", err)
+			}
+
+			err = e.Init()
+			if err != nil {
+				t.Errorf("TestRequestTimeout error occurred %v", err)
+			}
+
+			if test.cancelCtx {
+				time.AfterFunc(time.Duration(500)*time.Millisecond, func() {
+					cancel()
+				})
+			}
+
+			res := e.Start()
+			cancel()
+
+			// Assert
+			m.Lock()
+			if res != test.expectedStatus {
+				t.Errorf("Expected %v, Found %v", test.expectedStatus, res)
+			}
+			m.Unlock()
+		})
+	}
+}
