@@ -37,7 +37,7 @@ type Proxy struct {
 	Addr *url.URL
 
 	// Dynamic field for other proxy strategies.
-	Others map[interface{}]interface{}
+	Others map[string]interface{}
 }
 
 // ProvideService is the interface that abstracts different proxy implementations.
