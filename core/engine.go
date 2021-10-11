@@ -161,7 +161,7 @@ func (e *engine) runWorker() {
 		return
 	}
 
-	res.Others = make(map[interface{}]interface{})
+	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	e.responseChan <- res

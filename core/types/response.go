@@ -36,7 +36,7 @@ type Response struct {
 	ResponseItems []*ResponseItem
 
 	// Dynamic field for extra data needs in response object consumers.
-	Others map[interface{}]interface{}
+	Others map[string]interface{}
 }
 
 // ResponseItem is corresponding to ScenarioItem.
