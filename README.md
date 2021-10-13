@@ -25,6 +25,7 @@
 
 :heavy_check_mark: Different Load Types - Test your system's limits across different load types.
 
+Available in single-node version.
 
 ## Installation
 
@@ -264,6 +265,10 @@ There is an example config file at [config_examples/config.json](/config_example
 - Right click `ddosify` and select Open
 - Select Open
 - Close the opened terminal
+
+## More
+
+Stay tuned for multi-location based, full-featured web version. Join the waitlist at: https://www.ddosify.com
 
 ## License
 
