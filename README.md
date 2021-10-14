@@ -269,7 +269,7 @@ There is an example config file at [config_examples/config.json](/config_example
 This repository includes the single-node version of the Ddosify Loader. Ddosify Cloud will be available soon. 
 It will support multi-location based distributed load testing and more features. 
 
-Join the waitlist: https://www.ddosify.com
+Join the waitlist: https://ddosify.com
 
 ## License
 
