@@ -25,8 +25,6 @@
 
 :heavy_check_mark: Different Load Types - Test your system's limits across different load types.
 
-Available in single-node version.
-
 ## Installation
 
 `ddosify` is available via [Docker](https://hub.docker.com/ddosify/ddosify), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows.
@@ -268,7 +266,10 @@ There is an example config file at [config_examples/config.json](/config_example
 
 ## More
 
-Stay tuned for multi-location based, full-featured web version. Join the waitlist at: https://www.ddosify.com
+This repository includes the single-node version of the Ddosify Loader. Ddosify Cloud will be available soon. 
+It will support multi-location based distributed load testing and more features. 
+
+Join the waitlist: https://www.ddosify.com
 
 ## License
 
