@@ -22,6 +22,7 @@ package report
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -186,7 +187,7 @@ func (s *stdout) printDetails() {
 		fmt.Printf("Success Count: %-5d (%d%%)\n", v.successCount, v.successPercentage())
 		fmt.Printf("Failed Count:  %-5d (%d%%)\n", v.failedCount, v.failedPercentage())
 
-		fmt.Println("\nDurations (Avg);")
+		fmt.Println("\nDurations (Avg):")
 		var durationList = make([]duration, 0)
 		for d, s := range v.durations {
 			dur := keyToStr[d]
@@ -201,14 +202,15 @@ func (s *stdout) printDetails() {
 		}
 
 		if len(v.statusCodeDist) > 0 {
-			fmt.Println("\nStatus Codes;")
+			fmt.Println("\nStatus Codes:")
 			for s, c := range v.statusCodeDist {
-				fmt.Printf("\t%3d : %d\n", s, c)
+				desc := fmt.Sprintf("%s - %3d", http.StatusText(s), s)
+				fmt.Printf("\t%-30s:%d\n", desc, c)
 			}
 		}
 
 		if len(v.errorDist) > 0 {
-			fmt.Println("\nError Distribution (Count:Reason);")
+			fmt.Println("\nError Distribution (Count:Reason):")
 			for e, c := range v.errorDist {
 				fmt.Printf("\t%-5d : %s\n", c, e)
 			}
