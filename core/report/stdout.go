@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"text/tabwriter"
 	"time"
 
 	"github.com/enescakir/emoji"
@@ -164,8 +165,13 @@ func (s *stdout) realTimePrintStop() {
 // TODO:REFACTOR use template
 func (s *stdout) printDetails() {
 	color.Set(color.FgHiCyan)
-	fmt.Println("\nRESULT")
-	fmt.Println("-------------------------------------")
+	defer color.Unset()
+
+	b := strings.Builder{}
+	w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
+
+	fmt.Fprintln(w, "\nRESULT")
+	fmt.Fprintln(w, "-------------------------------------")
 
 	keys := make([]int, 0)
 	for k := range s.result.itemReports {
@@ -180,14 +186,14 @@ func (s *stdout) printDetails() {
 		v := s.result.itemReports[int16(k)]
 
 		if len(keys) > 1 {
-			fmt.Println("Step", k)
-			fmt.Println("-------------------------------------")
+			fmt.Fprintf(w, "Step %d\n", k)
+			fmt.Fprintln(w, "-------------------------------------")
 		}
 
-		fmt.Printf("Success Count: %-5d (%d%%)\n", v.successCount, v.successPercentage())
-		fmt.Printf("Failed Count:  %-5d (%d%%)\n", v.failedCount, v.failedPercentage())
+		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.successCount, v.successPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.failedCount, v.failedPercentage())
 
-		fmt.Println("\nDurations (Avg):")
+		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)
 		for d, s := range v.durations {
 			dur := keyToStr[d]
@@ -198,26 +204,28 @@ func (s *stdout) printDetails() {
 			return durationList[i].order < durationList[j].order
 		})
 		for _, v := range durationList {
-			fmt.Printf("\t%-20s:%.4fs\n", v.name, v.duration)
+			fmt.Fprintf(w, "  %s\t:%.4fs\n", v.name, v.duration)
 		}
 
 		if len(v.statusCodeDist) > 0 {
-			fmt.Println("\nStatus Codes:")
+			fmt.Fprintln(w, "\nStatus Code (Message) :Count")
 			for s, c := range v.statusCodeDist {
-				desc := fmt.Sprintf("%s - %3d", http.StatusText(s), s)
-				fmt.Printf("\t%-30s:%d\n", desc, c)
+				desc := fmt.Sprintf("%3d (%s)", s, http.StatusText(s))
+				fmt.Fprintf(w, "  %s\t:%d\n", desc, c)
 			}
 		}
 
 		if len(v.errorDist) > 0 {
-			fmt.Println("\nError Distribution (Count:Reason):")
+			fmt.Fprintln(w, "\nError Distribution (Count:Reason):")
 			for e, c := range v.errorDist {
-				fmt.Printf("\t%-5d : %s\n", c, e)
+				fmt.Fprintf(w, "  %d\t :%s\n", c, e)
 			}
 		}
-		fmt.Println()
+		fmt.Fprintln(w)
 	}
-	color.Unset()
+
+	w.Flush()
+	fmt.Print(b.String())
 }
 
 type result struct {
