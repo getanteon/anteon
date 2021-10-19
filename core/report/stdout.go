@@ -31,11 +31,14 @@ import (
 
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
+	"github.com/mattn/go-colorable"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
 
 const OutputTypeStdout = "stdout"
+
+var out = colorable.NewColorableStdout()
 
 func init() {
 	AvailableOutputServices[OutputTypeStdout] = &stdout{}
@@ -145,7 +148,7 @@ func (s *stdout) realTimePrintStart() {
 }
 
 func (s *stdout) liveResultPrint() {
-	fmt.Printf("%s %s %s\n",
+	fmt.Fprintf(out, "%s %s %s\n",
 		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
 			emoji.CheckMark, s.result.successCount, s.result.successPercentage(), "")),
 		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
@@ -225,7 +228,7 @@ func (s *stdout) printDetails() {
 	}
 
 	w.Flush()
-	fmt.Print(b.String())
+	fmt.Fprint(out, b.String())
 }
 
 type result struct {
