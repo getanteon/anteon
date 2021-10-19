@@ -150,15 +150,23 @@ func (e *engine) runWorkers(c int) {
 }
 
 func (e *engine) runWorker() {
-	p := e.proxyService.GetProxy()
-	res, err := e.scenarioService.Do(p)
+	var res *types.Response
+	var err *types.RequestError
 
-	if err != nil && err.Type == types.ErrorProxy {
-		e.proxyService.ReportProxy(p, err.Reason)
-	}
-	if err != nil && err.Type == types.ErrorIntented {
-		// Don't report intentionally created errors. Like canceled requests.
-		return
+	p := e.proxyService.GetProxy()
+	for i := 1; i <= 3; i++ {
+		res, err = e.scenarioService.Do(p)
+
+		if err != nil && err.Type == types.ErrorProxy {
+			p = e.proxyService.ReportProxy(p, err.Reason)
+			continue
+		}
+
+		if err != nil && err.Type == types.ErrorIntented {
+			// Don't report intentionally created errors. Like canceled requests.
+			return
+		}
+		break
 	}
 
 	res.Others = make(map[string]interface{})
