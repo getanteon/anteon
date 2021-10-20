@@ -28,8 +28,8 @@ import (
 )
 
 var protocolStrategiesStructMap = map[string]reflect.Type{
-	types.ProtocolHTTP:  reflect.TypeOf(&httpRequester{}),
-	types.ProtocolHTTPS: reflect.TypeOf(&httpRequester{}),
+	types.ProtocolHTTP:  reflect.TypeOf(&HttpRequester{}),
+	types.ProtocolHTTPS: reflect.TypeOf(&HttpRequester{}),
 }
 
 func TestNewRequester(t *testing.T) {

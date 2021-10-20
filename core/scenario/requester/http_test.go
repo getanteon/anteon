@@ -45,7 +45,7 @@ func TestInit(t *testing.T) {
 	p, _ := url.Parse("https://127.0.0.1:80")
 	ctx := context.TODO()
 
-	h := &httpRequester{}
+	h := &HttpRequester{}
 	h.Init(ctx, s, p)
 
 	if !reflect.DeepEqual(h.packet, s) {
@@ -158,7 +158,7 @@ func TestInitClient(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			h := &httpRequester{}
+			h := &HttpRequester{}
 			h.Init(test.ctx, test.scenarioItem, test.proxy)
 
 			transport := h.client.Transport.(*http.Transport)
@@ -318,7 +318,7 @@ func TestInitRequest(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			h := &httpRequester{}
+			h := &HttpRequester{}
 			err := h.Init(ctx, test.scenarioItem, p)
 
 			if test.shouldErr {
