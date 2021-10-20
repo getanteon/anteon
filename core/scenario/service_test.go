@@ -453,3 +453,66 @@ func TestGetOrCreateRequestersFailed(t *testing.T) {
 		t.Fatalf("TestGetOrCreateRequestersFailed should be errored")
 	}
 }
+
+// No need to test happy path for createRequesters, TestInitService already tests it.
+func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: "invalid_protocol",
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p, _ := url.Parse("http://proxy_server.com:80")
+	ctx := context.TODO()
+
+	service := ScenarioService{
+		clients:  map[*url.URL][]scenarioItemRequester{},
+		scenario: scenario,
+		ctx:      ctx,
+	}
+
+	// Act
+	err := service.createRequesters(p)
+
+	// Assert
+	if err == nil {
+		t.Fatal("TestCreateRequestersFailOnNewRequester should be errored")
+	}
+}
+
+func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   "?", // To fail HttpRequesters.Init method
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p, _ := url.Parse("http://proxy_server.com:80")
+	ctx := context.TODO()
+
+	service := ScenarioService{
+		clients:  map[*url.URL][]scenarioItemRequester{},
+		scenario: scenario,
+		ctx:      ctx,
+	}
+
+	// Act
+	err := service.createRequesters(p)
+
+	// Assert
+	if err == nil {
+		t.Fatal("TestCreateRequestersFailOnNewRequester should be errored")
+	}
+}
