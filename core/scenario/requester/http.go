@@ -46,7 +46,7 @@ type HttpRequester struct {
 	request   *http.Request
 }
 
-// Create a client with scenarioItem and use same client for each request
+// Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
 func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
 	h.ctx = ctx
 	h.packet = s
