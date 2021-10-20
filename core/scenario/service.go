@@ -69,7 +69,7 @@ func (s *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *typ
 	response.ProxyAddr = proxy
 
 	requesters, e := s.getOrCreateRequesters(proxy)
-	if err != nil {
+	if e != nil {
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
 

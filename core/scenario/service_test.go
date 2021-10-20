@@ -38,8 +38,7 @@ type MockRequester struct {
 	FailInit    bool
 	FailInitMsg string
 
-	SendCallCount int
-	ReturnSend    *types.ResponseItem
+	ReturnSend *types.ResponseItem
 }
 
 func (m *MockRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
@@ -52,7 +51,6 @@ func (m *MockRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 
 func (m *MockRequester) Send() (res *types.ResponseItem) {
 	m.SendCalled = true
-	m.SendCallCount++
 	return m.ReturnSend
 }
 
@@ -166,6 +164,171 @@ func TestInitServiceFail(t *testing.T) {
 	// Assert
 	if err == nil {
 		t.Fatalf("TestInitFunc should be errored")
+	}
+}
+
+func TestDo(t *testing.T) {
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p1, _ := url.Parse("http://proxy_server.com:80")
+	ctx := context.TODO()
+
+	requesters := []scenarioItemRequester{
+		{
+			scenarioItemID: 1,
+			requester:      &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}},
+		},
+		{
+			scenarioItemID: 2,
+			requester:      &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 2}},
+		},
+	}
+	service := ScenarioService{
+		clients: map[*url.URL][]scenarioItemRequester{
+			p1: requesters,
+		},
+		scenario: scenario,
+		ctx:      ctx,
+	}
+
+	expectedResponse := types.Response{
+		ProxyAddr: p1,
+		ResponseItems: []*types.ResponseItem{
+			{ScenarioItemID: 1}, {ScenarioItemID: 2},
+		},
+	}
+	// Act
+	response, err := service.Do(p1)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("TestDo errored: %v", err)
+	}
+	if response.ProxyAddr != expectedResponse.ProxyAddr {
+		t.Fatalf("ProxyAddr] Expected %v, Found: %v", expectedResponse.ProxyAddr, response.ProxyAddr)
+	}
+	if !reflect.DeepEqual(expectedResponse.ResponseItems, response.ResponseItems) {
+		t.Fatalf("[ResponseItem] Expected %#v, Found: %#v", expectedResponse.ResponseItems, response.ResponseItems)
+	}
+}
+
+func TestDoErrorOnNewRequester(t *testing.T) {
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: "invalid_protocol",
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p1, _ := url.Parse("http://proxy_server.com:80")
+	ctx := context.TODO()
+
+	requestersProxyError := []scenarioItemRequester{
+		{
+			scenarioItemID: 1,
+			requester:      &MockRequester{ReturnSend: &types.ResponseItem{Err: types.RequestError{Type: types.ErrorProxy}}},
+		},
+	}
+	requestersIntentedError := []scenarioItemRequester{
+		{
+			scenarioItemID: 1,
+			requester:      &MockRequester{ReturnSend: &types.ResponseItem{Err: types.RequestError{Type: types.ErrorIntented}}},
+		},
+	}
+	requestersConnError := []scenarioItemRequester{
+		{
+			scenarioItemID: 1,
+			requester:      &MockRequester{ReturnSend: &types.ResponseItem{Err: types.RequestError{Type: types.ErrorConn}}},
+		},
+	}
+
+	tests := []struct {
+		name       string
+		requesters []scenarioItemRequester
+		shouldErr  bool
+		errorType  string
+	}{
+		{"ProxyError", requestersProxyError, true, types.ErrorProxy},
+		{"IntentedError", requestersIntentedError, true, types.ErrorIntented},
+		{"ConnError", requestersConnError, false, ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service := ScenarioService{
+				clients: map[*url.URL][]scenarioItemRequester{
+					p1: test.requesters,
+				},
+				scenario: scenario,
+				ctx:      ctx,
+			}
+
+			// Act
+			_, err := service.Do(p1)
+
+			// Assert
+			if test.shouldErr {
+				if err == nil {
+					t.Fatalf("Should be errored")
+				}
+				if err.Type != test.errorType {
+					t.Fatalf("Expected: %v, Found: %v", test.errorType, err.Type)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Errored: %v", err)
+				}
+			}
+
+		})
+	}
+}
+
+func TestDoErrorOnSend(t *testing.T) {
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: "invalid_protocol",
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p1, _ := url.Parse("http://proxy_server.com:80")
+	ctx := context.TODO()
+
+	service := ScenarioService{
+		clients:  map[*url.URL][]scenarioItemRequester{},
+		scenario: scenario,
+		ctx:      ctx,
+	}
+
+	// Act
+	_, err := service.Do(p1)
+
+	// Assert
+	if err == nil {
+		t.Fatalf("TestDoErrorOnNewRequester should be errored")
+	}
+	if err.Type != types.ErrorUnkown {
+		t.Fatalf("Do should return types.ErrorUnkown error type")
 	}
 }
 
