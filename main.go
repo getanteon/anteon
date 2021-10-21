@@ -61,8 +61,9 @@ var (
 	target  = flag.String("t", "", "Target URL")
 	timeout = flag.Int("T", types.DefaultTimeout, "Request timeout in seconds")
 
-	proxyFlag = flag.String("P", "", "Proxy address as host:port")
-	output    = flag.String("o", types.DefaultOutputType, "Output destination")
+	proxyFlag = flag.String("P", "",
+		"Proxy address as protocol://username:password@host:port. Supported proxies [http(s), socks]")
+	output = flag.String("o", types.DefaultOutputType, "Output destination")
 
 	configPath = flag.String("config", "",
 		"Json config file path. If a config file is provided, other flag values will be ignored")
