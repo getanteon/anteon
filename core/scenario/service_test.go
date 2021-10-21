@@ -222,7 +222,7 @@ func TestDo(t *testing.T) {
 	}
 }
 
-func TestDoErrorOnNewRequester(t *testing.T) {
+func TestDoErrorOnSend(t *testing.T) {
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -258,14 +258,15 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		requesters []scenarioItemRequester
-		shouldErr  bool
-		errorType  string
+		name                     string
+		requesters               []scenarioItemRequester
+		shouldErr                bool
+		errorType                string
+		responseItemsShouldEmpty bool
 	}{
-		{"ProxyError", requestersProxyError, true, types.ErrorProxy},
-		{"IntentedError", requestersIntentedError, true, types.ErrorIntented},
-		{"ConnError", requestersConnError, false, ""},
+		{"ProxyError", requestersProxyError, true, types.ErrorProxy, false},
+		{"IntentedError", requestersIntentedError, true, types.ErrorIntented, true},
+		{"ConnError", requestersConnError, false, "", false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -278,7 +279,7 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 			}
 
 			// Act
-			_, err := service.Do(p1)
+			res, err := service.Do(p1)
 
 			// Assert
 			if test.shouldErr {
@@ -293,12 +294,18 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 					t.Fatalf("Errored: %v", err)
 				}
 			}
+			if test.responseItemsShouldEmpty && len(res.ResponseItems) > 0 {
+				t.Fatalf("ResponseItem should be empty: %v", res.ResponseItems)
+			}
+			if !test.responseItemsShouldEmpty && len(res.ResponseItems) == 0 {
+				t.Fatal("ResponseItem shouldn't be empty")
+			}
 
 		})
 	}
 }
 
-func TestDoErrorOnSend(t *testing.T) {
+func TestDoErrorOnNewRequester(t *testing.T) {
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
