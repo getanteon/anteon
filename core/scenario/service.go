@@ -77,7 +77,10 @@ func (s *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *typ
 		res := sr.requester.Send()
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
-			return
+			if res.Err.Type == types.ErrorIntented {
+				// Stop the loop. ErrorProxy can be fixed in time. But ErrorIntented is a signal to stop all.
+				return
+			}
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
 	}
