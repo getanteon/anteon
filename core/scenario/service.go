@@ -35,6 +35,9 @@ type ScenarioService struct {
 	// Each proxy represents a client.
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
+
+	scenario types.Scenario
+	ctx      context.Context
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -44,22 +47,14 @@ func NewScenarioService() *ScenarioService {
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control to the life of each request.
-func (ss *ScenarioService) Init(ctx context.Context, s types.Scenario, proxies []*url.URL) (err error) {
-	ss.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
+func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL) (err error) {
+	s.scenario = scenario
+	s.ctx = ctx
+	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
-		ss.clients[p] = []scenarioItemRequester{}
-		for _, si := range s.Scenario {
-			var r requester.Requester
-			r, err = requester.NewRequester(si)
-			if err != nil {
-				return
-			}
-			ss.clients[p] = append(ss.clients[p], scenarioItemRequester{scenarioItemID: si.ID, requester: r})
-
-			err = r.Init(ctx, si, p)
-			if err != nil {
-				return
-			}
+		err = s.createRequesters(p)
+		if err != nil {
+			return
 		}
 	}
 	return
@@ -68,18 +63,57 @@ func (ss *ScenarioService) Init(ctx context.Context, s types.Scenario, proxies [
 // Do executes the scenario for the given proxy.
 // Returns "types.Response" filled by the requester of the given Proxy
 // Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
-func (ss *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {
+func (s *ScenarioService) Do(proxy *url.URL) (response *types.Response, err *types.RequestError) {
 	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
 	response.StartTime = time.Now()
 	response.ProxyAddr = proxy
-	for _, sr := range ss.clients[proxy] {
+
+	requesters, e := s.getOrCreateRequesters(proxy)
+	if e != nil {
+		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
+	}
+
+	for _, sr := range requesters {
 		res := sr.requester.Send()
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
+			if res.Err.Type == types.ErrorIntented {
+				// Stop the loop. ErrorProxy can be fixed in time. But ErrorIntented is a signal to stop all.
+				return
+			}
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
 	}
 	return
+}
+
+func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {
+	requesters, ok := s.clients[proxy]
+	if !ok {
+		err = s.createRequesters(proxy)
+		if err != nil {
+			return
+		}
+	}
+	return s.clients[proxy], err
+}
+
+func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
+	s.clients[proxy] = []scenarioItemRequester{}
+	for _, si := range s.scenario.Scenario {
+		var r requester.Requester
+		r, err = requester.NewRequester(si)
+		if err != nil {
+			return
+		}
+		s.clients[proxy] = append(s.clients[proxy], scenarioItemRequester{scenarioItemID: si.ID, requester: r})
+
+		err = r.Init(s.ctx, si, proxy)
+		if err != nil {
+			return
+		}
+	}
+	return err
 }
 
 type scenarioItemRequester struct {

@@ -40,7 +40,7 @@ type Requester interface {
 func NewRequester(s types.ScenarioItem) (requester Requester, err error) {
 	if strings.EqualFold(s.Protocol, types.ProtocolHTTP) ||
 		strings.EqualFold(s.Protocol, types.ProtocolHTTPS) {
-		requester = &httpRequester{}
+		requester = &HttpRequester{}
 	} else {
 		err = fmt.Errorf("unsupported requester")
 	}

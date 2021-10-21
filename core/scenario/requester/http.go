@@ -38,7 +38,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
-type httpRequester struct {
+type HttpRequester struct {
 	ctx       context.Context
 	proxyAddr *url.URL
 	packet    types.ScenarioItem
@@ -46,8 +46,8 @@ type httpRequester struct {
 	request   *http.Request
 }
 
-// Create a client with scenarioItem and use same client for each request
-func (h *httpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
+// Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
+func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
@@ -78,7 +78,7 @@ func (h *httpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	return
 }
 
-func (h *httpRequester) Send() (res *types.ResponseItem) {
+func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -137,7 +137,7 @@ func (h *httpRequester) Send() (res *types.ResponseItem) {
 	return
 }
 
-func (h *httpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
+func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	httpReq := h.request.Clone(h.ctx)
 	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
@@ -175,7 +175,7 @@ func fetchErrType(err string) types.RequestError {
 	return requestErr
 }
 
-func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
+func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	tr := &http.Transport{
 		TLSClientConfig: tlsConfig,
 		Proxy:           http.ProxyURL(h.proxyAddr),
@@ -198,7 +198,7 @@ func (h *httpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	return tr
 }
 
-func (h *httpRequester) initTLSConfig() *tls.Config {
+func (h *HttpRequester) initTLSConfig() *tls.Config {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
@@ -208,7 +208,7 @@ func (h *httpRequester) initTLSConfig() *tls.Config {
 	return tlsConfig
 }
 
-func (h *httpRequester) initRequestInstance() (err error) {
+func (h *HttpRequester) initRequestInstance() (err error) {
 	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
 		return
