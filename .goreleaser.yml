@@ -43,6 +43,10 @@ archives:
     files:
       - README.md
       - LICENSE*
+
+universal_binaries:
+- replace: true
+
 checksum:
   name_template: 'checksums.txt'
 snapshot:
