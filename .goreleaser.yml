@@ -49,10 +49,14 @@ snapshot:
   name_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
+  use: github
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
 
 brews:
   - tap:
@@ -127,3 +131,11 @@ nfpms:
     - apk
     - deb
     - rpm
+
+release:
+  footer: |
+    ## More? 🚀
+
+    - Join the waitlist for [Ddosify Cloud](https://ddosify.com)
+    - Join our [Discord server](https://discord.gg/9KdnrSUZQg)
+    - Follow us on [Twitter](https://twitter.com/ddosify)
