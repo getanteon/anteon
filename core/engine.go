@@ -180,6 +180,7 @@ func (e *engine) stop() {
 	close(e.responseChan)
 	<-e.reportService.DoneChan()
 	e.reportService.Report()
+	e.proxyService.Done()
 }
 
 func (e *engine) initReqCountArr() {

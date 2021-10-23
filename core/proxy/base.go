@@ -48,6 +48,7 @@ type ProxyService interface {
 	GetProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string) *url.URL
 	GetProxyCountry(*url.URL) string
+	Done() error
 }
 
 // NewProxyService is the factory method of the ProxyService.
