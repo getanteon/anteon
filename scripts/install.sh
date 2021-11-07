@@ -12,6 +12,9 @@ uname_arch() {
     armv*) arch="armv6" ;;
     armv*) arch="armv6" ;;
   esac
+  if [ "$(uname_os)" == "macos" ]; then
+    arch="all"
+  fi
   echo ${arch}
 }
 
@@ -29,8 +32,8 @@ GITHUB_OWNER="ddosify"
 GITHUB_REPO="ddosify"
 TAG="latest"
 INSTALL_DIR="/usr/local/bin/"
-ARCH=$(uname_arch)
 OS=$(uname_os)
+ARCH=$(uname_arch)
 PLATFORM="${OS}/${ARCH}"
 GITHUB_RELEASES_PAGE=https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases
 VERSION=$(curl $GITHUB_RELEASES_PAGE/$TAG -sL -H 'Accept:application/json' | tr -s '\n' ' ' | sed 's/.*"tag_name":"//' | sed 's/".*//' | tr -d v)
