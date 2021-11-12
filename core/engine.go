@@ -132,7 +132,8 @@ func (e *engine) Start() string {
 		default:
 			mutex.Lock()
 			e.wg.Add(e.reqCountArr[e.tickCounter])
-			go e.runWorkers(e.tickCounter)
+			tickTime := time.Now()
+			go e.runWorkers(e.tickCounter, tickTime)
 			e.tickCounter++
 			mutex.Unlock()
 		}
@@ -140,22 +141,22 @@ func (e *engine) Start() string {
 	return resultDone
 }
 
-func (e *engine) runWorkers(c int) {
+func (e *engine) runWorkers(c int, tickTime time.Time) {
 	for i := 1; i <= e.reqCountArr[c]; i++ {
 		go func() {
-			e.runWorker()
+			e.runWorker(tickTime)
 			e.wg.Done()
 		}()
 	}
 }
 
-func (e *engine) runWorker() {
+func (e *engine) runWorker(tickTime time.Time) {
 	var res *types.Response
 	var err *types.RequestError
 
 	p := e.proxyService.GetProxy()
 	for i := 1; i <= 3; i++ {
-		res, err = e.scenarioService.Do(p)
+		res, err = e.scenarioService.Do(p, tickTime)
 
 		if err != nil && err.Type == types.ErrorProxy {
 			p = e.proxyService.ReportProxy(p, err.Reason)
