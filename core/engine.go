@@ -36,7 +36,7 @@ import (
 
 const (
 	// interval in millisecond
-	tickerInterval = 100
+	tickerInterval = 1000
 
 	// test result status
 	resultDone    = "done"
@@ -219,6 +219,9 @@ func (e *engine) createIncrementalReqCountArr() {
 func (e *engine) createWavedReqCountArr() {
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	quarterWaveCount := int((math.Log2(float64(e.hammer.TestDuration))))
+	if quarterWaveCount == 0 {
+		quarterWaveCount = 1
+	}
 	qWaveDuration := int(e.hammer.TestDuration / quarterWaveCount)
 	reqCountPerQWave := int(e.hammer.TotalReqCount / quarterWaveCount)
 	tickArrStartIndex := 0
