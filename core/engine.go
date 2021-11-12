@@ -142,20 +142,21 @@ func (e *engine) Start() string {
 
 func (e *engine) runWorkers(c int) {
 	for i := 1; i <= e.reqCountArr[c]; i++ {
-		go func() {
-			e.runWorker()
+		scenarioStartTime := time.Now()
+		go func(t time.Time) {
+			e.runWorker(t)
 			e.wg.Done()
-		}()
+		}(scenarioStartTime)
 	}
 }
 
-func (e *engine) runWorker() {
+func (e *engine) runWorker(scenarioStartTime time.Time) {
 	var res *types.Response
 	var err *types.RequestError
 
 	p := e.proxyService.GetProxy()
 	for i := 1; i <= 3; i++ {
-		res, err = e.scenarioService.Do(p)
+		res, err = e.scenarioService.Do(p, scenarioStartTime)
 
 		if err != nil && err.Type == types.ErrorProxy {
 			p = e.proxyService.ReportProxy(p, err.Reason)
@@ -202,7 +203,15 @@ func (e *engine) initReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
-	createLinearDistArr(e.hammer.TotalReqCount, e.reqCountArr)
+	steps := make([]int, e.hammer.TestDuration)
+	createLinearDistArr(e.hammer.TotalReqCount, steps)
+	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
+	for i := range steps {
+		tickArrStartIndex := i * tickPerSecond
+		tickArrEndIndex := tickArrStartIndex + tickPerSecond
+		segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
+		createLinearDistArr(steps[i], segment)
+	}
 }
 
 func (e *engine) createIncrementalReqCountArr() {
@@ -219,6 +228,9 @@ func (e *engine) createIncrementalReqCountArr() {
 func (e *engine) createWavedReqCountArr() {
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	quarterWaveCount := int((math.Log2(float64(e.hammer.TestDuration))))
+	if quarterWaveCount == 0 {
+		quarterWaveCount = 1
+	}
 	qWaveDuration := int(e.hammer.TestDuration / quarterWaveCount)
 	reqCountPerQWave := int(e.hammer.TotalReqCount / quarterWaveCount)
 	tickArrStartIndex := 0
