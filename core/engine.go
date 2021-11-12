@@ -142,21 +142,21 @@ func (e *engine) Start() string {
 
 func (e *engine) runWorkers(c int) {
 	for i := 1; i <= e.reqCountArr[c]; i++ {
-		tickTime := time.Now()
+		scenarioStartTime := time.Now()
 		go func(t time.Time) {
 			e.runWorker(t)
 			e.wg.Done()
-		}(tickTime)
+		}(scenarioStartTime)
 	}
 }
 
-func (e *engine) runWorker(tickTime time.Time) {
+func (e *engine) runWorker(scenarioStartTime time.Time) {
 	var res *types.Response
 	var err *types.RequestError
 
 	p := e.proxyService.GetProxy()
 	for i := 1; i <= 3; i++ {
-		res, err = e.scenarioService.Do(p, tickTime)
+		res, err = e.scenarioService.Do(p, scenarioStartTime)
 
 		if err != nil && err.Type == types.ErrorProxy {
 			p = e.proxyService.ReportProxy(p, err.Reason)
