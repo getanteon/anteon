@@ -132,8 +132,7 @@ func (e *engine) Start() string {
 		default:
 			mutex.Lock()
 			e.wg.Add(e.reqCountArr[e.tickCounter])
-			tickTime := time.Now()
-			go e.runWorkers(e.tickCounter, tickTime)
+			go e.runWorkers(e.tickCounter)
 			e.tickCounter++
 			mutex.Unlock()
 		}
@@ -141,12 +140,13 @@ func (e *engine) Start() string {
 	return resultDone
 }
 
-func (e *engine) runWorkers(c int, tickTime time.Time) {
+func (e *engine) runWorkers(c int) {
 	for i := 1; i <= e.reqCountArr[c]; i++ {
-		go func() {
-			e.runWorker(tickTime)
+		tickTime := time.Now()
+		go func(t time.Time) {
+			e.runWorker(t)
 			e.wg.Done()
-		}()
+		}(tickTime)
 	}
 }
 
