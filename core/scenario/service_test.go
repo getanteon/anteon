@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
 	"go.ddosify.com/ddosify/core/types"
@@ -208,7 +209,7 @@ func TestDo(t *testing.T) {
 		},
 	}
 	// Act
-	response, err := service.Do(p1)
+	response, err := service.Do(p1, time.Now())
 
 	// Assert
 	if err != nil {
@@ -279,7 +280,7 @@ func TestDoErrorOnSend(t *testing.T) {
 			}
 
 			// Act
-			res, err := service.Do(p1)
+			res, err := service.Do(p1, time.Now())
 
 			// Assert
 			if test.shouldErr {
@@ -328,7 +329,7 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 	}
 
 	// Act
-	_, err := service.Do(p1)
+	_, err := service.Do(p1, time.Now())
 
 	// Assert
 	if err == nil {
