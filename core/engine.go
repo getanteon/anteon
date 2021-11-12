@@ -36,7 +36,7 @@ import (
 
 const (
 	// interval in millisecond
-	tickerInterval = 1000
+	tickerInterval = 100
 
 	// test result status
 	resultDone    = "done"
@@ -202,7 +202,15 @@ func (e *engine) initReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
-	createLinearDistArr(e.hammer.TotalReqCount, e.reqCountArr)
+	steps := make([]int, e.hammer.TestDuration)
+	createLinearDistArr(e.hammer.TotalReqCount, steps)
+	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
+	for i := range steps {
+		tickArrStartIndex := i * tickPerSecond
+		tickArrEndIndex := tickArrStartIndex + tickPerSecond
+		segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
+		createLinearDistArr(steps[i], segment)
+	}
 }
 
 func (e *engine) createIncrementalReqCountArr() {
