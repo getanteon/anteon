@@ -46,7 +46,8 @@ brew install ddosify/tap/ddosify
 
 ### apk, deb, rpm packages
 
-For arm architectures change `ddosify_amd64` to `ddosify_arm64` or `ddosify_armv6`.
+- For arm architectures change `ddosify_amd64` to `ddosify_arm64` or `ddosify_armv6`.
+- Superuser privilege is required.
 
 ```bash
 # For Redhat based (Fedora, CentOS, RHEL, etc.) - Change 
