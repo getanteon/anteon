@@ -44,13 +44,13 @@ docker run -it --rm ddosify/ddosify
 brew install ddosify/tap/ddosify
 ```
 
-### apk, deb, rpm, Arch Linux packages
+### apk, deb, rpm packages
 
 - For arm architectures change `ddosify_amd64` to `ddosify_arm64` or `ddosify_armv6`.
 - Superuser privilege is required.
 
 ```bash
-# For Redhat based (Fedora, CentOS, RHEL, etc.) - Change 
+# For Redhat based (Fedora, CentOS, RHEL, etc.)
 rpm -i https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.rpm
 
 # For Debian based (Ubuntu, Linux Mint, etc.)
@@ -60,11 +60,6 @@ dpkg -i ddosify_amd64.deb
 # For Alpine
 wget https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.apk
 apk add --allow-untrusted ddosify_amd64.apk
-
-# For Arch Linux
-git clone https://aur.archlinux.org/ddosify.git
-cd ddosify
-makepkg -sri
 ```
 
 ### Using the convenience script (macOS and Linux)
