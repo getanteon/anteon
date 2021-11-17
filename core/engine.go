@@ -185,8 +185,8 @@ func (e *engine) stop() {
 }
 
 func (e *engine) initReqCountArr() {
-	if e.hammer.TimeReqCountMap != nil {
-		fmt.Println("initReqCountArr from TimeReqCountMap")
+	if e.hammer.TimeRunCountMap != nil {
+		fmt.Println("initReqCountArr from TimeRunCountMap")
 	} else {
 		length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
 		e.reqCountArr = make([]int, length)

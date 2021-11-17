@@ -50,6 +50,11 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
+type TimeRunCount []struct {
+	Duration int
+	Count    int
+}
+
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
@@ -63,7 +68,7 @@ type Hammer struct {
 	TestDuration int
 
 	// Duration (in second) - Request count map. Example: {10: 1500, 50: 400, ...}
-	TimeReqCountMap map[int]int
+	TimeRunCountMap TimeRunCount
 
 	// Test Scenario
 	Scenario Scenario
