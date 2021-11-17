@@ -95,5 +95,13 @@ func (h *Hammer) Validate() error {
 		return fmt.Errorf("unsupported LoadType: %s", h.LoadType)
 	}
 
+	if len(h.TimeRunCountMap) > 0 {
+		for _, t := range h.TimeRunCountMap {
+			if t.Duration < 1 {
+				return fmt.Errorf("duration in manual_load should be greater than 0")
+			}
+		}
+	}
+
 	return nil
 }
