@@ -114,38 +114,52 @@ func TestRequestCount(t *testing.T) {
 		loadType       string
 		duration       int
 		reqCount       int
+		timeRunCount   types.TimeRunCount
 		expectedReqArr []int
 		delta          int
 	}{
-		{"Linear1", types.LoadTypeLinear, 1, 100, []int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1},
-		{"Linear2", types.LoadTypeLinear, 1, 5, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
-		{"Linear3", types.LoadTypeLinear, 2, 4, []int{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0}, 0},
-		{"Linear4", types.LoadTypeLinear, 2, 23,
+		{"Linear1", types.LoadTypeLinear, 1, 100, nil, []int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1},
+		{"Linear2", types.LoadTypeLinear, 1, 5, nil, []int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
+		{"Linear3", types.LoadTypeLinear, 2, 4, nil,
+			[]int{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0}, 0},
+		{"Linear4", types.LoadTypeLinear, 2, 23, nil,
 			[]int{2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0},
-		{"Incremental1", types.LoadTypeIncremental, 1, 5,
+		{"Incremental1", types.LoadTypeIncremental, 1, 5, nil,
 			[]int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 2},
-		{"Incremental2", types.LoadTypeIncremental, 3, 1022,
+		{"Incremental2", types.LoadTypeIncremental, 3, 1022, nil,
 			[]int{17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 35, 34, 34, 34,
 				34, 34, 34, 34, 34, 34, 52, 51, 51, 51, 51, 51, 51, 51, 51, 51}, 2},
-		{"Incremental3", types.LoadTypeIncremental, 5, 10,
+		{"Incremental3", types.LoadTypeIncremental, 5, 10, nil,
 			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
-		{"Incremental4", types.LoadTypeIncremental, 4, 10,
+		{"Incremental4", types.LoadTypeIncremental, 4, 10, nil,
 			[]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0}, 0},
-		{"Waved1", types.LoadTypeWaved, 1, 5,
+		{"Waved1", types.LoadTypeWaved, 1, 5, nil,
 			[]int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
-		{"Waved2", types.LoadTypeWaved, 4, 32,
+		{"Waved2", types.LoadTypeWaved, 4, 32, nil,
 			[]int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1,
 				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
-		{"Waved3", types.LoadTypeWaved, 5, 10,
+		{"Waved3", types.LoadTypeWaved, 5, 10, nil,
 			[]int{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0},
-		{"Waved4", types.LoadTypeWaved, 9, 1000,
+		{"Waved4", types.LoadTypeWaved, 9, 1000, nil,
 			[]int{6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17,
 				17, 17, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 16, 16, 16, 16, 12, 11, 11, 11, 11, 11,
 				11, 11, 11, 11, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 12, 11, 11,
 				11, 11, 11, 11, 11, 11, 11, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16}, 1},
+		{"TimeRunCount1", "", 1, 100, types.TimeRunCount{{Duration: 1, Count: 100}},
+			[]int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}, 1},
+		{"TimeRunCount2", "", 1, 5, types.TimeRunCount{{Duration: 1, Count: 5}},
+			[]int{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, 0},
+		{"TimeRunCount3", "", 6, 55,
+			types.TimeRunCount{{Duration: 1, Count: 20}, {Duration: 2, Count: 30}, {Duration: 3, Count: 5}},
+			[]int{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
+				1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0},
+		{"TimeRunCount4", "", 5, 40,
+			types.TimeRunCount{{Duration: 1, Count: 20}, {Duration: 2, Count: 0}, {Duration: 2, Count: 20}},
+			[]int{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 0},
 	}
 
 	for _, tc := range tests {
@@ -171,6 +185,7 @@ func TestRequestCount(t *testing.T) {
 			h := newDummyHammer()
 			h.LoadType = test.loadType
 			h.TestDuration = test.duration
+			h.TimeRunCountMap = test.timeRunCount
 			h.TotalReqCount = test.reqCount
 			h.Scenario.Scenario[0].URL = server.URL
 

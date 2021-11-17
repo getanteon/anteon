@@ -50,6 +50,7 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
+// TimeRunCount is the data structure to store manual load type data.
 type TimeRunCount []struct {
 	Duration int
 	Count    int
