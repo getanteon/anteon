@@ -257,3 +257,27 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		t.Errorf("TestHammerInvalidScenarioItemID errored")
 	}
 }
+
+func TestHammerInvalidManualLoadDuration(t *testing.T) {
+	// Duration = 0
+	h := newDummyHammer()
+	h.TimeRunCountMap = TimeRunCount{
+		{Duration: 10, Count: 10},
+		{Duration: 0, Count: 10},
+	}
+
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidManualLoadDuration errored")
+	}
+
+	// Duration is negatie
+	h = newDummyHammer()
+	h.TimeRunCountMap = TimeRunCount{
+		{Duration: 10, Count: 10},
+		{Duration: -1, Count: 10},
+	}
+
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerInvalidManualLoadDuration errored")
+	}
+}
