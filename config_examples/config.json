@@ -2,6 +2,11 @@
     "request_count": 20,
     "load_type": "linear",
     "duration": 5,
+    "manual_load": [
+        {"duration": 5, "count": 5},
+        {"duration": 6, "count": 10},
+        {"duration": 7, "count": 20}
+    ],
     "proxy": "http://proxy_host.com:proxy_port",
     "output": "stdout",
     "steps": [
