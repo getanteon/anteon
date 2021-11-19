@@ -38,6 +38,11 @@ func init() {
 	AvailableConfigReader[ConfigTypeJson] = &JsonReader{}
 }
 
+type timeRunCount []struct {
+	Duration int `json:"duration"`
+	Count    int `json:"count"`
+}
+
 type auth struct {
 	Type     string `json:"type"`
 	Username string `json:"username"`
@@ -75,12 +80,13 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount int    `json:"request_count"`
-	LoadType string `json:"load_type"`
-	Duration int    `json:"duration"`
-	Steps    []step `json:"steps"`
-	Output   string `json:"output"`
-	Proxy    string `json:"proxy"`
+	ReqCount     int          `json:"request_count"`
+	LoadType     string       `json:"load_type"`
+	Duration     int          `json:"duration"`
+	TimeRunCount timeRunCount `json:"manual_load"`
+	Steps        []step       `json:"steps"`
+	Output       string       `json:"output"`
+	Proxy        string       `json:"proxy"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -140,11 +146,21 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Addr:     proxyURL,
 	}
 
+	// TimeRunCount
+	if len(j.TimeRunCount) > 0 {
+		j.ReqCount, j.Duration = 0, 0
+		for _, t := range j.TimeRunCount {
+			j.ReqCount += t.Count
+			j.Duration += t.Duration
+		}
+	}
+
 	// Hammer
 	h = types.Hammer{
 		TotalReqCount:     j.ReqCount,
 		LoadType:          strings.ToLower(j.LoadType),
 		TestDuration:      j.Duration,
+		TimeRunCountMap:   types.TimeRunCount(j.TimeRunCount),
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: j.Output,

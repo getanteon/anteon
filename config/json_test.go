@@ -117,6 +117,76 @@ func TestCreateHammer(t *testing.T) {
 	}
 }
 
+func TestCreateHammerManualLoad(t *testing.T) {
+	t.Parallel()
+
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load.json"), ConfigTypeJson)
+	expectedHammer := types.Hammer{
+		TotalReqCount:     35,
+		LoadType:          types.DefaultLoadType,
+		TestDuration:      18,
+		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
+		ReportDestination: types.DefaultOutputType,
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{{
+				ID:       1,
+				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				Timeout:  types.DefaultTimeout,
+			}},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: proxy.ProxyTypeSingle,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammerManualLoad error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
+	t.Parallel()
+
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load_override.json"), ConfigTypeJson)
+	expectedHammer := types.Hammer{
+		TotalReqCount:     35,
+		LoadType:          types.DefaultLoadType,
+		TestDuration:      18,
+		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
+		ReportDestination: types.DefaultOutputType,
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{{
+				ID:       1,
+				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				Timeout:  types.DefaultTimeout,
+			}},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: proxy.ProxyTypeSingle,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammerManualLoad error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+	}
+}
+
 func TestCreateHammerPayload(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_payload.json"), ConfigTypeJson)

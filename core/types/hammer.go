@@ -50,6 +50,12 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
+// TimeRunCount is the data structure to store manual load type data.
+type TimeRunCount []struct {
+	Duration int
+	Count    int
+}
+
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
@@ -63,7 +69,7 @@ type Hammer struct {
 	TestDuration int
 
 	// Duration (in second) - Request count map. Example: {10: 1500, 50: 400, ...}
-	TimeReqCountMap map[int]int
+	TimeRunCountMap TimeRunCount
 
 	// Test Scenario
 	Scenario Scenario
@@ -88,6 +94,14 @@ func (h *Hammer) Validate() error {
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {
 		return fmt.Errorf("unsupported LoadType: %s", h.LoadType)
+	}
+
+	if len(h.TimeRunCountMap) > 0 {
+		for _, t := range h.TimeRunCountMap {
+			if t.Duration < 1 {
+				return fmt.Errorf("duration in manual_load should be greater than 0")
+			}
+		}
 	}
 
 	return nil

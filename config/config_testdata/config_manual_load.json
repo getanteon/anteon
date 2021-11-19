@@ -1,0 +1,13 @@
+{
+    "manual_load": [
+        {"duration": 5, "count": 5},
+        {"duration": 6, "count": 10},
+        {"duration": 7, "count": 20}
+    ],
+    "steps": [
+        {
+            "id": 1,
+            "url": "test.com"
+        }
+    ]
+}

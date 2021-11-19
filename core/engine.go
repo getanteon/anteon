@@ -22,7 +22,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"reflect"
 	"sync"
@@ -185,12 +184,12 @@ func (e *engine) stop() {
 }
 
 func (e *engine) initReqCountArr() {
-	if e.hammer.TimeReqCountMap != nil {
-		fmt.Println("initReqCountArr from TimeReqCountMap")
-	} else {
-		length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
-		e.reqCountArr = make([]int, length)
+	length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
+	e.reqCountArr = make([]int, length)
 
+	if e.hammer.TimeRunCountMap != nil {
+		e.createManualReqCountArr()
+	} else {
 		switch e.hammer.LoadType {
 		case types.LoadTypeLinear:
 			e.createLinearReqCountArr()
@@ -199,6 +198,23 @@ func (e *engine) initReqCountArr() {
 		case types.LoadTypeWaved:
 			e.createWavedReqCountArr()
 		}
+	}
+}
+
+func (e *engine) createManualReqCountArr() {
+	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
+	stepStartIndex := 0
+	for _, t := range e.hammer.TimeRunCountMap {
+		steps := make([]int, t.Duration)
+		createLinearDistArr(t.Count, steps)
+
+		for i := range steps {
+			tickArrStartIndex := (i * tickPerSecond) + stepStartIndex
+			tickArrEndIndex := tickArrStartIndex + tickPerSecond
+			segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
+			createLinearDistArr(steps[i], segment)
+		}
+		stepStartIndex += len(steps) * tickPerSecond
 	}
 }
 
