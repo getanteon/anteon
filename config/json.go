@@ -59,6 +59,7 @@ type step struct {
 	Payload     string                 `json:"payload"`
 	PayloadFile string                 `json:"payload_file"`
 	Timeout     int                    `json:"timeout"`
+	Sleep       string                 `json:"sleep"`
 	Others      map[string]interface{} `json:"others"`
 }
 
@@ -201,6 +202,7 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		Headers:  s.Headers,
 		Payload:  payload,
 		Timeout:  s.Timeout,
+		Sleep:    strings.ReplaceAll(s.Sleep, " ", ""),
 		Custom:   s.Others,
 	}, nil
 }
