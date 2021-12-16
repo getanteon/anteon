@@ -86,12 +86,22 @@ func compareScenarioServiceClients(
 			if reflect.TypeOf(expectedVal[i].requester) != reflect.TypeOf(val[i].requester) {
 				return fmt.Errorf("[requester] Expected %#v, Found %#v", expectedVal, val)
 			}
+
+			if reflect.TypeOf(expectedVal[i].sleep) != reflect.TypeOf(val[i].sleep) {
+				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
+			}
+
+			if !reflect.DeepEqual(expectedVal[i].sleep, val[i].sleep) {
+				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
+			}
 		}
 	}
 	return nil
 }
 
 func TestInitService(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -101,12 +111,21 @@ func TestInitService(t *testing.T) {
 				Method:   types.DefaultMethod,
 				URL:      "test.com",
 				Timeout:  types.DefaultDuration,
+				Sleep:    "300-500",
 			},
 			{
 				ID:       2,
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      "test2.com",
+				Timeout:  types.DefaultDuration,
+				Sleep:    "1000",
+			},
+			{
+				ID:       3,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test3.com",
 				Timeout:  types.DefaultDuration,
 			},
 		},
@@ -117,12 +136,36 @@ func TestInitService(t *testing.T) {
 	ctx := context.TODO()
 	expectedClients := map[*url.URL][]scenarioItemRequester{
 		p1: {
-			{scenarioItemID: 1, requester: &requester.HttpRequester{}},
-			{scenarioItemID: 2, requester: &requester.HttpRequester{}},
+			{
+				scenarioItemID: 1,
+				requester:      &requester.HttpRequester{},
+				sleep:          &sleep{strategy: "range", min: 300, max: 500, dur: 0},
+			},
+			{
+				scenarioItemID: 2,
+				requester:      &requester.HttpRequester{},
+				sleep:          &sleep{strategy: "duration", min: 0, max: 0, dur: 1000},
+			},
+			{
+				scenarioItemID: 3,
+				requester:      &requester.HttpRequester{},
+			},
 		},
 		p2: {
-			{scenarioItemID: 1, requester: &requester.HttpRequester{}},
-			{scenarioItemID: 2, requester: &requester.HttpRequester{}},
+			{
+				scenarioItemID: 1,
+				requester:      &requester.HttpRequester{},
+				sleep:          &sleep{strategy: "range", min: 300, max: 500, dur: 0},
+			},
+			{
+				scenarioItemID: 2,
+				requester:      &requester.HttpRequester{},
+				sleep:          &sleep{strategy: "duration", min: 0, max: 0, dur: 1000},
+			},
+			{
+				scenarioItemID: 3,
+				requester:      &requester.HttpRequester{},
+			},
 		},
 	}
 
@@ -141,6 +184,8 @@ func TestInitService(t *testing.T) {
 }
 
 func TestInitServiceFail(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -169,6 +214,8 @@ func TestInitServiceFail(t *testing.T) {
 }
 
 func TestDo(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -224,6 +271,8 @@ func TestDo(t *testing.T) {
 }
 
 func TestDoErrorOnSend(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -307,6 +356,8 @@ func TestDoErrorOnSend(t *testing.T) {
 }
 
 func TestDoErrorOnNewRequester(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -341,6 +392,8 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 }
 
 func TestGetOrCreateRequesters(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -385,6 +438,8 @@ func TestGetOrCreateRequesters(t *testing.T) {
 }
 
 func TestGetOrCreateRequestersNewProxy(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -432,6 +487,8 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 }
 
 func TestGetOrCreateRequestersFailed(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -464,6 +521,8 @@ func TestGetOrCreateRequestersFailed(t *testing.T) {
 
 // No need to test happy path for createRequesters, TestInitService already tests it.
 func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -495,6 +554,8 @@ func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
 }
 
 func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -523,4 +584,72 @@ func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
 	if err == nil {
 		t.Fatal("TestCreateRequestersFailOnNewRequester should be errored")
 	}
+}
+
+func TestNewSleep(t *testing.T) {
+	t.Parallel()
+
+	sleepRange := "300-500"
+	sleepRangeReverse := "500-300"
+	sleepDuration := "1000"
+
+	expectedSleepRange := sleep{
+		strategy: "range",
+		min:      300,
+		max:      500,
+		dur:      0,
+	}
+	exptectedSleepDuration := sleep{
+		strategy: "duration",
+		dur:      1000,
+		min:      0,
+		max:      0,
+	}
+
+	// "range" sleep strategy test
+	sleep := newSleep(sleepRange)
+	if !reflect.DeepEqual(*sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, *sleep)
+	}
+	sleep = newSleep(sleepRangeReverse)
+	if !reflect.DeepEqual(*sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, *sleep)
+	}
+
+	// "duration" sleep strategy test
+	sleep = newSleep(sleepDuration)
+	if !reflect.DeepEqual(*sleep, exptectedSleepDuration) {
+		t.Errorf("Expected %v, Found: %v", exptectedSleepDuration, *sleep)
+	}
+}
+
+func TestGetSleepDuration(t *testing.T) {
+	t.Parallel()
+
+	min := 300
+	max := 500
+	dur := 1000
+	sleepRange := &sleep{
+		strategy: "range",
+		min:      min,
+		max:      max,
+		dur:      0,
+	}
+	sleepDuration := &sleep{
+		strategy: "duration",
+		dur:      dur,
+		min:      0,
+		max:      0,
+	}
+
+	duration := sleepRange.getDuration()
+	if duration > time.Duration(max) || duration < time.Duration(min) {
+		t.Errorf("Expected: [%d-%d], Found: %d", min, max, duration)
+	}
+
+	duration = sleepDuration.getDuration()
+	if duration != time.Duration(dur) {
+		t.Errorf("Expected: %d, Found: %d", dur, duration)
+	}
+
 }
