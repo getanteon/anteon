@@ -192,9 +192,8 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	h.Scenario = Scenario{
 		Scenario: []ScenarioItem{
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   "GETT",
+				ID:  1,
+				URL: "http://test.com",
 			},
 		},
 	}
@@ -255,6 +254,69 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 	}
 	if err := h.Validate(); err == nil {
 		t.Errorf("TestHammerInvalidScenarioItemID errored")
+	}
+}
+
+func TestHammerStepSleep(t *testing.T) {
+	t.Parallel()
+
+	invalidSleeps := []string{
+		"-300",
+		"-300-500",
+		"300s",
+		"as",
+		"100000", // More than maxSleep
+	}
+	validSleeps := []string{
+		"300-500",
+		"1000",
+	}
+
+	tests := []struct {
+		name      string
+		sleep     string
+		shouldErr bool
+	}{
+		{"Invalid 1", invalidSleeps[0], true},
+		{"Invalid 2", invalidSleeps[1], true},
+		{"Invalid 3", invalidSleeps[2], true},
+		{"Invalid 4", invalidSleeps[3], true},
+		{"Invalid 5", invalidSleeps[4], true},
+		{"ValidRange", validSleeps[0], false},
+		{"ValidDuration", validSleeps[1], false},
+	}
+
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			h := newDummyHammer()
+			h.Scenario = Scenario{
+				Scenario: []ScenarioItem{
+					{
+						ID:       1,
+						URL:      "target.com",
+						Protocol: SupportedProtocols[0],
+						Method:   supportedProtocolMethods["HTTP"][1],
+						Sleep:    test.sleep,
+					},
+				},
+			}
+
+			err := h.Validate()
+
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Error occurred %v", err)
+				}
+			}
+
+		})
 	}
 }
 
