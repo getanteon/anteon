@@ -21,6 +21,7 @@
             },
             "payload": "Body content 1",
             "timeout": 3,
+            "sleep": "300-500",
             "auth": {
                 "username": "test_user",
                 "password": "12345"

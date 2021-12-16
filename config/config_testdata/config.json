@@ -10,6 +10,7 @@
             "method": "GET",
             "payload": "payload str",
             "timeout": 3,
+            "sleep": "1000",
             "others": {
                 "keep-alive": true
             }
@@ -23,7 +24,8 @@
                 "ContenType": "application/xml",
                 "X-ddosify-key": "ajkndalnasd"
             },
-            "timeout": 2
+            "timeout": 2,
+            "sleep": " 300-500"
         }
     ],
     "output": "stdout",
