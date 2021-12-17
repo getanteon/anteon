@@ -639,10 +639,10 @@ func TestNewSleep(t *testing.T) {
 func TestSleep(t *testing.T) {
 	t.Parallel()
 
-	delta := time.Duration(100)
-	min := 300
-	max := 500
-	dur := 1000
+	delta := time.Duration(250)
+	min := 750
+	max := 1000
+	dur := 2000
 	sleepDuration := &DurationSleep{
 		duration: dur,
 	}
@@ -655,7 +655,7 @@ func TestSleep(t *testing.T) {
 	start := time.Now()
 	sleepRange.sleep()
 	elapsed := time.Duration(time.Since(start) / time.Millisecond)
-	if elapsed > time.Duration(max)+delta || elapsed < time.Duration(min)-100 {
+	if elapsed > time.Duration(max)+delta || elapsed < time.Duration(min)-delta {
 		t.Errorf("Expected: [%d-%d], Found: %d", min, max, elapsed)
 	}
 
