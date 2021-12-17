@@ -1,3 +1,4 @@
+// This file contains full features of Ddosify as a reference. Don't use it directly.
 {
     "request_count": 20,
     "load_type": "linear",
@@ -38,7 +39,8 @@
             "url": "https://test_site1.com/endpoint_2",
             "method": "GET",
             "payload_file": "config_examples/payload.txt",
-            "timeout": 2
+            "timeout": 2,
+            "sleep": "1000"
         }
     ]
 }

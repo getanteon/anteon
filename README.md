@@ -253,6 +253,44 @@ There is an example config file at [config_examples/config.json](/config_example
 
         If you need a long payload, we suggest using this parameter instead of `payload`.  
 
+    - `timeout` *optional*
+
+        This is the equivalent of the `-T` flag. 
+
+    - `sleep` *optional*
+
+        Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
+
+        **Example:** Sleep 1000ms after step-1;
+        ```json
+        "steps": [
+            {
+                "id": 1,
+                "url": "target.com/endpoint1",
+                "sleep": "1000"
+            },
+            {
+                "id": 2,
+                "url": "target.com/endpoint2",
+            }
+        ]
+        ```
+
+        **Example:** Sleep between 300ms-500ms after step-1;
+        ```json
+        "steps": [
+            {
+                "id": 1,
+                "url": "target.com/endpoint1",
+                "sleep": "300-500"
+            },
+            {
+                "id": 2,
+                "url": "target.com/endpoint2",
+            }
+        ]
+        ```
+
     - `auth` *optional*
         
         Basic authentication.
