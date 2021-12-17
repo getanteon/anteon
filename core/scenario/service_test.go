@@ -55,6 +55,16 @@ func (m *MockRequester) Send() (res *types.ResponseItem) {
 	return m.ReturnSend
 }
 
+type MockSleep struct {
+	SleepCalled    bool
+	SleepCallCount int
+}
+
+func (msl *MockSleep) sleep() {
+	msl.SleepCalled = true
+	msl.SleepCallCount++
+}
+
 func compareScenarioServiceClients(
 	expectedClients map[*url.URL][]scenarioItemRequester,
 	clients map[*url.URL][]scenarioItemRequester) error {
@@ -139,12 +149,12 @@ func TestInitService(t *testing.T) {
 			{
 				scenarioItemID: 1,
 				requester:      &requester.HttpRequester{},
-				sleep:          &sleep{strategy: "range", min: 300, max: 500, dur: 0},
+				sleep:          &RangeSleep{min: 300, max: 500},
 			},
 			{
 				scenarioItemID: 2,
 				requester:      &requester.HttpRequester{},
-				sleep:          &sleep{strategy: "duration", min: 0, max: 0, dur: 1000},
+				sleep:          &DurationSleep{duration: 1000},
 			},
 			{
 				scenarioItemID: 3,
@@ -155,12 +165,12 @@ func TestInitService(t *testing.T) {
 			{
 				scenarioItemID: 1,
 				requester:      &requester.HttpRequester{},
-				sleep:          &sleep{strategy: "range", min: 300, max: 500, dur: 0},
+				sleep:          &RangeSleep{min: 300, max: 500},
 			},
 			{
 				scenarioItemID: 2,
 				requester:      &requester.HttpRequester{},
-				sleep:          &sleep{strategy: "duration", min: 0, max: 0, dur: 1000},
+				sleep:          &DurationSleep{duration: 1000},
 			},
 			{
 				scenarioItemID: 3,
@@ -230,10 +240,12 @@ func TestDo(t *testing.T) {
 	}
 	p1, _ := url.Parse("http://proxy_server.com:80")
 	ctx := context.TODO()
+	mockSleep := &MockSleep{}
 
 	requesters := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
+			sleep:          mockSleep,
 			requester:      &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}},
 		},
 		{
@@ -263,10 +275,16 @@ func TestDo(t *testing.T) {
 		t.Fatalf("TestDo errored: %v", err)
 	}
 	if response.ProxyAddr != expectedResponse.ProxyAddr {
-		t.Fatalf("ProxyAddr] Expected %v, Found: %v", expectedResponse.ProxyAddr, response.ProxyAddr)
+		t.Fatalf("[ProxyAddr] Expected %v, Found: %v", expectedResponse.ProxyAddr, response.ProxyAddr)
 	}
 	if !reflect.DeepEqual(expectedResponse.ResponseItems, response.ResponseItems) {
 		t.Fatalf("[ResponseItem] Expected %#v, Found: %#v", expectedResponse.ResponseItems, response.ResponseItems)
+	}
+	if !mockSleep.SleepCalled {
+		t.Fatalf("[Sleep] Sleep should be called")
+	}
+	if mockSleep.SleepCallCount != 1 {
+		t.Fatalf("[Sleep] Sleep call count expected: %d, Found: %d", 1, mockSleep.SleepCallCount)
 	}
 }
 
@@ -593,63 +611,60 @@ func TestNewSleep(t *testing.T) {
 	sleepRangeReverse := "500-300"
 	sleepDuration := "1000"
 
-	expectedSleepRange := sleep{
-		strategy: "range",
-		min:      300,
-		max:      500,
-		dur:      0,
+	expectedSleepRange := &RangeSleep{
+		min: 300,
+		max: 500,
 	}
-	exptectedSleepDuration := sleep{
-		strategy: "duration",
-		dur:      1000,
-		min:      0,
-		max:      0,
+	exptectedSleepDuration := &DurationSleep{
+		duration: 1000,
 	}
 
 	// "range" sleep strategy test
 	sleep := newSleep(sleepRange)
-	if !reflect.DeepEqual(*sleep, expectedSleepRange) {
-		t.Errorf("Expected %v, Found: %v", expectedSleepRange, *sleep)
+	if !reflect.DeepEqual(sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
 	}
 	sleep = newSleep(sleepRangeReverse)
-	if !reflect.DeepEqual(*sleep, expectedSleepRange) {
-		t.Errorf("Expected %v, Found: %v", expectedSleepRange, *sleep)
+	if !reflect.DeepEqual(sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
 	}
 
 	// "duration" sleep strategy test
 	sleep = newSleep(sleepDuration)
-	if !reflect.DeepEqual(*sleep, exptectedSleepDuration) {
-		t.Errorf("Expected %v, Found: %v", exptectedSleepDuration, *sleep)
+	if !reflect.DeepEqual(sleep, exptectedSleepDuration) {
+		t.Errorf("Expected %v, Found: %v", exptectedSleepDuration, sleep)
 	}
 }
 
-func TestGetSleepDuration(t *testing.T) {
+func TestSleep(t *testing.T) {
 	t.Parallel()
 
+	delta := time.Duration(100)
 	min := 300
 	max := 500
 	dur := 1000
-	sleepRange := &sleep{
-		strategy: "range",
-		min:      min,
-		max:      max,
-		dur:      0,
+	sleepDuration := &DurationSleep{
+		duration: dur,
 	}
-	sleepDuration := &sleep{
-		strategy: "duration",
-		dur:      dur,
-		min:      0,
-		max:      0,
+	sleepRange := &RangeSleep{
+		min: min,
+		max: max,
 	}
 
-	duration := sleepRange.getDuration()
-	if duration > time.Duration(max) || duration < time.Duration(min) {
-		t.Errorf("Expected: [%d-%d], Found: %d", min, max, duration)
+	// Test range
+	start := time.Now()
+	sleepRange.sleep()
+	elapsed := time.Duration(time.Since(start) / time.Millisecond)
+	if elapsed > time.Duration(max)+delta || elapsed < time.Duration(min)-100 {
+		t.Errorf("Expected: [%d-%d], Found: %d", min, max, elapsed)
 	}
 
-	duration = sleepDuration.getDuration()
-	if duration != time.Duration(dur) {
-		t.Errorf("Expected: %d, Found: %d", dur, duration)
+	// Test exact duration
+	start = time.Now()
+	sleepDuration.sleep()
+	elapsed = time.Duration(time.Since(start) / time.Millisecond)
+	if elapsed > time.Duration(dur)+delta {
+		t.Errorf("Expected: %d, Found: %d", dur, elapsed)
 	}
 
 }

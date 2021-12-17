@@ -89,7 +89,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 
 		// Sleep before running the next step
 		if sr.sleep != nil {
-			time.Sleep(sr.sleep.getDuration() * time.Millisecond)
+			sr.sleep.sleep()
 		}
 	}
 	return
@@ -133,29 +133,43 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 
 type scenarioItemRequester struct {
 	scenarioItemID int16
-	sleep          *sleep
+	sleep          ISleep
 	requester      requester.Requester
 }
 
-type sleep struct {
-	strategy string // "range" | "duration"
-
-	// Fill if strategy is "range"
-	min int
-	max int
-
-	// Fill if stragy is "duration"
-	dur int
+// ISleep is the interface for implementing different sleep strategies.
+type ISleep interface {
+	sleep()
 }
 
-// newSleep constructs a sleep struct with one of the sleep strategies ["range", "duration"].
-// Returns nil if the given sleepStr is empty.
-func newSleep(sleepStr string) *sleep {
+// RangeSleep is the implementation of the range sleep feature
+type RangeSleep struct {
+	min int
+	max int
+}
+
+func (rs *RangeSleep) sleep() {
+	rand.Seed(time.Now().UnixNano())
+	dur := rand.Intn(rs.max-rs.min+1) + rs.min
+	time.Sleep(time.Duration(dur) * time.Millisecond)
+}
+
+// DurationSleep is the implementation of the exact duration sleep feature
+type DurationSleep struct {
+	duration int
+}
+
+func (ds *DurationSleep) sleep() {
+	time.Sleep(time.Duration(ds.duration) * time.Millisecond)
+}
+
+// newSleep is the factor method for the ISleep implementations.
+func newSleep(sleepStr string) ISleep {
 	if sleepStr == "" {
 		return nil
 	}
 
-	var sl sleep
+	var sl ISleep
 
 	// Sleep field already validated in types.scenario.validate(). No need to check parsing errors here.
 	s := strings.Split(sleepStr, "-")
@@ -166,29 +180,17 @@ func newSleep(sleepStr string) *sleep {
 			min, max = max, min
 		}
 
-		sl = sleep{
-			strategy: "range",
-			min:      min,
-			max:      max,
+		sl = &RangeSleep{
+			min: min,
+			max: max,
 		}
 	} else {
 		dur, _ := strconv.Atoi(s[0])
 
-		sl = sleep{
-			strategy: "duration",
-			dur:      dur,
+		sl = &DurationSleep{
+			duration: dur,
 		}
 	}
 
-	return &sl
-}
-
-func (sl *sleep) getDuration() time.Duration {
-	dur := sl.dur
-	if sl.strategy == "range" {
-		rand.Seed(time.Now().UnixNano())
-		dur = rand.Intn(sl.max-sl.min+1) + sl.min
-	}
-
-	return time.Duration(dur)
+	return sl
 }
