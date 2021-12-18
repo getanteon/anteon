@@ -253,7 +253,7 @@ func TestInitRequest(t *testing.T) {
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
-		URL:      "https://test.com",
+		URL:      "https://test.localhost",
 		Payload:  "payloadtest",
 		Auth: types.Auth{
 			Username: "test",
@@ -263,6 +263,7 @@ func TestInitRequest(t *testing.T) {
 			"Header1":    "Value1",
 			"Header2":    "Value2",
 			"User-Agent": "Firefox",
+			"Host":       "test.com",
 		},
 	}
 	expectedWithHeaders, _ := http.NewRequest(sWithHeaders.Method,
@@ -272,6 +273,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.Header.Set("Header1", "Value1")
 	expectedWithHeaders.Header.Set("Header2", "Value2")
 	expectedWithHeaders.Header.Set("User-Agent", "Firefox "+types.DdosifyUserAgent)
+	expectedWithHeaders.Host = "test.com"
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
 	// Request keep-alive condition
@@ -332,6 +334,9 @@ func TestInitRequest(t *testing.T) {
 
 				if !reflect.DeepEqual(h.request.URL, test.request.URL) {
 					t.Errorf("URL Expected: %#v, Found: \n%#v", test.request.URL, h.request.URL)
+				}
+				if !reflect.DeepEqual(h.request.Host, test.request.Host) {
+					t.Errorf("Host Expected: %#v, Found: \n%#v", test.request.Host, h.request.Host)
 				}
 				if !reflect.DeepEqual(h.request.Body, test.request.Body) {
 					t.Errorf("Body Expected: %#v, Found: \n%#v", test.request.Body, h.request.Body)

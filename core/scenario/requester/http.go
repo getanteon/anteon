@@ -217,7 +217,11 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	// Headers
 	header := make(http.Header)
 	for k, v := range h.packet.Headers {
-		header.Set(k, v)
+		if strings.EqualFold(k, "Host") {
+			h.request.Host = v
+		} else {
+			header.Set(k, v)
+		}
 	}
 
 	ua := header.Get("User-Agent")
