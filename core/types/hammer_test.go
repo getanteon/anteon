@@ -192,8 +192,9 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	h.Scenario = Scenario{
 		Scenario: []ScenarioItem{
 			{
-				ID:  1,
-				URL: "http://test.com",
+				ID:       1,
+				Protocol: SupportedProtocols[0],
+				Method:   "GETT",
 			},
 		},
 	}
