@@ -258,7 +258,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         Use this for `multipart/form-data` Content-Type.
 
-        Accepts list of `form-field` object structured as below;
+        Accepts list of `form-field` objects, structured as below;
         ```json
         {
             "name": [field-name],
