@@ -240,24 +240,7 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 		var err error
 
 		if strings.EqualFold(part.Type, "file") {
-
-			if part.Src == "" || strings.EqualFold(part.Src, "local") {
-				file, err := os.Open(part.Value)
-				defer file.Close()
-				if err != nil {
-					return "", "", err
-				}
-
-				formPart, err := writer.CreateFormFile(part.Name, filepath.Base(file.Name()))
-				if err != nil {
-					return "", "", err
-				}
-
-				_, err = io.Copy(formPart, file)
-				if err != nil {
-					return "", "", err
-				}
-			} else if strings.EqualFold(part.Src, "remote") {
+			if strings.EqualFold(part.Src, "remote") {
 				response, err := http.Get(part.Value)
 				if err != nil {
 					return "", "", err
@@ -275,17 +258,29 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 					return "", "", err
 				}
 			} else {
-				return "", "", fmt.Errorf("invalid multipart/form-data src: %v", part.Src)
+				file, err := os.Open(part.Value)
+				defer file.Close()
+				if err != nil {
+					return "", "", err
+				}
+
+				formPart, err := writer.CreateFormFile(part.Name, filepath.Base(file.Name()))
+				if err != nil {
+					return "", "", err
+				}
+
+				_, err = io.Copy(formPart, file)
+				if err != nil {
+					return "", "", err
+				}
 			}
 
-		} else if strings.EqualFold(part.Type, "text") {
+		} else {
 			// If we have to specify Content-Type in Content-Disposition, we should use writer.CreatePart directly.
 			err = writer.WriteField(part.Name, part.Value)
 			if err != nil {
 				return "", "", err
 			}
-		} else {
-			return "", "", fmt.Errorf("invalid multipart/form-data field type:%s", part.Type)
 		}
 	}
 

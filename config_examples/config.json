@@ -41,6 +41,29 @@
             "payload_file": "config_examples/payload.txt",
             "timeout": 2,
             "sleep": "1000"
+        },
+        {
+            "id": 3,
+            "url": "https://test_site1.com/endpoint_3",
+            "method": "POST",
+            "payload_multipart": [
+                {
+                    "name": "[field-name]",
+                    "value": "[field-value]"
+                },
+                {
+                    "name": "[field-name]",
+                    "value": "./test.png",
+                    "type": "file"
+                },
+                {
+                    "name": "[field-name]",
+                    "value": "http://test.com/test.png",
+                    "type": "file",
+                    "src": "remote"
+                }
+            ],
+            "timeout": 2
         }
     ]
 }
