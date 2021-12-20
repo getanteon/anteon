@@ -18,8 +18,7 @@
                 },
                 {
                     "name": "text-field",
-                    "value": "text-field-value",
-                    "type": "text"
+                    "value": "text-field-value"
                 },
                 {
                     "name": "text-field",
