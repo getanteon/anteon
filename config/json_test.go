@@ -82,6 +82,7 @@ func TestCreateHammer(t *testing.T) {
 					Protocol: types.ProtocolHTTPS,
 					Method:   http.MethodGet,
 					Timeout:  3,
+					Sleep:    "1000",
 					Payload:  "payload str",
 					Custom: map[string]interface{}{
 						"keep-alive": true,
@@ -93,6 +94,7 @@ func TestCreateHammer(t *testing.T) {
 					Protocol: types.ProtocolHTTP,
 					Method:   http.MethodPut,
 					Timeout:  2,
+					Sleep:    "300-500",
 					Headers: map[string]string{
 						"ContenType":    "application/xml",
 						"X-ddosify-key": "ajkndalnasd",

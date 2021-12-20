@@ -22,7 +22,10 @@ package scenario
 
 import (
 	"context"
+	"math/rand"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
@@ -46,7 +49,7 @@ func NewScenarioService() *ScenarioService {
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
-// Passes the given ctx to the underlying requestor so we are able to control to the life of each request.
+// Passes the given ctx to the underlying requestor so we are able to control the life of each request.
 func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
@@ -83,6 +86,11 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 			}
 		}
 		response.ResponseItems = append(response.ResponseItems, res)
+
+		// Sleep before running the next step
+		if sr.sleep != nil {
+			sr.sleep.sleep()
+		}
 	}
 	return
 }
@@ -106,7 +114,14 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 		if err != nil {
 			return
 		}
-		s.clients[proxy] = append(s.clients[proxy], scenarioItemRequester{scenarioItemID: si.ID, requester: r})
+		s.clients[proxy] = append(
+			s.clients[proxy],
+			scenarioItemRequester{
+				scenarioItemID: si.ID,
+				sleep:          newSleep(si.Sleep),
+				requester:      r,
+			},
+		)
 
 		err = r.Init(s.ctx, si, proxy)
 		if err != nil {
@@ -118,5 +133,64 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 
 type scenarioItemRequester struct {
 	scenarioItemID int16
+	sleep          ISleep
 	requester      requester.Requester
+}
+
+// ISleep is the interface for implementing different sleep strategies.
+type ISleep interface {
+	sleep()
+}
+
+// RangeSleep is the implementation of the range sleep feature
+type RangeSleep struct {
+	min int
+	max int
+}
+
+func (rs *RangeSleep) sleep() {
+	rand.Seed(time.Now().UnixNano())
+	dur := rand.Intn(rs.max-rs.min+1) + rs.min
+	time.Sleep(time.Duration(dur) * time.Millisecond)
+}
+
+// DurationSleep is the implementation of the exact duration sleep feature
+type DurationSleep struct {
+	duration int
+}
+
+func (ds *DurationSleep) sleep() {
+	time.Sleep(time.Duration(ds.duration) * time.Millisecond)
+}
+
+// newSleep is the factor method for the ISleep implementations.
+func newSleep(sleepStr string) ISleep {
+	if sleepStr == "" {
+		return nil
+	}
+
+	var sl ISleep
+
+	// Sleep field already validated in types.scenario.validate(). No need to check parsing errors here.
+	s := strings.Split(sleepStr, "-")
+	if len(s) == 2 {
+		min, _ := strconv.Atoi(s[0])
+		max, _ := strconv.Atoi(s[1])
+		if min > max {
+			min, max = max, min
+		}
+
+		sl = &RangeSleep{
+			min: min,
+			max: max,
+		}
+	} else {
+		dur, _ := strconv.Atoi(s[0])
+
+		sl = &DurationSleep{
+			duration: dur,
+		}
+	}
+
+	return sl
 }

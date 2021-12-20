@@ -55,6 +55,16 @@ func (m *MockRequester) Send() (res *types.ResponseItem) {
 	return m.ReturnSend
 }
 
+type MockSleep struct {
+	SleepCalled    bool
+	SleepCallCount int
+}
+
+func (msl *MockSleep) sleep() {
+	msl.SleepCalled = true
+	msl.SleepCallCount++
+}
+
 func compareScenarioServiceClients(
 	expectedClients map[*url.URL][]scenarioItemRequester,
 	clients map[*url.URL][]scenarioItemRequester) error {
@@ -86,12 +96,22 @@ func compareScenarioServiceClients(
 			if reflect.TypeOf(expectedVal[i].requester) != reflect.TypeOf(val[i].requester) {
 				return fmt.Errorf("[requester] Expected %#v, Found %#v", expectedVal, val)
 			}
+
+			if reflect.TypeOf(expectedVal[i].sleep) != reflect.TypeOf(val[i].sleep) {
+				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
+			}
+
+			if !reflect.DeepEqual(expectedVal[i].sleep, val[i].sleep) {
+				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
+			}
 		}
 	}
 	return nil
 }
 
 func TestInitService(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -101,12 +121,21 @@ func TestInitService(t *testing.T) {
 				Method:   types.DefaultMethod,
 				URL:      "test.com",
 				Timeout:  types.DefaultDuration,
+				Sleep:    "300-500",
 			},
 			{
 				ID:       2,
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      "test2.com",
+				Timeout:  types.DefaultDuration,
+				Sleep:    "1000",
+			},
+			{
+				ID:       3,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test3.com",
 				Timeout:  types.DefaultDuration,
 			},
 		},
@@ -117,12 +146,36 @@ func TestInitService(t *testing.T) {
 	ctx := context.TODO()
 	expectedClients := map[*url.URL][]scenarioItemRequester{
 		p1: {
-			{scenarioItemID: 1, requester: &requester.HttpRequester{}},
-			{scenarioItemID: 2, requester: &requester.HttpRequester{}},
+			{
+				scenarioItemID: 1,
+				requester:      &requester.HttpRequester{},
+				sleep:          &RangeSleep{min: 300, max: 500},
+			},
+			{
+				scenarioItemID: 2,
+				requester:      &requester.HttpRequester{},
+				sleep:          &DurationSleep{duration: 1000},
+			},
+			{
+				scenarioItemID: 3,
+				requester:      &requester.HttpRequester{},
+			},
 		},
 		p2: {
-			{scenarioItemID: 1, requester: &requester.HttpRequester{}},
-			{scenarioItemID: 2, requester: &requester.HttpRequester{}},
+			{
+				scenarioItemID: 1,
+				requester:      &requester.HttpRequester{},
+				sleep:          &RangeSleep{min: 300, max: 500},
+			},
+			{
+				scenarioItemID: 2,
+				requester:      &requester.HttpRequester{},
+				sleep:          &DurationSleep{duration: 1000},
+			},
+			{
+				scenarioItemID: 3,
+				requester:      &requester.HttpRequester{},
+			},
 		},
 	}
 
@@ -141,6 +194,8 @@ func TestInitService(t *testing.T) {
 }
 
 func TestInitServiceFail(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -169,6 +224,8 @@ func TestInitServiceFail(t *testing.T) {
 }
 
 func TestDo(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -183,10 +240,12 @@ func TestDo(t *testing.T) {
 	}
 	p1, _ := url.Parse("http://proxy_server.com:80")
 	ctx := context.TODO()
+	mockSleep := &MockSleep{}
 
 	requesters := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
+			sleep:          mockSleep,
 			requester:      &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}},
 		},
 		{
@@ -216,14 +275,22 @@ func TestDo(t *testing.T) {
 		t.Fatalf("TestDo errored: %v", err)
 	}
 	if response.ProxyAddr != expectedResponse.ProxyAddr {
-		t.Fatalf("ProxyAddr] Expected %v, Found: %v", expectedResponse.ProxyAddr, response.ProxyAddr)
+		t.Fatalf("[ProxyAddr] Expected %v, Found: %v", expectedResponse.ProxyAddr, response.ProxyAddr)
 	}
 	if !reflect.DeepEqual(expectedResponse.ResponseItems, response.ResponseItems) {
 		t.Fatalf("[ResponseItem] Expected %#v, Found: %#v", expectedResponse.ResponseItems, response.ResponseItems)
 	}
+	if !mockSleep.SleepCalled {
+		t.Fatalf("[Sleep] Sleep should be called")
+	}
+	if mockSleep.SleepCallCount != 1 {
+		t.Fatalf("[Sleep] Sleep call count expected: %d, Found: %d", 1, mockSleep.SleepCallCount)
+	}
 }
 
 func TestDoErrorOnSend(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -307,6 +374,8 @@ func TestDoErrorOnSend(t *testing.T) {
 }
 
 func TestDoErrorOnNewRequester(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -341,6 +410,8 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 }
 
 func TestGetOrCreateRequesters(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -385,6 +456,8 @@ func TestGetOrCreateRequesters(t *testing.T) {
 }
 
 func TestGetOrCreateRequestersNewProxy(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -432,6 +505,8 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 }
 
 func TestGetOrCreateRequestersFailed(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -464,6 +539,8 @@ func TestGetOrCreateRequestersFailed(t *testing.T) {
 
 // No need to test happy path for createRequesters, TestInitService already tests it.
 func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -495,6 +572,8 @@ func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
 }
 
 func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
+	t.Parallel()
+
 	// Arrange
 	scenario := types.Scenario{
 		Scenario: []types.ScenarioItem{
@@ -523,4 +602,69 @@ func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
 	if err == nil {
 		t.Fatal("TestCreateRequestersFailOnNewRequester should be errored")
 	}
+}
+
+func TestNewSleep(t *testing.T) {
+	t.Parallel()
+
+	sleepRange := "300-500"
+	sleepRangeReverse := "500-300"
+	sleepDuration := "1000"
+
+	expectedSleepRange := &RangeSleep{
+		min: 300,
+		max: 500,
+	}
+	exptectedSleepDuration := &DurationSleep{
+		duration: 1000,
+	}
+
+	// "range" sleep strategy test
+	sleep := newSleep(sleepRange)
+	if !reflect.DeepEqual(sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
+	}
+	sleep = newSleep(sleepRangeReverse)
+	if !reflect.DeepEqual(sleep, expectedSleepRange) {
+		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
+	}
+
+	// "duration" sleep strategy test
+	sleep = newSleep(sleepDuration)
+	if !reflect.DeepEqual(sleep, exptectedSleepDuration) {
+		t.Errorf("Expected %v, Found: %v", exptectedSleepDuration, sleep)
+	}
+}
+
+func TestSleep(t *testing.T) {
+	t.Parallel()
+
+	delta := time.Duration(250)
+	min := 750
+	max := 1000
+	dur := 2000
+	sleepDuration := &DurationSleep{
+		duration: dur,
+	}
+	sleepRange := &RangeSleep{
+		min: min,
+		max: max,
+	}
+
+	// Test range
+	start := time.Now()
+	sleepRange.sleep()
+	elapsed := time.Duration(time.Since(start) / time.Millisecond)
+	if elapsed > time.Duration(max)+delta || elapsed < time.Duration(min)-delta {
+		t.Errorf("Expected: [%d-%d], Found: %d", min, max, elapsed)
+	}
+
+	// Test exact duration
+	start = time.Now()
+	sleepDuration.sleep()
+	elapsed = time.Duration(time.Since(start) / time.Millisecond)
+	if elapsed > time.Duration(dur)+delta {
+		t.Errorf("Expected: %d, Found: %d", dur, elapsed)
+	}
+
 }
