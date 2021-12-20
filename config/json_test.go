@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -207,6 +208,34 @@ func TestCreateHammerPayload(t *testing.T) {
 
 	if steps[1].Payload != expectedPayloads[1] {
 		t.Errorf("Expected: %v, Found: %v", expectedPayloads[1], steps[1].Payload)
+	}
+}
+
+func TestCreateHammerMultipartPayload(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_multipart_payload.json"), ConfigTypeJson)
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerMultipartPayload error occurred: %v", err)
+	}
+	steps := h.Scenario.Scenario
+
+	// Content-Type Header Check
+	val, ok := steps[0].Headers["Content-Type"]
+	if !ok {
+		t.Error("Content-Type header should be exist")
+	}
+
+	rgx := "multipart/form-data; boundary=.*"
+	r, _ := regexp.Compile(rgx)
+	if !r.MatchString(val) {
+		t.Errorf("Expected: %v, Found: %v", rgx, val)
+	}
+
+	// Payload Check - Ensure that payload contains 4 form field.
+	if c := strings.Count(steps[0].Payload, "Content-Disposition: form-data;"); c != 4 {
+		t.Errorf("Expected: %v, Found: %v", 4, c)
 	}
 }
 
