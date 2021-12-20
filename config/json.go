@@ -188,6 +188,10 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	var payload string
 	var err error
 	if len(s.PayloadMultipart) > 0 {
+		if s.Headers == nil {
+			s.Headers = make(map[string]string)
+		}
+
 		payload, s.Headers["Content-Type"], err = prepareMultipartPayload(s.PayloadMultipart)
 		if err != nil {
 			return types.ScenarioItem{}, err
