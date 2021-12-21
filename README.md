@@ -239,7 +239,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         This is the equivalent of the `-t` flag.
 
-    - `name` *optional*
+    - `name` *optional* <a name="#step-name"></a>
     
         Name of the step.
     
