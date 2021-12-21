@@ -30,14 +30,14 @@ import (
 func TestScenarioItemReport(t *testing.T) {
 	tests := []struct {
 		name              string
-		s                 scenarioItemReport
+		s                 ScenarioItemReport
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-F:0", scenarioItemReport{failedCount: 0, successCount: 0}, 0, 0},
-		{"S:0-F:1", scenarioItemReport{failedCount: 1, successCount: 0}, 0, 100},
-		{"S:1-F:0", scenarioItemReport{failedCount: 0, successCount: 1}, 100, 0},
-		{"S:3-F:9", scenarioItemReport{failedCount: 9, successCount: 3}, 25, 75},
+		{"S:0-F:0", ScenarioItemReport{FailedCount: 0, SuccessCount: 0}, 0, 0},
+		{"S:0-F:1", ScenarioItemReport{FailedCount: 1, SuccessCount: 0}, 0, 100},
+		{"S:1-F:0", ScenarioItemReport{FailedCount: 0, SuccessCount: 1}, 100, 0},
+		{"S:3-F:9", ScenarioItemReport{FailedCount: 9, SuccessCount: 3}, 25, 75},
 	}
 
 	for _, test := range tests {
@@ -60,14 +60,14 @@ func TestScenarioItemReport(t *testing.T) {
 func TestResult(t *testing.T) {
 	tests := []struct {
 		name              string
-		r                 result
+		r                 Result
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-F:0", result{failedCount: 0, successCount: 0}, 0, 0},
-		{"S:0-F:1", result{failedCount: 1, successCount: 0}, 0, 100},
-		{"S:1-F:0", result{failedCount: 0, successCount: 1}, 100, 0},
-		{"S:3-F:9", result{failedCount: 9, successCount: 3}, 25, 75},
+		{"S:0-F:0", Result{FailedCount: 0, SuccessCount: 0}, 0, 0},
+		{"S:0-F:1", Result{FailedCount: 1, SuccessCount: 0}, 0, 100},
+		{"S:1-F:0", Result{FailedCount: 0, SuccessCount: 1}, 100, 0},
+		{"S:3-F:9", Result{FailedCount: 9, SuccessCount: 3}, 25, 75},
 	}
 
 	for _, test := range tests {
@@ -154,34 +154,34 @@ func TestStart(t *testing.T) {
 		},
 	}
 
-	itemReport1 := &scenarioItemReport{
-		statusCodeDist: map[int]int{200: 2},
-		successCount:   2,
-		failedCount:    0,
-		durations: map[string]float32{
+	itemReport1 := &ScenarioItemReport{
+		StatusCodeDist: map[int]int{200: 2},
+		SuccessCount:   2,
+		FailedCount:    0,
+		Durations: map[string]float32{
 			"dnsDuration":  7.5,
 			"connDuration": 12.5,
 			"duration":     20,
 		},
-		errorDist: map[string]int{},
+		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &scenarioItemReport{
-		statusCodeDist: map[int]int{401: 1},
-		successCount:   1,
-		failedCount:    1,
-		durations: map[string]float32{
+	itemReport2 := &ScenarioItemReport{
+		StatusCodeDist: map[int]int{401: 1},
+		SuccessCount:   1,
+		FailedCount:    1,
+		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
 			"duration":     60,
 		},
-		errorDist: map[string]int{types.ReasonConnTimeout: 1},
+		ErrorDist: map[string]int{types.ReasonConnTimeout: 1},
 	}
 
-	expectedResult := result{
-		successCount: 1,
-		failedCount:  1,
-		avgDuration:  90,
-		itemReports: map[int16]*scenarioItemReport{
+	expectedResult := Result{
+		SuccessCount: 1,
+		FailedCount:  1,
+		AvgDuration:  90,
+		ItemReports: map[int16]*ScenarioItemReport{
 			int16(1): itemReport1,
 			int16(2): itemReport2,
 		},
