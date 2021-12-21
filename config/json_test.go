@@ -79,6 +79,7 @@ func TestCreateHammer(t *testing.T) {
 			Scenario: []types.ScenarioItem{
 				{
 					ID:       1,
+					Name:     "Example Name 1",
 					URL:      "https://app.servdown.com/accounts/login/?next=/",
 					Protocol: types.ProtocolHTTPS,
 					Method:   http.MethodGet,
@@ -91,6 +92,7 @@ func TestCreateHammer(t *testing.T) {
 				},
 				{
 					ID:       2,
+					Name:     "Example Name 2",
 					URL:      "http://test.com",
 					Protocol: types.ProtocolHTTP,
 					Method:   http.MethodPut,
