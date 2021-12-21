@@ -20,6 +20,8 @@
 package report
 
 import (
+	"bytes"
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -27,82 +29,20 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-//TODO:move aggregator.go related tests cases to aggregator_test.go
+func TestInitStdoutJson(t *testing.T) {
+	sj := &stdoutJson{}
+	sj.Init()
 
-func TestScenarioItemReport(t *testing.T) {
-	tests := []struct {
-		name              string
-		s                 ScenarioItemReport
-		successPercentage int
-		failedPercentage  int
-	}{
-		{"S:0-F:0", ScenarioItemReport{FailedCount: 0, SuccessCount: 0}, 0, 0},
-		{"S:0-F:1", ScenarioItemReport{FailedCount: 1, SuccessCount: 0}, 0, 100},
-		{"S:1-F:0", ScenarioItemReport{FailedCount: 0, SuccessCount: 1}, 100, 0},
-		{"S:3-F:9", ScenarioItemReport{FailedCount: 9, SuccessCount: 3}, 25, 75},
-	}
-
-	for _, test := range tests {
-		tf := func(t *testing.T) {
-			sp := test.s.successPercentage()
-			fp := test.s.failedPercentage()
-
-			if test.successPercentage != sp {
-				t.Errorf("SuccessPercentage Expected %d Found %d", test.successPercentage, sp)
-			}
-
-			if test.failedPercentage != fp {
-				t.Errorf("FailedPercentage Expected %d Found %d", test.failedPercentage, fp)
-			}
-		}
-		t.Run(test.name, tf)
-	}
-}
-
-func TestResult(t *testing.T) {
-	tests := []struct {
-		name              string
-		r                 Result
-		successPercentage int
-		failedPercentage  int
-	}{
-		{"S:0-F:0", Result{FailedCount: 0, SuccessCount: 0}, 0, 0},
-		{"S:0-F:1", Result{FailedCount: 1, SuccessCount: 0}, 0, 100},
-		{"S:1-F:0", Result{FailedCount: 0, SuccessCount: 1}, 100, 0},
-		{"S:3-F:9", Result{FailedCount: 9, SuccessCount: 3}, 25, 75},
-	}
-
-	for _, test := range tests {
-		tf := func(t *testing.T) {
-			sp := test.r.successPercentage()
-			fp := test.r.failedPercentage()
-
-			if test.successPercentage != sp {
-				t.Errorf("SuccessPercentage Expected %d Found %d", test.successPercentage, sp)
-			}
-
-			if test.failedPercentage != fp {
-				t.Errorf("FailedPercentage Expected %d Found %d", test.failedPercentage, fp)
-			}
-		}
-		t.Run(test.name, tf)
-	}
-}
-
-func TestInit(t *testing.T) {
-	s := &stdout{}
-	s.Init()
-
-	if s.doneChan == nil {
+	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
 	}
 
-	if s.result == nil {
+	if sj.result == nil {
 		t.Errorf("Result map should be initialized")
 	}
 }
 
-func TestStart(t *testing.T) {
+func TestStdoutJsonStart(t *testing.T) {
 	responses := []*types.Response{
 		{
 			StartTime: time.Now(),
@@ -189,7 +129,7 @@ func TestStart(t *testing.T) {
 		},
 	}
 
-	s := &stdout{}
+	s := &stdoutJson{}
 	s.Init()
 
 	responseChan := make(chan *types.Response, len(responses))
@@ -214,6 +154,103 @@ func TestStart(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(*s.result, expectedResult) {
-		t.Errorf("2Expected %#v, Found %#v", expectedResult, *s.result)
+		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
+	}
+}
+
+func TestStdoutJsonOutput(t *testing.T) {
+	// Arrange
+	itemReport1 := &ScenarioItemReport{
+		StatusCodeDist: map[int]int{200: 11},
+		SuccessCount:   11,
+		FailedCount:    0,
+		Durations: map[string]float32{
+			"dnsDuration":  0.1897,
+			"connDuration": 0.0003,
+			"duration":     0.1900,
+		},
+		ErrorDist: map[string]int{},
+	}
+	itemReport2 := &ScenarioItemReport{
+		StatusCodeDist: map[int]int{401: 1, 200: 9},
+		SuccessCount:   9,
+		FailedCount:    2,
+		Durations: map[string]float32{
+			"dnsDuration":  0.48000,
+			"connDuration": 0.01356,
+			"duration":     0.493566,
+		},
+		ErrorDist: map[string]int{types.ReasonConnTimeout: 2},
+	}
+	result := Result{
+		SuccessCount: 9,
+		FailedCount:  2,
+		AvgDuration:  0.25637,
+		ItemReports: map[int16]*ScenarioItemReport{
+			int16(1): itemReport1,
+			int16(2): itemReport2,
+		},
+	}
+
+	var output string
+	printJson = func(j []byte) {
+		output = string(j)
+	}
+
+	expectedOutputByte := []byte(`{
+		"success_perc": 81,
+		"fail_perc": 19,
+		"success_count": 9,
+		"fail_count": 2,
+		"avg_duration": 0.256,
+		"steps": {
+			"1": {
+				"name": "",
+				"status_code_dist": {
+					"200": 11
+				},
+				"error_dist": {},
+				"durations": {
+					"connection": 0,
+					"dns": 0.19,
+					"total": 0.19
+				},
+				"success_count": 11,
+				"fail_count": 0,
+				"success_perc": 100,
+				"fail_perc": 0
+			},
+			"2": {
+				"name": "",
+				"status_code_dist": {
+					"200": 9,
+					"401": 1
+				},
+				"error_dist": {
+					"connection timeout": 2
+				},
+				"durations": {
+					"connection": 0.014,
+					"dns": 0.48,
+					"total": 0.494
+				},
+				"success_count": 9,
+				"fail_count": 2,
+				"success_perc": 81,
+				"fail_perc": 19
+			}
+		}
+	}`)
+	buffer := new(bytes.Buffer)
+	json.Compact(buffer, expectedOutputByte)
+	expectedOutput := buffer.String()
+
+	// Act
+	s := &stdoutJson{result: &result}
+	s.Report()
+
+	// Assert
+	if output != expectedOutput {
+		t.Errorf("Expected: %v, Found: %v", expectedOutput, output)
 	}
 }

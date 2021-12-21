@@ -100,10 +100,15 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
     Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
 
-3. ### Scenario based load test
+3. ### Usage for CI/CD pipelines (JSON output)
+
+    	ddosify -t target_site.com -o stdout-json | jq .avg_duration
+
+    Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic. 
+
+4. ### Scenario based load test
 
 		ddosify -config config_examples/config.json
-    
     Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
 		
@@ -128,7 +133,7 @@ ddosify [FLAG]
 | `-h`   | Headers of the request. You can provide multiple headers with multiple `-h` flag.  | `string`| -    | No         |
 | `-T`   | Timeout of the request in seconds.                       | `int`    | `5`    | No         |
 | `-P`   | Proxy address as host:port. `-P http://user:pass@proxy_host.com:port'` | `string`    | -    | No |
-| `-o`   | Test result output destination. Other output types will be added. | `string`    | `stdout`    | No |
+| `-o`   | Test result output destination. Supported outputs are [*stdout, stdout-json*] Other output types will be added. | `string`    | `stdout`    | No |
 | `-l`   | [Type](#load-types) of the load test. Ddosify supports 3 load types. | `string`    | `linear`    | No |
 | `-config`   | [Config File](#config-file) of the load test. | `string`    | -    | No |
 | `-version `   | Prints version, git commit, built date (utc), go information and quit | -    | -    | No |

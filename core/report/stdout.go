@@ -46,7 +46,7 @@ func init() {
 
 type stdout struct {
 	doneChan    chan struct{}
-	result      *result
+	result      *Result
 	printTicker *time.Ticker
 	mu          sync.Mutex
 }
@@ -58,8 +58,8 @@ var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
-	s.result = &result{
-		itemReports: make(map[int16]*scenarioItemReport),
+	s.result = &Result{
+		ItemReports: make(map[int16]*ScenarioItemReport),
 	}
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
@@ -71,49 +71,7 @@ func (s *stdout) Start(input chan *types.Response) {
 
 	for r := range input {
 		s.mu.Lock()
-		var scenarioDuration float32
-		errOccured := false
-		for _, rr := range r.ResponseItems {
-			scenarioDuration += float32(rr.Duration.Seconds())
-
-			if _, ok := s.result.itemReports[rr.ScenarioItemID]; !ok {
-				s.result.itemReports[rr.ScenarioItemID] = &scenarioItemReport{
-					name:           rr.ScenarioItemName,
-					statusCodeDist: make(map[int]int, 0),
-					errorDist:      make(map[string]int),
-					durations:      map[string]float32{},
-				}
-			}
-			item := s.result.itemReports[rr.ScenarioItemID]
-
-			if rr.Err.Type != "" {
-				errOccured = true
-				item.failedCount++
-				item.errorDist[rr.Err.Reason]++
-			} else {
-				item.statusCodeDist[rr.StatusCode]++
-				item.successCount++
-
-				totalDur := float32(item.successCount-1)*item.durations["duration"] + float32(rr.Duration.Seconds())
-				item.durations["duration"] = totalDur / float32(item.successCount)
-				for k, v := range rr.Custom {
-					if strings.Contains(k, "Duration") {
-						totalDur := float32(item.successCount-1)*item.durations[k] + float32(v.(time.Duration).Seconds())
-						item.durations[k] = float32(totalDur / float32(item.successCount))
-					}
-				}
-			}
-
-		}
-
-		// Don't change avg duration if there is a error
-		if !errOccured {
-			totalDuration := float32(s.result.successCount)*s.result.avgDuration + scenarioDuration
-			s.result.successCount++
-			s.result.avgDuration = totalDuration / float32(s.result.successCount)
-		} else if errOccured {
-			s.result.failedCount++
-		}
+		aggregate(s.result, r)
 		s.mu.Unlock()
 	}
 
@@ -151,10 +109,10 @@ func (s *stdout) realTimePrintStart() {
 func (s *stdout) liveResultPrint() {
 	fmt.Fprintf(out, "%s %s %s\n",
 		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
-			emoji.CheckMark, s.result.successCount, s.result.successPercentage(), "")),
+			emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
 		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
-			emoji.CrossMark, s.result.failedCount, s.result.failedPercentage(), "")),
-		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.avgDuration)))
+			emoji.CrossMark, s.result.FailedCount, s.result.failedPercentage(), "")),
+		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.AvgDuration)))
 }
 
 func (s *stdout) realTimePrintStop() {
@@ -178,7 +136,7 @@ func (s *stdout) printDetails() {
 	fmt.Fprintln(w, "-------------------------------------")
 
 	keys := make([]int, 0)
-	for k := range s.result.itemReports {
+	for k := range s.result.ItemReports {
 		keys = append(keys, int(k))
 	}
 
@@ -187,23 +145,23 @@ func (s *stdout) printDetails() {
 	sort.Ints(keys)
 
 	for _, k := range keys {
-		v := s.result.itemReports[int16(k)]
+		v := s.result.ItemReports[int16(k)]
 
 		if len(keys) > 1 {
-			stepHeader := v.name
-			if v.name == "" {
+			stepHeader := v.Name
+			if v.Name == "" {
 				stepHeader = fmt.Sprintf("Step %d", k)
 			}
 			fmt.Fprintf(w, "\n%d. "+stepHeader+"\n", k)
 			fmt.Fprintln(w, "---------------------------------")
 		}
 
-		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.successCount, v.successPercentage())
-		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.failedCount, v.failedPercentage())
+		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.SuccessCount, v.successPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.FailedCount, v.failedPercentage())
 
 		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)
-		for d, s := range v.durations {
+		for d, s := range v.Durations {
 			dur := keyToStr[d]
 			dur.duration = s
 			durationList = append(durationList, dur)
@@ -215,17 +173,17 @@ func (s *stdout) printDetails() {
 			fmt.Fprintf(w, "  %s\t:%.4fs\n", v.name, v.duration)
 		}
 
-		if len(v.statusCodeDist) > 0 {
+		if len(v.StatusCodeDist) > 0 {
 			fmt.Fprintln(w, "\nStatus Code (Message) :Count")
-			for s, c := range v.statusCodeDist {
+			for s, c := range v.StatusCodeDist {
 				desc := fmt.Sprintf("%3d (%s)", s, http.StatusText(s))
 				fmt.Fprintf(w, "  %s\t:%d\n", desc, c)
 			}
 		}
 
-		if len(v.errorDist) > 0 {
+		if len(v.ErrorDist) > 0 {
 			fmt.Fprintln(w, "\nError Distribution (Count:Reason):")
-			for e, c := range v.errorDist {
+			for e, c := range v.ErrorDist {
 				fmt.Fprintf(w, "  %d\t :%s\n", c, e)
 			}
 		}
@@ -234,52 +192,6 @@ func (s *stdout) printDetails() {
 
 	w.Flush()
 	fmt.Fprint(out, b.String())
-}
-
-type result struct {
-	successCount int64
-	avgDuration  float32
-	failedCount  int64
-	itemReports  map[int16]*scenarioItemReport
-}
-
-func (r *result) successPercentage() int {
-	if r.successCount+r.failedCount == 0 {
-		return 0
-	}
-	t := float32(r.successCount) / float32(r.successCount+r.failedCount)
-	return int(t * 100)
-}
-
-func (r *result) failedPercentage() int {
-	if r.successCount+r.failedCount == 0 {
-		return 0
-	}
-	return 100 - r.successPercentage()
-}
-
-type scenarioItemReport struct {
-	name           string
-	statusCodeDist map[int]int
-	errorDist      map[string]int
-	durations      map[string]float32
-	failedCount    int64
-	successCount   int64
-}
-
-func (s *scenarioItemReport) successPercentage() int {
-	if s.successCount+s.failedCount == 0 {
-		return 0
-	}
-	t := float32(s.successCount) / float32(s.successCount+s.failedCount)
-	return int(t * 100)
-}
-
-func (s *scenarioItemReport) failedPercentage() int {
-	if s.successCount+s.failedCount == 0 {
-		return 0
-	}
-	return 100 - s.successPercentage()
 }
 
 type duration struct {

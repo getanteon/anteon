@@ -639,10 +639,19 @@ func TestNewSleep(t *testing.T) {
 func TestSleep(t *testing.T) {
 	t.Parallel()
 
-	delta := time.Duration(250)
-	min := 750
-	max := 1000
-	dur := 2000
+	delta := time.Duration(100)
+	min := 300
+	max := 500
+	dur := 1000
+
+	if testing.Short() {
+		// Arrange durations for poor machines
+		delta = time.Duration(600)
+		min = 750
+		max = 1250
+		dur = 1000
+	}
+
 	sleepDuration := &DurationSleep{
 		duration: dur,
 	}
