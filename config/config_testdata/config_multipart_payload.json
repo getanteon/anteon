@@ -1,0 +1,31 @@
+{
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "method": "GET",
+            "payload_multipart": [
+                {
+                    "name": "example-name-1",
+                    "value": "config_testdata/test_img.svg",
+                    "type": "file"
+                },
+                {
+                    "name": "example-name-2",
+                    "value": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Test.svg",
+                    "type": "file",
+                    "src": "remote"
+                },
+                {
+                    "name": "example-name-3",
+                    "value": "text-field-value"
+                },
+                {
+                    "name": "example-name-4",
+                    "value": "123123",
+                    "type": "text"
+                }
+            ]
+        }
+    ]
+}

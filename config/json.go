@@ -21,10 +21,17 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"go.ddosify.com/ddosify/core/proxy"
@@ -49,18 +56,26 @@ type auth struct {
 	Password string `json:"password"`
 }
 
+type multipartFormData struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Type  string `json:"type"`
+	Src   string `json:"src"`
+}
+
 type step struct {
-	Id          int16                  `json:"id"`
-	Url         string                 `json:"url"`
-	Protocol    string                 `json:"protocol"`
-	Auth        auth                   `json:"auth"`
-	Method      string                 `json:"method"`
-	Headers     map[string]string      `json:"headers"`
-	Payload     string                 `json:"payload"`
-	PayloadFile string                 `json:"payload_file"`
-	Timeout     int                    `json:"timeout"`
-	Sleep       string                 `json:"sleep"`
-	Others      map[string]interface{} `json:"others"`
+	Id               int16                  `json:"id"`
+	Url              string                 `json:"url"`
+	Protocol         string                 `json:"protocol"`
+	Auth             auth                   `json:"auth"`
+	Method           string                 `json:"method"`
+	Headers          map[string]string      `json:"headers"`
+	Payload          string                 `json:"payload"`
+	PayloadFile      string                 `json:"payload_file"`
+	PayloadMultipart []multipartFormData    `json:"payload_multipart"`
+	Timeout          int                    `json:"timeout"`
+	Sleep            string                 `json:"sleep"`
+	Others           map[string]interface{} `json:"others"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -171,7 +186,17 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 
 func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	var payload string
-	if s.PayloadFile != "" {
+	var err error
+	if len(s.PayloadMultipart) > 0 {
+		if s.Headers == nil {
+			s.Headers = make(map[string]string)
+		}
+
+		payload, s.Headers["Content-Type"], err = prepareMultipartPayload(s.PayloadMultipart)
+		if err != nil {
+			return types.ScenarioItem{}, err
+		}
+	} else if s.PayloadFile != "" {
 		buf, err := ioutil.ReadFile(s.PayloadFile)
 		if err != nil {
 			return types.ScenarioItem{}, err
@@ -205,4 +230,60 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		Sleep:    strings.ReplaceAll(s.Sleep, " ", ""),
 		Custom:   s.Others,
 	}, nil
+}
+
+func prepareMultipartPayload(parts []multipartFormData) (body string, contentType string, err error) {
+	byteBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(byteBody)
+
+	for _, part := range parts {
+		var err error
+
+		if strings.EqualFold(part.Type, "file") {
+			if strings.EqualFold(part.Src, "remote") {
+				response, err := http.Get(part.Value)
+				if err != nil {
+					return "", "", err
+				}
+				defer response.Body.Close()
+
+				u, _ := url.Parse(part.Value)
+				formPart, err := writer.CreateFormFile(part.Name, path.Base(u.Path))
+				if err != nil {
+					return "", "", err
+				}
+
+				_, err = io.Copy(formPart, response.Body)
+				if err != nil {
+					return "", "", err
+				}
+			} else {
+				file, err := os.Open(part.Value)
+				defer file.Close()
+				if err != nil {
+					return "", "", err
+				}
+
+				formPart, err := writer.CreateFormFile(part.Name, filepath.Base(file.Name()))
+				if err != nil {
+					return "", "", err
+				}
+
+				_, err = io.Copy(formPart, file)
+				if err != nil {
+					return "", "", err
+				}
+			}
+
+		} else {
+			// If we have to specify Content-Type in Content-Disposition, we should use writer.CreatePart directly.
+			err = writer.WriteField(part.Name, part.Value)
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+
+	writer.Close()
+	return byteBody.String(), writer.FormDataContentType(), err
 }

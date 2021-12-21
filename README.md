@@ -178,6 +178,7 @@ The features you can use by config file;
 - Scenario creation
 - Custom load type creation
 - Payload from a file
+- Multipart/form-data payload
 - Extra connection configuration, like *keep-alive* enable/disable logic
 - HTTP2 support
 
@@ -252,6 +253,68 @@ There is an example config file at [config_examples/config.json](/config_example
     - `payload_file` *optional*
 
         If you need a long payload, we suggest using this parameter instead of `payload`.  
+
+    - `payload_multipart` *optional*
+
+        Use this for `multipart/form-data` Content-Type.
+
+        Accepts list of `form-field` objects, structured as below;
+        ```json
+        {
+            "name": [field-name],
+            "value": [field-value|file-path|url],
+            "type": <text|file>,    // Default "text"
+            "src": <local|remote>   // Default "local"
+        }
+        ```
+
+        **Example:** Sending form name-value pairs;
+        ```json
+        "payload_multipart": [
+            {
+                "name": "[field-name]",
+                "value": "[field-value]"
+            }
+        ]
+        ```
+
+        **Example:** Sending form name-value pairs and a local file;
+        ```json
+        "payload_multipart": [
+            {
+                "name": "[field-name]",
+                "value": "[field-value]",
+            },
+            {
+                "name": "[field-name]",
+                "value": "./test.png",
+                "type": "file"
+            }
+        ]
+        ```
+
+        **Example:** Sending form name-value pairs and a local file and a remote file;
+        ```json
+        "payload_multipart": [
+            {
+                "name": "[field-name]",
+                "value": "[field-value]",
+            },
+            {
+                "name": "[field-name]",
+                "value": "./test.png",
+                "type": "file"
+            },
+            {
+                "name": "[field-name]",
+                "value": "http://test.com/test.png",
+                "type": "file",
+                "src": "remote"
+            }
+        ]
+        ```
+
+        *Note:* Ddosify adds `Content-Type: multipart/form-data; boundary=[generated-boundary-value]` header to the request when using `payload_multipart`.
 
     - `timeout` *optional*
 
