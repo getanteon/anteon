@@ -263,7 +263,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         If you need a long payload, we suggest using this parameter instead of `payload`.  
 
-    - `payload_multipart` *optional* <a href="#payload_multipart"></a>
+    - `payload_multipart` *optional* <a name="#payload_multipart"></a>
 
         Use this for `multipart/form-data` Content-Type.
 
@@ -329,7 +329,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         This is the equivalent of the `-T` flag. 
 
-    - `sleep` *optional* <a href="#sleep"></a>
+    - `sleep` *optional* <a name="#sleep"></a>
 
         Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
 
