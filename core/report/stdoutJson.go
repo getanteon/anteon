@@ -24,8 +24,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"sync"
-	"time"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -37,10 +35,8 @@ func init() {
 }
 
 type stdoutJson struct {
-	doneChan    chan struct{}
-	result      *Result
-	printTicker *time.Ticker
-	mu          sync.Mutex
+	doneChan chan struct{}
+	result   *Result
 }
 
 func (s *stdoutJson) Init() (err error) {
@@ -73,8 +69,8 @@ func (s *stdoutJson) Report() {
 		itemReport.Durations = durations
 	}
 
-	r, _ := json.Marshal(s.result)
-	fmt.Print(string(r))
+	j, _ := json.Marshal(s.result)
+	printJson(j)
 }
 
 func (s *stdoutJson) DoneChan() <-chan struct{} {
@@ -109,6 +105,10 @@ func (s ScenarioItemReport) MarshalJSON() ([]byte, error) {
 		SuccesPerc: s.successPercentage(),
 		FailPerc:   s.failedPercentage(),
 	})
+}
+
+var printJson = func(j []byte) {
+	fmt.Println(string(j))
 }
 
 var strKeyToJsonKey = map[string]string{
