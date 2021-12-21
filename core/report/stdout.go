@@ -78,6 +78,7 @@ func (s *stdout) Start(input chan *types.Response) {
 
 			if _, ok := s.result.itemReports[rr.ScenarioItemID]; !ok {
 				s.result.itemReports[rr.ScenarioItemID] = &scenarioItemReport{
+					name:           rr.ScenarioItemName,
 					statusCodeDist: make(map[int]int, 0),
 					errorDist:      make(map[string]int),
 					durations:      map[string]float32{},
@@ -173,7 +174,7 @@ func (s *stdout) printDetails() {
 	b := strings.Builder{}
 	w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 
-	fmt.Fprintln(w, "\nRESULT")
+	fmt.Fprintln(w, "\n\nRESULT")
 	fmt.Fprintln(w, "-------------------------------------")
 
 	keys := make([]int, 0)
@@ -189,8 +190,12 @@ func (s *stdout) printDetails() {
 		v := s.result.itemReports[int16(k)]
 
 		if len(keys) > 1 {
-			fmt.Fprintf(w, "Step %d\n", k)
-			fmt.Fprintln(w, "-------------------------------------")
+			stepHeader := v.name
+			if v.name == "" {
+				stepHeader = fmt.Sprintf("Step %d", k)
+			}
+			fmt.Fprintf(w, "\n%d. "+stepHeader+"\n", k)
+			fmt.Fprintln(w, "---------------------------------")
 		}
 
 		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.successCount, v.successPercentage())
@@ -254,6 +259,7 @@ func (r *result) failedPercentage() int {
 }
 
 type scenarioItemReport struct {
+	name           string
 	statusCodeDist map[int]int
 	errorDist      map[string]int
 	durations      map[string]float32
