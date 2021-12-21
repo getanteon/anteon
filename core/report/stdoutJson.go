@@ -62,6 +62,7 @@ func (s *stdoutJson) Report() {
 	p := 1e3
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
+
 	for _, itemReport := range s.result.ItemReports {
 		durations := make(map[string]float32)
 		for d, s := range itemReport.Durations {
@@ -78,6 +79,36 @@ func (s *stdoutJson) Report() {
 
 func (s *stdoutJson) DoneChan() <-chan struct{} {
 	return s.doneChan
+}
+
+// Report wraps Result to add success/fails percentage values
+type Report Result
+
+func (r Result) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		SuccesPerc int `json:"success_perc"`
+		FailPerc   int `json:"fail_perc"`
+		Report
+	}{
+		SuccesPerc: r.successPercentage(),
+		FailPerc:   r.failedPercentage(),
+		Report:     Report(r),
+	})
+}
+
+// ItemReport wraps ScenarioItemReport to add success/fails percentage values
+type ItemReport ScenarioItemReport
+
+func (s ScenarioItemReport) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		ItemReport
+		SuccesPerc int `json:"success_perc"`
+		FailPerc   int `json:"fail_perc"`
+	}{
+		ItemReport: ItemReport(s),
+		SuccesPerc: s.successPercentage(),
+		FailPerc:   s.failedPercentage(),
+	})
 }
 
 var strKeyToJsonKey = map[string]string{
