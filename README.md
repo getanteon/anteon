@@ -238,6 +238,10 @@ There is an example config file at [config_examples/config.json](/config_example
     - `url` *mandatory*
 
         This is the equivalent of the `-t` flag.
+
+    - `name` *optional*
+    
+        Name of the step.
     
     - `protocol` *optional*
 
