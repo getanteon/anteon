@@ -65,6 +65,7 @@ type multipartFormData struct {
 
 type step struct {
 	Id               int16                  `json:"id"`
+	Name             string                 `json:"name"`
 	Url              string                 `json:"url"`
 	Protocol         string                 `json:"protocol"`
 	Auth             auth                   `json:"auth"`
@@ -220,6 +221,7 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 
 	return types.ScenarioItem{
 		ID:       s.Id,
+		Name:     s.Name,
 		URL:      url.String(),
 		Protocol: strings.ToUpper(url.Scheme),
 		Auth:     types.Auth(s.Auth),

@@ -83,6 +83,9 @@ type ScenarioItem struct {
 	// ID of the Item. Should be given by the client.
 	ID int16
 
+	// Name of the Item.
+	Name string
+
 	// Protocol of the requests.
 	Protocol string
 

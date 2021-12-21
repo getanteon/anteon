@@ -44,6 +44,9 @@ type ResponseItem struct {
 	// ID of the ScenarioItem
 	ScenarioItemID int16
 
+	// Name of the ScenarioItem
+	ScenarioItemName string
+
 	// Each request has a unique ID.
 	RequestID uuid.UUID
 
