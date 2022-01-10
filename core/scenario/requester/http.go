@@ -121,7 +121,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 		StatusCode:       statusCode,
 		RequestTime:      reqStartTime,
 		Duration:         durations.totalDuration(),
-		ContentLenth:     contentLength,
+		ContentLength:    contentLength,
 		Err:              requestErr,
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),

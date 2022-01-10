@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.ddosify.com/ddosify/core/scenario/requester"
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -68,6 +69,7 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, pro
 // Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
 func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *types.Response, err *types.RequestError) {
 	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
+	response.ResponseID = uuid.New()
 	response.StartTime = startTime
 	response.ProxyAddr = proxy
 

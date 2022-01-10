@@ -29,6 +29,9 @@ import (
 
 // Response is corresponding to Scenario. Each Scenario has a Response after the request is done.
 type Response struct {
+	// Each response object has a unique identifier
+	ResponseID uuid.UUID
+
 	// First request start time for the Scenario
 	StartTime time.Time
 
@@ -60,7 +63,7 @@ type ResponseItem struct {
 	Duration time.Duration
 
 	// Response content length
-	ContentLenth int64
+	ContentLength int64
 
 	// Error occurred at request time.
 	Err RequestError
