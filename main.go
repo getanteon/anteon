@@ -51,7 +51,7 @@ var (
 	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
 	loadType = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
 
-	protocol = flag.String("p", types.DefaultProtocol, "[HTTP, HTTPS]")
+	protocol = flag.String("p", types.DefaultProtocol, "Protocol [HTTP, HTTPS]")
 	method   = flag.String("m", types.DefaultMethod,
 		"Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
 	payload = flag.String("b", "", "Payload of the network packet")
