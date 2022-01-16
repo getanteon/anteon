@@ -29,9 +29,6 @@ import (
 
 // Response is corresponding to Scenario. Each Scenario has a Response after the request is done.
 type Response struct {
-	// Each response object has a unique identifier
-	ResponseID uuid.UUID
-
 	// First request start time for the Scenario
 	StartTime time.Time
 
