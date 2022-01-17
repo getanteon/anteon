@@ -22,6 +22,7 @@ package proxy
 
 import (
 	"net/url"
+	"time"
 )
 
 const ProxyTypeSingle = "single"
@@ -55,6 +56,11 @@ func (sp *singleProxyStrategy) ReportProxy(addr *url.URL, reason string) *url.UR
 
 func (sp *singleProxyStrategy) GetProxyCountry(addr *url.URL) string {
 	return "unknown"
+}
+
+func (sp *singleProxyStrategy) GetLatency(addr *url.URL) time.Duration {
+	// We may want to calculate latency for single proxy strategy also.
+	return time.Duration(0)
 }
 
 func (sp *singleProxyStrategy) Done() error {

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"time"
 )
 
 var AvailableProxyServices = make(map[string]ProxyService)
@@ -48,6 +49,7 @@ type ProxyService interface {
 	GetProxy() *url.URL
 	ReportProxy(addr *url.URL, reason string) *url.URL
 	GetProxyCountry(*url.URL) string
+	GetLatency(*url.URL) time.Duration
 	Done() error
 }
 

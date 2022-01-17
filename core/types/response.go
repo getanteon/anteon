@@ -60,7 +60,7 @@ type ResponseItem struct {
 	Duration time.Duration
 
 	// Response content length
-	ContentLenth int64
+	ContentLength int64
 
 	// Error occurred at request time.
 	Err RequestError
