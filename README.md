@@ -67,6 +67,17 @@ cd ddosify
 makepkg -sri
 ```
 
+### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/latest)
+
+- Download *.zip file for your architecture. For example download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
+- Unzip `ddosify_x.x.x_windows_amd64.zip`
+- Open Powershell or CMD (Command Prompt) and change directory to unzipped folder: `ddosify_x.x.x_windows_amd64`
+- Run ddosify: 
+
+```bash
+.\ddosify.exe -t target_site.com
+```
+
 ### Using the convenience script (macOS and Linux)
 
 - The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
