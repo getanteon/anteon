@@ -16,7 +16,8 @@ type VariableInjector struct {
 	fakerMap map[string]interface{}
 }
 
-func (vi *VariableInjector) Init() {
+func New() *VariableInjector {
+	vi := &VariableInjector{}
 	vi.faker = faker.New()
 	vi.fakerMap = template.FuncMap{
 		/*
@@ -53,11 +54,12 @@ func (vi *VariableInjector) Init() {
 		"_randomString": randomString,
 
 		// Functions
-		"_intBetween":      vi.faker.IntBetween,
-		"_floatBetween":    vi.faker.RandomFloat,
-		"_stringMaxLength": vi.faker.RandomStringWithLength,
+		"_intBetween":         vi.faker.IntBetween,
+		"_floatBetween":       vi.faker.RandomFloat,
+		"_stringWithLength":   vi.faker.RandomStringWithLength,
+		"_alphaNumWithLength": alphaNumWithLength,
 	}
-
+	return vi
 }
 
 func (vi *VariableInjector) Inject(text string) string {
@@ -96,4 +98,11 @@ func randomFloat() float64 {
 
 func randomString() string {
 	return faker.New().RandomStringWithLength(10)
+}
+
+func alphaNumWithLength(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, length)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)[:length]
 }

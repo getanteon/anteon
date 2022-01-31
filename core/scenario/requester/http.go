@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/scenario/scripting"
 	"go.ddosify.com/ddosify/core/types"
 	"golang.org/x/net/http2"
 )
@@ -43,7 +44,7 @@ type HttpRequester struct {
 	proxyAddr *url.URL
 	packet    types.ScenarioItem
 	client    *http.Client
-	request   *http.Request
+	vi        *scripting.VariableInjector
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -51,6 +52,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
+	h.vi = scripting.New()
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -69,12 +71,6 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 		}
 	}
 
-	// Request instance
-	err = h.initRequestInstance()
-	if err != nil {
-		return
-	}
-
 	return
 }
 
@@ -86,7 +82,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 
 	durations := &duration{}
 	trace := newTrace(durations)
-	httpReq := h.prepareReq(trace)
+	httpReq, _ := h.newRequestInstance(trace)
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
@@ -136,14 +132,6 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	}
 
 	return
-}
-
-func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
-	httpReq := h.request.Clone(h.ctx)
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
-	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
-	return httpReq
 }
 
 // TODO:REFACTOR
@@ -209,8 +197,8 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 	return tlsConfig
 }
 
-func (h *HttpRequester) initRequestInstance() (err error) {
-	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
+func (h *HttpRequester) newRequestInstance(trace *httptrace.ClientTrace) (request *http.Request, err error) {
+	request, err = http.NewRequest(h.packet.Method, h.vi.Inject(h.packet.URL), bytes.NewBufferString(h.vi.Inject(h.packet.Payload)))
 	if err != nil {
 		return
 	}
@@ -219,9 +207,9 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	header := make(http.Header)
 	for k, v := range h.packet.Headers {
 		if strings.EqualFold(k, "Host") {
-			h.request.Host = v
+			request.Host = v
 		} else {
-			header.Set(k, v)
+			header.Set(k, h.vi.Inject(v))
 		}
 	}
 
@@ -233,20 +221,22 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	}
 	header.Set("User-Agent", ua)
 
-	h.request.Header = header
+	request.Header = header
 
 	// Auth should be set after header assignment.
 	if h.packet.Auth != (types.Auth{}) {
-		h.request.SetBasicAuth(h.packet.Auth.Username, h.packet.Auth.Password)
+		request.SetBasicAuth(h.packet.Auth.Username, h.packet.Auth.Password)
 	}
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
-	h.request.Close = true
+	request.Close = true
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		if val.(bool) {
-			h.request.Close = false
+			request.Close = false
 		}
 	}
+
+	request.WithContext(httptrace.WithClientTrace(h.ctx, trace))
 	return
 }
 
