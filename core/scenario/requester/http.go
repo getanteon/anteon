@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/scenario/scripting"
 	"go.ddosify.com/ddosify/core/types"
 	"golang.org/x/net/http2"
 )
@@ -44,6 +45,7 @@ type HttpRequester struct {
 	packet    types.ScenarioItem
 	client    *http.Client
 	request   *http.Request
+	vi        *scripting.VariableInjector
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -51,6 +53,8 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
+	h.vi = &scripting.VariableInjector{}
+	h.vi.Init()
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -139,10 +143,23 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 }
 
 func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
+	// TODO: use vi.inject only if we need to.
+
 	httpReq := h.request.Clone(h.ctx)
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
+
+	body := h.vi.Inject(h.packet.Payload)
+	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+	httpReq.ContentLength = int64(len(body))
+
+	httpReq.URL, _ = url.Parse(h.vi.Inject(h.packet.URL))
+
+	for k, values := range httpReq.Header {
+		for _, v := range values {
+			httpReq.Header.Set(k, h.vi.Inject(v))
+		}
+	}
+
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
 	return httpReq
 }
 
