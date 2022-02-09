@@ -62,7 +62,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
-		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+		t.Errorf("\nExpected: %#v, \nFound: %#v", expectedHammer, h)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestCreateHammer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(expectedHammer, h) {
-		t.Errorf("Expected: %v, Found: %v", expectedHammer, h)
+		t.Errorf("\nExpected: %v,\n Found: %v", expectedHammer, h)
 	}
 }
 
@@ -280,16 +280,16 @@ func TestCreateHammerProtocol(t *testing.T) {
 	steps := h.Scenario.Scenario
 	for i := 0; i < len(steps); i++ {
 		if steps[i].Protocol != expectedProtocols[i] {
-			t.Errorf("1: Expected: %v, Found: %v", expectedProtocols[i], steps[0].Protocol)
+			t.Errorf("Step: %d, 1: Expected: %v, Found: %v", i, expectedProtocols[i], steps[0].Protocol)
 		}
 
 		url, err := url.Parse(steps[i].URL)
 		if err != nil {
-			t.Errorf("TestCreateHammerProtocol-SchemeCheck error occurred: %v", err)
+			t.Errorf("Step: %d, TestCreateHammerProtocol-SchemeCheck error occurred: %v", i, err)
 		}
 
 		if strings.ToUpper(url.Scheme) != expectedProtocols[i] {
-			t.Errorf("2: Expected: %v, Found: %v", expectedProtocols[i], url.Scheme)
+			t.Errorf("Step: %d, 2: Expected: %v, Found: %v", i, expectedProtocols[i], url.Scheme)
 		}
 	}
 }

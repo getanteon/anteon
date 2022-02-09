@@ -106,6 +106,7 @@ func TestHammerValidScenario(t *testing.T) {
 						ID:       1,
 						Protocol: p,
 						Method:   m,
+						URL:      "https://127.0.0.1",
 					},
 				},
 			}
@@ -126,8 +127,10 @@ func TestHammerValidScenario(t *testing.T) {
 						ID:       1,
 						Protocol: p,
 						Method:   m,
+						URL:      "https://127.0.0.1",
 					}, {
 						ID:       2,
+						URL:      "https://127.0.0.1",
 						Protocol: p,
 						Method:   m,
 					},

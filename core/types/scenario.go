@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 
+	validator "github.com/asaskevich/govalidator"
 	"go.ddosify.com/ddosify/core/util"
 )
 
@@ -134,6 +135,9 @@ func (si *ScenarioItem) validate() error {
 	if si.ID == 0 {
 		return fmt.Errorf("each scenario item should have an unique ID")
 	}
+	if !validator.IsURL(si.URL) {
+		return fmt.Errorf("target is not valid: %s", si.URL)
+	}
 	if si.Sleep != "" {
 		sleep := strings.Split(si.Sleep, "-")
 
@@ -155,4 +159,29 @@ func (si *ScenarioItem) validate() error {
 		}
 	}
 	return nil
+}
+
+// AjustUrlProtocol adjusts the proper url-proto pair for the given ones.
+// If url includes protocol then the new protocol will be the protocol in the url
+// If url does not include protocol, then the new url will include the given protocol
+// If url is not valid, then error will be returned
+func AdjustUrlProtocol(url string, proto string) (string, string, error) {
+	var err error
+	if !validator.IsURL(url) {
+		err = fmt.Errorf("target is not valid: %s", url)
+	} else {
+		url = strings.ToUpper(url)
+		if strings.HasPrefix(url, ProtocolHTTPS+"://") {
+			proto = ProtocolHTTPS
+		} else if strings.HasPrefix(url, ProtocolHTTP+"://") {
+			proto = ProtocolHTTP
+		} else {
+			if !strings.HasPrefix(url, ProtocolHTTP) &&
+				!strings.HasPrefix(url, ProtocolHTTPS) {
+				url = strings.ToLower(proto) + "://" + url
+			}
+		}
+	}
+
+	return strings.ToLower(url), proto, err
 }
