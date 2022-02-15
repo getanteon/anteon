@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
@@ -41,6 +42,8 @@ type ScenarioService struct {
 
 	scenario types.Scenario
 	ctx      context.Context
+
+	clientMutex sync.Mutex
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -96,6 +99,9 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 }
 
 func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {
+	s.clientMutex.Lock()
+	defer s.clientMutex.Unlock()
+
 	requesters, ok := s.clients[proxy]
 	if !ok {
 		err = s.createRequesters(proxy)
