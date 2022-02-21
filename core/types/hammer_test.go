@@ -235,7 +235,7 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		},
 	}
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInvalidScenarioItemID errored")
+		t.Errorf("1- TestHammerEmptyScenarioItemID should be errored")
 	}
 
 	// Multi Scenario
@@ -254,7 +254,34 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		},
 	}
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInvalidScenarioItemID errored")
+		t.Errorf("2- TestHammerEmptyScenarioItemID should be errored")
+	}
+}
+
+func TestHammerDuplicateScenarioItemID(t *testing.T) {
+	// Single Scenario
+	h := newDummyHammer()
+	h.Scenario = Scenario{
+		Scenario: []ScenarioItem{
+			{
+				ID:       1,
+				Protocol: SupportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+			{
+				ID:       2,
+				Protocol: SupportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+			{
+				ID:       2,
+				Protocol: SupportedProtocols[0],
+				Method:   supportedProtocolMethods["HTTP"][1],
+			},
+		},
+	}
+	if err := h.Validate(); err == nil {
+		t.Errorf("TestHammerDuplicateScenarioItemID should be errored")
 	}
 }
 
