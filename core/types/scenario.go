@@ -69,10 +69,16 @@ type Scenario struct {
 }
 
 func (s *Scenario) validate() error {
+	stepIds := make(map[int16]struct{}, len(s.Scenario))
 	for _, si := range s.Scenario {
 		if err := si.validate(); err != nil {
 			return err
 		}
+
+		if _, ok := stepIds[si.ID]; ok {
+			return fmt.Errorf("duplicate step id: %d", si.ID)
+		}
+		stepIds[si.ID] = struct{}{}
 	}
 	return nil
 }
@@ -132,7 +138,7 @@ func (si *ScenarioItem) validate() error {
 		return fmt.Errorf("unsupported Authentication Method (%s) For Protocol (%s) ", si.Auth.Type, si.Protocol)
 	}
 	if si.ID == 0 {
-		return fmt.Errorf("each scenario item should have an unique ID")
+		return fmt.Errorf("step ID should be greater than zero")
 	}
 	if si.Sleep != "" {
 		sleep := strings.Split(si.Sleep, "-")
