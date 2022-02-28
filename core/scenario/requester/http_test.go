@@ -228,7 +228,6 @@ func TestInitRequest(t *testing.T) {
 	expected, _ := http.NewRequest(s.Method, s.URL, bytes.NewBufferString(s.Payload))
 	expected.Close = true
 	expected.Header = make(http.Header)
-	expected.Header.Set("User-Agent", types.DdosifyUserAgent)
 
 	// Request with auth
 	sWithAuth := types.ScenarioItem{
@@ -245,7 +244,6 @@ func TestInitRequest(t *testing.T) {
 	expectedWithAuth, _ := http.NewRequest(sWithAuth.Method, sWithAuth.URL, bytes.NewBufferString(sWithAuth.Payload))
 	expectedWithAuth.Close = true
 	expectedWithAuth.Header = make(http.Header)
-	expectedWithAuth.Header.Set("User-Agent", types.DdosifyUserAgent)
 	expectedWithAuth.SetBasicAuth(sWithAuth.Auth.Username, sWithAuth.Auth.Password)
 
 	// Request With Headers
@@ -272,7 +270,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.Header = make(http.Header)
 	expectedWithHeaders.Header.Set("Header1", "Value1")
 	expectedWithHeaders.Header.Set("Header2", "Value2")
-	expectedWithHeaders.Header.Set("User-Agent", "Firefox "+types.DdosifyUserAgent)
+	expectedWithHeaders.Header.Set("User-Agent", "Firefox")
 	expectedWithHeaders.Host = "test.com"
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
@@ -301,7 +299,6 @@ func TestInitRequest(t *testing.T) {
 	expectedWithKeepAlive.Header = make(http.Header)
 	expectedWithKeepAlive.Header.Set("Header1", "Value1")
 	expectedWithKeepAlive.Header.Set("Header2", "Value2")
-	expectedWithKeepAlive.Header.Set("User-Agent", types.DdosifyUserAgent)
 	expectedWithKeepAlive.SetBasicAuth(sWithKeepAlive.Auth.Username, sWithKeepAlive.Auth.Password)
 
 	// Sub Tests

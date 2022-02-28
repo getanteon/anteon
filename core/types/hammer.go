@@ -35,9 +35,6 @@ const (
 	LoadTypeIncremental = "incremental"
 	LoadTypeWaved       = "waved"
 
-	// To distinguish the received requests on the server side we are adding this special User-Agent to all requests
-	DdosifyUserAgent = "DdosifyHammer"
-
 	// Default Values
 	DefaultReqCount   = 100
 	DefaultLoadType   = LoadTypeLinear

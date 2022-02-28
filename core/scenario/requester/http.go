@@ -225,14 +225,6 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 		}
 	}
 
-	ua := header.Get("User-Agent")
-	if ua == "" {
-		ua = types.DdosifyUserAgent
-	} else {
-		ua += " " + types.DdosifyUserAgent
-	}
-	header.Set("User-Agent", ua)
-
 	h.request.Header = header
 
 	// Auth should be set after header assignment.

@@ -420,6 +420,10 @@ It will support multi-location based distributed load testing and more features.
 
 Join the waitlist: https://ddosify.com
 
+
+## Disclaimer
+
+Ddosify is created for testing the performance of web applications. Users must be the owner of the target system. Using it for harmful purposes is extremely forbidden. Ddosify team & company is not responsible for its’ usages and consequences.
 ## License
 
 Licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
