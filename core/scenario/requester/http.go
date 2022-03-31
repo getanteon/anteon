@@ -468,5 +468,5 @@ func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+	return d.dnsDur + d.connDur + d.tlsDur + d.tlsDur2 + d.reqDur + d.serverProcessDur + d.resDur
 }
