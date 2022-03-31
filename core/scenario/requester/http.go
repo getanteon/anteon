@@ -85,7 +85,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	var reqStartTime = time.Now()
 
 	durations := &duration{}
-	trace := newTrace(durations)
+	trace := newTrace(durations, h.proxyAddr)
 	httpReq := h.prepareReq(trace)
 
 	// Action
@@ -129,7 +129,6 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 			"reqDuration":           durations.getReqDur(),
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
-			"tls2Duration":          durations.getTLSDur2(),
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
@@ -243,8 +242,8 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	return
 }
 
-func newTrace(duration *duration) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, tlsStart2, reqStart, serverProcessStart time.Time
+func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
+	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
 	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
@@ -287,21 +286,23 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 		},
 		TLSHandshakeStart: func() {
 			m.Lock()
-			if tlsStart.IsZero() {
-				tlsStart = time.Now()
-			} else if tlsStart2.IsZero() {
-				tlsStart2 = time.Now()
-			}
+			// This hook can be hit 2 times;
+			// If bost proxy and target are HTTPS
+			//	First hit is for proxy, second is for target.
+			//  To catch the second TLS start time (for target), we can't perform tlsStart.IsZero() check here.
+			tlsStart = time.Now()
 			m.Unlock()
 		},
 		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
 			m.Lock()
-			// no need to handle error in here. We can detect it at http.Client.Do return.
+			// This hook can be hit 2 times;
+			// If proxy: HTTPS, target: HTTPS
+			//	First hit is for proxy, second is for target TLS
+			//  We need to calculate TLS duration if and only if the TLS handshake process is for the target.
+
 			if e == nil {
-				if tlsStart2.IsZero() {
+				if proxyAddr == nil || proxyAddr.Hostname() != cs.ServerName {
 					duration.setTLSDur(time.Since(tlsStart))
-				} else {
-					duration.setTLSDur2(time.Since(tlsStart2))
 				}
 			}
 			m.Unlock()
@@ -396,20 +397,6 @@ func (d *duration) getTLSDur() time.Duration {
 	return d.tlsDur
 }
 
-func (d *duration) setTLSDur2(t time.Duration) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.tlsDur2 == 0 {
-		d.tlsDur2 = t
-	}
-}
-
-func (d *duration) getTLSDur2() time.Duration {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return d.tlsDur2
-}
-
 func (d *duration) setConnDur(t time.Duration) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -468,5 +455,5 @@ func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.dnsDur + d.connDur + d.tlsDur + d.tlsDur2 + d.reqDur + d.serverProcessDur + d.resDur
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
 }
