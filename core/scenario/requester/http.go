@@ -243,7 +243,7 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 }
 
 func newTrace(duration *duration) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
+	var dnsStart, connStart, tlsStart, tlsStart2, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
 	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
@@ -288,6 +288,8 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 			m.Lock()
 			if tlsStart.IsZero() {
 				tlsStart = time.Now()
+			} else if tlsStart2.IsZero() {
+				tlsStart2 = time.Now()
 			}
 			m.Unlock()
 		},
@@ -295,7 +297,11 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 			m.Lock()
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if e == nil {
-				duration.setTLSDur(time.Since(tlsStart))
+				if tlsStart2.IsZero() {
+					duration.setTLSDur(time.Since(tlsStart))
+				} else {
+					duration.setTLSDur2(time.Since(tlsStart2))
+				}
 			}
 			m.Unlock()
 		},
@@ -336,6 +342,10 @@ type duration struct {
 
 	// TLS handshake duration. For HTTP this will be 0
 	tlsDur time.Duration
+
+	// If target is HTTPS and Proxy is HTTPS then there will be 2 TLS handshake.
+	// First TLS is between ddosify - proxy, seconds TLS is between ddosify - target
+	tlsDur2 time.Duration
 
 	// Request write duration
 	reqDur time.Duration
@@ -383,6 +393,20 @@ func (d *duration) getTLSDur() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.tlsDur
+}
+
+func (d *duration) setTLSDur2(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.tlsDur2 == 0 {
+		d.tlsDur2 = t
+	}
+}
+
+func (d *duration) getTLSDur2() time.Duration {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.tlsDur2
 }
 
 func (d *duration) setConnDur(t time.Duration) {
@@ -442,5 +466,6 @@ func (d *duration) getResDur() time.Duration {
 func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
 }
