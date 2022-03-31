@@ -129,6 +129,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 			"reqDuration":           durations.getReqDur(),
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
+			"tls2Duration":          durations.getTLSDur2(),
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
