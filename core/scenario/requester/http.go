@@ -287,7 +287,7 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 		TLSHandshakeStart: func() {
 			m.Lock()
 			// This hook can be hit 2 times;
-			// If bost proxy and target are HTTPS
+			// If both proxy and target are HTTPS
 			//	First hit is for proxy, second is for target.
 			//  To catch the second TLS start time (for target), we can't perform tlsStart.IsZero() check here.
 			tlsStart = time.Now()
@@ -344,10 +344,6 @@ type duration struct {
 
 	// TLS handshake duration. For HTTP this will be 0
 	tlsDur time.Duration
-
-	// If target is HTTPS and Proxy is HTTPS then there will be 2 TLS handshake.
-	// First TLS is between ddosify - proxy, seconds TLS is between ddosify - target
-	tlsDur2 time.Duration
 
 	// Request write duration
 	reqDur time.Duration
