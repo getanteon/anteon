@@ -178,12 +178,12 @@ func fetchErrType(err string) types.RequestError {
 
 func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
-		Proxy:           http.ProxyURL(h.proxyAddr),
-		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
+		TLSClientConfig:     tlsConfig,
+		Proxy:               http.ProxyURL(h.proxyAddr),
+		MaxIdleConnsPerHost: 60000,
 	}
 
-	tr.DisableKeepAlives = true
+	tr.DisableKeepAlives = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		tr.DisableKeepAlives = !val.(bool)
 	}
@@ -233,11 +233,9 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	}
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
-	h.request.Close = true
+	h.request.Close = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		if val.(bool) {
-			h.request.Close = false
-		}
+		h.request.Close = !val.(bool)
 	}
 	return
 }
