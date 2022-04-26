@@ -181,6 +181,7 @@ func (e *engine) stop() {
 	<-e.reportService.DoneChan()
 	e.reportService.Report()
 	e.proxyService.Done()
+	e.scenarioService.Done()
 }
 
 func (e *engine) initReqCountArr() {

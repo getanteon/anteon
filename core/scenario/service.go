@@ -98,6 +98,14 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 	return
 }
 
+func (s *ScenarioService) Done() {
+	for _, v := range s.clients {
+		for _, r := range v {
+			r.requester.Done()
+		}
+	}
+}
+
 func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {
 	s.clientMutex.Lock()
 	defer s.clientMutex.Unlock()
