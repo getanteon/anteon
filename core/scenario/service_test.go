@@ -35,6 +35,7 @@ import (
 type MockRequester struct {
 	InitCalled bool
 	SendCalled bool
+	DoneCalled bool
 
 	FailInit    bool
 	FailInitMsg string
@@ -53,6 +54,10 @@ func (m *MockRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 func (m *MockRequester) Send() (res *types.ResponseItem) {
 	m.SendCalled = true
 	return m.ReturnSend
+}
+
+func (m *MockRequester) Done() {
+	m.DoneCalled = true
 }
 
 type MockSleep struct {
@@ -406,6 +411,74 @@ func TestDoErrorOnNewRequester(t *testing.T) {
 	}
 	if err.Type != types.ErrorUnkown {
 		t.Fatalf("Do should return types.ErrorUnkown error type")
+	}
+}
+
+func TestDone(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	scenario := types.Scenario{
+		Scenario: []types.ScenarioItem{
+			{
+				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+		},
+	}
+	p1, _ := url.Parse("http://proxy_server.com:80")
+	p2, _ := url.Parse("http://proxy_server.com:8080")
+	ctx := context.TODO()
+
+	requester1 := &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}}
+	requester2 := &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 2}}
+	requester3 := &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}}
+	requester4 := &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 2}}
+	service := ScenarioService{
+		clients: map[*url.URL][]scenarioItemRequester{
+			p1: {
+				{
+					scenarioItemID: 1,
+					requester:      requester1,
+				},
+				{
+					scenarioItemID: 2,
+					requester:      requester2,
+				},
+			},
+			p2: {
+				{
+					scenarioItemID: 1,
+					requester:      requester3,
+				},
+				{
+					scenarioItemID: 2,
+					requester:      requester4,
+				},
+			},
+		},
+		scenario: scenario,
+		ctx:      ctx,
+	}
+
+	// Act
+	service.Done()
+
+	// Assert
+	if !requester1.DoneCalled {
+		t.Fatalf("Requester1 Done should be called")
+	}
+	if !requester2.DoneCalled {
+		t.Fatalf("Requester2 Done should be called")
+	}
+	if !requester3.DoneCalled {
+		t.Fatalf("Requester3 Done should be called")
+	}
+	if !requester4.DoneCalled {
+		t.Fatalf("Requester4 Done should be called")
 	}
 }
 

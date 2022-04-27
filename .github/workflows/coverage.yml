@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17.x
+        go-version: 1.18.x
 
     - name: Test
       run: go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./... && go tool cover -func coverage.txt

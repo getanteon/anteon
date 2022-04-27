@@ -1,20 +1,19 @@
-FROM golang:1.17.1
+FROM golang:1.18.1
 
-RUN apt update && apt install -y git gcc musl-dev curl iputils-ping telnet && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y git gcc musl-dev curl iputils-ping telnet graphviz && rm -rf /var/lib/apt/lists/*
 
 ENV GOPATH /go
 ENV GOBIN /go/bin
 
 WORKDIR /workspace
 
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.0
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.45.2
 
-RUN go get -v golang.org/x/tools/gopls@v0.7.2
-RUN go get -v github.com/rogpeppe/godef@v1.1.2
-RUN go get -v github.com/rakyll/gotest@v0.0.6
-RUN go get -v github.com/cweill/gotests@v1.6.0
-RUN go get -v github.com/ramya-rao-a/go-outline@1.0.0
-RUN go get -v github.com/go-delve/delve/cmd/dlv@v1.8.1
+RUN go install -v golang.org/x/tools/gopls@v0.8.3
+RUN go install -v github.com/rogpeppe/godef@v1.1.2
+RUN go install -v github.com/rakyll/gotest@v0.0.6
+RUN go install -v github.com/ramya-rao-a/go-outline@1.0.0
+RUN go install -v github.com/go-delve/delve/cmd/dlv@v1.8.1
 
 COPY go.mod ./
 COPY go.sum ./

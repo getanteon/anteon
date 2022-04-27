@@ -78,6 +78,14 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	return
 }
 
+func (h *HttpRequester) Done() {
+	// MaxIdleConnsPerHost and MaxIdleConns at Transport layer configuration
+	// let us reuse the connections when keep-alive enabled(default)
+	// When the Job is finished, we have to Close idle connections to prevent sockets to lock in at the TIME_WAIT state.
+	// Otherwise, the next job can't use these sockets because they are reserved for the current target host.
+	h.client.CloseIdleConnections()
+}
+
 func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	var statusCode int
 	var contentLength int64
@@ -105,10 +113,12 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	} else {
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
+	}
 
-		// From the DOC: If the Body is not both read to EOF and closed,
-		// the Client's underlying RoundTripper (typically Transport)
-		// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	// From the DOC: If the Body is not both read to EOF and closed,
+	// the Client's underlying RoundTripper (typically Transport)
+	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	if httpRes != nil {
 		io.Copy(ioutil.Discard, httpRes.Body)
 		httpRes.Body.Close()
 	}
@@ -178,12 +188,13 @@ func fetchErrType(err string) types.RequestError {
 
 func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
-		Proxy:           http.ProxyURL(h.proxyAddr),
-		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
+		TLSClientConfig:     tlsConfig,
+		Proxy:               http.ProxyURL(h.proxyAddr),
+		MaxIdleConnsPerHost: 60000,
+		MaxIdleConns:        0,
 	}
 
-	tr.DisableKeepAlives = true
+	tr.DisableKeepAlives = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		tr.DisableKeepAlives = !val.(bool)
 	}
@@ -233,11 +244,9 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	}
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
-	h.request.Close = true
+	h.request.Close = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		if val.(bool) {
-			h.request.Close = false
-		}
+		h.request.Close = !val.(bool)
 	}
 	return
 }

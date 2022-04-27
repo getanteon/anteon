@@ -388,7 +388,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         ```json
         "others": {
-            "keep-alive": true,              // Default false
+            "keep-alive": true,              // Default true
             "disable-compression": false,    // Default true
             "h2": true,                      // Enables HTTP/2. Default false.
             "disable-redirect": true         // Default false
