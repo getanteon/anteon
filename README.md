@@ -414,11 +414,7 @@ You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, fea
 
 ## More
 
-This repository includes the single-node version of the Ddosify Loader. Ddosify Cloud will be available soon. 
-It will support multi-location based distributed load testing and more features. 
-
-Join the waitlist: https://ddosify.com
-
+This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Ddosify Cloud](https://ddosify.com)
 
 ## Disclaimer
 
