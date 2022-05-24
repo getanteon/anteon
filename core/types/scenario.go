@@ -176,18 +176,18 @@ func AdjustUrlProtocol(url string, proto string) (string, string, error) {
 	if !validator.IsURL(url) {
 		err = fmt.Errorf("target is not valid: %s", url)
 	} else {
-		url = strings.ToUpper(url)
-		if strings.HasPrefix(url, ProtocolHTTPS+"://") {
+		tempURL := strings.ToUpper(url)
+		if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
 			proto = ProtocolHTTPS
-		} else if strings.HasPrefix(url, ProtocolHTTP+"://") {
+		} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
 			proto = ProtocolHTTP
 		} else {
-			if !strings.HasPrefix(url, ProtocolHTTP) &&
-				!strings.HasPrefix(url, ProtocolHTTPS) {
+			if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
+				!strings.HasPrefix(tempURL, ProtocolHTTPS) {
 				url = strings.ToLower(proto) + "://" + url
 			}
 		}
 	}
 
-	return strings.ToLower(url), proto, err
+	return url, proto, err
 }
