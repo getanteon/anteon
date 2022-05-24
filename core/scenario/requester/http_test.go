@@ -77,7 +77,7 @@ func TestInitClient(t *testing.T) {
 	expectedTr := &http.Transport{
 		TLSClientConfig:   expectedTLS,
 		Proxy:             http.ProxyURL(p),
-		DisableKeepAlives: true,
+		DisableKeepAlives: false,
 	}
 	expectedClient := &http.Client{
 		Transport: expectedTr,
@@ -93,7 +93,7 @@ func TestInitClient(t *testing.T) {
 		Timeout:  types.DefaultTimeout,
 		Custom: map[string]interface{}{
 			"disable-redirect":    true,
-			"keep-alive":          true,
+			"keep-alive":          false,
 			"disable-compression": true,
 			"hostname":            "dummy.com",
 		},
@@ -105,7 +105,7 @@ func TestInitClient(t *testing.T) {
 	expectedTrCustomData := &http.Transport{
 		TLSClientConfig:    expectedTLSCustomData,
 		Proxy:              http.ProxyURL(p),
-		DisableKeepAlives:  false,
+		DisableKeepAlives:  true,
 		DisableCompression: true,
 	}
 	expectedClientWithCustomData := &http.Client{
@@ -133,7 +133,7 @@ func TestInitClient(t *testing.T) {
 	expectedTrHTTP2 := &http.Transport{
 		TLSClientConfig:   expectedTLSHTTP2,
 		Proxy:             http.ProxyURL(p),
-		DisableKeepAlives: true,
+		DisableKeepAlives: false,
 	}
 	http2.ConfigureTransport(expectedTrHTTP2)
 	expectedClientHTTP2 := &http.Client{
@@ -226,9 +226,8 @@ func TestInitRequest(t *testing.T) {
 		Payload:  "payloadtest",
 	}
 	expected, _ := http.NewRequest(s.Method, s.URL, bytes.NewBufferString(s.Payload))
-	expected.Close = true
+	expected.Close = false
 	expected.Header = make(http.Header)
-	expected.Header.Set("User-Agent", types.DdosifyUserAgent)
 
 	// Request with auth
 	sWithAuth := types.ScenarioItem{
@@ -243,9 +242,8 @@ func TestInitRequest(t *testing.T) {
 		},
 	}
 	expectedWithAuth, _ := http.NewRequest(sWithAuth.Method, sWithAuth.URL, bytes.NewBufferString(sWithAuth.Payload))
-	expectedWithAuth.Close = true
+	expectedWithAuth.Close = false
 	expectedWithAuth.Header = make(http.Header)
-	expectedWithAuth.Header.Set("User-Agent", types.DdosifyUserAgent)
 	expectedWithAuth.SetBasicAuth(sWithAuth.Auth.Username, sWithAuth.Auth.Password)
 
 	// Request With Headers
@@ -268,16 +266,16 @@ func TestInitRequest(t *testing.T) {
 	}
 	expectedWithHeaders, _ := http.NewRequest(sWithHeaders.Method,
 		sWithHeaders.URL, bytes.NewBufferString(sWithHeaders.Payload))
-	expectedWithHeaders.Close = true
+	expectedWithHeaders.Close = false
 	expectedWithHeaders.Header = make(http.Header)
 	expectedWithHeaders.Header.Set("Header1", "Value1")
 	expectedWithHeaders.Header.Set("Header2", "Value2")
-	expectedWithHeaders.Header.Set("User-Agent", "Firefox "+types.DdosifyUserAgent)
+	expectedWithHeaders.Header.Set("User-Agent", "Firefox")
 	expectedWithHeaders.Host = "test.com"
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
 	// Request keep-alive condition
-	sWithKeepAlive := types.ScenarioItem{
+	sWithoutKeepAlive := types.ScenarioItem{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -292,17 +290,16 @@ func TestInitRequest(t *testing.T) {
 			"Header2": "Value2",
 		},
 		Custom: map[string]interface{}{
-			"keep-alive": true,
+			"keep-alive": false,
 		},
 	}
-	expectedWithKeepAlive, _ := http.NewRequest(sWithKeepAlive.Method,
-		sWithKeepAlive.URL, bytes.NewBufferString(sWithKeepAlive.Payload))
-	expectedWithKeepAlive.Close = false
-	expectedWithKeepAlive.Header = make(http.Header)
-	expectedWithKeepAlive.Header.Set("Header1", "Value1")
-	expectedWithKeepAlive.Header.Set("Header2", "Value2")
-	expectedWithKeepAlive.Header.Set("User-Agent", types.DdosifyUserAgent)
-	expectedWithKeepAlive.SetBasicAuth(sWithKeepAlive.Auth.Username, sWithKeepAlive.Auth.Password)
+	expectedWithoutKeepAlive, _ := http.NewRequest(sWithoutKeepAlive.Method,
+		sWithoutKeepAlive.URL, bytes.NewBufferString(sWithoutKeepAlive.Payload))
+	expectedWithoutKeepAlive.Close = true
+	expectedWithoutKeepAlive.Header = make(http.Header)
+	expectedWithoutKeepAlive.Header.Set("Header1", "Value1")
+	expectedWithoutKeepAlive.Header.Set("Header2", "Value2")
+	expectedWithoutKeepAlive.SetBasicAuth(sWithoutKeepAlive.Auth.Username, sWithoutKeepAlive.Auth.Password)
 
 	// Sub Tests
 	tests := []struct {
@@ -315,7 +312,7 @@ func TestInitRequest(t *testing.T) {
 		{"Basic", s, false, expected},
 		{"WithAuth", sWithAuth, false, expectedWithAuth},
 		{"WithHeaders", sWithHeaders, false, expectedWithHeaders},
-		{"WithKeepAlive", sWithKeepAlive, false, expectedWithKeepAlive},
+		{"WithoutKeepAlive", sWithoutKeepAlive, false, expectedWithoutKeepAlive},
 	}
 
 	for _, test := range tests {

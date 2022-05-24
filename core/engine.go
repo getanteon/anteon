@@ -172,7 +172,6 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
-	res.Others["proxyLatency"] = e.proxyService.GetLatency(p)
 	e.responseChan <- res
 }
 
@@ -182,6 +181,7 @@ func (e *engine) stop() {
 	<-e.reportService.DoneChan()
 	e.reportService.Report()
 	e.proxyService.Done()
+	e.scenarioService.Done()
 }
 
 func (e *engine) initReqCountArr() {

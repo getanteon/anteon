@@ -82,6 +82,14 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	return
 }
 
+func (h *HttpRequester) Done() {
+	// MaxIdleConnsPerHost and MaxIdleConns at Transport layer configuration
+	// let us reuse the connections when keep-alive enabled(default)
+	// When the Job is finished, we have to Close idle connections to prevent sockets to lock in at the TIME_WAIT state.
+	// Otherwise, the next job can't use these sockets because they are reserved for the current target host.
+	h.client.CloseIdleConnections()
+}
+
 func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	var statusCode int
 	var contentLength int64
@@ -89,7 +97,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	var reqStartTime = time.Now()
 
 	durations := &duration{}
-	trace := newTrace(durations)
+	trace := newTrace(durations, h.proxyAddr)
 	httpReq := h.prepareReq(trace)
 
 	// Action
@@ -109,10 +117,12 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	} else {
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
+	}
 
-		// From the DOC: If the Body is not both read to EOF and closed,
-		// the Client's underlying RoundTripper (typically Transport)
-		// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	// From the DOC: If the Body is not both read to EOF and closed,
+	// the Client's underlying RoundTripper (typically Transport)
+	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	if httpRes != nil {
 		io.Copy(ioutil.Discard, httpRes.Body)
 		httpRes.Body.Close()
 	}
@@ -195,12 +205,13 @@ func fetchErrType(err string) types.RequestError {
 
 func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
-		Proxy:           http.ProxyURL(h.proxyAddr),
-		// MaxIdleConnsPerHost: 100, TODO: Let's think about this.
+		TLSClientConfig:     tlsConfig,
+		Proxy:               http.ProxyURL(h.proxyAddr),
+		MaxIdleConnsPerHost: 60000,
+		MaxIdleConns:        0,
 	}
 
-	tr.DisableKeepAlives = true
+	tr.DisableKeepAlives = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
 		tr.DisableKeepAlives = !val.(bool)
 	}
@@ -242,14 +253,6 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 		}
 	}
 
-	ua := header.Get("User-Agent")
-	if ua == "" {
-		ua = types.DdosifyUserAgent
-	} else {
-		ua += " " + types.DdosifyUserAgent
-	}
-	header.Set("User-Agent", ua)
-
 	h.request.Header = header
 
 	// Auth should be set after header assignment.
@@ -258,16 +261,14 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	}
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
-	h.request.Close = true
+	h.request.Close = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		if val.(bool) {
-			h.request.Close = false
-		}
+		h.request.Close = !val.(bool)
 	}
 	return
 }
 
-func newTrace(duration *duration) *httptrace.ClientTrace {
+func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
@@ -311,16 +312,24 @@ func newTrace(duration *duration) *httptrace.ClientTrace {
 		},
 		TLSHandshakeStart: func() {
 			m.Lock()
-			if tlsStart.IsZero() {
-				tlsStart = time.Now()
-			}
+			// This hook can be hit 2 times;
+			// If both proxy and target are HTTPS
+			//	First hit is for proxy, second is for target.
+			//  To catch the second TLS start time (for target), we can't perform tlsStart.IsZero() check here.
+			tlsStart = time.Now()
 			m.Unlock()
 		},
 		TLSHandshakeDone: func(cs tls.ConnectionState, e error) {
 			m.Lock()
-			// no need to handle error in here. We can detect it at http.Client.Do return.
+			// This hook can be hit 2 times;
+			// If proxy: HTTPS, target: HTTPS
+			//	First hit is for proxy, second is for target TLS
+			//  We need to calculate TLS duration if and only if the TLS handshake process is for the target.
+
 			if e == nil {
-				duration.setTLSDur(time.Since(tlsStart))
+				if proxyAddr == nil || proxyAddr.Hostname() != cs.ServerName {
+					duration.setTLSDur(time.Since(tlsStart))
+				}
 			}
 			m.Unlock()
 		},
@@ -467,5 +476,6 @@ func (d *duration) getResDur() time.Duration {
 func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
 }

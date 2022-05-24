@@ -11,8 +11,7 @@
     <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/ddosify/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;
     <a href="https://github.com/ddosify/ddosify/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
     <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="ddosify discord server" /></a>
-    <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&color=orange&logo=docker&label=docker" alt="ddosify docker image" /></a>
-    
+    <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&logo=docker&label=docker" alt="ddosify docker image" /></a>
 </p>
 
 
@@ -389,7 +388,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         ```json
         "others": {
-            "keep-alive": true,              // Default false
+            "keep-alive": true,              // Default true
             "disable-compression": false,    // Default true
             "h2": true,                      // Enables HTTP/2. Default false.
             "disable-redirect": true         // Default false
@@ -415,11 +414,11 @@ You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, fea
 
 ## More
 
-This repository includes the single-node version of the Ddosify Loader. Ddosify Cloud will be available soon. 
-It will support multi-location based distributed load testing and more features. 
+This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Ddosify Cloud](https://ddosify.com)
 
-Join the waitlist: https://ddosify.com
+## Disclaimer
 
+Ddosify is created for testing the performance of web applications. Users must be the owner of the target system. Using it for harmful purposes is extremely forbidden. Ddosify team & company is not responsible for its’ usages and consequences.
 ## License
 
 Licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html

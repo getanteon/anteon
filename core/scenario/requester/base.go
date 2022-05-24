@@ -34,6 +34,7 @@ import (
 type Requester interface {
 	Init(context.Context, types.ScenarioItem, *url.URL) error
 	Send() *types.ResponseItem
+	Done()
 }
 
 // NewRequester is the factory method of the Requester.
