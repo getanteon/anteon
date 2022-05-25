@@ -9,48 +9,66 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jaswdr/faker"
+
+	"go.ddosify.com/ddosify/core/util"
 )
 
 type VariableInjector struct {
-	faker    faker.Faker
-	fakerMap map[string]interface{}
+	faker       faker.Faker
+	customFaker util.CustomFaker
+	fakerMap    map[string]interface{}
 }
 
 func (vi *VariableInjector) Init() {
 	vi.faker = faker.New()
+	vi.customFaker = util.NewCustomFaker()
 	vi.fakerMap = template.FuncMap{
 		/*
-		* Postman equivalents.
+		* Postman equivalents: https://learning.postman.com/docs/writing-scripts/script-references/variables-list
 		 */
-		"_guid":         uuid.New().String,
-		"_randomUUID":   uuid.New().String,
-		"_timestamp":    randomTimestamp().Unix,
+
+		// Common
+		"_guid":         uuid.New,
+		"_timestamp":    randomTimestamp,
 		"_isoTimestamp": randomISOTimestamp,
-		// "_randomAlphaNumeric":  to_be_filled,
+		"_randomUUID":   uuid.New,
+
+		//Text, numbers, and colors
+		//"_randomAlphaNumeric": vi.faker.Letter,
 		"_randomBoolean":  vi.faker.Bool,
-		"_randomInt":      randomInt,
-		"_randomColor":    vi.faker.Color().ColorName,
+		"_randomInt":      vi.faker.Int,
+		"_randomColor":    vi.faker.Color().SafeColorName,
 		"_randomHexColor": vi.faker.Color().Hex,
 		// "_randomAbbreviation": to_be_filled,
-		"_randomIP":         vi.faker.Internet().Ipv4,
-		"_randomIPV6":       vi.faker.Internet().Ipv6,
+
+		// Internet and IP addresses
+		"_randomIP": vi.faker.Internet().Ipv4,
+		//"_randomIPV6":       vi.faker.Internet().Ipv6,
 		"_randomMACAddress": vi.faker.Internet().MacAddress,
 		"_randomPassword":   vi.faker.Internet().Password,
 		"_randomLocale":     vi.faker.Language().LanguageAbbr,
 		"_randomUserAgent":  vi.faker.UserAgent().UserAgent,
 		// "randomProtocol":  to_be_filled,,
-		"_randomSemver":     vi.faker.App().Version,
+		"_randomSemver": vi.faker.App().Version,
+
+		// Names
 		"_randomFirstName":  vi.faker.Person().FirstName,
 		"_randomLastName":   vi.faker.Person().LastName,
 		"_randomFullName":   vi.faker.Person().Name,
 		"_randomNamePrefix": vi.faker.Person().Title,
 		"_randomNameSuffix": vi.faker.Person().Suffix,
 
+		// Profession
+		// "_randomJobArea":       vi.faker.Company().JobTitle,
+		// "_randomJobDescriptor": vi.faker.Company().JobTitle,
+		"_randomJobTitle": vi.faker.Company().JobTitle,
+		// "randomJobType":        vi.faker.Company().JobTitle,
+
 		/*
 		* Spesific to us.
 		 */
-		"_randomFloat":  randomFloat,
-		"_randomString": randomString,
+		"_randomFloat":  vi.customFaker.RandomFloat,
+		"_randomString": vi.customFaker.RandomString,
 
 		// Functions
 		"_intBetween":      vi.faker.IntBetween,
@@ -76,9 +94,9 @@ func (vi *VariableInjector) fakeDataInjector(text string) string {
 	return buf.String()
 }
 
-func randomTimestamp() time.Time {
+func randomTimestamp() int64 {
 	randomTime := rand.Int63n(time.Now().Unix()-94608000) + 94608000
-	return time.Unix(randomTime, 0)
+	return time.Unix(randomTime, 0).Unix()
 }
 
 func randomISOTimestamp() string {
@@ -87,7 +105,7 @@ func randomISOTimestamp() string {
 }
 
 func randomInt() int {
-	return faker.New().IntBetween(0, 100)
+	return faker.New().IntBetween(0, 1000000000)
 }
 
 func randomFloat() float64 {
