@@ -97,13 +97,86 @@ func (vi *VariableInjector) Init() {
 		"_randomCreditCardMask":  vi.customFaker.RandomCreaditCardMask,
 		// "_randomBankAccountBic":  vi.faker,
 		// "_randomBankAccountIban": vi.customFaker.RandomAvatarImage,
-		"_randomTransactionType": vi.customFaker.RandomTransactionTypes,
-		"_randomCurrencyCode":    vi.customFaker.RandomCurrencyCodes,
-		"_randomCurrencyName":    vi.customFaker.RandomCurrencyNames,
-		"_randomCurrencySymbol":  vi.customFaker.RandomCurrencySymbols,
+		"_randomTransactionType": vi.customFaker.RandomTransactionType,
+		"_randomCurrencyCode":    vi.customFaker.RandomCurrencyCode,
+		"_randomCurrencyName":    vi.customFaker.RandomCurrencyName,
+		"_randomCurrencySymbol":  vi.customFaker.RandomCurrencySymbol,
 		"_randomBitcoin":         vi.customFaker.RandomBitcoin,
 
 		// Business
+		// "_randomCompanyName":   vi.customFaker.RandomBankAccount,
+		"_randomCompanySuffix": vi.customFaker.RandomCompanySuffix,
+		"_randomBs":            vi.customFaker.RandomBs,
+		"_randomBsAdjective":   vi.customFaker.RandomBsAdjective,
+		"_randomBsBuzz":        vi.customFaker.RandomBsBuzzVerbs,
+		"_randomBsNoun":        vi.customFaker.RandomBsNouns,
+
+		// Catchphrases
+		"_randomCatchPhrase":           vi.customFaker.RandomCatchPhrases,
+		"_randomCatchPhraseAdjective":  vi.customFaker.RandomCatchPhraseAdjectives,
+		"_randomCatchPhraseDescriptor": vi.customFaker.RandomCatchPhraseDescriptors,
+		"_randomCatchPhraseNoun":       vi.customFaker.RandomCatchPhraseNouns,
+
+		// Databases
+		"_randomDatabaseColumn":    vi.customFaker.RandomDatabaseColumn,
+		"_randomDatabaseType":      vi.customFaker.RandomDatabaseType,
+		"_randomDatabaseCollation": vi.customFaker.RandomDatabaseCollation,
+		"_randomDatabaseEngine":    vi.customFaker.RandomDatabaseEngine,
+
+		// Dates
+		// "_randomDateFuture": vi.faker.date,
+		// "_randomDatePast":   vi.customFaker.RandomDatabaseColumn,
+		// "_randomDateRecent": vi.customFaker.RandomDatabaseColumn,
+		"_randomWeekday": vi.customFaker.RandomWeekday,
+		"_randomMonth":   vi.customFaker.RandomMonth,
+
+		// Domains, emails, and usernames
+		"_randomDomainName":   vi.customFaker.RandomDomainName,
+		"_randomDomainSuffix": vi.customFaker.RandomDomainSuffix,
+		"_randomDomainWord":   vi.customFaker.RandomDomainWord,
+		"_randomEmail":        vi.customFaker.RandomEmail,
+		"_randomExampleEmail": vi.customFaker.RandomExampleEmail,
+		"_randomUserName":     vi.customFaker.RandomUsername,
+		"_randomUrl":          vi.customFaker.RandomUrl,
+
+		// Files and directories
+		"_randomFileName":       vi.customFaker.RandomFileName,
+		"_randomFileType":       vi.customFaker.RandomFileType,
+		"_randomFileExt":        vi.customFaker.RandomFileExtension,
+		"_randomCommonFileName": vi.customFaker.RandomCommonFileName,
+		"_randomCommonFileType": vi.customFaker.RandomCommonFileType,
+		"_randomCommonFileExt":  vi.customFaker.RandomCommonFileExtension,
+		"_randomFilePath":       vi.customFaker.RandomFilePath,
+		"_randomDirectoryPath":  vi.customFaker.RandomDirectoryPath,
+		"_randomMimeType":       vi.customFaker.RandomMimeTypes,
+
+		// Stores
+		// "_randomPrice":            vi.customFaker.RandomFileName,
+		// "_randomProduct":          vi.customFaker.RandomFileName,
+		// "_randomProductAdjective": vi.customFaker.RandomFileName,
+		// "_randomProductMaterial":  vi.customFaker.RandomFileName,
+		// "_randomProductName":      vi.customFaker.RandomFileName,
+		// "_randomDepartment":       vi.customFaker.RandomFileName,
+
+		// Grammar
+		// "_randomNoun":      vi.customFaker.RandomFileType,
+		// "_randomVerb":      vi.customFaker.RandomFileType,
+		// "_randomIngverb":   vi.customFaker.RandomFileType,
+		// "_randomAdjective": vi.customFaker.RandomFileType,
+		// "_randomWord":      vi.customFaker.RandomFileType,
+		// "_randomWords":     vi.customFaker.RandomFileType,
+		// "_randomPhrase":    vi.customFaker.RandomFileType,
+
+		// Lorem ipsum
+		// "_randomLoremWord":       vi.customFaker.RandomFileName,
+		// "_randomLoremWords":      vi.customFaker.RandomFileName,
+		// "_randomLoremSentence":   vi.customFaker.RandomFileName,
+		// "_randomLoremSentences":  vi.customFaker.RandomFileName,
+		// "_randomLoremParagraph":  vi.customFaker.RandomFileName,
+		// "_randomLoremParagraphs": vi.customFaker.RandomFileName,
+		// "_randomLoremText":       vi.customFaker.RandomFileName,
+		// "_randomLoremSlug":       vi.customFaker.RandomFileName,
+		// "_randomLoremLines":      vi.faker.Lorem(),
 
 		/*
 		* Spesific to us.

@@ -82,7 +82,7 @@ var (
 		"Serbian Dinar", "Russian Ruble", "Rwanda Franc", "Saudi Riyal", "Solomon Islands Dollar", "Seychelles Rupee",
 		"Sudanese Pound", "Swedish Krona", "Singapore Dollar", "Saint Helena Pound", "Leone", "Somali Shilling",
 		"Surinam Dollar", "Dobra", "El Salvador Colon", "Syrian Pound", "Lilangeni", "Baht", "Somoni", "Manat",
-		"Pa'anga", "Turkish Lira", "Trinidad and Tobago Dollar", "New Taiwan Dollar", "Tanzanian Shilling", "Hryvnia",
+		"Paanga", "Turkish Lira", "Trinidad and Tobago Dollar", "New Taiwan Dollar", "Tanzanian Shilling", "Hryvnia",
 		"Uganda Shilling", "US Dollar", "Peso Uruguayo", "Uzbekistan Sum", "Bolivar Fuerte", "Dong", "Vatu", "Tala",
 		"CFA Franc BEAC", "Silver", "Gold", "Bond Markets Units European Composite Unit (EURCO)",
 		"European Monetary Unit (E.M.U.-6)", "European Unit of Account 9(E.U.A.-9)", "European Unit of Account 17(E.U.A.-17)",
@@ -112,10 +112,330 @@ var (
 		"₨", "kr", "$", "£", "S", "$", "Db", "₡", "£", "฿", "₺", "TT$", "NT$", "₴", "$", "$U", "лв", "Bs", "₫", "$", "﷼", "R",
 		"N$",
 	}
+
+	CompanySuffixes = []string{"AG", "GmbH", "und Söhne", "und Partner", "& Co.", "Gruppe", "LLC", "Inc."}
+
+	BusinessVerbs = []string{
+		"implement", "utilize", "integrate", "streamline", "optimize", "evolve", "transform", "embrace", "enable",
+		"orchestrate", "leverage", "reinvent", "aggregate", "architect", "enhance", "incentivize", "morph", "empower",
+		"envisioneer", "monetize", "harness", "facilitate", "seize", "disintermediate", "synergize", "strategize", "deploy",
+		"brand", "grow", "target", "syndicate", "synthesize", "deliver", "mesh", "incubate", "engage", "maximize",
+		"benchmark", "expedite", "reintermediate", "whiteboard", "visualize", "repurpose", "innovate", "scale", "unleash",
+		"drive", "extend", "engineer", "revolutionize", "generate", "exploit", "transition", "e-enable", "iterate",
+		"cultivate", "matrix", "productize", "redefine", "recontextualize",
+	}
+
+	BusinessAdjectives = []string{
+		"clicks-and-mortar", "value-added", "vertical", "proactive", "robust", "revolutionary", "scalable", "leading-edge",
+		"innovative", "intuitive", "strategic", "e-business", "mission-critical", "sticky", "one-to-one", "24/7",
+		"end-to-end", "global", "B2B", "B2C", "granular", "frictionless", "virtual", "viral", "dynamic", "24/365",
+		"best-of-breed", "killer", "magnetic", "bleeding-edge", "web-enabled", "interactive", "dot-com", "sexy", "back-end",
+		"real-time", "efficient", "front-end", "distributed", "seamless", "extensible", "turn-key", "world-class",
+		"open-source", "cross-platform", "cross-media", "synergistic", "bricks-and-clicks", "out-of-the-box", "enterprise",
+		"integrated", "impactful", "wireless", "transparent", "next-generation", "cutting-edge", "user-centric", "visionary",
+		"customized", "ubiquitous", "plug-and-play", "collaborative", "compelling", "holistic", "rich",
+	}
+
+	BusinessNouns = []string{
+		"synergies", "web-readiness", "paradigms", "markets", "partnerships", "infrastructures", "platforms", "initiatives",
+		"channels", "eyeballs", "communities", "ROI", "solutions", "e-tailers", "e-services", "action-items", "portals",
+		"niches", "technologies", "content", "vortals", "supply-chains", "convergence", "relationships", "architectures",
+		"interfaces", "e-markets", "e-commerce", "systems", "bandwidth", "infomediaries", "models", "mindshare",
+		"deliverables", "users", "schemas", "networks", "applications", "metrics", "e-business", "functionalities",
+		"experiences", "web services", "methodologies", "blockchains",
+	}
+
+	CompanyAdjectives = []string{
+		"Adaptive", "Advanced", "Ameliorated", "Assimilated", "Automated", "Balanced", "Business-focused", "Centralized",
+		"Cloned", "Compatible", "Configurable", "Cross-group", "Cross-platform", "Customer-focused", "Customizable",
+		"Decentralized", "De-engineered", "Devolved", "Digitized", "Distributed", "Diverse", "Down-sized", "Enhanced",
+		"Enterprise-wide", "Ergonomic", "Exclusive", "Expanded", "Extended", "Face to face", "Focused", "Front-line",
+		"Fully-configurable", "Function-based", "Fundamental", "Future-proofed", "Grass-roots", "Horizontal", "Implemented",
+		"Innovative", "Integrated", "Intuitive", "Inverse", "Managed", "Mandatory", "Monitored", "Multi-channeled",
+		"Multi-lateral", "Multi-layered", "Multi-tiered", "Networked", "Object-based", "Open-architected", "Open-source",
+		"Operative", "Optimized", "Optional", "Organic", "Organized", "Persevering", "Persistent", "Phased", "Polarized",
+		"Pre-emptive", "Proactive", "Profit-focused", "Profound", "Programmable", "Progressive", "Public-key",
+		"Quality-focused", "Reactive", "Realigned", "Re-contextualized", "Re-engineered", "Reduced", "Reverse-engineered",
+		"Right-sized", "Robust", "Seamless", "Secured", "Self-enabling", "Sharable", "Stand-alone", "Streamlined",
+		"Switchable", "Synchronized", "Synergistic", "Synergized", "Team-oriented", "Total", "Triple-buffered", "Universal",
+		"Up-sized", "Upgradable", "User-centric", "User-friendly", "Versatile", "Virtual", "Visionary", "Vision-oriented",
+	}
+
+	CompanyDescriptors = []string{
+		"24 hour", "24/7", "3rd generation", "4th generation", "5th generation", "6th generation", "actuating", "analyzing",
+		"asymmetric", "asynchronous", "attitude-oriented", "background", "bandwidth-monitored", "bi-directional",
+		"bifurcated", "bottom-line", "clear-thinking", "client-driven", "client-server", "coherent", "cohesive", "composite",
+		"context-sensitive", "contextually-based", "content-based", "dedicated", "demand-driven", "didactic", "directional",
+		"discrete", "disintermediate", "dynamic", "eco-centric", "empowering", "encompassing", "even-keeled", "executive",
+		"explicit", "exuding", "fault-tolerant", "foreground", "fresh-thinking", "full-range", "global", "grid-enabled",
+		"heuristic", "high-level", "holistic", "homogeneous", "human-resource", "hybrid", "impactful", "incremental",
+		"intangible", "interactive", "intermediate", "leading edge", "local", "logistical", "maximized", "methodical",
+		"mission-critical", "mobile", "modular", "motivating", "multimedia", "multi-state", "multi-tasking", "national",
+		"needs-based", "neutral", "next generation", "non-volatile", "object-oriented", "optimal", "optimizing", "radical",
+		"real-time", "reciprocal", "regional", "responsive", "scalable", "secondary", "solution-oriented", "stable", "static",
+		"systematic", "systemic", "system-worthy", "tangible", "tertiary", "transitional", "uniform", "upward-trending",
+		"user-facing", "value-added", "web-enabled", "well-modulated", "zero administration", "zero defect", "zero tolerance",
+	}
+
+	CompanyNouns = []string{
+		"ability", "access", "adapter", "algorithm", "alliance", "analyzer", "application", "approach", "architecture",
+		"archive", "artificial intelligence", "array", "attitude", "benchmark", "budgetary management", "capability",
+		"capacity", "challenge", "circuit", "collaboration", "complexity", "concept", "conglomeration", "contingency", "core",
+		"customer loyalty", "database", "data-warehouse", "definition", "emulation", "encoding", "encryption", "extranet",
+		"firmware", "flexibility", "focus group", "forecast", "frame", "framework", "function", "functionalities",
+		"Graphic Interface", "groupware", "Graphical User Interface", "hardware", "help-desk", "hierarchy", "hub",
+		"implementation", "info-mediaries", "infrastructure", "initiative", "installation", "instruction set", "interface",
+		"internet solution", "intranet", "knowledge user", "knowledge base", "local area network", "leverage", "matrices",
+		"matrix", "methodology", "middleware", "migration", "model", "moderator", "monitoring", "moratorium", "neural-net",
+		"open architecture", "open system", "orchestration", "paradigm", "parallelism", "policy", "portal",
+		"pricing structure", "process improvement", "product", "productivity", "project", "projection", "protocol",
+		"secured line", "service-desk", "software", "solution", "standardization", "strategy", "structure", "success",
+		"superstructure", "support", "synergy", "system engine", "task-force", "throughput", "time-frame", "toolset",
+		"utilization", "website", "workforce",
+	}
+
+	DatabaseColumns = []string{
+		"id", "title", "name", "email", "phone", "token", "group", "category", "password", "comment", "avatar", "status",
+		"createdAt", "updatedAt",
+	}
+
+	DatabaseTypes = []string{
+		"int", "varchar", "text", "date", "datetime", "tinyint", "time", "timestamp", "smallint", "mediumint", "bigint",
+		"decimal", "float", "double", "real", "bit", "boolean", "serial", "blob", "binary", "enum", "set", "geometry",
+		"point",
+	}
+
+	DatabaseCollations = []string{
+		"utf8_unicode_ci", "utf8_general_ci", "utf8_bin", "ascii_bin", "ascii_general_ci", "cp1250_bin", "cp1250_general_ci",
+	}
+
+	DatabaseEngines = []string{"InnoDB", "MyISAM", "MEMORY", "CSV", "BLACKHOLE", "ARCHIVE"}
+
+	WeekDays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+
+	Months = []string{
+		"January", "February", "March", "April", "May", "June", "July", "August", "September",
+		"October", "November", "December",
+	}
+
+	DomainSuffixes = []string{
+		"ac.uk", "biz", "co", "co.uk", "com", "cymru", "gov.uk", "info", "london", "ltd.uk", "me.uk", "name", "nhs.uk",
+		"org.uk", "plc.uk", "sch.uk", "scot", "uk", "wales", "com.tr",
+	}
+
+	FirstNames = []string{
+		"William", "Jack", "Oliver", "Joshua", "Thomas", "Lachlan", "Cooper", "Noah", "Ethan", "Lucas", "James", "Samuel",
+		"Jacob", "Liam", "Alexander", "Benjamin", "Max", "Isaac", "Daniel", "Riley", "Ryan", "Charlie", "Tyler", "Jake",
+		"Matthew", "Xavier", "Harry", "Jayden", "Nicholas", "Harrison", "Levi", "Luke", "Adam", "Henry", "Aiden", "Dylan",
+		"Oscar", "Michael", "Jackson", "Logan", "Joseph", "Blake", "Nathan", "Connor", "Elijah", "Nate", "Archie", "Bailey",
+		"Marcus", "Cameron", "Jordan", "Zachary", "Caleb", "Hunter", "Ashton", "Toby", "Aidan", "Hayden", "Mason", "Hamish",
+		"Edward", "Angus", "Eli", "Sebastian", "Christian", "Patrick", "Andrew", "Anthony", "Luca", "Kai", "Beau", "Alex",
+		"George", "Callum", "Finn", "Zac", "Mitchell", "Jett", "Jesse", "Gabriel", "Leo", "Declan", "Charles", "Jasper",
+		"Jonathan", "Aaron", "Hugo", "David", "Christopher", "Chase", "Owen", "Justin", "Ali", "Darcy", "Lincoln", "Cody",
+		"Phoenix", "Sam", "John", "Joel", "Isabella", "Ruby", "Chloe", "Olivia", "Charlotte", "Mia", "Lily", "Emily",
+		"Ella", "Sienna", "Sophie", "Amelia", "Grace", "Ava", "Zoe", "Emma", "Sophia", "Matilda", "Hannah", "Jessica",
+		"Lucy", "Georgia", "Sarah", "Abigail", "Zara", "Eva", "Scarlett", "Jasmine", "Chelsea", "Lilly", "Ivy", "Isla",
+		"Evie", "Isabelle", "Maddison", "Layla", "Summer", "Annabelle", "Alexis", "Elizabeth", "Bella", "Holly", "Lara",
+		"Madison", "Alyssa", "Maya", "Tahlia", "Claire", "Hayley", "Imogen", "Jade", "Ellie", "Sofia", "Addison", "Kiara",
+		"Molly", "Phoebe", "Alice", "Savannah", "Gabriella", "Kayla", "Mikayla", "Abbey", "Eliza", "Willow", "Alexandra",
+		"Poppy", "Samantha", "Stella", "Amy", "Amelie", "Anna", "Piper", "Gemma", "Isabel", "Victoria", "Stephanie",
+		"Caitlin", "Heidi", "Paige", "Rose", "Amber", "Audrey", "Claudia", "Taylor", "Madeline", "Angelina", "Natalie",
+		"Charli", "Lauren", "Ashley", "Violet", "Mackenzie", "Abby", "Skye", "Lillian", "Alana", "Lola", "Leah", "Eve",
+	}
+
+	LastNames = []string{
+		"Smith", "Jones", "Williams", "Brown", "Wilson", "Taylor", "Johnson", "White", "Martin", "Anderson", "Thompson",
+		"Nguyen", "Thomas", "Walker", "Harris", "Lee", "Ryan", "Robinson", "Kelly", "King", "Davis", "Wright", "Evans",
+		"Roberts", "Green", "Hall", "Wood", "Jackson", "Clarke", "Patel", "Khan", "Lewis", "James", "Phillips", "Mason",
+		"Mitchell", "Rose", "Davies", "Rodriguez", "Cox", "Alexander", "Garden", "Campbell", "Johnston", "Moore", "Smyth",
+		"Oneill", "Doherty", "Stewart", "Quinn", "Murphy", "Graham", "Mclaughlin", "Hamilton", "Murray", "Hughes",
+		"Robertson", "Thomson", "Scott", "Macdonald", "Reid", "Clark", "Ross", "Young", "Watson", "Paterson", "Morrison",
+		"Morgan", "Griffiths", "Edwards", "Rees", "Jenkins", "Owen", "Price", "Moss", "Richards", "Abbott", "Adams",
+		"Armstrong", "Bahringer", "Bailey", "Barrows", "Bartell", "Bartoletti", "Barton", "Bauch", "Baumbach", "Bayer",
+		"Beahan", "Beatty", "Becker", "Beier", "Berge", "Bergstrom", "Bode", "Bogan", "Borer", "Bosco", "Botsford", "Boyer",
+		"Boyle", "Braun", "Bruen", "Carroll", "Carter", "Cartwright", "Casper", "Cassin", "Champlin", "Christiansen",
+		"Cole", "Collier", "Collins", "Connelly", "Conroy", "Corkery", "Cormier", "Corwin", "Cronin", "Crooks", "Cruickshank",
+		"Cummings", "Damore", "Daniel", "Dare", "Daugherty", "Dickens", "Dickinson", "Dietrich", "Donnelly", "Dooley",
+		"Douglas", "Doyle", "Durgan", "Ebert", "Emard", "Emmerich", "Erdman", "Ernser", "Fadel", "Fahey", "Farrell", "Fay",
+		"Feeney", "Feil", "Ferry", "Fisher", "Flatley", "Gibson", "Gleason", "Glover", "Goldner", "Goodwin", "Grady", "Grant",
+		"Greenfelder", "Greenholt", "Grimes", "Gutmann", "Hackett", "Hahn", "Haley", "Hammes", "Hand", "Hane", "Hansen",
+		"Harber", "Hartmann", "Harvey", "Hayes", "Heaney", "Heathcote", "Heller", "Hermann", "Hermiston", "Hessel",
+		"Hettinger", "Hickle", "Hill", "Hills", "Hoppe", "Howe", "Howell", "Hudson", "Huel", "Hyatt", "Jacobi", "Jacobs",
+		"Jacobson", "Jerde", "Johns", "Keeling", "Kemmer", "Kessler", "Kiehn", "Kirlin", "Klein", "Koch", "Koelpin",
+		"Kohler", "Koss", "Kovacek", "Kreiger", "Kris", "Kuhlman", "Kuhn", "Kulas", "Kunde", "Kutch", "Lakin", "Lang",
+		"Langworth", "Larkin", "Larson", "Leannon", "Leffler", "Little", "Lockman", "Lowe", "Lynch", "Mann", "Marks",
+		"Marvin", "Mayer", "Mccullough", "Mcdermott", "Mckenzie", "Miller", "Mills", "Monahan", "Morissette", "Mueller",
+		"Muller", "Nader", "Nicolas", "Nolan", "Oconnell", "Oconner", "Ohara", "Okeefe", "Olson", "Oreilly", "Parisian",
+		"Parker", "Quigley", "Reilly", "Reynolds", "Rice", "Ritchie", "Rohan", "Rolfson", "Rowe", "Russel", "Rutherford",
+		"Sanford", "Sauer", "Schmidt", "Schmitt", "Schneider", "Schroeder", "Schultz", "Shields", "Smitham", "Spencer",
+		"Stanton", "Stark", "Stokes", "Swift", "Tillman", "Towne", "Tremblay", "Tromp", "Turcotte", "Turner", "Walsh",
+		"Walter", "Ward", "Waters", "Weber", "Welch", "West", "Wilderman", "Wilkinson", "Williamson", "Windler", "Wolf",
+	}
+
+	Emails = []string{"gmail.com", "yahoo.com", "hotmail.com", "protonmail.com", "outlook.com", "hey.com"}
+
+	ExampleEmails = []string{"example.org", "example.com", "example.net"}
+
+	DirectoryPaths = []string{
+		"/Applications", "/bin", "/boot", "/boot/defaults", "/dev", "/etc", "/etc/defaults", "/etc/mail", "/etc/namedb",
+		"/etc/periodic", "/etc/ppp", "/home", "/home/user", "/home/user/dir", "/lib", "/Library", "/lost+found", "/media",
+		"/mnt", "/net", "/Network", "/opt", "/opt/bin", "/opt/include", "/opt/lib", "/opt/sbin", "/opt/share", "/private",
+		"/private/tmp", "/private/var", "/proc", "/rescue", "/root", "/sbin", "/selinux", "/srv", "/sys", "/System", "/tmp",
+		"/Users", "/usr", "/usr/X11R6", "/usr/bin", "/usr/include", "/usr/lib", "/usr/libdata", "/usr/libexec",
+		"/usr/local/src", "/usr/obj", "/usr/ports", "/usr/sbin", "/usr/share", "/usr/src", "/var", "/var/log", "/var/mail",
+		"/var/spool", "/var/tmp", "/var/yp", "/usr/local/bin",
+	}
+
+	FileExtensions = []string{
+		"png", "gif", "doc", "docx", "pdf", "xls", "ppt", "jpg", "mp4", "mov", "wav", "html", "json", "xml", "tif", "tsv",
+		"csv", "gdoc", "lzh", "wsdl", "html", "war", "book", "fsc",
+	}
+
+	CommonFileExtensions = []string{
+		"pdf", "mpeg", "wav", "png", "jpeg", "gif", "mp4", "html", "m3a",
+	}
+
+	FileTypes = []string{"video", "audio", "image", "text", "application", "multipart", "model"}
+
+	CommonFileTypes = []string{"video", "audio", "image", "text", "application"}
+
+	CommonMimeTypes = []string{
+		"application/pdf", "audio/mpeg", "audio/wav", "image/png", "image/jpeg", "image/gif", "video/mp4", "video/mpeg",
+		"text/html",
+	}
 )
 
 type CustomFaker struct {
 	Generator *rand.Rand
+}
+
+func (f CustomFaker) RandomFilePath() string {
+	return f.RandomDirectoryPath() + "/" + f.RandomDomainWord() + "." + f.RandomFileExtension()
+}
+
+func (f CustomFaker) RandomMimeTypes() string {
+	return CommonMimeTypes[f.Generator.Intn(len(CommonMimeTypes))]
+}
+
+func (f CustomFaker) RandomDirectoryPath() string {
+	return DirectoryPaths[f.Generator.Intn(len(DirectoryPaths))]
+}
+
+func (f CustomFaker) RandomCommonFileExtension() string {
+	return CommonFileExtensions[f.Generator.Intn(len(CommonFileExtensions))]
+}
+
+func (f CustomFaker) RandomCommonFileType() string {
+	return CommonFileTypes[f.Generator.Intn(len(CommonFileTypes))]
+}
+
+func (f CustomFaker) RandomCommonFileName() string {
+	return f.RandomDomainWord() + "." + f.RandomFileExtension()
+}
+
+func (f CustomFaker) RandomFileType() string {
+	return FileTypes[f.Generator.Intn(len(FileTypes))]
+}
+
+func (f CustomFaker) RandomFileExtension() string {
+	return FileExtensions[f.Generator.Intn(len(FileExtensions))]
+}
+
+func (f CustomFaker) RandomFileName() string {
+	return strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))]+"_"+
+		LastNames[f.Generator.Intn(len(LastNames))]) + "." + f.RandomFileExtension()
+}
+
+func (f CustomFaker) RandomUrl() string {
+	return f.RandomProtocol() + "://" + strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))]+
+		LastNames[f.Generator.Intn(len(LastNames))]) + "." + f.RandomDomainSuffix()
+}
+
+func (f CustomFaker) RandomUsername() string {
+	return FirstNames[f.Generator.Intn(len(FirstNames))] + "." + LastNames[f.Generator.Intn(len(LastNames))]
+}
+
+func (f CustomFaker) RandomExampleEmail() string {
+	return strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))]+"."+
+		LastNames[f.Generator.Intn(len(LastNames))]) + "@" + ExampleEmails[f.Generator.Intn(len(ExampleEmails))]
+}
+
+func (f CustomFaker) RandomEmail() string {
+	return strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))]+"."+
+		LastNames[f.Generator.Intn(len(LastNames))]) + "@" + Emails[f.Generator.Intn(len(Emails))]
+}
+
+func (f CustomFaker) RandomDomainWord() string {
+	return strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))] + LastNames[f.Generator.Intn(len(LastNames))])
+}
+
+func (f CustomFaker) RandomDomainSuffix() string {
+	return DomainSuffixes[f.Generator.Intn(len(DomainSuffixes))]
+}
+
+func (f CustomFaker) RandomDomainName() string {
+	return strings.ToLower(FirstNames[f.Generator.Intn(len(FirstNames))]+LastNames[f.Generator.Intn(len(LastNames))]) +
+		"." + f.RandomDomainSuffix()
+}
+
+func (f CustomFaker) RandomMonth() string {
+	return Months[f.Generator.Intn(len(Months))]
+}
+
+func (f CustomFaker) RandomWeekday() string {
+	return WeekDays[f.Generator.Intn(len(WeekDays))]
+}
+
+func (f CustomFaker) RandomDatabaseColumn() string {
+	return DatabaseColumns[f.Generator.Intn(len(DatabaseColumns))]
+}
+
+func (f CustomFaker) RandomDatabaseType() string {
+	return DatabaseTypes[f.Generator.Intn(len(DatabaseTypes))]
+}
+
+func (f CustomFaker) RandomDatabaseCollation() string {
+	return DatabaseCollations[f.Generator.Intn(len(DatabaseCollations))]
+}
+
+func (f CustomFaker) RandomDatabaseEngine() string {
+	return DatabaseEngines[f.Generator.Intn(len(DatabaseEngines))]
+}
+
+func (f CustomFaker) RandomCatchPhrases() string {
+	return f.RandomCatchPhraseAdjectives() + " " + f.RandomCatchPhraseDescriptors() + " " + f.RandomCatchPhraseNouns()
+}
+
+func (f CustomFaker) RandomCatchPhraseAdjectives() string {
+	return CompanyAdjectives[f.Generator.Intn(len(CompanyAdjectives))]
+}
+
+func (f CustomFaker) RandomCatchPhraseDescriptors() string {
+	return CompanyDescriptors[f.Generator.Intn(len(CompanyDescriptors))]
+}
+
+func (f CustomFaker) RandomCatchPhraseNouns() string {
+	return CompanyNouns[f.Generator.Intn(len(CompanyNouns))]
+}
+
+func (f CustomFaker) RandomBsNouns() string {
+	return BusinessNouns[f.Generator.Intn(len(BusinessNouns))]
+}
+
+func (f CustomFaker) RandomBsBuzzVerbs() string {
+	return BusinessVerbs[f.Generator.Intn(len(BusinessVerbs))]
+}
+
+func (f CustomFaker) RandomBsAdjective() string {
+	return BusinessAdjectives[f.Generator.Intn(len(BusinessAdjectives))]
+}
+
+func (f CustomFaker) RandomBs() string {
+	return f.RandomBsBuzzVerbs() + " " + f.RandomBsAdjective() + " " + f.RandomBsNouns()
+}
+
+func (f CustomFaker) RandomCompanySuffix() string {
+	return CompanySuffixes[f.Generator.Intn(len(CompanySuffixes))]
 }
 
 func (f CustomFaker) RandomBitcoin() string {
@@ -128,19 +448,19 @@ func (f CustomFaker) RandomBitcoin() string {
 	return string(b)
 }
 
-func (f CustomFaker) RandomCurrencySymbols() string {
+func (f CustomFaker) RandomCurrencySymbol() string {
 	return CurrencySymbols[f.Generator.Intn(len(CurrencySymbols))]
 }
 
-func (f CustomFaker) RandomCurrencyCodes() string {
+func (f CustomFaker) RandomCurrencyCode() string {
 	return CurrencyCodes[f.Generator.Intn(len(CurrencyCodes))]
 }
 
-func (f CustomFaker) RandomCurrencyNames() string {
+func (f CustomFaker) RandomCurrencyName() string {
 	return CurrencyNames[f.Generator.Intn(len(CurrencyNames))]
 }
 
-func (f CustomFaker) RandomTransactionTypes() string {
+func (f CustomFaker) RandomTransactionType() string {
 	return BankTransactionTypes[f.Generator.Intn(len(BankTransactionTypes))]
 }
 
