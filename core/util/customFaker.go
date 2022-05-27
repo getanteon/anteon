@@ -303,10 +303,96 @@ var (
 		"application/pdf", "audio/mpeg", "audio/wav", "image/png", "image/jpeg", "image/gif", "video/mp4", "video/mpeg",
 		"text/html",
 	}
+
+	Products = []string{
+		"Chair", "Car", "Computer", "Keyboard", "Mouse", "Bike", "Ball", "Gloves", "Pants", "Shirt", "Table", "Shoes", "Hat",
+		"Towels", "Soap", "Tuna", "Chicken", "Fish", "Cheese", "Bacon", "Pizza", "Salad", "Sausages", "Chips",
+	}
+
+	ProductMaterials = []string{
+		"Steel", "Bronze", "Wooden", "Concrete", "Plastic", "Cotton", "Granite", "Rubber", "Metal", "Soft", "Fresh", "Frozen",
+	}
+
+	ProductAdjectives = []string{
+		"Small", "Ergonomic", "Electronic", "Rustic", "Intelligent", "Gorgeous", "Incredible", "Elegant", "Fantastic",
+		"Practical", "Modern", "Recycled", "Sleek", "Bespoke", "Awesome", "Generic", "Handcrafted", "Handmade", "Oriental",
+		"Licensed", "Luxurious", "Refined", "Unbranded", "Tasty",
+	}
+
+	StoreDepartments = []string{
+		"Books", "Movies", "Music", "Games", "Electronics", "Computers", "Home", "Garden", "Tools", "Grocery", "Health",
+		"Beauty", "Toys", "Kids", "Baby", "Clothing", "Shoes", "Jewelery", "Sports", "Outdoors", "Automotive", "Industrial",
+	}
+
+	Nouns = []string{
+		"driver", "protocol", "bandwidth", "panel", "microchip", "program", "port", "card", "array", "interface", "system",
+		"sensor", "firewall", "hard drive", "pixel", "alarm", "feed", "monitor", "application", "transmitter", "bus",
+		"circuit", "capacitor", "matrix",
+	}
+
+	Verbs = []string{
+		"back up", "bypass", "hack", "override", "compress", "copy", "navigate", "index", "connect", "generate", "quantify",
+		"calculate", "synthesize", "input", "transmit", "program", "reboot", "parse",
+	}
+
+	IngVerbs = []string{
+		"backing up", "bypassing", "hacking", "overriding", "compressing", "copying", "navigating", "indexing", "connecting",
+		"generating", "quantifying", "calculating", "synthesizing", "transmitting", "programming", "parsing",
+	}
+
+	Adjectives = []string{
+		"auxiliary", "primary", "back-end", "digital", "open-source", "virtual", "cross-platform", "redundant", "online",
+		"haptic", "multi-byte", "bluetooth", "wireless", "1080p", "neural", "optical", "solid state", "mobile",
+	}
 )
 
 type CustomFaker struct {
 	Generator *rand.Rand
+}
+
+func (f CustomFaker) RandomNoun() string {
+	return Nouns[f.Generator.Intn(len(Nouns))]
+}
+
+func (f CustomFaker) RandomVerb() string {
+	return Verbs[f.Generator.Intn(len(Verbs))]
+}
+
+func (f CustomFaker) RandomIngVerb() string {
+	return IngVerbs[f.Generator.Intn(len(IngVerbs))]
+}
+
+func (f CustomFaker) RandomAdjective() string {
+	return Adjectives[f.Generator.Intn(len(Adjectives))]
+}
+
+func (f CustomFaker) RandomWord() string {
+	words := append(append(append(Adjectives, IngVerbs...), Verbs...), Nouns...)
+	return words[f.Generator.Intn(len(words))]
+}
+
+func (f CustomFaker) RandomDepartment() string {
+	return StoreDepartments[f.Generator.Intn(len(StoreDepartments))]
+}
+
+func (f CustomFaker) RandomProductName() string {
+	return f.RandomProductAdjective() + " " + f.RandomProductMaterial() + " " + f.RandomProduct()
+}
+
+func (f CustomFaker) RandomProductMaterial() string {
+	return ProductMaterials[f.Generator.Intn(len(ProductMaterials))]
+}
+
+func (f CustomFaker) RandomProductAdjective() string {
+	return ProductAdjectives[f.Generator.Intn(len(ProductAdjectives))]
+}
+
+func (f CustomFaker) RandomProduct() string {
+	return Products[f.Generator.Intn(len(Products))]
+}
+
+func (f CustomFaker) RandomPrice() string {
+	return strconv.Itoa(f.Generator.Intn(1000)) + "." + strconv.Itoa(f.Generator.Intn(99-10)+10)
 }
 
 func (f CustomFaker) RandomFilePath() string {

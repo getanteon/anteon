@@ -151,19 +151,19 @@ func (vi *VariableInjector) Init() {
 		"_randomMimeType":       vi.customFaker.RandomMimeTypes,
 
 		// Stores
-		// "_randomPrice":            vi.customFaker.RandomFileName,
-		// "_randomProduct":          vi.customFaker.RandomFileName,
-		// "_randomProductAdjective": vi.customFaker.RandomFileName,
-		// "_randomProductMaterial":  vi.customFaker.RandomFileName,
-		// "_randomProductName":      vi.customFaker.RandomFileName,
-		// "_randomDepartment":       vi.customFaker.RandomFileName,
+		"_randomPrice":            vi.customFaker.RandomPrice,
+		"_randomProduct":          vi.customFaker.RandomProduct,
+		"_randomProductAdjective": vi.customFaker.RandomProductAdjective,
+		"_randomProductMaterial":  vi.customFaker.RandomProductMaterial,
+		"_randomProductName":      vi.customFaker.RandomProductName,
+		"_randomDepartment":       vi.customFaker.RandomDepartment,
 
 		// Grammar
-		// "_randomNoun":      vi.customFaker.RandomFileType,
-		// "_randomVerb":      vi.customFaker.RandomFileType,
-		// "_randomIngverb":   vi.customFaker.RandomFileType,
-		// "_randomAdjective": vi.customFaker.RandomFileType,
-		// "_randomWord":      vi.customFaker.RandomFileType,
+		"_randomNoun":      vi.customFaker.RandomNoun,
+		"_randomVerb":      vi.customFaker.RandomVerb,
+		"_randomIngverb":   vi.customFaker.RandomIngVerb,
+		"_randomAdjective": vi.customFaker.RandomAdjective,
+		"_randomWord":      vi.customFaker.RandomWord,
 		// "_randomWords":     vi.customFaker.RandomFileType,
 		// "_randomPhrase":    vi.customFaker.RandomFileType,
 
