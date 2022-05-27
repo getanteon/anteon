@@ -34,22 +34,22 @@ func (vi *VariableInjector) Init() {
 		"_randomUUID":   uuid.New,
 
 		//Text, numbers, and colors
-		//"_randomAlphaNumeric": vi.faker.Letter,
-		"_randomBoolean":  vi.faker.Bool,
-		"_randomInt":      vi.faker.Int,
-		"_randomColor":    vi.faker.Color().SafeColorName,
-		"_randomHexColor": vi.faker.Color().Hex,
-		// "_randomAbbreviation": to_be_filled,
+		"_randomAlphaNumeric": vi.customFaker.RandomAlphanumeric,
+		"_randomBoolean":      vi.faker.Bool,
+		"_randomInt":          vi.faker.Int,
+		"_randomColor":        vi.faker.Color().SafeColorName,
+		"_randomHexColor":     vi.faker.Color().Hex,
+		"_randomAbbreviation": vi.customFaker.RandomAbbreviation,
 
 		// Internet and IP addresses
-		"_randomIP": vi.faker.Internet().Ipv4,
-		//"_randomIPV6":       vi.faker.Internet().Ipv6,
+		"_randomIP":         vi.faker.Internet().Ipv4,
+		"_randomIPV6":       vi.customFaker.Ipv6,
 		"_randomMACAddress": vi.faker.Internet().MacAddress,
 		"_randomPassword":   vi.faker.Internet().Password,
 		"_randomLocale":     vi.faker.Language().LanguageAbbr,
 		"_randomUserAgent":  vi.faker.UserAgent().UserAgent,
-		// "randomProtocol":  to_be_filled,,
-		"_randomSemver": vi.faker.App().Version,
+		"_randomProtocol":   vi.customFaker.RandomProtocol,
+		"_randomSemver":     vi.customFaker.RandomSemver,
 
 		// Names
 		"_randomFirstName":  vi.faker.Person().FirstName,
@@ -59,10 +59,51 @@ func (vi *VariableInjector) Init() {
 		"_randomNameSuffix": vi.faker.Person().Suffix,
 
 		// Profession
-		// "_randomJobArea":       vi.faker.Company().JobTitle,
-		// "_randomJobDescriptor": vi.faker.Company().JobTitle,
-		"_randomJobTitle": vi.faker.Company().JobTitle,
-		// "randomJobType":        vi.faker.Company().JobTitle,
+		"_randomJobArea":       vi.customFaker.RandomJobArea,
+		"_randomJobDescriptor": vi.customFaker.RandomJobDescriptor,
+		"_randomJobTitle":      vi.customFaker.RandomJobTitle,
+		"_randomJobType":       vi.customFaker.RandomJobType,
+
+		// Phone, address, and location
+		"_randomPhoneNumber":    vi.customFaker.RandomPhoneNumber,
+		"_randomPhoneNumberExt": vi.customFaker.RandomPhoneNumberExt,
+		"_randomCity":           vi.faker.Address().City,
+		"_randomStreetName":     vi.faker.Address().StreetName,
+		"_randomStreetAddress":  vi.faker.Address().StreetAddress,
+		"_randomCountry":        vi.faker.Address().Country,
+		"_randomCountryCode":    vi.customFaker.RandomCountryCode,
+		"_randomLatitude":       vi.faker.Address().Latitude,
+		"_randomLongitude":      vi.faker.Address().Longitude,
+
+		// Images
+		"_randomAvatarImage":    vi.customFaker.RandomAvatarImage,
+		"_randomImageUrl":       vi.customFaker.RandomImageURL,
+		"_randomAbstractImage":  vi.customFaker.RandomAbstractImage,
+		"_randomAnimalsImage":   vi.customFaker.RandomAnimalsImage,
+		"_randomBusinessImage":  vi.customFaker.RandomBusinessImage,
+		"_randomCatsImage":      vi.customFaker.RandomCatsImage,
+		"_randomCityImage":      vi.customFaker.RandomCityImage,
+		"_randomFoodImage":      vi.customFaker.RandomFoodImage,
+		"_randomNightlifeImage": vi.customFaker.RandomNightlifeImage,
+		"_randomFashionImage":   vi.customFaker.RandomFashionImage,
+		"_randomPeopleImage":    vi.customFaker.RandomPeopleImage,
+		"_randomNatureImage":    vi.customFaker.RandomNatureImage,
+		"_randomTransportImage": vi.customFaker.RandomTransportImage,
+		// "_randomImageDataUri":   ,
+
+		// Finance
+		"_randomBankAccount":     vi.customFaker.RandomBankAccount,
+		"_randomBankAccountName": vi.customFaker.RandomBankAccountName,
+		"_randomCreditCardMask":  vi.customFaker.RandomCreaditCardMask,
+		// "_randomBankAccountBic":  vi.faker,
+		// "_randomBankAccountIban": vi.customFaker.RandomAvatarImage,
+		"_randomTransactionType": vi.customFaker.RandomTransactionTypes,
+		"_randomCurrencyCode":    vi.customFaker.RandomCurrencyCodes,
+		"_randomCurrencyName":    vi.customFaker.RandomCurrencyNames,
+		"_randomCurrencySymbol":  vi.customFaker.RandomCurrencySymbols,
+		"_randomBitcoin":         vi.customFaker.RandomBitcoin,
+
+		// Business
 
 		/*
 		* Spesific to us.
