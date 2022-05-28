@@ -344,10 +344,96 @@ var (
 		"auxiliary", "primary", "back-end", "digital", "open-source", "virtual", "cross-platform", "redundant", "online",
 		"haptic", "multi-byte", "bluetooth", "wireless", "1080p", "neural", "optical", "solid state", "mobile",
 	}
+
+	LoremWords = []string{
+		"alias", "consequatur", "aut", "perferendis", "sit", "voluptatem", "accusantium", "doloremque", "aperiam", "eaque",
+		"ipsa", "quae", "ab", "illo", "inventore", "veritatis", "et", "quasi", "architecto", "beatae", "vitae", "dicta",
+		"sunt", "explicabo", "aspernatur", "aut", "odit", "aut", "fugit", "sed", "quia", "consequuntur", "magni", "dolores",
+		"eos", "qui", "ratione", "voluptatem", "sequi", "nesciunt", "neque", "dolorem", "ipsum", "quia", "dolor", "sit",
+		"amet", "consectetur", "adipisci", "velit", "sed", "quia", "non", "numquam", "eius", "modi", "tempora", "incidunt",
+		"ut", "labore", "et", "dolore", "magnam", "aliquam", "quaerat", "voluptatem", "ut", "enim", "ad", "minima", "veniam",
+		"quis", "nostrum", "exercitationem", "ullam", "corporis", "nemo", "enim", "ipsam", "voluptatem", "quia", "voluptas",
+		"sit", "suscipit", "laboriosam", "nisi", "ut", "aliquid", "ex", "ea", "commodi", "consequatur", "quis", "autem",
+		"vel", "eum", "iure", "reprehenderit", "qui", "in", "ea", "voluptate", "velit", "esse", "quam", "nihil", "molestiae",
+		"et", "iusto", "odio", "dignissimos", "ducimus", "qui", "blanditiis", "praesentium", "laudantium", "totam", "rem",
+		"voluptatum", "deleniti", "atque", "corrupti", "quos", "dolores", "et", "quas", "molestias", "excepturi", "sint",
+		"occaecati", "cupiditate", "non", "provident", "sed", "ut", "perspiciatis", "unde", "omnis", "iste", "natus",
+		"error", "similique", "sunt", "culpa", "qui", "officia", "deserunt", "mollitia", "animi", "id", "est", "tenetur",
+		"laborum", "et", "dolorum", "fuga", "et", "harum", "quidem", "rerum", "facilis", "est", "et", "expedita", "et", "in",
+		"distinctio", "nam", "libero", "tempore", "cum", "soluta", "nobis", "est", "eligendi", "optio", "cumque", "nihil",
+		"impedit", "quo", "porro", "quisquam", "est", "qui", "minus", "id", "quod", "maxime", "placeat", "facere", "possimus",
+		"omnis", "voluptas", "assumenda", "est", "omnis", "dolor", "repellendus", "temporibus", "autem", "quibusdam", "et",
+		"aut", "consequatur", "vel", "illum", "qui", "dolorem", "eum", "fugiat", "quo", "voluptas", "nulla", "pariatur", "at",
+		"vero", "eos", "et", "accusamus", "officiis", "debitis", "aut", "rerum", "necessitatibus", "saepe", "eveniet", "ut",
+		"voluptates", "repudiandae", "sint", "et", "molestiae", "non", "recusandae", "itaque", "earum", "rerum", "hic", "ut",
+		"a", "sapiente", "delectus", "aut", "reiciendis", "voluptatibus", "maiores", "doloribus", "asperiores", "repellat",
+	}
 )
 
 type CustomFaker struct {
 	Generator *rand.Rand
+}
+
+func (f CustomFaker) RandomLoremWord() string {
+	return LoremWords[f.Generator.Intn(len(LoremWords))]
+}
+
+func (f CustomFaker) RandomLoremWords() string {
+	words := ""
+	size := f.Generator.Intn(6-2) + 2
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremWord() + " "
+	}
+	return words
+}
+
+func (f CustomFaker) RandomLoremSentence() string {
+	words := ""
+	size := f.Generator.Intn(6-2) + 2
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremWords()
+	}
+	return words + "."
+}
+
+func (f CustomFaker) RandomLoremSentences() string {
+	words := ""
+	size := f.Generator.Intn(6-2) + 2
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremSentence() + " "
+	}
+	return words
+}
+
+// func (f CustomFaker) RandomLoremLines() string {
+// 	words := ""
+// 	size := f.Generator.Intn(5-1) + 1
+// 	for i := 0; i < size; i++ {
+// 		words += f.RandomLoremSentence() + "\n"
+// 	}
+// 	return words
+// }
+
+func (f CustomFaker) RandomLoremParagraph() string {
+	words := ""
+	size := f.Generator.Intn(6-2) + 2
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremSentences()
+	}
+	return words
+}
+
+func (f CustomFaker) RandomLoremParagraphs() string {
+	words := ""
+	size := 3
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremSentences()
+	}
+	return words
+}
+
+func (f CustomFaker) RandomLoremSlug() string {
+	return f.RandomLoremWord() + "-" + f.RandomLoremWord() + "-" + f.RandomLoremWord()
 }
 
 func (f CustomFaker) RandomNoun() string {
@@ -369,6 +455,15 @@ func (f CustomFaker) RandomAdjective() string {
 func (f CustomFaker) RandomWord() string {
 	words := append(append(append(Adjectives, IngVerbs...), Verbs...), Nouns...)
 	return words[f.Generator.Intn(len(words))]
+}
+
+func (f CustomFaker) RandomWords() string {
+	words := ""
+	size := f.Generator.Intn(6-2) + 2
+	for i := 0; i < size; i++ {
+		words += f.RandomWord() + " "
+	}
+	return words
 }
 
 func (f CustomFaker) RandomDepartment() string {
@@ -488,19 +583,19 @@ func (f CustomFaker) RandomDatabaseEngine() string {
 	return DatabaseEngines[f.Generator.Intn(len(DatabaseEngines))]
 }
 
-func (f CustomFaker) RandomCatchPhrases() string {
-	return f.RandomCatchPhraseAdjectives() + " " + f.RandomCatchPhraseDescriptors() + " " + f.RandomCatchPhraseNouns()
+func (f CustomFaker) RandomCatchPhrase() string {
+	return f.RandomCatchPhraseAdjective() + " " + f.RandomCatchPhraseDescriptor() + " " + f.RandomCatchPhraseNoun()
 }
 
-func (f CustomFaker) RandomCatchPhraseAdjectives() string {
+func (f CustomFaker) RandomCatchPhraseAdjective() string {
 	return CompanyAdjectives[f.Generator.Intn(len(CompanyAdjectives))]
 }
 
-func (f CustomFaker) RandomCatchPhraseDescriptors() string {
+func (f CustomFaker) RandomCatchPhraseDescriptor() string {
 	return CompanyDescriptors[f.Generator.Intn(len(CompanyDescriptors))]
 }
 
-func (f CustomFaker) RandomCatchPhraseNouns() string {
+func (f CustomFaker) RandomCatchPhraseNoun() string {
 	return CompanyNouns[f.Generator.Intn(len(CompanyNouns))]
 }
 
@@ -522,6 +617,11 @@ func (f CustomFaker) RandomBs() string {
 
 func (f CustomFaker) RandomCompanySuffix() string {
 	return CompanySuffixes[f.Generator.Intn(len(CompanySuffixes))]
+}
+
+func (f CustomFaker) RandomCompanyName() string {
+	return FirstNames[f.Generator.Intn(len(FirstNames))] + " " +
+		LastNames[f.Generator.Intn(len(LastNames))]
 }
 
 func (f CustomFaker) RandomBitcoin() string {

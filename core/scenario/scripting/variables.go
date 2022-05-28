@@ -104,7 +104,7 @@ func (vi *VariableInjector) Init() {
 		"_randomBitcoin":         vi.customFaker.RandomBitcoin,
 
 		// Business
-		// "_randomCompanyName":   vi.customFaker.RandomBankAccount,
+		"_randomCompanyName":   vi.customFaker.RandomCompanyName,
 		"_randomCompanySuffix": vi.customFaker.RandomCompanySuffix,
 		"_randomBs":            vi.customFaker.RandomBs,
 		"_randomBsAdjective":   vi.customFaker.RandomBsAdjective,
@@ -112,10 +112,10 @@ func (vi *VariableInjector) Init() {
 		"_randomBsNoun":        vi.customFaker.RandomBsNouns,
 
 		// Catchphrases
-		"_randomCatchPhrase":           vi.customFaker.RandomCatchPhrases,
-		"_randomCatchPhraseAdjective":  vi.customFaker.RandomCatchPhraseAdjectives,
-		"_randomCatchPhraseDescriptor": vi.customFaker.RandomCatchPhraseDescriptors,
-		"_randomCatchPhraseNoun":       vi.customFaker.RandomCatchPhraseNouns,
+		"_randomCatchPhrase":           vi.customFaker.RandomCatchPhrase,
+		"_randomCatchPhraseAdjective":  vi.customFaker.RandomCatchPhraseAdjective,
+		"_randomCatchPhraseDescriptor": vi.customFaker.RandomCatchPhraseDescriptor,
+		"_randomCatchPhraseNoun":       vi.customFaker.RandomCatchPhraseNoun,
 
 		// Databases
 		"_randomDatabaseColumn":    vi.customFaker.RandomDatabaseColumn,
@@ -164,19 +164,19 @@ func (vi *VariableInjector) Init() {
 		"_randomIngverb":   vi.customFaker.RandomIngVerb,
 		"_randomAdjective": vi.customFaker.RandomAdjective,
 		"_randomWord":      vi.customFaker.RandomWord,
-		// "_randomWords":     vi.customFaker.RandomFileType,
-		// "_randomPhrase":    vi.customFaker.RandomFileType,
+		"_randomWords":     vi.customFaker.RandomWords,
+		"_randomPhrase":    vi.customFaker.RandomLoremSentences,
 
 		// Lorem ipsum
-		// "_randomLoremWord":       vi.customFaker.RandomFileName,
-		// "_randomLoremWords":      vi.customFaker.RandomFileName,
-		// "_randomLoremSentence":   vi.customFaker.RandomFileName,
-		// "_randomLoremSentences":  vi.customFaker.RandomFileName,
-		// "_randomLoremParagraph":  vi.customFaker.RandomFileName,
-		// "_randomLoremParagraphs": vi.customFaker.RandomFileName,
-		// "_randomLoremText":       vi.customFaker.RandomFileName,
-		// "_randomLoremSlug":       vi.customFaker.RandomFileName,
-		// "_randomLoremLines":      vi.faker.Lorem(),
+		"_randomLoremWord":       vi.customFaker.RandomLoremWord,
+		"_randomLoremWords":      vi.customFaker.RandomLoremWords,
+		"_randomLoremSentence":   vi.customFaker.RandomLoremSentence,
+		"_randomLoremSentences":  vi.customFaker.RandomLoremSentences,
+		"_randomLoremParagraph":  vi.customFaker.RandomLoremParagraph,
+		"_randomLoremParagraphs": vi.customFaker.RandomLoremParagraphs,
+		"_randomLoremText":       vi.customFaker.RandomLoremSentences,
+		"_randomLoremSlug":       vi.customFaker.RandomLoremSlug,
+		// "_randomLoremLines":      vi.customFaker.RandomLoremLines,
 
 		/*
 		* Spesific to us.
