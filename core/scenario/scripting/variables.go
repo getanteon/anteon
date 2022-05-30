@@ -89,14 +89,14 @@ func (vi *VariableInjector) Init() {
 		"_randomPeopleImage":    vi.customFaker.RandomPeopleImage,
 		"_randomNatureImage":    vi.customFaker.RandomNatureImage,
 		"_randomTransportImage": vi.customFaker.RandomTransportImage,
-		// "_randomImageDataUri":   ,
+		"_randomImageDataUri":   vi.customFaker.RandomDataImageUri,
 
 		// Finance
 		"_randomBankAccount":     vi.customFaker.RandomBankAccount,
 		"_randomBankAccountName": vi.customFaker.RandomBankAccountName,
 		"_randomCreditCardMask":  vi.customFaker.RandomCreaditCardMask,
-		// "_randomBankAccountBic":  vi.faker,
-		// "_randomBankAccountIban": vi.customFaker.RandomAvatarImage,
+		"_randomBankAccountBic":  vi.customFaker.RandomBankAccountBic,
+		"_randomBankAccountIban": vi.customFaker.RandomBankAccountIban,
 		"_randomTransactionType": vi.customFaker.RandomTransactionType,
 		"_randomCurrencyCode":    vi.customFaker.RandomCurrencyCode,
 		"_randomCurrencyName":    vi.customFaker.RandomCurrencyName,
@@ -124,11 +124,11 @@ func (vi *VariableInjector) Init() {
 		"_randomDatabaseEngine":    vi.customFaker.RandomDatabaseEngine,
 
 		// Dates
-		// "_randomDateFuture": vi.faker.date,
-		// "_randomDatePast":   vi.customFaker.RandomDatabaseColumn,
-		// "_randomDateRecent": vi.customFaker.RandomDatabaseColumn,
-		"_randomWeekday": vi.customFaker.RandomWeekday,
-		"_randomMonth":   vi.customFaker.RandomMonth,
+		"_randomDateFuture": vi.customFaker.RandomDateFuture,
+		"_randomDatePast":   vi.customFaker.RandomDatePast,
+		"_randomDateRecent": vi.customFaker.RandomDateRecent,
+		"_randomWeekday":    vi.customFaker.RandomWeekday,
+		"_randomMonth":      vi.customFaker.RandomMonth,
 
 		// Domains, emails, and usernames
 		"_randomDomainName":   vi.customFaker.RandomDomainName,
@@ -176,7 +176,7 @@ func (vi *VariableInjector) Init() {
 		"_randomLoremParagraphs": vi.customFaker.RandomLoremParagraphs,
 		"_randomLoremText":       vi.customFaker.RandomLoremSentences,
 		"_randomLoremSlug":       vi.customFaker.RandomLoremSlug,
-		// "_randomLoremLines":      vi.customFaker.RandomLoremLines,
+		"_randomLoremLines":      vi.customFaker.RandomLoremLines,
 
 		/*
 		* Spesific to us.

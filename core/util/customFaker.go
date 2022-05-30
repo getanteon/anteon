@@ -61,6 +61,47 @@ var (
 	BankAccounts = []string{
 		"Checking", "Savings", "Money Market", "Investment", "Home Loan", "Credit Card", "Auto Loan", "Personal Loan"}
 
+	BankAccountIbans = []string{
+		"HU 26", "AT 18", "MG 25", "CZ 22", "EE 18", "DE 20", "FI 16", "IL 21", "PT 23", "ES 22", "SE 22", "TR 24",
+		"UA 27", "MD 22",
+	}
+
+	BankAccountBics = []string{
+		"BADACVF1", "RZYUAIZ1383", "GJCAMHN1488", "DTVUHMS1", "AAFCSEMM", "LNDXSEGG", "ABVOSEGG", "AFAISESS", "AKRPSESS",
+		"AABASESS", "AABASESSTMS", "ALTASESS", "AAFESES2", "ATLPSESS", "ATLPSES2", "AVANSESX", "BFIUSES2", "BKCHSESS",
+		"BGABSESG", "BGABSESS", "BGABSESSMUL", "BKABSE22", "BSTPSESS", "FTSBSESS", "BRTESESS", "CITISESX", "BSUISESS",
+		"DABASESXGBG", "DABASESX", "DABASESXCLS", "DABASESXCON", "DABASESXSTO", "DNBASESX", "DNBASESXCLS", "MNYXSESS",
+		"EPRCSE22", "EQTSSESS", "ERPFSES2", "VPCSSESS", "VPCSSESSCLP", "VPCSSESSVKI", "EKTKSES2", "FORXSESA", "GLSYSES2",
+		"GTRESEGG", "GITCSES2", "GLCTSES2", "GFTMSES2", "HMHMSESS", "HMHMSESSGOE", "ICHOSES2", "FTCSSESS", "FTCSSES2",
+		"CHASSESS", "JAKMSE22", "KLRNSESS", "KIABSE22", "LAHYSESS", "ELLFSESS", "LANTSESS", "MARGSESS", "MFEXSESS",
+		"MFEXSESSGFP", "OMBSSESSNFM", "OMBSSESS", "OMECSESS", "OMECSESSCCP", "OMECSESSNOC", "OMECSESSCOL", "OMECSESSDVP",
+		"OMECSESSEXT", "OMECSESSTRE", "OMECSESSTSU", "NOFBSESS", "NDEASEGG", "NDEASESSNCL", "NDEASESSRCC", "NDEASESS",
+		"NDEASESSFDS", "NDEASESSTRI", "NDEASESSNBM", "NDEASESSPGI", "NOLSSES2910", "NOLSSES2911", "NOLSSES2913",
+		"NOLSSES2G10", "NOLSSES2G11", "NOLSSES2G12", "NOLSSES2G13", "NOLSSES2G14", "NOLSSES2W95", "NOLSSES2W96",
+		"NOLSSES2", "NOLSSES2491", "NOLSSES2A96", "NOLSSES2E47", "NOLSSES2E48", "NOLSSES2E49", "NNSESE22", "NOHLSESS",
+		"OHMJSESS", "RILUSES2", "SNDVSE22", "SVTRSESS", "AARBDE5W100", "AARBDE5W360", "AARBDE5W860", "AARBDE5WCLE",
+		"AARBDE5W500", "AARBDE5W200", "AARBDE5W250", "AARBDE5W550", "AARBDE5W700", "AARBDE5W600", "AARBDE5WDOM", "AARBDE5W",
+		"IMMODE5M", "ABCADEFFKTO", "ABCADEFF", "WWBADE3ADOT", "WWBADE3A", "ABKBDEBB", "ABKSDEFF", "FTSBDEFAMYO",
+		"FTSBDEFAPRO", "FTSBDEFASFI", "FTSBDEFA", "AWSGDE3S", "WUERDE66", "ABOCDEFF", "AGBMDEMMTGT", "AGBMDEMME22",
+		"AGBMDEMME23", "AGBMDEMM", "EADSDEMMPAY", "EADSDEMM", "AUSKDEFF", "AKBKDEFF", "AKFBDE33", "AGIDDEFB", "AGIDDEFFHOF",
+		"AGIDDEFF", "AGIDDEFBSGF", "AGIDDEFFPAR", "AGIDDEFBSSL", "AGIDDEFFIAM", "AGIDDEFFPA1", "AGIDDEFFFOA", "AGIDDEFFHO1",
+		"AGIDDEFFHO3", "AGIDDEFFINV", "ALLVDESL", "AZSEDEMM", "SOGEFRPPAGY", "SOGEFRPPAOA", "SOGEFRPPOBA", "SOGEFRPPANB",
+		"SOGEFRPPRRC", "SOGEFRPPABO", "SOGEFRPPBML", "SOGEFRPPAJC", "SOGEFRPPCTE", "SOGEFRPPBXC", "SOGEFRPPUCR",
+		"SOGEFRPPBFD", "SOGEFRPPAED", "SOGEFRPPWLF", "SOGEFRPPAZF", "SOGEFRPPAUG", "SOGEFRPPGSG", "SOGEFRPPALG",
+		"SOGEFRPPAGK", "SOGEFRPPBMA", "SOGEFRPPAKT", "SOGEFRPPFMA", "SOGEFRPPAMM", "SOGEFRPPLPC", "SOGEFRPPHPO",
+		"SOGEFRPPKPA", "SOGEFRPPJLH", "SOGEFRPPRAS", "SOGEFRPPBKR", "SOGEFRPPRIG", "SOGEFRPPGSM", "SOGEFRPPAFS",
+		"SOGEFRPPAPS", "SOGEFRPPAIS", "SOGEFRPPAXT", "SOGEFRPPPVL", "SOGEFRPPATV", "SOGEFRPPTVI", "SOGEFRPPBLG",
+		"SOGEFRPPAAA", "SOGEFRPPACF", "SOGEFRPPSFX", "SOGEFRPPSGA", "SOGEFRPPCBV", "SOGEFRPPSGI", "SOGEFRPPBTC",
+		"SOGEFRPPBTL", "SOGEFRPPFIP", "SOGEFRPPSGO", "SOGEFRPPLMT", "DEUTTRIS", "BKTRTRIS", "BKTRTRISCUS", "BKTRTRISGFX",
+		"DYAKTRIS", "DSGHTRIS", "ECTVTRIS", "EKSFTRI2", "FBHLTRIS", "GLOHTRIS", "GOGYTRIS", "GSDBTRIS", "HABBTRIS",
+		"HSBCTRIX002", "HSBCTRIX113", "HSBCTRIX933", "HSBCTRIX956", "HSBCTRIX001", "HSBCTRIXHYM", "HSBCTRIX", "HSBYTRIS",
+		"ICBKTRISADN", "ICBKTRISANK", "ICBKTRISNEC", "ICBKTRISOST", "ICBKTRISATK", "ICBKTRISANT", "ICBKTRISAYD",
+		"ICBKTRISBAL", "ICBKTRISBUR", "ICBKTRISDNZ", "ICBKTRISESK", "ICBKTRISISK", "ICBKTRISAVC", "ICBKTRISBKY",
+		"ICBKTRISBYP", "ICBKTRISBSK", "ICBKTRISDLY", "ICBKTRISMTP", "ICBKTRISETL", "ICBKTRISGUN", "ICBKTRISIKT",
+		"ICBKTRISTZL", "ICBKTRISKDK", "ICBKTRISKZY", "ICBKTRISLVT", "ICBKTRISMER", "ICBKTRISMAL", "ICBKTRISBAK",
+		"ICBKTRISMOD",
+	}
+
 	CurrencyNames = []string{
 		"UAE Dirham", "Afghani", "Lek", "Armenian Dram", "Netherlands Antillian Guilder", "Kwanza", "Argentine Peso",
 		"Australian Dollar", "Aruban Guilder", "Azerbaijanian Manat", "Convertible Marks", "Barbados Dollar", "Taka",
@@ -374,6 +415,39 @@ type CustomFaker struct {
 	Generator *rand.Rand
 }
 
+func (f CustomFaker) RandomDateFuture() string {
+	min := time.Now().Unix()
+	max := time.Now().Unix() * 10 / 9
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	randTime := time.Unix(sec, 0)
+
+	return randTime.Format(time.UnixDate)
+}
+
+func (f CustomFaker) RandomDatePast() string {
+	min := time.Now().Unix() - (time.Now().Unix() * 2 / 10)
+	max := time.Now().Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	randTime := time.Unix(sec, 0)
+
+	return randTime.Format(time.UnixDate)
+}
+
+func (f CustomFaker) RandomDateRecent() string {
+	min := time.Now().Unix() - (time.Now().Unix() * 1 / 200)
+	max := time.Now().Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	randTime := time.Unix(sec, 0)
+
+	return randTime.Format(time.UnixDate)
+}
+
 func (f CustomFaker) RandomLoremWord() string {
 	return LoremWords[f.Generator.Intn(len(LoremWords))]
 }
@@ -405,14 +479,14 @@ func (f CustomFaker) RandomLoremSentences() string {
 	return words
 }
 
-// func (f CustomFaker) RandomLoremLines() string {
-// 	words := ""
-// 	size := f.Generator.Intn(5-1) + 1
-// 	for i := 0; i < size; i++ {
-// 		words += f.RandomLoremSentence() + "\n"
-// 	}
-// 	return words
-// }
+func (f CustomFaker) RandomLoremLines() string {
+	words := ""
+	size := f.Generator.Intn(5-1) + 1
+	for i := 0; i < size; i++ {
+		words += f.RandomLoremSentence() + "\n"
+	}
+	return words
+}
 
 func (f CustomFaker) RandomLoremParagraph() string {
 	words := ""
@@ -658,8 +732,32 @@ func (f CustomFaker) RandomBankAccountName() string {
 	return BankAccounts[f.Generator.Intn(len(BankAccounts))]
 }
 
+func (f CustomFaker) RandomBankAccountBic() string {
+	return BankAccountBics[f.Generator.Intn(len(BankAccountBics))]
+}
+
+func (f CustomFaker) RandomBankAccountIban() string {
+	randomIbanFormat := BankAccountIbans[f.Generator.Intn(len(BankAccountIbans))]
+	randomIbanFormatList := strings.Split(randomIbanFormat, " ")
+
+	randomIban := randomIbanFormatList[0]
+	numberLen, _ := strconv.Atoi(randomIbanFormatList[1])
+	for i := 0; i < numberLen; i++ {
+		randomIban += strconv.Itoa(f.Generator.Intn(9-1) + 1)
+	}
+	return randomIban
+}
+
 func (f CustomFaker) RandomBankAccount() string {
 	return strconv.Itoa(f.Generator.Intn(99999999-10000000) + 10000000)
+}
+
+func (f CustomFaker) RandomDataImageUri() string {
+	return "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D" +
+		"%221.1%22%20baseProfile%3D%22full%22%20width%3D%22undefined%22%20height%3D%22undefined%22%3E%3Crect%20width%" +
+		"3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22grey%22%2F%3E%3Ctext%20x%3D%22NaN%22%20y%3D%22NaN%22%20fo" +
+		"nt-size%3D%2220%22%20alignment-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%3Eu" +
+		"ndefinedxundefined%3C%2Ftext%3E%3C%2Fsvg%3E"
 }
 
 func (f CustomFaker) RandomAvatarImage() string {
@@ -836,14 +934,12 @@ func (f CustomFaker) IntBetween(min, max int) int {
 	return f.Generator.Intn(diff+1) + min
 }
 
-// New returns a new instance of Faker instance with a random seed
 func NewCustomFaker() (f CustomFaker) {
 	seed := rand.NewSource(time.Now().Unix())
 	f = NewWithSeed(seed)
 	return
 }
 
-// NewWithSeed returns a new instance of Faker instance with a given seed
 func NewWithSeed(src rand.Source) (f CustomFaker) {
 	generator := rand.New(src)
 	f = CustomFaker{Generator: generator}
