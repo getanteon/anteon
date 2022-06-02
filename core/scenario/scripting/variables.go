@@ -191,6 +191,7 @@ func (vi *VariableInjector) Inject(text string) string {
 func (vi *VariableInjector) fakeDataInjector(text string) string {
 	parsed, err := template.New("").Funcs(vi.fakerMap).Parse(text)
 	if err != nil {
+		// TODO: Return error
 		fmt.Println("ERRR", err)
 		return text
 	}

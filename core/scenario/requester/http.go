@@ -101,6 +101,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 		}
 	}
 
+	if re.MatchString(h.packet.Auth.Username) || re.MatchString(h.packet.Auth.Password) {
+		h.containsDynamicField["basicauth"] = true
+	}
+
 	return
 }
 
@@ -204,6 +208,12 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 				}
 			}
 		}
+	}
+
+	if h.containsDynamicField["basicauth"] {
+		username := h.vi.Inject(h.packet.Auth.Username)
+		password := h.vi.Inject(h.packet.Auth.Password)
+		httpReq.SetBasicAuth(username, password)
 	}
 
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
