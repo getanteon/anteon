@@ -42,7 +42,7 @@ import (
 
 //TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.
 
-const headerRegexp = `^([\w-]+):\s*(.+)`
+const headerRegexp = `^*(.+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (

@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -36,16 +37,18 @@ import (
 	"github.com/google/uuid"
 	"go.ddosify.com/ddosify/core/scenario/scripting"
 	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/util"
 	"golang.org/x/net/http2"
 )
 
 type HttpRequester struct {
-	ctx       context.Context
-	proxyAddr *url.URL
-	packet    types.ScenarioItem
-	client    *http.Client
-	request   *http.Request
-	vi        *scripting.VariableInjector
+	ctx                  context.Context
+	proxyAddr            *url.URL
+	packet               types.ScenarioItem
+	client               *http.Client
+	request              *http.Request
+	vi                   *scripting.VariableInjector
+	containsDynamicField map[string]bool
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -55,6 +58,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	h.proxyAddr = proxyAddr
 	h.vi = &scripting.VariableInjector{}
 	h.vi.Init()
+	h.containsDynamicField = make(map[string]bool)
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -77,6 +81,24 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	err = h.initRequestInstance()
 	if err != nil {
 		return
+	}
+
+	re := regexp.MustCompile(util.DynamicVariableRegex)
+	if re.MatchString(h.packet.Payload) {
+		h.containsDynamicField["body"] = true
+	}
+
+	if re.MatchString(h.packet.URL) {
+		h.containsDynamicField["url"] = true
+	}
+
+	for k, values := range h.request.Header {
+		for _, v := range values {
+			if re.MatchString(k) || re.MatchString(v) {
+				h.containsDynamicField["header"] = true
+				break
+			}
+		}
 	}
 
 	return
@@ -153,19 +175,34 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 }
 
 func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
-	// TODO: use vi.inject only if we need to.
-
+	re := regexp.MustCompile(util.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
-	body := h.vi.Inject(h.packet.Payload)
+	body := h.packet.Payload
+	if h.containsDynamicField["body"] {
+		body = h.vi.Inject(h.packet.Payload)
+	}
+
 	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
 	httpReq.ContentLength = int64(len(body))
 
-	httpReq.URL, _ = url.Parse(h.vi.Inject(h.packet.URL))
+	httpReq.URL, _ = url.Parse(h.packet.URL)
+	if h.containsDynamicField["url"] {
+		httpReq.URL, _ = url.Parse(h.vi.Inject(h.packet.URL))
+	}
 
-	for k, values := range httpReq.Header {
-		for _, v := range values {
-			httpReq.Header.Set(k, h.vi.Inject(v))
+	if h.containsDynamicField["header"] {
+		for k, values := range httpReq.Header {
+			for _, v := range values {
+				if re.MatchString(k) || re.MatchString(v) {
+					httpReq.Header.Set(h.vi.Inject(k), h.vi.Inject(v))
+					if re.MatchString(k) {
+						httpReq.Header.Del(k)
+					}
+				} else {
+					httpReq.Header.Set(k, v)
+				}
+			}
 		}
 	}
 

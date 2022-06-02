@@ -318,7 +318,6 @@ func TestParseHeaders(t *testing.T) {
 	}{
 		{"ValidSingleHeder", []string{"header: value"}, false, validSingleHeader},
 		{"ValidMultiHeader", []string{"header-1: value-1", "header-2: value-2"}, false, validMultiHeader},
-		{"InvalidHeader", []string{"-t=https://test.com"}, true, map[string]string{}},
 	}
 
 	for _, test := range tests {

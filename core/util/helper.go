@@ -25,6 +25,8 @@ import (
 	"strings"
 )
 
+const DynamicVariableRegex = `\{{([^}]+)\}}`
+
 // StringInSlice checks if the given string is in the given list of strings
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
