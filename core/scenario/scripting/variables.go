@@ -4,190 +4,182 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"math/rand"
-	"time"
 
-	"github.com/google/uuid"
-	"github.com/jaswdr/faker"
-
-	"go.ddosify.com/ddosify/core/util"
+	"github.com/ddosify/go-faker/faker"
 )
 
 type VariableInjector struct {
-	faker       faker.Faker
-	customFaker util.CustomFaker
-	fakerMap    map[string]interface{}
+	faker    faker.Faker
+	fakerMap map[string]interface{}
 }
 
 func (vi *VariableInjector) Init() {
-	vi.faker = faker.New()
-	vi.customFaker = util.NewCustomFaker()
+	vi.faker = faker.NewFaker()
 	vi.fakerMap = template.FuncMap{
 		/*
 		* Postman equivalents: https://learning.postman.com/docs/writing-scripts/script-references/variables-list
 		 */
 
 		// Common
-		"_guid":         uuid.New,
-		"_timestamp":    randomTimestamp,
-		"_isoTimestamp": randomISOTimestamp,
-		"_randomUUID":   uuid.New,
+		"_guid":         vi.faker.RandomGuid,
+		"_timestamp":    vi.faker.CurrentTimestamp,
+		"_isoTimestamp": vi.faker.CurrentISOTimestamp,
+		"_randomUUID":   vi.faker.RandomUUID,
 
 		//Text, numbers, and colors
-		"_randomAlphaNumeric": vi.customFaker.RandomAlphanumeric,
-		"_randomBoolean":      vi.faker.Bool,
-		"_randomInt":          vi.faker.Int,
-		"_randomColor":        vi.faker.Color().SafeColorName,
-		"_randomHexColor":     vi.faker.Color().Hex,
-		"_randomAbbreviation": vi.customFaker.RandomAbbreviation,
+		"_randomAlphaNumeric": vi.faker.RandomAlphanumeric,
+		"_randomBoolean":      vi.faker.RandomBoolean,
+		"_randomInt":          vi.faker.RandomInt,
+		"_randomColor":        vi.faker.RandomSafeColorName,
+		"_randomHexColor":     vi.faker.RandomSafeColorHex,
+		"_randomAbbreviation": vi.faker.RandomAbbreviation,
 
 		// Internet and IP addresses
-		"_randomIP":         vi.faker.Internet().Ipv4,
-		"_randomIPV6":       vi.customFaker.Ipv6,
-		"_randomMACAddress": vi.faker.Internet().MacAddress,
-		"_randomPassword":   vi.faker.Internet().Password,
-		"_randomLocale":     vi.faker.Language().LanguageAbbr,
-		"_randomUserAgent":  vi.faker.UserAgent().UserAgent,
-		"_randomProtocol":   vi.customFaker.RandomProtocol,
-		"_randomSemver":     vi.customFaker.RandomSemver,
+		"_randomIP":         vi.faker.RandomIP,
+		"_randomIPV6":       vi.faker.RandomIpv6,
+		"_randomMACAddress": vi.faker.RandomMACAddress,
+		"_randomPassword":   vi.faker.RandomPassword,
+		"_randomLocale":     vi.faker.RandomLocale,
+		"_randomUserAgent":  vi.faker.RandomUserAgent,
+		"_randomProtocol":   vi.faker.RandomProtocol,
+		"_randomSemver":     vi.faker.RandomSemver,
 
 		// Names
-		"_randomFirstName":  vi.faker.Person().FirstName,
-		"_randomLastName":   vi.faker.Person().LastName,
-		"_randomFullName":   vi.faker.Person().Name,
-		"_randomNamePrefix": vi.faker.Person().Title,
-		"_randomNameSuffix": vi.faker.Person().Suffix,
+		"_randomFirstName":  vi.faker.RandomPersonFirstName,
+		"_randomLastName":   vi.faker.RandomPersonLastName,
+		"_randomFullName":   vi.faker.RandomPersonFullName,
+		"_randomNamePrefix": vi.faker.RandomPersonNamePrefix,
+		"_randomNameSuffix": vi.faker.RandomPersonNameSuffix,
 
 		// Profession
-		"_randomJobArea":       vi.customFaker.RandomJobArea,
-		"_randomJobDescriptor": vi.customFaker.RandomJobDescriptor,
-		"_randomJobTitle":      vi.customFaker.RandomJobTitle,
-		"_randomJobType":       vi.customFaker.RandomJobType,
+		"_randomJobArea":       vi.faker.RandomJobArea,
+		"_randomJobDescriptor": vi.faker.RandomJobDescriptor,
+		"_randomJobTitle":      vi.faker.RandomJobTitle,
+		"_randomJobType":       vi.faker.RandomJobType,
 
 		// Phone, address, and location
-		"_randomPhoneNumber":    vi.customFaker.RandomPhoneNumber,
-		"_randomPhoneNumberExt": vi.customFaker.RandomPhoneNumberExt,
-		"_randomCity":           vi.faker.Address().City,
-		"_randomStreetName":     vi.faker.Address().StreetName,
-		"_randomStreetAddress":  vi.faker.Address().StreetAddress,
-		"_randomCountry":        vi.faker.Address().Country,
-		"_randomCountryCode":    vi.customFaker.RandomCountryCode,
-		"_randomLatitude":       vi.faker.Address().Latitude,
-		"_randomLongitude":      vi.faker.Address().Longitude,
+		"_randomPhoneNumber":    vi.faker.RandomPhoneNumber,
+		"_randomPhoneNumberExt": vi.faker.RandomPhoneNumberExt,
+		"_randomCity":           vi.faker.RandomAddressCity,
+		"_randomStreetName":     vi.faker.RandomAddresStreetName,
+		"_randomStreetAddress":  vi.faker.RandomAddressStreetAddress,
+		"_randomCountry":        vi.faker.RandomAddressCountry,
+		"_randomCountryCode":    vi.faker.RandomCountryCode,
+		"_randomLatitude":       vi.faker.RandomAddressLatitude,
+		"_randomLongitude":      vi.faker.RandomAddressLongitude,
 
 		// Images
-		"_randomAvatarImage":    vi.customFaker.RandomAvatarImage,
-		"_randomImageUrl":       vi.customFaker.RandomImageURL,
-		"_randomAbstractImage":  vi.customFaker.RandomAbstractImage,
-		"_randomAnimalsImage":   vi.customFaker.RandomAnimalsImage,
-		"_randomBusinessImage":  vi.customFaker.RandomBusinessImage,
-		"_randomCatsImage":      vi.customFaker.RandomCatsImage,
-		"_randomCityImage":      vi.customFaker.RandomCityImage,
-		"_randomFoodImage":      vi.customFaker.RandomFoodImage,
-		"_randomNightlifeImage": vi.customFaker.RandomNightlifeImage,
-		"_randomFashionImage":   vi.customFaker.RandomFashionImage,
-		"_randomPeopleImage":    vi.customFaker.RandomPeopleImage,
-		"_randomNatureImage":    vi.customFaker.RandomNatureImage,
-		"_randomTransportImage": vi.customFaker.RandomTransportImage,
-		"_randomImageDataUri":   vi.customFaker.RandomDataImageUri,
+		"_randomAvatarImage":    vi.faker.RandomAvatarImage,
+		"_randomImageUrl":       vi.faker.RandomImageURL,
+		"_randomAbstractImage":  vi.faker.RandomAbstractImage,
+		"_randomAnimalsImage":   vi.faker.RandomAnimalsImage,
+		"_randomBusinessImage":  vi.faker.RandomBusinessImage,
+		"_randomCatsImage":      vi.faker.RandomCatsImage,
+		"_randomCityImage":      vi.faker.RandomCityImage,
+		"_randomFoodImage":      vi.faker.RandomFoodImage,
+		"_randomNightlifeImage": vi.faker.RandomNightlifeImage,
+		"_randomFashionImage":   vi.faker.RandomFashionImage,
+		"_randomPeopleImage":    vi.faker.RandomPeopleImage,
+		"_randomNatureImage":    vi.faker.RandomNatureImage,
+		"_randomTransportImage": vi.faker.RandomTransportImage,
+		"_randomImageDataUri":   vi.faker.RandomDataImageUri,
 
 		// Finance
-		"_randomBankAccount":     vi.customFaker.RandomBankAccount,
-		"_randomBankAccountName": vi.customFaker.RandomBankAccountName,
-		"_randomCreditCardMask":  vi.customFaker.RandomCreaditCardMask,
-		"_randomBankAccountBic":  vi.customFaker.RandomBankAccountBic,
-		"_randomBankAccountIban": vi.customFaker.RandomBankAccountIban,
-		"_randomTransactionType": vi.customFaker.RandomTransactionType,
-		"_randomCurrencyCode":    vi.customFaker.RandomCurrencyCode,
-		"_randomCurrencyName":    vi.customFaker.RandomCurrencyName,
-		"_randomCurrencySymbol":  vi.customFaker.RandomCurrencySymbol,
-		"_randomBitcoin":         vi.customFaker.RandomBitcoin,
+		"_randomBankAccount":     vi.faker.RandomBankAccount,
+		"_randomBankAccountName": vi.faker.RandomBankAccountName,
+		"_randomCreditCardMask":  vi.faker.RandomCreaditCardMask,
+		"_randomBankAccountBic":  vi.faker.RandomBankAccountBic,
+		"_randomBankAccountIban": vi.faker.RandomBankAccountIban,
+		"_randomTransactionType": vi.faker.RandomTransactionType,
+		"_randomCurrencyCode":    vi.faker.RandomCurrencyCode,
+		"_randomCurrencyName":    vi.faker.RandomCurrencyName,
+		"_randomCurrencySymbol":  vi.faker.RandomCurrencySymbol,
+		"_randomBitcoin":         vi.faker.RandomBitcoin,
 
 		// Business
-		"_randomCompanyName":   vi.customFaker.RandomCompanyName,
-		"_randomCompanySuffix": vi.customFaker.RandomCompanySuffix,
-		"_randomBs":            vi.customFaker.RandomBs,
-		"_randomBsAdjective":   vi.customFaker.RandomBsAdjective,
-		"_randomBsBuzz":        vi.customFaker.RandomBsBuzzVerbs,
-		"_randomBsNoun":        vi.customFaker.RandomBsNouns,
+		"_randomCompanyName":   vi.faker.RandomCompanyName,
+		"_randomCompanySuffix": vi.faker.RandomCompanySuffix,
+		"_randomBs":            vi.faker.RandomBs,
+		"_randomBsAdjective":   vi.faker.RandomBsAdjective,
+		"_randomBsBuzz":        vi.faker.RandomBsBuzzWord,
+		"_randomBsNoun":        vi.faker.RandomBsNoun,
 
 		// Catchphrases
-		"_randomCatchPhrase":           vi.customFaker.RandomCatchPhrase,
-		"_randomCatchPhraseAdjective":  vi.customFaker.RandomCatchPhraseAdjective,
-		"_randomCatchPhraseDescriptor": vi.customFaker.RandomCatchPhraseDescriptor,
-		"_randomCatchPhraseNoun":       vi.customFaker.RandomCatchPhraseNoun,
+		"_randomCatchPhrase":           vi.faker.RandomCatchPhrase,
+		"_randomCatchPhraseAdjective":  vi.faker.RandomCatchPhraseAdjective,
+		"_randomCatchPhraseDescriptor": vi.faker.RandomCatchPhraseDescriptor,
+		"_randomCatchPhraseNoun":       vi.faker.RandomCatchPhraseNoun,
 
 		// Databases
-		"_randomDatabaseColumn":    vi.customFaker.RandomDatabaseColumn,
-		"_randomDatabaseType":      vi.customFaker.RandomDatabaseType,
-		"_randomDatabaseCollation": vi.customFaker.RandomDatabaseCollation,
-		"_randomDatabaseEngine":    vi.customFaker.RandomDatabaseEngine,
+		"_randomDatabaseColumn":    vi.faker.RandomDatabaseColumn,
+		"_randomDatabaseType":      vi.faker.RandomDatabaseType,
+		"_randomDatabaseCollation": vi.faker.RandomDatabaseCollation,
+		"_randomDatabaseEngine":    vi.faker.RandomDatabaseEngine,
 
 		// Dates
-		"_randomDateFuture": vi.customFaker.RandomDateFuture,
-		"_randomDatePast":   vi.customFaker.RandomDatePast,
-		"_randomDateRecent": vi.customFaker.RandomDateRecent,
-		"_randomWeekday":    vi.customFaker.RandomWeekday,
-		"_randomMonth":      vi.customFaker.RandomMonth,
+		"_randomDateFuture": vi.faker.RandomDateFuture,
+		"_randomDatePast":   vi.faker.RandomDatePast,
+		"_randomDateRecent": vi.faker.RandomDateRecent,
+		"_randomWeekday":    vi.faker.RandomWeekday,
+		"_randomMonth":      vi.faker.RandomMonth,
 
 		// Domains, emails, and usernames
-		"_randomDomainName":   vi.customFaker.RandomDomainName,
-		"_randomDomainSuffix": vi.customFaker.RandomDomainSuffix,
-		"_randomDomainWord":   vi.customFaker.RandomDomainWord,
-		"_randomEmail":        vi.customFaker.RandomEmail,
-		"_randomExampleEmail": vi.customFaker.RandomExampleEmail,
-		"_randomUserName":     vi.customFaker.RandomUsername,
-		"_randomUrl":          vi.customFaker.RandomUrl,
+		"_randomDomainName":   vi.faker.RandomDomainName,
+		"_randomDomainSuffix": vi.faker.RandomDomainSuffix,
+		"_randomDomainWord":   vi.faker.RandomDomainWord,
+		"_randomEmail":        vi.faker.RandomEmail,
+		"_randomExampleEmail": vi.faker.RandomExampleEmail,
+		"_randomUserName":     vi.faker.RandomUsername,
+		"_randomUrl":          vi.faker.RandomUrl,
 
 		// Files and directories
-		"_randomFileName":       vi.customFaker.RandomFileName,
-		"_randomFileType":       vi.customFaker.RandomFileType,
-		"_randomFileExt":        vi.customFaker.RandomFileExtension,
-		"_randomCommonFileName": vi.customFaker.RandomCommonFileName,
-		"_randomCommonFileType": vi.customFaker.RandomCommonFileType,
-		"_randomCommonFileExt":  vi.customFaker.RandomCommonFileExtension,
-		"_randomFilePath":       vi.customFaker.RandomFilePath,
-		"_randomDirectoryPath":  vi.customFaker.RandomDirectoryPath,
-		"_randomMimeType":       vi.customFaker.RandomMimeTypes,
+		"_randomFileName":       vi.faker.RandomFileName,
+		"_randomFileType":       vi.faker.RandomFileType,
+		"_randomFileExt":        vi.faker.RandomFileExtension,
+		"_randomCommonFileName": vi.faker.RandomCommonFileName,
+		"_randomCommonFileType": vi.faker.RandomCommonFileType,
+		"_randomCommonFileExt":  vi.faker.RandomCommonFileExtension,
+		"_randomFilePath":       vi.faker.RandomFilePath,
+		"_randomDirectoryPath":  vi.faker.RandomDirectoryPath,
+		"_randomMimeType":       vi.faker.RandomMimeType,
 
 		// Stores
-		"_randomPrice":            vi.customFaker.RandomPrice,
-		"_randomProduct":          vi.customFaker.RandomProduct,
-		"_randomProductAdjective": vi.customFaker.RandomProductAdjective,
-		"_randomProductMaterial":  vi.customFaker.RandomProductMaterial,
-		"_randomProductName":      vi.customFaker.RandomProductName,
-		"_randomDepartment":       vi.customFaker.RandomDepartment,
+		"_randomPrice":            vi.faker.RandomPrice,
+		"_randomProduct":          vi.faker.RandomProduct,
+		"_randomProductAdjective": vi.faker.RandomProductAdjective,
+		"_randomProductMaterial":  vi.faker.RandomProductMaterial,
+		"_randomProductName":      vi.faker.RandomProductName,
+		"_randomDepartment":       vi.faker.RandomDepartment,
 
 		// Grammar
-		"_randomNoun":      vi.customFaker.RandomNoun,
-		"_randomVerb":      vi.customFaker.RandomVerb,
-		"_randomIngverb":   vi.customFaker.RandomIngVerb,
-		"_randomAdjective": vi.customFaker.RandomAdjective,
-		"_randomWord":      vi.customFaker.RandomWord,
-		"_randomWords":     vi.customFaker.RandomWords,
-		"_randomPhrase":    vi.customFaker.RandomLoremSentences,
+		"_randomNoun":      vi.faker.RandomNoun,
+		"_randomVerb":      vi.faker.RandomVerb,
+		"_randomIngverb":   vi.faker.RandomIngVerb,
+		"_randomAdjective": vi.faker.RandomAdjective,
+		"_randomWord":      vi.faker.RandomWord,
+		"_randomWords":     vi.faker.RandomWords,
+		"_randomPhrase":    vi.faker.RandomPhrase,
 
 		// Lorem ipsum
-		"_randomLoremWord":       vi.customFaker.RandomLoremWord,
-		"_randomLoremWords":      vi.customFaker.RandomLoremWords,
-		"_randomLoremSentence":   vi.customFaker.RandomLoremSentence,
-		"_randomLoremSentences":  vi.customFaker.RandomLoremSentences,
-		"_randomLoremParagraph":  vi.customFaker.RandomLoremParagraph,
-		"_randomLoremParagraphs": vi.customFaker.RandomLoremParagraphs,
-		"_randomLoremText":       vi.customFaker.RandomLoremSentences,
-		"_randomLoremSlug":       vi.customFaker.RandomLoremSlug,
-		"_randomLoremLines":      vi.customFaker.RandomLoremLines,
+		"_randomLoremWord":       vi.faker.RandomLoremWord,
+		"_randomLoremWords":      vi.faker.RandomLoremWords,
+		"_randomLoremSentence":   vi.faker.RandomLoremSentence,
+		"_randomLoremSentences":  vi.faker.RandomLoremSentences,
+		"_randomLoremParagraph":  vi.faker.RandomLoremParagraph,
+		"_randomLoremParagraphs": vi.faker.RandomLoremParagraphs,
+		"_randomLoremText":       vi.faker.RandomLoremText,
+		"_randomLoremSlug":       vi.faker.RandomLoremSlug,
+		"_randomLoremLines":      vi.faker.RandomLoremLines,
 
 		/*
 		* Spesific to us.
 		 */
-		"_randomFloat":  vi.customFaker.RandomFloat,
-		"_randomString": vi.customFaker.RandomString,
+		"_randomFloat":  vi.faker.RandomFloat,
+		"_randomString": vi.faker.RandomString,
 
 		// Functions
-		"_intBetween":      vi.faker.IntBetween,
-		"_floatBetween":    vi.faker.RandomFloat,
-		"_stringMaxLength": vi.faker.RandomStringWithLength,
+		"_intBetween":       vi.faker.IntBetween,
+		"_stringWithLength": vi.faker.RandomStringWithLength,
 	}
 
 }
@@ -206,26 +198,4 @@ func (vi *VariableInjector) fakeDataInjector(text string) string {
 	buf := &bytes.Buffer{}
 	_ = parsed.Execute(buf, nil)
 	return buf.String()
-}
-
-func randomTimestamp() int64 {
-	randomTime := rand.Int63n(time.Now().Unix()-94608000) + 94608000
-	return time.Unix(randomTime, 0).Unix()
-}
-
-func randomISOTimestamp() string {
-	randomTime := rand.Int63n(time.Now().Unix()-94608000) + 94608000
-	return time.Unix(randomTime, 0).UTC().Format("2006-01-02T15:04:05.000Z")
-}
-
-func randomInt() int {
-	return faker.New().IntBetween(0, 1000000000)
-}
-
-func randomFloat() float64 {
-	return faker.New().RandomFloat(1, 50, 100)
-}
-
-func randomString() string {
-	return faker.New().RandomStringWithLength(10)
 }
