@@ -140,7 +140,7 @@ ddosify [FLAG]
 | `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS* | `string`    | `GET`    | No  |
 | `-b`   | The payload of the network packet. AKA body for the HTTP.  | `string`    | -    | No         |
 | `-a`   | Basic authentication. Usage: `-a username:password`        | `string`    | -    | No         |
-| `-h`   | Headers of the request. You can provide multiple headers with multiple `-h` flag.  | `string`| -    | No         |
+| `-h`   | Headers of the request. You can provide multiple headers with multiple `-h` flag. Usage: `-h 'Accept: text/html'`  | `string`| -    | No         |
 | `-T`   | Timeout of the request in seconds.                       | `int`    | `5`    | No         |
 | `-P`   | Proxy address as host:port. `-P http://user:pass@proxy_host.com:port'` | `string`    | -    | No |
 | `-o`   | Test result output destination. Supported outputs are [*stdout, stdout-json*] Other output types will be added. | `string`    | `stdout`    | No |
