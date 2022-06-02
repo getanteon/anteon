@@ -141,7 +141,7 @@ func (si *ScenarioItem) validate() error {
 	if si.ID == 0 {
 		return fmt.Errorf("step ID should be greater than zero")
 	}
-	if !validator.IsURL(si.URL) {
+	if !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
 		return fmt.Errorf("target is not valid: %s", si.URL)
 	}
 	if si.Sleep != "" {
@@ -173,7 +173,7 @@ func (si *ScenarioItem) validate() error {
 // If url is not valid, then error will be returned
 func AdjustUrlProtocol(url string, proto string) (string, string, error) {
 	var err error
-	if !validator.IsURL(url) {
+	if !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
 		err = fmt.Errorf("target is not valid: %s", url)
 	} else {
 		tempURL := strings.ToUpper(url)
