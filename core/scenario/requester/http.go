@@ -225,16 +225,16 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	if h.containsDynamicField["header"] {
 		for k, values := range httpReq.Header {
 			for _, v := range values {
-				if re.MatchString(k) || re.MatchString(v) {
-					kk, _ := h.vi.Inject(k)
-					vv, _ := h.vi.Inject(v)
-					httpReq.Header.Set(kk, vv)
-					if re.MatchString(k) {
-						httpReq.Header.Del(k)
-					}
-				} else {
-					httpReq.Header.Set(k, v)
+				kk := k
+				vv := v
+				if re.MatchString(v) {
+					vv, _ = h.vi.Inject(v)
 				}
+				if re.MatchString(k) {
+					kk, _ = h.vi.Inject(k)
+					httpReq.Header.Del(k)
+				}
+				httpReq.Header.Set(kk, vv)
 			}
 		}
 	}
