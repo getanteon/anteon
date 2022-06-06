@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/ddosify/go-faker v0.1.0
+	github.com/ddosify/go-faker v0.1.1
 	github.com/enescakir/emoji v1.0.0
 	github.com/fatih/color v1.13.0
 	github.com/google/uuid v1.3.0

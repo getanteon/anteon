@@ -87,7 +87,7 @@ func (vi *VariableInjector) Init() {
 		// Finance
 		"_randomBankAccount":     vi.faker.RandomBankAccount,
 		"_randomBankAccountName": vi.faker.RandomBankAccountName,
-		"_randomCreditCardMask":  vi.faker.RandomCreaditCardMask,
+		"_randomCreditCardMask":  vi.faker.RandomCreditCardMask,
 		"_randomBankAccountBic":  vi.faker.RandomBankAccountBic,
 		"_randomBankAccountIban": vi.faker.RandomBankAccountIban,
 		"_randomTransactionType": vi.faker.RandomTransactionType,
