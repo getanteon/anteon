@@ -1,10 +1,14 @@
 package scripting
 
 import (
-	"bytes"
-	"html/template"
+	"fmt"
+	"io"
+	"reflect"
+	"strconv"
 
 	"github.com/ddosify/go-faker/faker"
+	"github.com/google/uuid"
+	"github.com/valyala/fasttemplate"
 )
 
 type VariableInjector struct {
@@ -14,7 +18,7 @@ type VariableInjector struct {
 
 func (vi *VariableInjector) Init() {
 	vi.faker = faker.NewFaker()
-	vi.fakerMap = template.FuncMap{
+	vi.fakerMap = map[string]interface{}{
 		/*
 		* Postman equivalents: https://learning.postman.com/docs/writing-scripts/script-references/variables-list
 		 */
@@ -171,14 +175,10 @@ func (vi *VariableInjector) Init() {
 		"_randomLoremLines":      vi.faker.RandomLoremLines,
 
 		/*
-		* Spesific to us.
+		 * Spesific to us.
 		 */
 		"_randomFloat":  vi.faker.RandomFloat,
 		"_randomString": vi.faker.RandomString,
-
-		// Functions
-		"_intBetween":       vi.faker.IntBetween,
-		"_stringWithLength": vi.faker.RandomStringWithLength,
 	}
 
 }
@@ -186,14 +186,29 @@ func (vi *VariableInjector) Init() {
 func (vi *VariableInjector) Inject(text string) (string, error) {
 	return vi.fakeDataInjector(text)
 }
-
 func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
-	parsed, err := template.New("").Funcs(vi.fakerMap).Parse(text)
-	if err != nil {
-		return text, err
-	}
+	var err error
+	parsed := fasttemplate.New(text, "{{", "}}").ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		if _, ok := vi.fakerMap[tag]; !ok {
+			err = fmt.Errorf("%s is not a valid dynamic variable", tag)
+			return 0, nil
+		}
 
-	buf := &bytes.Buffer{}
-	_ = parsed.Execute(buf, nil)
-	return buf.String(), nil
+		res := reflect.ValueOf(vi.fakerMap[tag]).Call(nil)[0].Interface()
+
+		var p string
+		switch res.(type) {
+		case int:
+			p = strconv.Itoa(res.(int))
+		case float64:
+			p = fmt.Sprintf("%f", res.(float64))
+		case uuid.UUID:
+			p = res.(uuid.UUID).String()
+		default:
+			p = res.(string)
+		}
+		return w.Write([]byte(p))
+
+	})
+	return parsed, err
 }
