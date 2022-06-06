@@ -2,7 +2,6 @@ package scripting
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 
 	"github.com/ddosify/go-faker/faker"
@@ -185,17 +184,12 @@ func (vi *VariableInjector) Init() {
 }
 
 func (vi *VariableInjector) Inject(text string) (string, error) {
-	data, err := vi.fakeDataInjector(text)
-	if err != nil {
-		return data, err
-	}
-	return data, nil
+	return vi.fakeDataInjector(text)
 }
 
 func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 	parsed, err := template.New("").Funcs(vi.fakerMap).Parse(text)
 	if err != nil {
-		fmt.Println(err)
 		return text, err
 	}
 
