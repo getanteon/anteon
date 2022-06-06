@@ -22,14 +22,19 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/ddosify/go-faker/faker"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
@@ -505,5 +510,117 @@ func TestEngineResult(t *testing.T) {
 			}
 			m.Unlock()
 		})
+	}
+}
+
+func TestDynamicData(t *testing.T) {
+	t.Parallel()
+
+	var headers http.Header
+	var body, uri string
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		headers = r.Header
+		uri = r.RequestURI
+		bodyByte, _ := ioutil.ReadAll(r.Body)
+		body = string(bodyByte)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTP",
+		Method:   "GET",
+		URL:      server.URL + "/get_test_data/{{_randomInt}}",
+		Headers: map[string]string{
+			"Test1":            "{{_randomInt}}",
+			"{{_randomInt}}":   "Test2Value",
+			"{{_randomColor}}": "{{_randomInt}}",
+			"Test4":            "Test4Value",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	// Assert
+	if i, err := strconv.Atoi(headers.Get("Test1")); err != nil {
+		t.Errorf("invalid header received: %v", i)
+	}
+
+	if headers.Get("Test4") != "Test4Value" {
+		t.Errorf("invalid header received: %v", headers.Get("Test4"))
+	}
+
+	for k, v := range headers {
+		vFirst := v[0]
+		if vFirst == "Test2Value" {
+			if i, err := strconv.Atoi(k); err != nil {
+				t.Errorf("invalid header received: %v", i)
+			}
+		}
+		fmt.Println(k, v)
+
+	}
+
+	// body
+	contains := false
+	for _, v := range faker.JobAreas {
+		if body == v {
+			contains = true
+			break
+		}
+	}
+	if contains == false {
+		t.Errorf("invalid body received: %v", body)
+	}
+
+	// basic auth
+	authHeader := strings.ReplaceAll(headers.Get("Authorization"), "Basic ", "")
+	d, _ := base64.StdEncoding.DecodeString(authHeader)
+	usernamePassword := string(d)
+	usernamePasswordSlice := strings.Split(usernamePassword, ":")
+	username := usernamePasswordSlice[0]
+	password := usernamePasswordSlice[1]
+
+	if username != "testuser" {
+		t.Errorf("invalid username received: %v", username)
+	}
+
+	contains = false
+	for _, v := range faker.BankAccountBics {
+		if password == v {
+			contains = true
+			break
+		}
+	}
+	if contains == false {
+		t.Errorf("invalid body received: %v", body)
+	}
+
+	// uri
+	uriDynamicPart := strings.ReplaceAll(uri, "/get_test_data/", "")
+	if i, err := strconv.Atoi(uriDynamicPart); err != nil {
+		t.Errorf("invalid uri received: %v", i)
 	}
 }
