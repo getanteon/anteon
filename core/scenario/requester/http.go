@@ -85,16 +85,33 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 
 	re := regexp.MustCompile(util.DynamicVariableRegex)
 	if re.MatchString(h.packet.Payload) {
+		_, err = h.vi.Inject(h.packet.Payload)
+		if err != nil {
+			return
+		}
 		h.containsDynamicField["body"] = true
 	}
 
 	if re.MatchString(h.packet.URL) {
+		_, err = h.vi.Inject(h.packet.URL)
+		if err != nil {
+			return
+		}
 		h.containsDynamicField["url"] = true
 	}
 
 	for k, values := range h.request.Header {
 		for _, v := range values {
 			if re.MatchString(k) || re.MatchString(v) {
+				_, err = h.vi.Inject(k)
+				if err != nil {
+					return
+				}
+
+				_, err = h.vi.Inject(v)
+				if err != nil {
+					return
+				}
 				h.containsDynamicField["header"] = true
 				break
 			}
@@ -102,6 +119,15 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	}
 
 	if re.MatchString(h.packet.Auth.Username) || re.MatchString(h.packet.Auth.Password) {
+		_, err = h.vi.Inject(h.packet.Auth.Username)
+		if err != nil {
+			return
+		}
+
+		_, err = h.vi.Inject(h.packet.Auth.Password)
+		if err != nil {
+			return
+		}
 		h.containsDynamicField["basicauth"] = true
 	}
 
@@ -184,7 +210,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 
 	body := h.packet.Payload
 	if h.containsDynamicField["body"] {
-		body = h.vi.Inject(h.packet.Payload)
+		body, _ = h.vi.Inject(h.packet.Payload)
 	}
 
 	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
@@ -192,14 +218,17 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 
 	httpReq.URL, _ = url.Parse(h.packet.URL)
 	if h.containsDynamicField["url"] {
-		httpReq.URL, _ = url.Parse(h.vi.Inject(h.packet.URL))
+		u, _ := h.vi.Inject(h.packet.URL)
+		httpReq.URL, _ = url.Parse(u)
 	}
 
 	if h.containsDynamicField["header"] {
 		for k, values := range httpReq.Header {
 			for _, v := range values {
 				if re.MatchString(k) || re.MatchString(v) {
-					httpReq.Header.Set(h.vi.Inject(k), h.vi.Inject(v))
+					kk, _ := h.vi.Inject(k)
+					vv, _ := h.vi.Inject(v)
+					httpReq.Header.Set(kk, vv)
 					if re.MatchString(k) {
 						httpReq.Header.Del(k)
 					}
@@ -211,8 +240,8 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	}
 
 	if h.containsDynamicField["basicauth"] {
-		username := h.vi.Inject(h.packet.Auth.Username)
-		password := h.vi.Inject(h.packet.Auth.Password)
+		username, _ := h.vi.Inject(h.packet.Auth.Username)
+		password, _ := h.vi.Inject(h.packet.Auth.Password)
 		httpReq.SetBasicAuth(username, password)
 	}
 

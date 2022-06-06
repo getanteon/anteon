@@ -184,19 +184,22 @@ func (vi *VariableInjector) Init() {
 
 }
 
-func (vi *VariableInjector) Inject(text string) string {
-	return vi.fakeDataInjector(text)
+func (vi *VariableInjector) Inject(text string) (string, error) {
+	data, err := vi.fakeDataInjector(text)
+	if err != nil {
+		return data, err
+	}
+	return data, nil
 }
 
-func (vi *VariableInjector) fakeDataInjector(text string) string {
+func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 	parsed, err := template.New("").Funcs(vi.fakerMap).Parse(text)
 	if err != nil {
-		// TODO: Return error
-		fmt.Println("ERRR", err)
-		return text
+		fmt.Println(err)
+		return text, err
 	}
 
 	buf := &bytes.Buffer{}
 	_ = parsed.Execute(buf, nil)
-	return buf.String()
+	return buf.String(), nil
 }
