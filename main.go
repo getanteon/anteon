@@ -57,7 +57,7 @@ var (
 
 	method = flag.String("m", types.DefaultMethod,
 		"Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
-	payload = flag.String("b", "", "Payload of the network packet")
+	payload = flag.String("b", "", "Payload of the network packet (body)")
 	auth    = flag.String("a", "", "Basic authentication, username:password")
 	headers header
 
