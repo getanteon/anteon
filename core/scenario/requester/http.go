@@ -29,21 +29,26 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/scenario/scripting"
 	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/util"
 	"golang.org/x/net/http2"
 )
 
 type HttpRequester struct {
-	ctx       context.Context
-	proxyAddr *url.URL
-	packet    types.ScenarioItem
-	client    *http.Client
-	request   *http.Request
+	ctx                  context.Context
+	proxyAddr            *url.URL
+	packet               types.ScenarioItem
+	client               *http.Client
+	request              *http.Request
+	vi                   *scripting.VariableInjector
+	containsDynamicField map[string]bool
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -51,6 +56,9 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
+	h.vi = &scripting.VariableInjector{}
+	h.vi.Init()
+	h.containsDynamicField = make(map[string]bool)
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -73,6 +81,54 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 	err = h.initRequestInstance()
 	if err != nil {
 		return
+	}
+
+	re := regexp.MustCompile(util.DynamicVariableRegex)
+	if re.MatchString(h.packet.Payload) {
+		_, err = h.vi.Inject(h.packet.Payload)
+		if err != nil {
+			return
+		}
+		h.containsDynamicField["body"] = true
+	}
+
+	if re.MatchString(h.packet.URL) {
+		_, err = h.vi.Inject(h.packet.URL)
+		if err != nil {
+			return
+		}
+		h.containsDynamicField["url"] = true
+	}
+
+	for k, values := range h.request.Header {
+		for _, v := range values {
+			if re.MatchString(k) || re.MatchString(v) {
+				_, err = h.vi.Inject(k)
+				if err != nil {
+					return
+				}
+
+				_, err = h.vi.Inject(v)
+				if err != nil {
+					return
+				}
+				h.containsDynamicField["header"] = true
+				break
+			}
+		}
+	}
+
+	if re.MatchString(h.packet.Auth.Username) || re.MatchString(h.packet.Auth.Password) {
+		_, err = h.vi.Inject(h.packet.Auth.Username)
+		if err != nil {
+			return
+		}
+
+		_, err = h.vi.Inject(h.packet.Auth.Password)
+		if err != nil {
+			return
+		}
+		h.containsDynamicField["basicauth"] = true
 	}
 
 	return
@@ -149,10 +205,47 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 }
 
 func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
+	re := regexp.MustCompile(util.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(h.packet.Payload))
+
+	body := h.packet.Payload
+	if h.containsDynamicField["body"] {
+		body, _ = h.vi.Inject(h.packet.Payload)
+	}
+
+	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+	httpReq.ContentLength = int64(len(body))
+
+	httpReq.URL, _ = url.Parse(h.packet.URL)
+	if h.containsDynamicField["url"] {
+		u, _ := h.vi.Inject(h.packet.URL)
+		httpReq.URL, _ = url.Parse(u)
+	}
+
+	if h.containsDynamicField["header"] {
+		for k, values := range httpReq.Header {
+			for _, v := range values {
+				kk := k
+				vv := v
+				if re.MatchString(v) {
+					vv, _ = h.vi.Inject(v)
+				}
+				if re.MatchString(k) {
+					kk, _ = h.vi.Inject(k)
+					httpReq.Header.Del(k)
+				}
+				httpReq.Header.Set(kk, vv)
+			}
+		}
+	}
+
+	if h.containsDynamicField["basicauth"] {
+		username, _ := h.vi.Inject(h.packet.Auth.Username)
+		password, _ := h.vi.Inject(h.packet.Auth.Password)
+		httpReq.SetBasicAuth(username, password)
+	}
+
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	// httpReq.URL.RawQuery += uuid.NewString() // TODO: this can be a feature. like -cache_bypass flag?
 	return httpReq
 }
 

@@ -36,7 +36,6 @@ import (
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
 )
 
 const ConfigTypeJson = "jsonReader"
@@ -213,17 +212,19 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		s.Auth.Type = types.AuthHttpBasic
 	}
 
+	// TODO:V1 - Remove protocol flag at v1
 	// Protocol & URL
-	url, err := util.StrToURL(s.Protocol, s.Url)
+	s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
 	if err != nil {
 		return types.ScenarioItem{}, err
 	}
 
+	s.Protocol = strings.ToUpper(s.Protocol)
 	return types.ScenarioItem{
 		ID:       s.Id,
 		Name:     s.Name,
-		URL:      url.String(),
-		Protocol: strings.ToUpper(url.Scheme),
+		URL:      s.Url,
+		Protocol: s.Protocol,
 		Auth:     types.Auth(s.Auth),
 		Method:   strings.ToUpper(s.Method),
 		Headers:  s.Headers,

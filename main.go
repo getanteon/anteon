@@ -38,12 +38,11 @@ import (
 	"go.ddosify.com/ddosify/core"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
 )
 
 //TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.
 
-const headerRegexp = `^([\w-]+):\s*(.+)`
+const headerRegexp = `^*(.+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
@@ -51,10 +50,14 @@ var (
 	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
 	loadType = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
 
+	// TODO:V1 - Remove protocol flag at v1.
+	// Adjusting the protocol from both the target flag and this flag increases the complexity of the system&usage.
+	// We don't need a protocol flag. Users can easily pass the protocol along with the target.
 	protocol = flag.String("p", types.DefaultProtocol, "Protocol [HTTP, HTTPS]")
-	method   = flag.String("m", types.DefaultMethod,
+
+	method = flag.String("m", types.DefaultMethod,
 		"Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
-	payload = flag.String("b", "", "Payload of the network packet")
+	payload = flag.String("b", "", "Payload of the network packet (body)")
 	auth    = flag.String("a", "", "Basic authentication, username:password")
 	headers header
 
@@ -221,8 +224,8 @@ func createScenario() (s types.Scenario, err error) {
 		}
 	}
 
-	// Protocol & URL
-	url, err := util.StrToURL(*protocol, *target)
+	// TODO:V1 - Remove protocol flag at v1
+	*target, *protocol, err = types.AdjustUrlProtocol(*target, *protocol)
 	if err != nil {
 		return
 	}
@@ -232,16 +235,17 @@ func createScenario() (s types.Scenario, err error) {
 		return
 	}
 
+	*protocol = strings.ToUpper(*protocol)
 	s = types.Scenario{
 		Scenario: []types.ScenarioItem{
 			{
 				ID:       1,
-				Protocol: strings.ToUpper(url.Scheme),
+				Protocol: *protocol,
 				Method:   strings.ToUpper(*method),
 				Auth:     a,
 				Headers:  h,
 				Payload:  *payload,
-				URL:      url.String(),
+				URL:      *target,
 				Timeout:  *timeout,
 			},
 		},

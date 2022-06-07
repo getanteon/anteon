@@ -21,13 +21,11 @@
 package util
 
 import (
-	"fmt"
-	"net/url"
 	"os"
 	"strings"
-
-	validator "github.com/asaskevich/govalidator"
 )
+
+const DynamicVariableRegex = `\{{([^}]+)\}}`
 
 // StringInSlice checks if the given string is in the given list of strings
 func StringInSlice(a string, list []string) bool {
@@ -47,25 +45,4 @@ func IsSystemInTestMode() bool {
 		}
 	}
 	return false
-}
-
-// StrToURL creates *url.URL from the given parameters.
-// If the str does not have a Scheme segment then defaultProtocol parameter is used as a Scheme.
-// Returns error if the given str is not a URL.
-func StrToURL(defaultProtocol string, str string) (*url.URL, error) {
-	u, err := url.Parse(str)
-	if err != nil {
-		return nil, fmt.Errorf("invalid target url")
-	}
-
-	// Without protocol, url.Parse returns Host empty and pass the whole value to Path.
-	// If the protocol empty we should add default scheme then create new URL then check again.
-	if u.Scheme == "" {
-		u.Scheme = strings.ToLower(defaultProtocol)
-		if !validator.IsURL(u.String()) {
-			return nil, fmt.Errorf("invalid target url")
-		}
-	}
-
-	return u, nil
 }
