@@ -84,6 +84,7 @@ func (vi *VariableInjector) Init() {
 		"_randomFashionImage":   vi.faker.RandomFashionImage,
 		"_randomPeopleImage":    vi.faker.RandomPeopleImage,
 		"_randomNatureImage":    vi.faker.RandomNatureImage,
+		"_randomSportsImage":    vi.faker.RandomSportsImage,
 		"_randomTransportImage": vi.faker.RandomTransportImage,
 		"_randomImageDataUri":   vi.faker.RandomDataImageUri,
 
