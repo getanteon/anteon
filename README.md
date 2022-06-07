@@ -125,8 +125,8 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
 5. ### Load test with Dynamic Variables (Parameterization)
 
-    	ddosify -t target_site.com/{{_randomInt}} -d 10 -n 100 -h 'First-Name: {{_randomFirstName}}' -b '{"city": "{{_randomCity}}"}'
-    Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random first name in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
+    	ddosify -t target_site.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'
+    Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
