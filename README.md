@@ -21,11 +21,13 @@
 
 
 ## Features
-:heavy_check_mark: Protocol Agnostic - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
+📌 **Protocol Agnostic** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
-:heavy_check_mark: Scenario-Based - Create your flow in a JSON file. Without a line of code!
+📌 **Scenario-Based** - Create your flow in a JSON file. Without a line of code!
 
-:heavy_check_mark: Different Load Types - Test your system's limits across different load types.
+📌 **Different Load Types** - Test your system's limits across different load types.
+
+📌 **Parameterization** - Make a load test with dynamic data.
 
 ## Installation
 
@@ -121,7 +123,10 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 		ddosify -config config_examples/config.json
     Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
-		
+5. ### Load test with Dynamic Variables (Parameterization)
+
+    	ddosify -t target_site.com/{{_randomInt}} -d 10 -n 100 -h 'First-Name: {{_randomFirstName}}' -b '{"city": "{{_randomCity}}"}'
+    Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random first name in the header and a random city in the body. The full list of the random variables can be found in the [docs]().
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
@@ -394,6 +399,42 @@ There is an example config file at [config_examples/config.json](/config_example
             "disable-redirect": true         // Default false
         }
         ```
+
+## Parameterization (Dynamic Variables)
+
+Ddosify supports parameterization (dynamic variables) on *URL*, *headers*, *payload (body)* and *basic authentication* on load testing. To simulate a realistic load test on your system, Ddosify sends every request with dynamic variables. 
+
+### Parameterization on URL
+
+Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
+
+```bash
+ddosify -t target_site.com/?key={{_randomString}} -d 10 -n 100
+```
+
+### Parameterization on Headers
+
+Ddosify sends *100* GET requests in *10* seconds with random `Transaction-Type` and `Country` headers.
+
+```bash
+ddosify -t target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
+```
+
+### Parameterization on Payload (Body)
+
+Ddosify sends *100* GET requests in *10* seconds with random `latitude` and `longitude` values in body. 
+
+```bash
+ddosify -t target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
+```
+
+### Parameterization on Basic Authentication
+
+Ddosify sends *100* GET requests in *10* seconds with random `username` and `password` with basic authentication.
+
+```bash
+ddosify -t target_site.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
+```
 
 ## Common Issues
 
