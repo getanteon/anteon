@@ -167,7 +167,7 @@ func (si *ScenarioItem) validate() error {
 	return nil
 }
 
-// AjustUrlProtocol adjusts the proper url-proto pair for the given ones.
+// AdjustUrlProtocol adjusts the proper url-proto pair for the given ones.
 // If url includes protocol then the new protocol will be the protocol in the url
 // If url does not include protocol, then the new url will include the given protocol
 // If url is not valid, then error will be returned
