@@ -273,9 +273,9 @@ func (e *engine) createWavedReqCountArr() {
 }
 
 func createLinearDistArr(count int, arr []int) {
-	len := len(arr)
-	minReqCount := int(count / len)
-	remaining := count - minReqCount*len
+	arrLen := len(arr)
+	minReqCount := int(count / arrLen)
+	remaining := count - minReqCount*arrLen
 	for i := range arr {
 		plusOne := 0
 		if i < remaining {
