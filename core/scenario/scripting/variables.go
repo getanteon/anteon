@@ -201,6 +201,8 @@ func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 		switch res.(type) {
 		case int:
 			p = strconv.Itoa(res.(int))
+		case int64:
+			p = strconv.FormatInt(res.(int64), 10)
 		case float64:
 			p = fmt.Sprintf("%f", res.(float64))
 		case uuid.UUID:
