@@ -31,13 +31,17 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows.
+`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows.
 
 ### Docker
 
 ```bash
 docker run -it --rm ddosify/ddosify
 ```
+
+### Docker Extension
+
+Run Ddosify open-source on Docker Desktop with Ddosify Docker extension. More: [https://hub.docker.com/extensions/ddosify/ddosify-docker-extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension)
 
 ### Homebrew Tap (macOS and Linux)
 
