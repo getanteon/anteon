@@ -16,7 +16,7 @@
 
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start"  width="900px" />
+<img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start" />
 </p>
 
 
