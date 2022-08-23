@@ -154,8 +154,8 @@ ddosify [FLAG]
 | `-P`   | Proxy address as host:port. `-P 'http://user:pass@proxy_host.com:port'` | `string`    | -    | No |
 | `-o`   | Test result output destination. Supported outputs are [*stdout, stdout-json*] Other output types will be added. | `string`    | `stdout`    | No |
 | `-l`   | [Type](#load-types) of the load test. Ddosify supports 3 load types. | `string`    | `linear`    | No |
-| `-config`   | [Config File](#config-file) of the load test. | `string`    | -    | No |
-| `-version `   | Prints version, git commit, built date (utc), go information and quit | -    | -    | No |
+| `--config`   | [Config File](#config-file) of the load test. | `string`    | -    | No |
+| `--version `   | Prints version, git commit, built date (utc), go information and quit | -    | -    | No |
 
 
 ### Load Types
