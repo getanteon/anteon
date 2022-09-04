@@ -49,7 +49,7 @@ Run Ddosify open-source on Docker Desktop with Ddosify Docker extension. More: [
 brew install ddosify/tap/ddosify
 ```
 
-### apk, deb, rpm, Arch Linux packages
+### apk, deb, rpm, Arch Linux, FreeBSD packages
 
 - For arm architectures change `ddosify_amd64` to `ddosify_arm64` or `ddosify_armv6`.
 - Superuser privilege is required.
@@ -70,6 +70,9 @@ apk add --allow-untrusted ddosify_amd64.apk
 git clone https://aur.archlinux.org/ddosify.git
 cd ddosify
 makepkg -sri
+
+# For FreeBSD
+pkg install ddosify
 ```
 
 ### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/latest)
@@ -95,7 +98,7 @@ makepkg -sri
 curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
 ```
 
-### Go install from source (macOS, Linux, Windows)
+### Go install from source (macOS, FreeBSD, Linux, Windows)
 
 ```bash
 go install -v go.ddosify.com/ddosify@latest
