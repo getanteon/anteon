@@ -207,6 +207,8 @@ func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 			p = fmt.Sprintf("%f", res.(float64))
 		case uuid.UUID:
 			p = res.(uuid.UUID).String()
+		case bool:
+			p = strconv.FormatBool(res.(bool))
 		default:
 			p = res.(string)
 		}
