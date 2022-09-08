@@ -202,11 +202,13 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 			"reqDuration":           durations.getReqDur(),
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
-			"ddResponseTime":        ddResTime,
 		},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
 		res.Custom["tlsDuration"] = durations.getTLSDur()
+	}
+	if ddResTime != 0 {
+		res.Custom["ddResponseTime"] = ddResTime
 	}
 
 	return
