@@ -30,6 +30,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -179,6 +180,12 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 		httpRes.Body.Close()
 	}
 
+	var ddResTime time.Duration
+	if httpRes != nil && httpRes.Header.Get("x-ddsfy-response-time") != "" {
+		resTime, _ := strconv.ParseFloat(httpRes.Header.Get("x-ddsfy-response-time"), 8)
+		ddResTime = time.Duration(resTime*1000) * time.Millisecond
+	}
+
 	// Finalize
 	res = &types.ResponseItem{
 		ScenarioItemID:   h.packet.ID,
@@ -199,6 +206,9 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
 		res.Custom["tlsDuration"] = durations.getTLSDur()
+	}
+	if ddResTime != 0 {
+		res.Custom["ddResponseTime"] = ddResTime
 	}
 
 	return
