@@ -22,11 +22,14 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -622,5 +625,180 @@ func TestDynamicData(t *testing.T) {
 	uriDynamicPart := strings.ReplaceAll(uri, "/get_test_data/", "")
 	if i, err := strconv.Atoi(uriDynamicPart); err != nil {
 		t.Errorf("invalid uri received: %v", i)
+	}
+}
+
+func TestTlcMutualAuth(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLC files
+	cert := `-----BEGIN CERTIFICATE-----
+MIIDazCCAlOgAwIBAgIUS4UhTks8aRCQ1k9IGn437ZyP3MgwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMjEwMDUyMjM5MDVaFw0zMjEw
+MDIyMjM5MDVaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDMbZctKXBx8v63TXIhM/OB7S6VfPqpzfHufhs6kAHu
+jfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBsqfd01Po1ltWmbMf7ZvmSB6VN7kC2
+Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8UHSGzSC/smJOrjYidtlbvzOcX0pv3
+RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNlNetSkvTi7cxMWfwpcM/rN1hEmP1X
+J43hJp/TNRZVnEsvs/yggP/FwUjG74mU3KfnWiv91AkkarNTNquEMJ+f4OFqMcnF
+p0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXsHETZNG+JAgMBAAGjUzBRMB0GA1Ud
+DgQWBBSIw+qUKQJjXWti5x/Cnn2GueuX5zAfBgNVHSMEGDAWgBSIw+qUKQJjXWti
+5x/Cnn2GueuX5zAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAA
+DXzf8VXi4s2GScNfHf0BzMjpyrtRZ0Wbp2Vfh7OwVR6xcx+pqXNjlydM/vu2LvOK
+hh7Jbo+JS+o7O24UJ9lLFkCRsZVF+NFqJf+2rdHCaOiZSdZmtjBU0dFuAGS7+lU3
+M8P7WCNOm6NAKbs7VZHVcZPzp81SCPQgQIS19xRf4Irbvsijv4YdyL4Qv7aWcclb
+MdZX9AH9Fx8tJq4VKvUYsCXAD0kuywMLjh+yj5O/2hMvs5rvaQvm2daQNRDNp884
+uTLrNF7W7QaKEL06ZpXJoBqdKsiwn577XTDKvzN0XxQrT+xV9VHO7OXblF+Od3/Y
+SzBR+QiQKy3x+LkOxhkk
+-----END CERTIFICATE-----`
+
+	certKey := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDMbZctKXBx8v63
+TXIhM/OB7S6VfPqpzfHufhs6kAHujfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBs
+qfd01Po1ltWmbMf7ZvmSB6VN7kC2Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8U
+HSGzSC/smJOrjYidtlbvzOcX0pv3RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNl
+NetSkvTi7cxMWfwpcM/rN1hEmP1XJ43hJp/TNRZVnEsvs/yggP/FwUjG74mU3Kfn
+Wiv91AkkarNTNquEMJ+f4OFqMcnFp0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXs
+HETZNG+JAgMBAAECggEAM+U6NHfJmNPD/8qER5OFpJ0Ob1qL06F5Yj7XMLWwF9wm
+mGaGV7dkKOpTD/Wa6Dv82ZDWAeZnLDQa6vr228zZO9Nvp1EEL3kDsCOKvk7WVLbX
+ikPfKZznE/iA1tNLmkvioPiJ3oQB+2Bt6YA/tuCDcf+FtU43uTm5tiSBIdYQS+Om
+xN9OEXihk1svxHXQKa/a3nKPVLvdp3P90hDJ0PcRslXSy1V8az+A94JFEnCvnKsK
+nF2rItCcXkInL0lYHZKgLHQMXGWkNl8e3PA1GZk3yF6LPNtPI1T5Ek9GwkHNw4JZ
+BL/xEWLKB1qR2Z4I3UbWGVyi418kANv1eISb+49egQKBgQDraSRWB8nM5O3Zl9kT
+8S5K924o1oXrO17eqQlVtQVmtUdoVvIBc6uHQZOmV1eHYpr6c95h8apNLexI22AY
+SWkq9smpCnxLUsdkplwzie0F4bAzD6MCR8WIJxapUSPlyCA+8st1hquYBchKGQhd
+6mMY1gzMDacYV/WhtG4E5d0nMQKBgQDeTr793n00VtpKuquFJe6Stu7Ujf64dL0s
+3opLovyI0TmtMz5oCqIezwrjqc0Vy0UksWXaz0AboinDP+5n60cTEIt/6H0kryDc
+dxfSHEA9BBDoQtxOFi3QGcxXbwu0i9QSoexrKY7FhA2xPji6bCcPycthhIrCpUiZ
+s5gVkjHn2QKBgQCGklxLMbiSgGvXb46Qb9be1AMNJVT427+n2UmUzR6BUC+53boK
+Sm1LrJkTBerrYdrmQUZnBxcrd40TORT9zTlpbhppn6zeAjwptVAPxlDQg+uNxOqS
+ayToaC/0KoYy3OxSD8lvLcT56pRMh3LY/RwZHoPCQiu7Js0r21DpS93YgQKBgAuc
+c09RMprsOmSS0WiX7ZkOIvVJIVfDCSpxySlgLu56dxe7yHOosoUHbVsswEB2KHtd
+JKPEFWYcFzBSg4I8AK9XOuIIY5jp6L57Hexke1p0fumSrG0LrYLkBg8/Bo58iywZ
+9v414nYgipKKXG4oPfYOJShHwvOdrGgSwEvIIgEpAoGAZz0yC9+x+JaoTnyUIRyI
++Aj5a4KhYjFtsZhcn/yCZHDqzJNDz6gAu579ey+J2CVOhjtgB5lowsDrHu32Hqnn
+SEfyTru/ynQ8obwaRzdDYml+On86YWOw+brpMXkN+KB6bs2okE2N68v0qGPakxjt
+OLDW6kKz5pI4T8lQJhdqjCU=
+-----END PRIVATE KEY-----`
+
+	certFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+
+	_, err = io.WriteString(certFile, cert)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+
+	keyFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(keyFile.Name())
+
+	_, err = io.WriteString(keyFile, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	err = h.Scenario.Scenario[0].ParseTLC(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	// Assert
+	if handlerCalls == 0 {
+		t.Errorf("handler was not called at all: %#v", handlerCalls)
+	}
+
+	// Now test a fail scenario to make sure it works
+
+	h = newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	err = h.Scenario.Scenario[0].ParseTLC(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// invalidate the certs
+	h.Scenario.Scenario[0].CertPool = nil
+	h.Scenario.Scenario[0].Cert = tls.Certificate{}
+
+	// invalidate the flag
+	handlerCalls = 0
+
+	e, err = NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if handlerCalls != 0 {
+		t.Errorf("handler was called uncexpectedly: %#v", handlerCalls)
 	}
 }
