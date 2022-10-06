@@ -318,7 +318,7 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 		InsecureSkipVerify: true,
 	}
 
-	if h.packet.CertPool != nil {
+	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {
 		tlsConfig.RootCAs = h.packet.CertPool
 		tlsConfig.Certificates = []tls.Certificate{h.packet.Cert}
 	}

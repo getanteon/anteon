@@ -250,7 +250,7 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	if *certPath != "" && *certKeyPath != "" {
-		err = scenario.ParseTLC(*certPath, *certKeyPath)
+		err = scenario.ParseTLS(*certPath, *certKeyPath)
 		if err != nil {
 			return
 		}

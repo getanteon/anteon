@@ -103,8 +103,8 @@ type JsonReader struct {
 	Steps        []step       `json:"steps"`
 	Output       string       `json:"output"`
 	Proxy        string       `json:"proxy"`
-	CertPath     string       `json:"certPath"`
-	CertKeyPath  string       `json:"certKeyPath"`
+	CertPath     string       `json:"cert_path"`
+	CertKeyPath  string       `json:"cert_key_path"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -149,7 +149,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 
 		if j.CertPath != "" && j.CertKeyPath != "" {
-			err = si.ParseTLC(j.CertPath, j.CertKeyPath)
+			err = si.ParseTLS(j.CertPath, j.CertKeyPath)
 			if err != nil {
 				return
 			}

@@ -105,10 +105,10 @@ type ScenarioItem struct {
 	// Authentication
 	Auth Auth
 
-	// A TLC cert
+	// A TLS cert
 	Cert tls.Certificate
 
-	// A TLC cert pool
+	// A TLS cert pool
 	CertPool *x509.CertPool
 
 	// Request Headers
@@ -176,7 +176,7 @@ func (si *ScenarioItem) validate() error {
 	return nil
 }
 
-func (si *ScenarioItem) ParseTLC(certFile, keyFile string) error {
+func (si *ScenarioItem) ParseTLS(certFile, keyFile string) error {
 	// Read the key pair to create certificate
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {

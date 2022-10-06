@@ -628,7 +628,7 @@ func TestDynamicData(t *testing.T) {
 	}
 }
 
-func TestTlcMutualAuth(t *testing.T) {
+func TestTLSMutualAuth(t *testing.T) {
 	t.Parallel()
 
 	handlerCalls := 0
@@ -640,7 +640,223 @@ func TestTlcMutualAuth(t *testing.T) {
 	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
 	defer server.Close()
 
-	// prepare TLC files
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	// Assert
+	if handlerCalls == 0 {
+		t.Errorf("handler was not called at all: %#v", handlerCalls)
+	}
+}
+
+func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// invalidate the certs
+	h.Scenario.Scenario[0].CertPool = nil
+	h.Scenario.Scenario[0].Cert = tls.Certificate{}
+
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if handlerCalls != 0 {
+		t.Errorf("handler was called unexpectedly: %#v", handlerCalls)
+	}
+}
+
+func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// prepare server TLS files
+	cert, certKey = generateCerts2()
+	certFile2, keyFile2, err := createCertPairFiles(t, cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile2.Name())
+	defer os.Remove(keyFile2.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
+
+	// here we use server certs first
+	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// here we use different certs
+	// so the server and client has different pairs
+	err = h.Scenario.Scenario[0].ParseTLS(certFile2.Name(), keyFile2.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if handlerCalls != 0 {
+		t.Errorf("handler was called unexpectedly: %#v", handlerCalls)
+	}
+}
+
+func createCertPairFiles(t *testing.T, cert string, certKey string) (*os.File, *os.File, error) {
+	certFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(certFile, cert)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	keyFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(keyFile, certKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return certFile, keyFile, nil
+}
+
+func generateCerts() (string, string) {
 	cert := `-----BEGIN CERTIFICATE-----
 MIIDazCCAlOgAwIBAgIUS4UhTks8aRCQ1k9IGn437ZyP3MgwDQYJKoZIhvcNAQEL
 BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
@@ -692,113 +908,60 @@ SEfyTru/ynQ8obwaRzdDYml+On86YWOw+brpMXkN+KB6bs2okE2N68v0qGPakxjt
 OLDW6kKz5pI4T8lQJhdqjCU=
 -----END PRIVATE KEY-----`
 
-	certFile, err := os.CreateTemp("", ".pem")
-	if err != nil {
-		t.Errorf("Failed to prepare certs %v", err)
-	}
-	defer os.Remove(certFile.Name())
+	return cert, certKey
+}
 
-	_, err = io.WriteString(certFile, cert)
-	if err != nil {
-		t.Errorf("Failed to prepare certs %v", err)
-	}
+func generateCerts2() (string, string) {
+	cert := `-----BEGIN CERTIFICATE-----
+MIIDazCCAlOgAwIBAgIUSun8oI56ArKxfhqNLLfEmteRHRUwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMjEwMDYyMTE1NDdaFw0zMjEw
+MDMyMTE1NDdaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQC63U6N03rm4I8yFmYK27DUlVdMUGSRQt6UIdPT5F2c
+fv5mBRLwEANoqscNenNajGHiIqBiFQ3pG+p7BIIq11d87Of24XSll4MoK+6R9SFF
+6lTdGt9HSzuCXQtMf5g6/MbgH240xrBXmwwJNkqpUzXVOeQBPzxplf1b/0ircf8n
+fE81wnCtWyiu8BtlWvs/yJBTvSiIQ6w2Tp+K5oFZLCUwgQZdUcqzXp5nbWZkdO+D
+hOGdiY7G+fC19GX7lVt+kw+xB/uAqmXw2WoR/Db/M8tJDzTw810ZbWp0tAw7Pga+
+ybvIYN9mTFr4Tm052r2jVXAYejf8z4kdr4mCDKlSQTIlAgMBAAGjUzBRMB0GA1Ud
+DgQWBBRWchX65rXlT+/xlgxhKMTX5/FdtTAfBgNVHSMEGDAWgBRWchX65rXlT+/x
+lgxhKMTX5/FdtTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCo
+I3MOkAULOaa4Vr80lVn/kZi8HIwQ1NenqyoykqO/FDS7q5o5vaeNquqOgC4scTdb
+WJEgzBNpbIOxEM6ou5Q7IUlX6YZaTMK/Z0QbqjZuHA5ny8uaUERDLoDit318yNe+
+0TOY5m5n+pRkFPvjnqoNNxvYabUqQ7NpgKTv277eecfGdFPi971EiT9HSUM8n7tU
+1C1FNr7P1WGmng2EO1UCG3SQi1JpMGUYyFLSOP6F7wWhflO1JqdF57nmTtv8lKJ9
+O4ACJ5BuWUqUyDLYjMK+oHh/c6xLHxfQKs62HuLqfaobqUPyE0kS7LXN2G7adjrs
+2vBHv2U/QrjmLLF8CSdh
+-----END CERTIFICATE-----`
 
-	keyFile, err := os.CreateTemp("", ".pem")
-	if err != nil {
-		t.Errorf("Failed to prepare certs %v", err)
-	}
-	defer os.Remove(keyFile.Name())
+	certKey := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC63U6N03rm4I8y
+FmYK27DUlVdMUGSRQt6UIdPT5F2cfv5mBRLwEANoqscNenNajGHiIqBiFQ3pG+p7
+BIIq11d87Of24XSll4MoK+6R9SFF6lTdGt9HSzuCXQtMf5g6/MbgH240xrBXmwwJ
+NkqpUzXVOeQBPzxplf1b/0ircf8nfE81wnCtWyiu8BtlWvs/yJBTvSiIQ6w2Tp+K
+5oFZLCUwgQZdUcqzXp5nbWZkdO+DhOGdiY7G+fC19GX7lVt+kw+xB/uAqmXw2WoR
+/Db/M8tJDzTw810ZbWp0tAw7Pga+ybvIYN9mTFr4Tm052r2jVXAYejf8z4kdr4mC
+DKlSQTIlAgMBAAECggEANaE4X1n3pvWCA3UMOkeM+6YU1PEpu8r+SHNg8SpUd4q3
+Bp6kLcPaxppk4IhpPO6XVShs8VlrkaCSblX/6b29/Tuc420XZkMSwF/Da553uzIi
+wwZoWHTOEn8TtBPWo+9SQJaksX7os2vrS2WKjgg0pgqkVntIomEKwvGEcLgZ68Gy
+aCYgrJfvzS38+XhOJB00YOoq6vgqHj8YnTGtYAwwW+nI7oHGJS7H09eQV51cmQ2j
+NSmc0SsGJ/IYrCMfJp0W8Ho9z66qRiFLb7vFS1050r5r3+slHCZPQwYXY6ovo2EJ
+2Y5mKdem70dP8JZx6siVlOCKh/2fHOFNnegcQ/ADgQKBgQDx1ueRb7w9a/lh0PPN
+8tLvclN/BJCqVoaF31f+Ah9Q7bfagkI7kmaQfYChWPLM5mXwr8YCPM1jysQOUTJp
+ExBkGbngv/M0JeXSyt2Z9kbreFSll+ILnImAME+0KKjHTy1gDSvqX/a4NiZdDOaK
+44r4CZSeVrpH2YY4tq/huL68xQKBgQDFzlhPEYOxTnQytPuXWRTtB5is1WNs7cU0
+AKVGkqgNKj5++Jl+IT3/pDhcJXe06E1V9ldHFpwAorkbIvAEE45aqzp5ZrrlrAjJ
+06wmEEgP5tQxmBj+hx6jitzDoEmqHvyN5Dm8/Kxu2VF2n4yTGEeSX+ep1ojLCeAj
+heJuuO614QKBgGV+O1DeA7IDTnWuq6MS9VNoN4Jm+A+EoJAuW09OtLXSDga2A/Xc
+Sw74nLMaEUvMpZuNKRxnSAtJXV5k1TMjvQ1FfqzD4d1QylLcsIOcx8aqiVu1kjgt
+ScdyfwCsz6hVokVdQcDq5TAKCa+jal1/gSL3YlfRLfxZXesPQGEKl4HBAoGBALOw
+BMye7nDNAgVmHv6Xr8i6k9i9Z7p2LCRXScxYQUzkSS1yi4zmibmG5qPebWXreQVT
+6Gjtgv2Y1GpwTHSHh1OaJF5QEgu9QaaGIOXa+Htphu0ea+YbvJt385/KJeDikS4c
+Ws7xAXsY80W9HigpcCrp8Dp6Zn17FR9v6ggG+uJBAoGAFGo7X1bpEA1bKAA04wJL
+gq6wwKgTUjqnvHSo1CqPqoWeX8MM0VU9Jw2n0bxfD5He/snYO4pQUatD90kcgQch
+BmvE1yTn4kzC0ZO3++qPulpXpAp4QJLIdKeAE9cPhKqe4lBboJRbJqoXCaoIxNeg
+z0xcfR+tEmGlvxaHqXlQg9o=
+-----END PRIVATE KEY-----`
 
-	_, err = io.WriteString(keyFile, certKey)
-	if err != nil {
-		t.Errorf("Failed to prepare certs %v", err)
-	}
-
-	// Prepare
-	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
-	}
-
-	err = h.Scenario.Scenario[0].ParseTLC(certFile.Name(), keyFile.Name())
-	if err != nil {
-		t.Errorf("Failed to parse certs %v", err)
-	}
-
-	server.TLS = &tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    h.Scenario.Scenario[0].CertPool,
-		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
-	}
-
-	server.StartTLS()
-
-	h.Scenario.Scenario[0].URL = server.URL
-
-	// Act
-	e, err := NewEngine(context.TODO(), h)
-	if err != nil {
-		t.Errorf("TestRequestData error occurred %v", err)
-	}
-
-	err = e.Init()
-	if err != nil {
-		t.Errorf("TestRequestData error occurred %v", err)
-	}
-
-	e.Start()
-
-	// Assert
-	if handlerCalls == 0 {
-		t.Errorf("handler was not called at all: %#v", handlerCalls)
-	}
-
-	// Now test a fail scenario to make sure it works
-
-	h = newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
-	}
-
-	err = h.Scenario.Scenario[0].ParseTLC(certFile.Name(), keyFile.Name())
-	if err != nil {
-		t.Errorf("Failed to parse certs %v", err)
-	}
-
-	server.TLS = &tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    h.Scenario.Scenario[0].CertPool,
-		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
-	}
-
-	h.Scenario.Scenario[0].URL = server.URL
-
-	// invalidate the certs
-	h.Scenario.Scenario[0].CertPool = nil
-	h.Scenario.Scenario[0].Cert = tls.Certificate{}
-
-	// invalidate the flag
-	handlerCalls = 0
-
-	e, err = NewEngine(context.TODO(), h)
-	if err != nil {
-		t.Errorf("TestRequestData error occurred %v", err)
-	}
-
-	err = e.Init()
-	if err != nil {
-		t.Errorf("TestRequestData error occurred %v", err)
-	}
-
-	e.Start()
-
-	if handlerCalls != 0 {
-		t.Errorf("handler was called uncexpectedly: %#v", handlerCalls)
-	}
+	return cert, certKey
 }
