@@ -642,7 +642,7 @@ func TestTLSMutualAuth(t *testing.T) {
 
 	// prepare TLS files
 	cert, certKey := generateCerts()
-	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
 	if err != nil {
 		t.Errorf("Failed to prepare certs %v", err)
 	}
@@ -706,7 +706,7 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 
 	// prepare TLS files
 	cert, certKey := generateCerts()
-	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
 	if err != nil {
 		t.Errorf("Failed to prepare certs %v", err)
 	}
@@ -772,7 +772,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// prepare TLS files
 	cert, certKey := generateCerts()
-	certFile, keyFile, err := createCertPairFiles(t, cert, certKey)
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
 	if err != nil {
 		t.Errorf("Failed to prepare certs %v", err)
 	}
@@ -781,7 +781,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// prepare server TLS files
 	cert, certKey = generateCerts2()
-	certFile2, keyFile2, err := createCertPairFiles(t, cert, certKey)
+	certFile2, keyFile2, err := createCertPairFiles(cert, certKey)
 	if err != nil {
 		t.Errorf("Failed to prepare certs %v", err)
 	}
@@ -832,7 +832,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	}
 }
 
-func createCertPairFiles(t *testing.T, cert string, certKey string) (*os.File, *os.File, error) {
+func createCertPairFiles(cert string, certKey string) (*os.File, *os.File, error) {
 	certFile, err := os.CreateTemp("", ".pem")
 	if err != nil {
 		return nil, nil, err

@@ -71,8 +71,8 @@ var (
 	configPath = flag.String("config", "",
 		"Json config file path. If a config file is provided, other flag values will be ignored")
 
-	certPath    = flag.String("certPath", "", "A path to a certificate file (usually called 'cert.pem')")
-	certKeyPath = flag.String("certKeyPath", "", "A path to a certificate key file (usually called 'key.pem')")
+	certPath    = flag.String("cert_path", "", "A path to a certificate file (usually called 'cert.pem')")
+	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
 )

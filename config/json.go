@@ -76,6 +76,8 @@ type step struct {
 	Timeout          int                    `json:"timeout"`
 	Sleep            string                 `json:"sleep"`
 	Others           map[string]interface{} `json:"others"`
+	CertPath         string                 `json:"cert_path"`
+	CertKeyPath      string                 `json:"cert_key_path"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -103,8 +105,6 @@ type JsonReader struct {
 	Steps        []step       `json:"steps"`
 	Output       string       `json:"output"`
 	Proxy        string       `json:"proxy"`
-	CertPath     string       `json:"cert_path"`
-	CertKeyPath  string       `json:"cert_key_path"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -146,13 +146,6 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		si, err = stepToScenarioItem(step)
 		if err != nil {
 			return
-		}
-
-		if j.CertPath != "" && j.CertKeyPath != "" {
-			err = si.ParseTLS(j.CertPath, j.CertKeyPath)
-			if err != nil {
-				return
-			}
 		}
 
 		s.Scenario = append(s.Scenario, si)
@@ -229,7 +222,8 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	}
 
 	s.Protocol = strings.ToUpper(s.Protocol)
-	return types.ScenarioItem{
+
+	item := types.ScenarioItem{
 		ID:       s.Id,
 		Name:     s.Name,
 		URL:      s.Url,
@@ -241,7 +235,16 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 		Timeout:  s.Timeout,
 		Sleep:    strings.ReplaceAll(s.Sleep, " ", ""),
 		Custom:   s.Others,
-	}, nil
+	}
+
+	if s.CertPath != "" && s.CertKeyPath != "" {
+		err = item.ParseTLS(s.CertPath, s.CertKeyPath)
+		if err != nil {
+			return item, err
+		}
+	}
+
+	return item, nil
 }
 
 func prepareMultipartPayload(parts []multipartFormData) (body string, contentType string, err error) {
