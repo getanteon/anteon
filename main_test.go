@@ -260,8 +260,7 @@ func TestCreateScenarioTLS(t *testing.T) {
 	defer os.Remove(certFile.Name())
 	defer os.Remove(keyFile.Name())
 
-	gen := types.ScenarioItem{}
-	err = gen.ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, pool, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to gen certs %v", err)
 	}
@@ -275,8 +274,8 @@ func TestCreateScenarioTLS(t *testing.T) {
 				Method:   types.DefaultMethod,
 				URL:      url,
 				Timeout:  types.DefaultDuration,
-				Cert:     gen.Cert,
-				CertPool: gen.CertPool,
+				Cert:     certVal,
+				CertPool: pool,
 			},
 		},
 	}

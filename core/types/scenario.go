@@ -176,25 +176,26 @@ func (si *ScenarioItem) validate() error {
 	return nil
 }
 
-func (si *ScenarioItem) ParseTLS(certFile, keyFile string) error {
+func ParseTLS(certFile, keyFile string) (tls.Certificate, *x509.CertPool, error) {
+	if certFile == "" || keyFile == "" {
+		return tls.Certificate{}, nil, nil
+	}
+
 	// Read the key pair to create certificate
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return err
+		return tls.Certificate{}, nil, err
 	}
 
 	// Create a CA certificate pool and add cert.pem to it
 	caCert, err := ioutil.ReadFile(certFile)
 	if err != nil {
-		return err
+		return tls.Certificate{}, nil, err
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caCert)
 
-	si.Cert = cert
-	si.CertPool = caCertPool
-
-	return nil
+	return cert, pool, nil
 }
 
 // AdjustUrlProtocol adjusts the proper url-proto pair for the given ones.

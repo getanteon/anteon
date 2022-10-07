@@ -329,15 +329,14 @@ func TestCreateHammerTLS(t *testing.T) {
 		t.Errorf("TestCreateHammerDefaultValues error occurred: %v", err)
 	}
 
-	expected := types.ScenarioItem{}
-	err = expected.ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, _, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to gen certs %v", err)
 	}
 
 	// We compare only Certificte because CertPool has pointers inside and it's hard to compare it
-	if !reflect.DeepEqual(expected.Cert, h.Scenario.Scenario[0].Cert) {
-		t.Errorf("\nExpected: %#v, \nFound: %#v", expected.Cert, h.Scenario.Scenario[0].Cert)
+	if !reflect.DeepEqual(certVal, h.Scenario.Scenario[0].Cert) {
+		t.Errorf("\nExpected: %#v, \nFound: %#v", certVal, h.Scenario.Scenario[0].Cert)
 	}
 }
 
@@ -352,12 +351,6 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 	}
 	defer os.Remove(certFile.Name())
 	defer os.Remove(keyFile.Name())
-
-	gen := types.ScenarioItem{}
-	err = gen.ParseTLS(certFile.Name(), keyFile.Name())
-	if err != nil {
-		t.Fatalf("Failed to gen certs %v", err)
-	}
 
 	config := buildJSONTLSConfig(certFile.Name(), "")
 
@@ -403,12 +396,6 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 	}
 	defer os.Remove(certFile.Name())
 	defer os.Remove(keyFile.Name())
-
-	gen := types.ScenarioItem{}
-	err = gen.ParseTLS(certFile.Name(), keyFile.Name())
-	if err != nil {
-		t.Fatalf("Failed to gen certs %v", err)
-	}
 
 	config := buildJSONTLSConfig("", keyFile.Name())
 

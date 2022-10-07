@@ -658,10 +658,13 @@ func TestTLSMutualAuth(t *testing.T) {
 		URL:      "",
 	}
 
-	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Errorf("Failed to parse certs %v", err)
 	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -722,10 +725,13 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 		URL:      "",
 	}
 
-	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Errorf("Failed to parse certs %v", err)
 	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -793,10 +799,13 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	h.Scenario.Scenario[0] = types.ScenarioItem{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
 
 	// here we use server certs first
-	err = h.Scenario.Scenario[0].ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Errorf("Failed to parse certs %v", err)
 	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -810,10 +819,13 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// here we use different certs
 	// so the server and client has different pairs
-	err = h.Scenario.Scenario[0].ParseTLS(certFile2.Name(), keyFile2.Name())
+	certVal, poolVal, err = types.ParseTLS(certFile2.Name(), keyFile2.Name())
 	if err != nil {
 		t.Errorf("Failed to parse certs %v", err)
 	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
 
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {

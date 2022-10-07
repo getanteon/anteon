@@ -238,10 +238,13 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {
-		err = item.ParseTLS(s.CertPath, s.CertKeyPath)
+		cert, pool, err := types.ParseTLS(s.CertPath, s.CertKeyPath)
 		if err != nil {
 			return item, err
 		}
+
+		item.Cert = cert
+		item.CertPool = pool
 	}
 
 	return item, nil

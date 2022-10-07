@@ -250,10 +250,14 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	if *certPath != "" && *certKeyPath != "" {
-		err = scenario.ParseTLS(*certPath, *certKeyPath)
-		if err != nil {
+		cert, pool, e := types.ParseTLS(*certPath, *certKeyPath)
+		if e != nil {
+			err = e
 			return
 		}
+
+		scenario.Cert = cert
+		scenario.CertPool = pool
 	}
 
 	*protocol = strings.ToUpper(*protocol)
