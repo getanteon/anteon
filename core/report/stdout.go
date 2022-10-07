@@ -54,12 +54,13 @@ type stdout struct {
 var blue = color.New(color.FgHiBlue).SprintFunc()
 var green = color.New(color.FgHiGreen).SprintFunc()
 var red = color.New(color.FgHiRed).SprintFunc()
+var cyan = color.New(color.FgHiCyan).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[int16]*ScenarioItemReport),
+		ItemReports: make(map[int16]*ScenarioResult),
 	}
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
@@ -107,12 +108,18 @@ func (s *stdout) realTimePrintStart() {
 }
 
 func (s *stdout) liveResultPrint() {
-	fmt.Fprintf(out, "%s %s %s\n",
-		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
-			emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
-		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
-			emoji.CrossMark, s.result.FailedCount, s.result.failedPercentage(), "")),
-		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.AvgDuration)))
+	fmt.Fprintf(out, "%s %s %s",
+		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s", emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
+		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s", emoji.CrossMark, s.result.FailedCount, s.result.failedPercentage(), "")),
+		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.AvgDuration)),
+	)
+
+	for key, item := range s.result.ItemReports {
+		p := item.Durations["duration"].Percentile(95)
+		fmt.Fprintf(out, " %s", cyan(fmt.Sprintf("[%d] p(95): %.5fs", key, p)))
+	}
+
+	fmt.Fprintln(out, "")
 }
 
 func (s *stdout) realTimePrintStop() {
@@ -145,7 +152,7 @@ func (s *stdout) printDetails() {
 	sort.Ints(keys)
 
 	for _, k := range keys {
-		v := s.result.ItemReports[int16(k)]
+		v := s.result.ItemReports[int16(k)].Report
 
 		if len(keys) > 1 {
 			stepHeader := v.Name

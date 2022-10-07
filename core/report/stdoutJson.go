@@ -42,7 +42,7 @@ type stdoutJson struct {
 func (s *stdoutJson) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[int16]*ScenarioItemReport),
+		ItemReports: make(map[int16]*ScenarioResult),
 	}
 	return
 }
@@ -59,7 +59,8 @@ func (s *stdoutJson) Report() {
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
 
-	for _, itemReport := range s.result.ItemReports {
+	for _, item := range s.result.ItemReports {
+		itemReport := item.Report
 		durations := make(map[string]float32)
 		for d, s := range itemReport.Durations {
 			// Less precision for durations.

@@ -123,9 +123,9 @@ func TestStdoutJsonStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[int16]*ScenarioItemReport{
-			int16(1): itemReport1,
-			int16(2): itemReport2,
+		ItemReports: map[int16]*ScenarioResult{
+			int16(1): {Report: itemReport1},
+			int16(2): {Report: itemReport2},
 		},
 	}
 
@@ -186,9 +186,9 @@ func TestStdoutJsonOutput(t *testing.T) {
 		SuccessCount: 9,
 		FailedCount:  2,
 		AvgDuration:  0.25637,
-		ItemReports: map[int16]*ScenarioItemReport{
-			int16(1): itemReport1,
-			int16(2): itemReport2,
+		ItemReports: map[int16]*ScenarioResult{
+			int16(1): {Report: itemReport1},
+			int16(2): {Report: itemReport2},
 		},
 	}
 
