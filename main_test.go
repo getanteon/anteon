@@ -179,7 +179,8 @@ func TestCreateScenario(t *testing.T) {
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      url,
-				Timeout:  types.DefaultDuration,
+				Timeout:  types.DefaultTimeout,
+				Headers:  map[string]string{},
 			},
 		},
 	}
@@ -190,7 +191,8 @@ func TestCreateScenario(t *testing.T) {
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      url,
-				Timeout:  types.DefaultDuration,
+				Timeout:  types.DefaultTimeout,
+				Headers:  map[string]string{},
 				Auth: types.Auth{
 					Type:     types.AuthHttpBasic,
 					Username: "testuser",
@@ -239,8 +241,8 @@ func TestCreateScenario(t *testing.T) {
 				if err != nil {
 					t.Errorf("Errored: %v", err)
 				}
-				if reflect.DeepEqual(test.expected, s) {
-					t.Errorf("Expected %v, Found %v", test.expected, s)
+				if !reflect.DeepEqual(test.expected, s) {
+					t.Errorf("Expected %#v, Found %#v", test.expected, s)
 				}
 			}
 
