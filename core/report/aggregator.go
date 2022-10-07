@@ -109,6 +109,25 @@ func (r *Result) failedPercentage() int {
 	return 100 - r.successPercentage()
 }
 
+func (r *Result) DurationPercentile(p int) float32 {
+	if p < 0 || p > 100 {
+		return 0
+	}
+
+	var durations []float32
+	for _, rr := range r.ItemReports {
+		if list, ok := rr.Durations["duration"]; ok {
+			durations = append(durations, list.Durations...)
+		}
+	}
+
+	sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
+
+	d := ScenarioStats{Durations: durations}
+
+	return d.Percentile(p)
+}
+
 type ScenarioResult struct {
 	Report    *ScenarioItemReport       `json:"report"`
 	Durations map[string]*ScenarioStats `json:"durations"`
