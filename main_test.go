@@ -21,6 +21,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -37,9 +38,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Mock run function to prevent engine starting
-	run = func(h types.Hammer) {
-		return
-	}
+	run = func(h types.Hammer) {}
 	os.Exit(m.Run())
 }
 
@@ -223,10 +222,7 @@ func TestCreateScenario(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
-			os.Args = []string{"cmd"}
-			for _, a := range test.args {
-				os.Args = append(os.Args, a)
-			}
+			os.Args = append([]string{"cmd"}, test.args...)
 
 			// Act
 			flag.Parse()
@@ -262,24 +258,9 @@ func TestCreateScenarioTLS(t *testing.T) {
 	defer os.Remove(certFile.Name())
 	defer os.Remove(keyFile.Name())
 
-	certVal, pool, err := types.ParseTLS(certFile.Name(), keyFile.Name())
+	certVal, _, err := types.ParseTLS(certFile.Name(), keyFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to gen certs %v", err)
-	}
-
-	url := "https://test.com"
-	valid := types.Scenario{
-		Scenario: []types.ScenarioItem{
-			{
-				ID:       1,
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				URL:      url,
-				Timeout:  types.DefaultDuration,
-				Cert:     certVal,
-				CertPool: pool,
-			},
-		},
 	}
 
 	certPathArg := fmt.Sprintf("--cert_path=%s", certFile.Name())
@@ -289,11 +270,11 @@ func TestCreateScenarioTLS(t *testing.T) {
 		name      string
 		args      []string
 		shouldErr bool
-		expected  types.Scenario
+		expected  tls.Certificate
 	}{
-		{"MissingKey", []string{"-t=https://test.com", certPathArg}, false, types.Scenario{}},
-		{"MissingCert", []string{"-t=https://test.com", keyPathArg}, false, types.Scenario{}},
-		{"WithTLS", []string{"-t=https://test.com", certPathArg, keyPathArg}, false, valid},
+		{"MissingKey", []string{"-t=https://test.com", certPathArg}, false, tls.Certificate{}},
+		{"MissingCert", []string{"-t=https://test.com", keyPathArg}, false, tls.Certificate{}},
+		{"WithTLS", []string{"-t=https://test.com", certPathArg, keyPathArg}, false, certVal},
 	}
 
 	for _, test := range tests {
@@ -305,10 +286,7 @@ func TestCreateScenarioTLS(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
-			os.Args = []string{"cmd"}
-			for _, a := range test.args {
-				os.Args = append(os.Args, a)
-			}
+			os.Args = append([]string{"cmd"}, test.args...)
 
 			// Act
 			flag.Parse()
@@ -323,11 +301,10 @@ func TestCreateScenarioTLS(t *testing.T) {
 				if err != nil {
 					t.Errorf("Errored: %v", err)
 				}
-				if reflect.DeepEqual(test.expected, s) {
+				if !reflect.DeepEqual(test.expected, s.Scenario[0].Cert) {
 					t.Errorf("Expected %v, Found %v", test.expected, s)
 				}
 			}
-
 		}
 
 		t.Run(test.name, tf)
@@ -365,10 +342,7 @@ func TestCreateProxy(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
-			os.Args = []string{"cmd"}
-			for _, a := range test.args {
-				os.Args = append(os.Args, a)
-			}
+			os.Args = append([]string{"cmd"}, test.args...)
 
 			// Act
 			flag.Parse()
