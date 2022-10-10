@@ -628,6 +628,8 @@ func TestDynamicData(t *testing.T) {
 	}
 }
 
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {
 	t.Parallel()
 
@@ -695,6 +697,8 @@ func TestTLSMutualAuth(t *testing.T) {
 	}
 }
 
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine, but the engine doesn't have a certificate therefore it's expected that no handler is called.
 func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	t.Parallel()
 
@@ -764,6 +768,8 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	}
 }
 
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine, but the engine have a different certificate therefore it's expected that no handler is called.
 func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	t.Parallel()
 

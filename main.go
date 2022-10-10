@@ -238,6 +238,7 @@ func createScenario() (s types.Scenario, err error) {
 		return
 	}
 
+	*protocol = strings.ToUpper(*protocol)
 	scenario := types.ScenarioItem{
 		ID:       1,
 		Protocol: *protocol,
@@ -260,7 +261,6 @@ func createScenario() (s types.Scenario, err error) {
 		scenario.CertPool = pool
 	}
 
-	*protocol = strings.ToUpper(*protocol)
 	s = types.Scenario{Scenario: []types.ScenarioItem{scenario}}
 
 	return
