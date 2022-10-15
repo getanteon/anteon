@@ -21,7 +21,10 @@
 package types
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -102,6 +105,12 @@ type ScenarioItem struct {
 	// Authentication
 	Auth Auth
 
+	// A TLS cert
+	Cert tls.Certificate
+
+	// A TLS cert pool
+	CertPool *x509.CertPool
+
 	// Request Headers
 	Headers map[string]string
 
@@ -165,6 +174,28 @@ func (si *ScenarioItem) validate() error {
 		}
 	}
 	return nil
+}
+
+func ParseTLS(certFile, keyFile string) (tls.Certificate, *x509.CertPool, error) {
+	if certFile == "" || keyFile == "" {
+		return tls.Certificate{}, nil, nil
+	}
+
+	// Read the key pair to create certificate
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+
+	// Create a CA certificate pool and add cert.pem to it
+	caCert, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caCert)
+
+	return cert, pool, nil
 }
 
 // AdjustUrlProtocol adjusts the proper url-proto pair for the given ones.
