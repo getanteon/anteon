@@ -21,7 +21,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
+	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -35,9 +38,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Mock run function to prevent engine starting
-	run = func(h types.Hammer) {
-		return
-	}
+	run = func(h types.Hammer) {}
 	os.Exit(m.Run())
 }
 
@@ -59,6 +60,9 @@ func resetFlags() {
 	*output = types.DefaultOutputType
 
 	*configPath = ""
+
+	*certPath = ""
+	*certKeyPath = ""
 }
 
 func TestDefaultFlagValues(t *testing.T) {
@@ -103,6 +107,12 @@ func TestDefaultFlagValues(t *testing.T) {
 	}
 	if *configPath != "" {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *configPath)
+	}
+	if *certPath != "" {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *certPath)
+	}
+	if *certKeyPath != "" {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *certKeyPath)
 	}
 }
 
@@ -168,7 +178,8 @@ func TestCreateScenario(t *testing.T) {
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      url,
-				Timeout:  types.DefaultDuration,
+				Timeout:  types.DefaultTimeout,
+				Headers:  map[string]string{},
 			},
 		},
 	}
@@ -179,7 +190,8 @@ func TestCreateScenario(t *testing.T) {
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      url,
-				Timeout:  types.DefaultDuration,
+				Timeout:  types.DefaultTimeout,
+				Headers:  map[string]string{},
 				Auth: types.Auth{
 					Type:     types.AuthHttpBasic,
 					Username: "testuser",
@@ -210,10 +222,7 @@ func TestCreateScenario(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
-			os.Args = []string{"cmd"}
-			for _, a := range test.args {
-				os.Args = append(os.Args, a)
-			}
+			os.Args = append([]string{"cmd"}, test.args...)
 
 			// Act
 			flag.Parse()
@@ -228,11 +237,74 @@ func TestCreateScenario(t *testing.T) {
 				if err != nil {
 					t.Errorf("Errored: %v", err)
 				}
-				if reflect.DeepEqual(test.expected, s) {
-					t.Errorf("Expected %v, Found %v", test.expected, s)
+				if !reflect.DeepEqual(test.expected, s) {
+					t.Errorf("Expected %#v, Found %#v", test.expected, s)
 				}
 			}
 
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
+func TestCreateScenarioTLS(t *testing.T) {
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
+	if err != nil {
+		t.Fatalf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	certVal, _, err := types.ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Fatalf("Failed to gen certs %v", err)
+	}
+
+	certPathArg := fmt.Sprintf("--cert_path=%s", certFile.Name())
+	keyPathArg := fmt.Sprintf("--cert_key_path=%s", keyFile.Name())
+
+	tests := []struct {
+		name      string
+		args      []string
+		shouldErr bool
+		expected  tls.Certificate
+	}{
+		{"MissingKey", []string{"-t=https://test.com", certPathArg}, false, tls.Certificate{}},
+		{"MissingCert", []string{"-t=https://test.com", keyPathArg}, false, tls.Certificate{}},
+		{"WithTLS", []string{"-t=https://test.com", certPathArg, keyPathArg}, false, certVal},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			os.Args = append([]string{"cmd"}, test.args...)
+
+			// Act
+			flag.Parse()
+			s, err := createScenario()
+
+			// Assert
+			if test.shouldErr {
+				if err == nil {
+					t.Errorf("Should be errored")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Errored: %v", err)
+				}
+				if !reflect.DeepEqual(test.expected, s.Scenario[0].Cert) {
+					t.Errorf("Expected %v, Found %v", test.expected, s)
+				}
+			}
 		}
 
 		t.Run(test.name, tf)
@@ -270,10 +342,7 @@ func TestCreateProxy(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
-			os.Args = []string{"cmd"}
-			for _, a := range test.args {
-				os.Args = append(os.Args, a)
-			}
+			os.Args = append([]string{"cmd"}, test.args...)
 
 			// Act
 			flag.Parse()
@@ -457,4 +526,83 @@ func Test_versionTemplate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createCertPairFiles(cert string, certKey string) (*os.File, *os.File, error) {
+	certFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(certFile, cert)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	keyFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(keyFile, certKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return certFile, keyFile, nil
+}
+
+func generateCerts() (string, string) {
+	cert := `-----BEGIN CERTIFICATE-----
+MIIDazCCAlOgAwIBAgIUS4UhTks8aRCQ1k9IGn437ZyP3MgwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMjEwMDUyMjM5MDVaFw0zMjEw
+MDIyMjM5MDVaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDMbZctKXBx8v63TXIhM/OB7S6VfPqpzfHufhs6kAHu
+jfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBsqfd01Po1ltWmbMf7ZvmSB6VN7kC2
+Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8UHSGzSC/smJOrjYidtlbvzOcX0pv3
+RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNlNetSkvTi7cxMWfwpcM/rN1hEmP1X
+J43hJp/TNRZVnEsvs/yggP/FwUjG74mU3KfnWiv91AkkarNTNquEMJ+f4OFqMcnF
+p0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXsHETZNG+JAgMBAAGjUzBRMB0GA1Ud
+DgQWBBSIw+qUKQJjXWti5x/Cnn2GueuX5zAfBgNVHSMEGDAWgBSIw+qUKQJjXWti
+5x/Cnn2GueuX5zAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAA
+DXzf8VXi4s2GScNfHf0BzMjpyrtRZ0Wbp2Vfh7OwVR6xcx+pqXNjlydM/vu2LvOK
+hh7Jbo+JS+o7O24UJ9lLFkCRsZVF+NFqJf+2rdHCaOiZSdZmtjBU0dFuAGS7+lU3
+M8P7WCNOm6NAKbs7VZHVcZPzp81SCPQgQIS19xRf4Irbvsijv4YdyL4Qv7aWcclb
+MdZX9AH9Fx8tJq4VKvUYsCXAD0kuywMLjh+yj5O/2hMvs5rvaQvm2daQNRDNp884
+uTLrNF7W7QaKEL06ZpXJoBqdKsiwn577XTDKvzN0XxQrT+xV9VHO7OXblF+Od3/Y
+SzBR+QiQKy3x+LkOxhkk
+-----END CERTIFICATE-----`
+
+	certKey := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDMbZctKXBx8v63
+TXIhM/OB7S6VfPqpzfHufhs6kAHujfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBs
+qfd01Po1ltWmbMf7ZvmSB6VN7kC2Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8U
+HSGzSC/smJOrjYidtlbvzOcX0pv3RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNl
+NetSkvTi7cxMWfwpcM/rN1hEmP1XJ43hJp/TNRZVnEsvs/yggP/FwUjG74mU3Kfn
+Wiv91AkkarNTNquEMJ+f4OFqMcnFp0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXs
+HETZNG+JAgMBAAECggEAM+U6NHfJmNPD/8qER5OFpJ0Ob1qL06F5Yj7XMLWwF9wm
+mGaGV7dkKOpTD/Wa6Dv82ZDWAeZnLDQa6vr228zZO9Nvp1EEL3kDsCOKvk7WVLbX
+ikPfKZznE/iA1tNLmkvioPiJ3oQB+2Bt6YA/tuCDcf+FtU43uTm5tiSBIdYQS+Om
+xN9OEXihk1svxHXQKa/a3nKPVLvdp3P90hDJ0PcRslXSy1V8az+A94JFEnCvnKsK
+nF2rItCcXkInL0lYHZKgLHQMXGWkNl8e3PA1GZk3yF6LPNtPI1T5Ek9GwkHNw4JZ
+BL/xEWLKB1qR2Z4I3UbWGVyi418kANv1eISb+49egQKBgQDraSRWB8nM5O3Zl9kT
+8S5K924o1oXrO17eqQlVtQVmtUdoVvIBc6uHQZOmV1eHYpr6c95h8apNLexI22AY
+SWkq9smpCnxLUsdkplwzie0F4bAzD6MCR8WIJxapUSPlyCA+8st1hquYBchKGQhd
+6mMY1gzMDacYV/WhtG4E5d0nMQKBgQDeTr793n00VtpKuquFJe6Stu7Ujf64dL0s
+3opLovyI0TmtMz5oCqIezwrjqc0Vy0UksWXaz0AboinDP+5n60cTEIt/6H0kryDc
+dxfSHEA9BBDoQtxOFi3QGcxXbwu0i9QSoexrKY7FhA2xPji6bCcPycthhIrCpUiZ
+s5gVkjHn2QKBgQCGklxLMbiSgGvXb46Qb9be1AMNJVT427+n2UmUzR6BUC+53boK
+Sm1LrJkTBerrYdrmQUZnBxcrd40TORT9zTlpbhppn6zeAjwptVAPxlDQg+uNxOqS
+ayToaC/0KoYy3OxSD8lvLcT56pRMh3LY/RwZHoPCQiu7Js0r21DpS93YgQKBgAuc
+c09RMprsOmSS0WiX7ZkOIvVJIVfDCSpxySlgLu56dxe7yHOosoUHbVsswEB2KHtd
+JKPEFWYcFzBSg4I8AK9XOuIIY5jp6L57Hexke1p0fumSrG0LrYLkBg8/Bo58iywZ
+9v414nYgipKKXG4oPfYOJShHwvOdrGgSwEvIIgEpAoGAZz0yC9+x+JaoTnyUIRyI
++Aj5a4KhYjFtsZhcn/yCZHDqzJNDz6gAu579ey+J2CVOhjtgB5lowsDrHu32Hqnn
+SEfyTru/ynQ8obwaRzdDYml+On86YWOw+brpMXkN+KB6bs2okE2N68v0qGPakxjt
+OLDW6kKz5pI4T8lQJhdqjCU=
+-----END PRIVATE KEY-----`
+
+	return cert, certKey
 }

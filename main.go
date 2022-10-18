@@ -71,6 +71,9 @@ var (
 	configPath = flag.String("config", "",
 		"Json config file path. If a config file is provided, other flag values will be ignored")
 
+	certPath    = flag.String("cert_path", "", "A path to a certificate file (usually called 'cert.pem')")
+	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
+
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
 )
 
@@ -236,20 +239,29 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	*protocol = strings.ToUpper(*protocol)
-	s = types.Scenario{
-		Scenario: []types.ScenarioItem{
-			{
-				ID:       1,
-				Protocol: *protocol,
-				Method:   strings.ToUpper(*method),
-				Auth:     a,
-				Headers:  h,
-				Payload:  *payload,
-				URL:      *target,
-				Timeout:  *timeout,
-			},
-		},
+	scenario := types.ScenarioItem{
+		ID:       1,
+		Protocol: *protocol,
+		Method:   strings.ToUpper(*method),
+		Auth:     a,
+		Headers:  h,
+		Payload:  *payload,
+		URL:      *target,
+		Timeout:  *timeout,
 	}
+
+	if *certPath != "" && *certKeyPath != "" {
+		cert, pool, e := types.ParseTLS(*certPath, *certKeyPath)
+		if e != nil {
+			err = e
+			return
+		}
+
+		scenario.Cert = cert
+		scenario.CertPool = pool
+	}
+
+	s = types.Scenario{Scenario: []types.ScenarioItem{scenario}}
 
 	return
 }

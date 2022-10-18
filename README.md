@@ -159,7 +159,8 @@ ddosify [FLAG]
 | `-l`   | [Type](#load-types) of the load test. Ddosify supports 3 load types. | `string`    | `linear`    | No |
 | <span style="white-space: nowrap;">`--config`</span>    | [Config File](#config-file) of the load test. | `string`    | -    | No |
 | <span style="white-space: nowrap;">`--version`</span>    | Prints version, git commit, built date (utc), go information and quit | -    | -    | No |
-
+| <span style="white-space: nowrap;">`--cert_path`</span>    | A path to a certificate file (usually called 'cert.pem') | -    | -    | No |
+| <span style="white-space: nowrap;">`--cert_key_path`</span>    | A path to a certificate key file (usually called 'key.pem') | -    | -    | No |
 
 ### Load Types
 

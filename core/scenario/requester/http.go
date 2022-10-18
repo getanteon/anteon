@@ -317,6 +317,12 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
+
+	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {
+		tlsConfig.RootCAs = h.packet.CertPool
+		tlsConfig.Certificates = []tls.Certificate{h.packet.Cert}
+	}
+
 	if val, ok := h.packet.Custom["hostname"]; ok {
 		tlsConfig.ServerName = val.(string)
 	}

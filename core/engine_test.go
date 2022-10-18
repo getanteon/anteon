@@ -22,11 +22,14 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -623,4 +626,360 @@ func TestDynamicData(t *testing.T) {
 	if i, err := strconv.Atoi(uriDynamicPart); err != nil {
 		t.Errorf("invalid uri received: %v", i)
 	}
+}
+
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine and verifies that the auth was successfully passsed.
+func TestTLSMutualAuth(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	// Assert
+	if handlerCalls == 0 {
+		t.Errorf("handler was not called at all: %#v", handlerCalls)
+	}
+}
+
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine, but the engine doesn't have a certificate therefore it's expected that no handler is called.
+func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{
+		ID:       1,
+		Protocol: "HTTPS",
+		Method:   "GET",
+		URL:      "",
+	}
+
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// invalidate the certs
+	h.Scenario.Scenario[0].CertPool = nil
+	h.Scenario.Scenario[0].Cert = tls.Certificate{}
+
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if handlerCalls != 0 {
+		t.Errorf("handler was called unexpectedly: %#v", handlerCalls)
+	}
+}
+
+// The test creates a web server with Certificate auth,
+// then it spawns an Engine, but the engine have a different certificate therefore it's expected that no handler is called.
+func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
+	t.Parallel()
+
+	handlerCalls := 0
+
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls += 1
+	}
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// prepare TLS files
+	cert, certKey := generateCerts()
+	certFile, keyFile, err := createCertPairFiles(cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile.Name())
+	defer os.Remove(keyFile.Name())
+
+	// prepare server TLS files
+	cert, certKey = generateCerts2()
+	certFile2, keyFile2, err := createCertPairFiles(cert, certKey)
+	if err != nil {
+		t.Errorf("Failed to prepare certs %v", err)
+	}
+	defer os.Remove(certFile2.Name())
+	defer os.Remove(keyFile2.Name())
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Scenario[0] = types.ScenarioItem{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
+
+	// here we use server certs first
+	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
+
+	server.TLS = &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    h.Scenario.Scenario[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+	}
+
+	server.StartTLS()
+
+	h.Scenario.Scenario[0].URL = server.URL
+
+	// here we use different certs
+	// so the server and client has different pairs
+	certVal, poolVal, err = types.ParseTLS(certFile2.Name(), keyFile2.Name())
+	if err != nil {
+		t.Errorf("Failed to parse certs %v", err)
+	}
+
+	h.Scenario.Scenario[0].Cert = certVal
+	h.Scenario.Scenario[0].CertPool = poolVal
+
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestRequestData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if handlerCalls != 0 {
+		t.Errorf("handler was called unexpectedly: %#v", handlerCalls)
+	}
+}
+
+func createCertPairFiles(cert string, certKey string) (*os.File, *os.File, error) {
+	certFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(certFile, cert)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	keyFile, err := os.CreateTemp("", ".pem")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = io.WriteString(keyFile, certKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return certFile, keyFile, nil
+}
+
+func generateCerts() (string, string) {
+	cert := `-----BEGIN CERTIFICATE-----
+MIIDazCCAlOgAwIBAgIUS4UhTks8aRCQ1k9IGn437ZyP3MgwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMjEwMDUyMjM5MDVaFw0zMjEw
+MDIyMjM5MDVaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDMbZctKXBx8v63TXIhM/OB7S6VfPqpzfHufhs6kAHu
+jfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBsqfd01Po1ltWmbMf7ZvmSB6VN7kC2
+Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8UHSGzSC/smJOrjYidtlbvzOcX0pv3
+RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNlNetSkvTi7cxMWfwpcM/rN1hEmP1X
+J43hJp/TNRZVnEsvs/yggP/FwUjG74mU3KfnWiv91AkkarNTNquEMJ+f4OFqMcnF
+p0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXsHETZNG+JAgMBAAGjUzBRMB0GA1Ud
+DgQWBBSIw+qUKQJjXWti5x/Cnn2GueuX5zAfBgNVHSMEGDAWgBSIw+qUKQJjXWti
+5x/Cnn2GueuX5zAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAA
+DXzf8VXi4s2GScNfHf0BzMjpyrtRZ0Wbp2Vfh7OwVR6xcx+pqXNjlydM/vu2LvOK
+hh7Jbo+JS+o7O24UJ9lLFkCRsZVF+NFqJf+2rdHCaOiZSdZmtjBU0dFuAGS7+lU3
+M8P7WCNOm6NAKbs7VZHVcZPzp81SCPQgQIS19xRf4Irbvsijv4YdyL4Qv7aWcclb
+MdZX9AH9Fx8tJq4VKvUYsCXAD0kuywMLjh+yj5O/2hMvs5rvaQvm2daQNRDNp884
+uTLrNF7W7QaKEL06ZpXJoBqdKsiwn577XTDKvzN0XxQrT+xV9VHO7OXblF+Od3/Y
+SzBR+QiQKy3x+LkOxhkk
+-----END CERTIFICATE-----`
+
+	certKey := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDMbZctKXBx8v63
+TXIhM/OB7S6VfPqpzfHufhs6kAHujfC2ooCUqzqdg0T8bM1bjahYuAbQA1cWKYBs
+qfd01Po1ltWmbMf7ZvmSB6VN7kC2Y670zee91dGDQ2yzmorJuIZAtOBVZesYLg8U
+HSGzSC/smJOrjYidtlbvzOcX0pv3RCIUrNMed60EpSch/rzAJLzJmwNSQZ4vJHNl
+NetSkvTi7cxMWfwpcM/rN1hEmP1XJ43hJp/TNRZVnEsvs/yggP/FwUjG74mU3Kfn
+Wiv91AkkarNTNquEMJ+f4OFqMcnFp0wqg47JTqcAAT0n1B0VB+z0hGXEFMN+IJXs
+HETZNG+JAgMBAAECggEAM+U6NHfJmNPD/8qER5OFpJ0Ob1qL06F5Yj7XMLWwF9wm
+mGaGV7dkKOpTD/Wa6Dv82ZDWAeZnLDQa6vr228zZO9Nvp1EEL3kDsCOKvk7WVLbX
+ikPfKZznE/iA1tNLmkvioPiJ3oQB+2Bt6YA/tuCDcf+FtU43uTm5tiSBIdYQS+Om
+xN9OEXihk1svxHXQKa/a3nKPVLvdp3P90hDJ0PcRslXSy1V8az+A94JFEnCvnKsK
+nF2rItCcXkInL0lYHZKgLHQMXGWkNl8e3PA1GZk3yF6LPNtPI1T5Ek9GwkHNw4JZ
+BL/xEWLKB1qR2Z4I3UbWGVyi418kANv1eISb+49egQKBgQDraSRWB8nM5O3Zl9kT
+8S5K924o1oXrO17eqQlVtQVmtUdoVvIBc6uHQZOmV1eHYpr6c95h8apNLexI22AY
+SWkq9smpCnxLUsdkplwzie0F4bAzD6MCR8WIJxapUSPlyCA+8st1hquYBchKGQhd
+6mMY1gzMDacYV/WhtG4E5d0nMQKBgQDeTr793n00VtpKuquFJe6Stu7Ujf64dL0s
+3opLovyI0TmtMz5oCqIezwrjqc0Vy0UksWXaz0AboinDP+5n60cTEIt/6H0kryDc
+dxfSHEA9BBDoQtxOFi3QGcxXbwu0i9QSoexrKY7FhA2xPji6bCcPycthhIrCpUiZ
+s5gVkjHn2QKBgQCGklxLMbiSgGvXb46Qb9be1AMNJVT427+n2UmUzR6BUC+53boK
+Sm1LrJkTBerrYdrmQUZnBxcrd40TORT9zTlpbhppn6zeAjwptVAPxlDQg+uNxOqS
+ayToaC/0KoYy3OxSD8lvLcT56pRMh3LY/RwZHoPCQiu7Js0r21DpS93YgQKBgAuc
+c09RMprsOmSS0WiX7ZkOIvVJIVfDCSpxySlgLu56dxe7yHOosoUHbVsswEB2KHtd
+JKPEFWYcFzBSg4I8AK9XOuIIY5jp6L57Hexke1p0fumSrG0LrYLkBg8/Bo58iywZ
+9v414nYgipKKXG4oPfYOJShHwvOdrGgSwEvIIgEpAoGAZz0yC9+x+JaoTnyUIRyI
++Aj5a4KhYjFtsZhcn/yCZHDqzJNDz6gAu579ey+J2CVOhjtgB5lowsDrHu32Hqnn
+SEfyTru/ynQ8obwaRzdDYml+On86YWOw+brpMXkN+KB6bs2okE2N68v0qGPakxjt
+OLDW6kKz5pI4T8lQJhdqjCU=
+-----END PRIVATE KEY-----`
+
+	return cert, certKey
+}
+
+func generateCerts2() (string, string) {
+	cert := `-----BEGIN CERTIFICATE-----
+MIIDazCCAlOgAwIBAgIUSun8oI56ArKxfhqNLLfEmteRHRUwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMjEwMDYyMTE1NDdaFw0zMjEw
+MDMyMTE1NDdaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQC63U6N03rm4I8yFmYK27DUlVdMUGSRQt6UIdPT5F2c
+fv5mBRLwEANoqscNenNajGHiIqBiFQ3pG+p7BIIq11d87Of24XSll4MoK+6R9SFF
+6lTdGt9HSzuCXQtMf5g6/MbgH240xrBXmwwJNkqpUzXVOeQBPzxplf1b/0ircf8n
+fE81wnCtWyiu8BtlWvs/yJBTvSiIQ6w2Tp+K5oFZLCUwgQZdUcqzXp5nbWZkdO+D
+hOGdiY7G+fC19GX7lVt+kw+xB/uAqmXw2WoR/Db/M8tJDzTw810ZbWp0tAw7Pga+
+ybvIYN9mTFr4Tm052r2jVXAYejf8z4kdr4mCDKlSQTIlAgMBAAGjUzBRMB0GA1Ud
+DgQWBBRWchX65rXlT+/xlgxhKMTX5/FdtTAfBgNVHSMEGDAWgBRWchX65rXlT+/x
+lgxhKMTX5/FdtTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCo
+I3MOkAULOaa4Vr80lVn/kZi8HIwQ1NenqyoykqO/FDS7q5o5vaeNquqOgC4scTdb
+WJEgzBNpbIOxEM6ou5Q7IUlX6YZaTMK/Z0QbqjZuHA5ny8uaUERDLoDit318yNe+
+0TOY5m5n+pRkFPvjnqoNNxvYabUqQ7NpgKTv277eecfGdFPi971EiT9HSUM8n7tU
+1C1FNr7P1WGmng2EO1UCG3SQi1JpMGUYyFLSOP6F7wWhflO1JqdF57nmTtv8lKJ9
+O4ACJ5BuWUqUyDLYjMK+oHh/c6xLHxfQKs62HuLqfaobqUPyE0kS7LXN2G7adjrs
+2vBHv2U/QrjmLLF8CSdh
+-----END CERTIFICATE-----`
+
+	certKey := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC63U6N03rm4I8y
+FmYK27DUlVdMUGSRQt6UIdPT5F2cfv5mBRLwEANoqscNenNajGHiIqBiFQ3pG+p7
+BIIq11d87Of24XSll4MoK+6R9SFF6lTdGt9HSzuCXQtMf5g6/MbgH240xrBXmwwJ
+NkqpUzXVOeQBPzxplf1b/0ircf8nfE81wnCtWyiu8BtlWvs/yJBTvSiIQ6w2Tp+K
+5oFZLCUwgQZdUcqzXp5nbWZkdO+DhOGdiY7G+fC19GX7lVt+kw+xB/uAqmXw2WoR
+/Db/M8tJDzTw810ZbWp0tAw7Pga+ybvIYN9mTFr4Tm052r2jVXAYejf8z4kdr4mC
+DKlSQTIlAgMBAAECggEANaE4X1n3pvWCA3UMOkeM+6YU1PEpu8r+SHNg8SpUd4q3
+Bp6kLcPaxppk4IhpPO6XVShs8VlrkaCSblX/6b29/Tuc420XZkMSwF/Da553uzIi
+wwZoWHTOEn8TtBPWo+9SQJaksX7os2vrS2WKjgg0pgqkVntIomEKwvGEcLgZ68Gy
+aCYgrJfvzS38+XhOJB00YOoq6vgqHj8YnTGtYAwwW+nI7oHGJS7H09eQV51cmQ2j
+NSmc0SsGJ/IYrCMfJp0W8Ho9z66qRiFLb7vFS1050r5r3+slHCZPQwYXY6ovo2EJ
+2Y5mKdem70dP8JZx6siVlOCKh/2fHOFNnegcQ/ADgQKBgQDx1ueRb7w9a/lh0PPN
+8tLvclN/BJCqVoaF31f+Ah9Q7bfagkI7kmaQfYChWPLM5mXwr8YCPM1jysQOUTJp
+ExBkGbngv/M0JeXSyt2Z9kbreFSll+ILnImAME+0KKjHTy1gDSvqX/a4NiZdDOaK
+44r4CZSeVrpH2YY4tq/huL68xQKBgQDFzlhPEYOxTnQytPuXWRTtB5is1WNs7cU0
+AKVGkqgNKj5++Jl+IT3/pDhcJXe06E1V9ldHFpwAorkbIvAEE45aqzp5ZrrlrAjJ
+06wmEEgP5tQxmBj+hx6jitzDoEmqHvyN5Dm8/Kxu2VF2n4yTGEeSX+ep1ojLCeAj
+heJuuO614QKBgGV+O1DeA7IDTnWuq6MS9VNoN4Jm+A+EoJAuW09OtLXSDga2A/Xc
+Sw74nLMaEUvMpZuNKRxnSAtJXV5k1TMjvQ1FfqzD4d1QylLcsIOcx8aqiVu1kjgt
+ScdyfwCsz6hVokVdQcDq5TAKCa+jal1/gSL3YlfRLfxZXesPQGEKl4HBAoGBALOw
+BMye7nDNAgVmHv6Xr8i6k9i9Z7p2LCRXScxYQUzkSS1yi4zmibmG5qPebWXreQVT
+6Gjtgv2Y1GpwTHSHh1OaJF5QEgu9QaaGIOXa+Htphu0ea+YbvJt385/KJeDikS4c
+Ws7xAXsY80W9HigpcCrp8Dp6Zn17FR9v6ggG+uJBAoGAFGo7X1bpEA1bKAA04wJL
+gq6wwKgTUjqnvHSo1CqPqoWeX8MM0VU9Jw2n0bxfD5He/snYO4pQUatD90kcgQch
+BmvE1yTn4kzC0ZO3++qPulpXpAp4QJLIdKeAE9cPhKqe4lBboJRbJqoXCaoIxNeg
+z0xcfR+tEmGlvxaHqXlQg9o=
+-----END PRIVATE KEY-----`
+
+	return cert, certKey
 }
