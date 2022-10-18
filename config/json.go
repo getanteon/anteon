@@ -98,13 +98,14 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount     int          `json:"request_count"`
-	LoadType     string       `json:"load_type"`
-	Duration     int          `json:"duration"`
-	TimeRunCount timeRunCount `json:"manual_load"`
-	Steps        []step       `json:"steps"`
-	Output       string       `json:"output"`
-	Proxy        string       `json:"proxy"`
+	ReqCount         int          `json:"request_count"`
+	LoadType         string       `json:"load_type"`
+	Duration         int          `json:"duration"`
+	TimeRunCount     timeRunCount `json:"manual_load"`
+	Steps            []step       `json:"steps"`
+	Output           string       `json:"output"`
+	Proxy            string       `json:"proxy"`
+	OutputPercentile bool         `json:"output_percentile"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -182,6 +183,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: j.Output,
+		ReportPercentiles: j.OutputPercentile,
 	}
 	return
 }

@@ -32,18 +32,18 @@ var AvailableOutputServices = make(map[string]ReportService)
 // ReportService is the interface that abstracts different report implementations.
 type ReportService interface {
 	DoneChan() <-chan struct{}
-	Init() error
+	Init(reportPercentiles bool) error
 	Start(input chan *types.Response)
 	Report()
 }
 
 // NewReportService is the factory method of the ReportService.
-func NewReportService(s string) (service ReportService, err error) {
-	if val, ok := AvailableOutputServices[s]; ok {
+func NewReportService(output string) (service ReportService, err error) {
+	if val, ok := AvailableOutputServices[output]; ok {
 		// Create a new object from the service type
 		service = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ReportService)
 	} else {
-		err = fmt.Errorf("unsupported output type: %s", s)
+		err = fmt.Errorf("unsupported output type: %s", output)
 	}
 
 	return

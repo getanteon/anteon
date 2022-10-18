@@ -77,6 +77,9 @@ type Hammer struct {
 	// Destination of the results data.
 	ReportDestination string
 
+	// Report percentiles
+	ReportPercentiles bool
+
 	// Dynamic field for extra parameters.
 	Others map[string]interface{}
 }

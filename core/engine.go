@@ -99,7 +99,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.reportService.Init(); err != nil {
+	if err = e.reportService.Init(e.hammer.ReportPercentiles); err != nil {
 		return
 	}
 

@@ -74,6 +74,8 @@ var (
 	certPath    = flag.String("cert_path", "", "A path to a certificate file (usually called 'cert.pem')")
 	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
+	outputPercentile = flag.Bool("output-percentile", false, "Report percentile")
+
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
 )
 
@@ -190,6 +192,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: *output,
+		ReportPercentiles: *outputPercentile,
 	}
 	return
 }

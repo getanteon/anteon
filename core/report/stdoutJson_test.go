@@ -22,6 +22,7 @@ package report
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ import (
 
 func TestInitStdoutJson(t *testing.T) {
 	sj := &stdoutJson{}
-	sj.Init()
+	sj.Init(false)
 
 	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -123,14 +124,14 @@ func TestStdoutJsonStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[int16]*ScenarioResult{
-			int16(1): {Report: itemReport1},
-			int16(2): {Report: itemReport2},
+		ItemReports: map[int16]*ScenarioItemReport{
+			int16(1): itemReport1,
+			int16(2): itemReport2,
 		},
 	}
 
 	s := &stdoutJson{}
-	s.Init()
+	s.Init(false)
 
 	responseChan := make(chan *types.Response, len(responses))
 	go s.Start(responseChan)
@@ -186,9 +187,9 @@ func TestStdoutJsonOutput(t *testing.T) {
 		SuccessCount: 9,
 		FailedCount:  2,
 		AvgDuration:  0.25637,
-		ItemReports: map[int16]*ScenarioResult{
-			int16(1): {Report: itemReport1},
-			int16(2): {Report: itemReport2},
+		ItemReports: map[int16]*ScenarioItemReport{
+			int16(1): itemReport1,
+			int16(2): itemReport2,
 		},
 	}
 
@@ -253,4 +254,8 @@ func TestStdoutJsonOutput(t *testing.T) {
 	if output != expectedOutput {
 		t.Errorf("Expected: %v, Found: %v", expectedOutput, output)
 	}
+}
+
+var printJson = func(j []byte) {
+	fmt.Println(string(j))
 }

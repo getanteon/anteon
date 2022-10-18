@@ -22,8 +22,8 @@ package report
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
+	"os"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -35,15 +35,18 @@ func init() {
 }
 
 type stdoutJson struct {
-	doneChan chan struct{}
-	result   *Result
+	doneChan          chan struct{}
+	result            *Result
+	reportPercentiles bool
 }
 
-func (s *stdoutJson) Init() (err error) {
+func (s *stdoutJson) Init(reportPercentiles bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[int16]*ScenarioResult),
+		ItemReports: make(map[int16]*ScenarioItemReport),
 	}
+	s.reportPercentiles = reportPercentiles
+
 	return
 }
 
@@ -54,13 +57,57 @@ func (s *stdoutJson) Start(input chan *types.Response) {
 	s.doneChan <- struct{}{}
 }
 
-func (s *stdoutJson) Report() {
-	p := 1e3
+type jsonResult struct {
+	SuccessCount int64                             `json:"success_count"`
+	FailedCount  int64                             `json:"fail_count"`
+	AvgDuration  float32                           `json:"avg_duration"`
+	ItemReports  map[int16]*jsonScenarioItemReport `json:"steps"`
+}
 
+type jsonScenarioItemReport struct {
+	Name           string             `json:"name"`
+	StatusCodeDist map[int]int        `json:"status_code_dist"`
+	ErrorDist      map[string]int     `json:"error_dist"`
+	Durations      map[string]float32 `json:"durations"`
+	Percentiles    map[string]float32 `json:"percentiles"`
+	SuccessCount   int64              `json:"success_count"`
+	FailedCount    int64              `json:"fail_count"`
+}
+
+func (s *stdoutJson) Report() {
+	jsonResult := jsonResult{
+		SuccessCount: s.result.SuccessCount,
+		FailedCount:  s.result.FailedCount,
+		AvgDuration:  s.result.AvgDuration,
+		ItemReports:  map[int16]*jsonScenarioItemReport{},
+	}
+
+	for key, item := range s.result.ItemReports {
+		jsonResult.ItemReports[key] = &jsonScenarioItemReport{
+			Name:           item.Name,
+			StatusCodeDist: item.StatusCodeDist,
+			ErrorDist:      item.ErrorDist,
+			Durations:      item.Durations,
+			SuccessCount:   item.SuccessCount,
+			FailedCount:    item.FailedCount,
+		}
+
+		if s.reportPercentiles {
+			jsonResult.ItemReports[key].Percentiles = map[string]float32{
+				"p99": item.DurationPercentile(99),
+				"p95": item.DurationPercentile(95),
+				"p90": item.DurationPercentile(90),
+				"p80": item.DurationPercentile(80),
+			}
+		}
+
+	}
+
+	p := 1e3
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
 
-	for _, item := range s.result.ItemReports {
-		itemReport := item.Report
+	for _, item := range jsonResult.ItemReports {
+		itemReport := item
 		durations := make(map[string]float32)
 		for d, s := range itemReport.Durations {
 			// Less precision for durations.
@@ -70,8 +117,8 @@ func (s *stdoutJson) Report() {
 		itemReport.Durations = durations
 	}
 
-	j, _ := json.Marshal(s.result)
-	printJson(j)
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.Encode(&jsonResult)
 }
 
 func (s *stdoutJson) DoneChan() <-chan struct{} {
@@ -106,10 +153,6 @@ func (s ScenarioItemReport) MarshalJSON() ([]byte, error) {
 		SuccesPerc: s.successPercentage(),
 		FailPerc:   s.failedPercentage(),
 	})
-}
-
-var printJson = func(j []byte) {
-	fmt.Println(string(j))
 }
 
 var strKeyToJsonKey = map[string]string{

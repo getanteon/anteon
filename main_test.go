@@ -63,6 +63,8 @@ func resetFlags() {
 
 	*certPath = ""
 	*certKeyPath = ""
+
+	*outputPercentile = false
 }
 
 func TestDefaultFlagValues(t *testing.T) {
@@ -113,6 +115,9 @@ func TestDefaultFlagValues(t *testing.T) {
 	}
 	if *certKeyPath != "" {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *certKeyPath)
+	}
+	if *outputPercentile != false {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", "", *outputPercentile)
 	}
 }
 

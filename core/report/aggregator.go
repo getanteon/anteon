@@ -21,6 +21,7 @@
 package report
 
 import (
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -35,17 +36,15 @@ func aggregate(result *Result, response *types.Response) {
 		scenarioDuration += float32(rr.Duration.Seconds())
 
 		if _, ok := result.ItemReports[rr.ScenarioItemID]; !ok {
-			result.ItemReports[rr.ScenarioItemID] = &ScenarioResult{
-				Report: &ScenarioItemReport{
-					Name:           rr.ScenarioItemName,
-					StatusCodeDist: make(map[int]int, 0),
-					ErrorDist:      make(map[string]int),
-					Durations:      map[string]float32{},
-				},
-				Durations: map[string]*ScenarioStats{},
+			result.ItemReports[rr.ScenarioItemID] = &ScenarioItemReport{
+				Name:           rr.ScenarioItemName,
+				StatusCodeDist: make(map[int]int, 0),
+				ErrorDist:      make(map[string]int),
+				Durations:      map[string]float32{},
+				TotalDurations: map[string][]float32{},
 			}
 		}
-		item := result.ItemReports[rr.ScenarioItemID].Report
+		item := result.ItemReports[rr.ScenarioItemID]
 
 		if rr.Err.Type != "" {
 			errOccured = true
@@ -67,13 +66,8 @@ func aggregate(result *Result, response *types.Response) {
 	}
 
 	for _, report := range result.ItemReports {
-		for key, duration := range report.Report.Durations {
-			if report.Durations[key] == nil {
-				report.Durations[key] = &ScenarioStats{}
-			}
-
-			report.Durations[key].Durations = append(report.Durations[key].Durations, duration)
-			sort.Slice(report.Durations[key].Durations, func(i, j int) bool { return report.Durations[key].Durations[i] < report.Durations[key].Durations[j] })
+		for key, duration := range report.Durations {
+			report.TotalDurations[key] = append(report.TotalDurations[key], duration)
 		}
 	}
 
@@ -88,10 +82,10 @@ func aggregate(result *Result, response *types.Response) {
 }
 
 type Result struct {
-	SuccessCount int64                     `json:"success_count"`
-	FailedCount  int64                     `json:"fail_count"`
-	AvgDuration  float32                   `json:"avg_duration"`
-	ItemReports  map[int16]*ScenarioResult `json:"steps"`
+	SuccessCount int64                         `json:"success_count"`
+	FailedCount  int64                         `json:"fail_count"`
+	AvgDuration  float32                       `json:"avg_duration"`
+	ItemReports  map[int16]*ScenarioItemReport `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {
@@ -109,56 +103,30 @@ func (r *Result) failedPercentage() int {
 	return 100 - r.successPercentage()
 }
 
-func (r *Result) DurationPercentile(p int) float32 {
+type ScenarioItemReport struct {
+	Name           string               `json:"name"`
+	StatusCodeDist map[int]int          `json:"status_code_dist"`
+	ErrorDist      map[string]int       `json:"error_dist"`
+	Durations      map[string]float32   `json:"durations"`
+	TotalDurations map[string][]float32 `json:"total_durations"`
+	SuccessCount   int64                `json:"success_count"`
+	FailedCount    int64                `json:"fail_count"`
+}
+
+func (s *ScenarioItemReport) DurationPercentile(p int) float32 {
 	if p < 0 || p > 100 {
 		return 0
 	}
 
-	var durations []float32
-	for _, rr := range r.ItemReports {
-		if list, ok := rr.Durations["duration"]; ok {
-			durations = append(durations, list.Durations...)
-		}
+	durations, ok := s.TotalDurations["duration"]
+	if !ok {
+		return 0
 	}
 
+	// todo: it could be optimized by always sorted array being used in TotalDurations so we would not make this call.
 	sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
 
-	d := ScenarioStats{Durations: durations}
-
-	return d.Percentile(p)
-}
-
-type ScenarioResult struct {
-	Report    *ScenarioItemReport       `json:"report"`
-	Durations map[string]*ScenarioStats `json:"durations"`
-}
-
-type ScenarioStats struct {
-	Durations []float32 `json:"durations"`
-}
-
-func (r *ScenarioStats) Percentile(p int) float32 {
-	if p < 0 || p > 100 {
-		return 0
-	}
-
-	// n = (P/100) x N
-	n := (p / 100) * len(r.Durations)
-	if n > 0 {
-		// I am not sure about the case where n == 0
-		n--
-	}
-
-	return r.Durations[n]
-}
-
-type ScenarioItemReport struct {
-	Name           string             `json:"name"`
-	StatusCodeDist map[int]int        `json:"status_code_dist"`
-	ErrorDist      map[string]int     `json:"error_dist"`
-	Durations      map[string]float32 `json:"durations"`
-	SuccessCount   int64              `json:"success_count"`
-	FailedCount    int64              `json:"fail_count"`
+	return Percentile(durations, p)
 }
 
 func (s *ScenarioItemReport) successPercentage() int {
@@ -174,4 +142,18 @@ func (s *ScenarioItemReport) failedPercentage() int {
 		return 0
 	}
 	return 100 - s.successPercentage()
+}
+
+func Percentile(list []float32, p int) float32 {
+	if p < 0 || p > 100 {
+		return 0
+	}
+
+	n := int(math.Round((float64(p) / 100.0) * float64(len(list))))
+	if n > 0 {
+		// I am not sure about the case where n == 0
+		n--
+	}
+
+	return list[n]
 }

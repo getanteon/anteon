@@ -91,7 +91,7 @@ func TestResult(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	s := &stdout{}
-	s.Init()
+	s.Init(false)
 
 	if s.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -183,14 +183,14 @@ func TestStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[int16]*ScenarioResult{
-			int16(1): {Report: itemReport1},
-			int16(2): {Report: itemReport2},
+		ItemReports: map[int16]*ScenarioItemReport{
+			int16(1): itemReport1,
+			int16(2): itemReport2,
 		},
 	}
 
 	s := &stdout{}
-	s.Init()
+	s.Init(false)
 
 	responseChan := make(chan *types.Response, len(responses))
 	go s.Start(responseChan)
