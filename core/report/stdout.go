@@ -176,15 +176,17 @@ func (s *stdout) printDetails() {
 
 		if s.reportPercentiles {
 			// print percentalies
-			percentiles := map[string]float32{
-				"P99": v.DurationPercentile(99),
-				"P95": v.DurationPercentile(95),
-				"P90": v.DurationPercentile(90),
-				"P80": v.DurationPercentile(80),
+			percentiles := []map[string]float32{
+				{"P99": v.DurationPercentile(99)},
+				{"P95": v.DurationPercentile(95)},
+				{"P90": v.DurationPercentile(90)},
+				{"P80": v.DurationPercentile(80)},
 			}
 			fmt.Fprintln(w, "\nPercentiles:")
-			for name, percentile := range percentiles {
-				fmt.Fprintf(w, "  %s\t:%.4fs\n", name, percentile)
+			for _, val := range percentiles {
+				for name, percentile := range val {
+					fmt.Fprintf(w, "  %s\t:%.4fs\n", name, percentile)
+				}
 			}
 		}
 
