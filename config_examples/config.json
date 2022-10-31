@@ -17,7 +17,7 @@
             "protocol": "https",
             "method": "POST",
             "headers": {
-                "ContenType": "application/xml",
+                "Content-Type": "application/xml",
                 "header1": "header2"
             },
             "payload": "Body content 1",
