@@ -74,10 +74,10 @@ func aggregate(result *Result, response *types.Response) {
 }
 
 type Result struct {
-	SuccessCount int64                         `json:"success_count"`
-	FailedCount  int64                         `json:"fail_count"`
-	AvgDuration  float32                       `json:"avg_duration"`
-	ItemReports  map[int16]*ScenarioItemReport `json:"steps"`
+	SuccessCount int64                          `json:"success_count"`
+	FailedCount  int64                          `json:"fail_count"`
+	AvgDuration  float32                        `json:"avg_duration"`
+	ItemReports  map[uint16]*ScenarioItemReport `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {

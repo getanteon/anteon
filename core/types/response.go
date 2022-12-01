@@ -42,7 +42,7 @@ type Response struct {
 // ResponseItem is corresponding to ScenarioItem.
 type ResponseItem struct {
 	// ID of the ScenarioItem
-	ScenarioItemID int16
+	ScenarioItemID uint16
 
 	// Name of the ScenarioItem
 	ScenarioItemName string

@@ -59,7 +59,7 @@ var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 func (s *stdout) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[int16]*ScenarioItemReport),
+		ItemReports: make(map[uint16]*ScenarioItemReport),
 	}
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
@@ -145,7 +145,7 @@ func (s *stdout) printDetails() {
 	sort.Ints(keys)
 
 	for _, k := range keys {
-		v := s.result.ItemReports[int16(k)]
+		v := s.result.ItemReports[uint16(k)]
 
 		if len(keys) > 1 {
 			stepHeader := v.Name
