@@ -102,11 +102,11 @@ func compareScenarioServiceClients(
 				return fmt.Errorf("[requester] Expected %#v, Found %#v", expectedVal, val)
 			}
 
-			if reflect.TypeOf(expectedVal[i].sleep) != reflect.TypeOf(val[i].sleep) {
+			if reflect.TypeOf(expectedVal[i].sleeper) != reflect.TypeOf(val[i].sleeper) {
 				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
 			}
 
-			if !reflect.DeepEqual(expectedVal[i].sleep, val[i].sleep) {
+			if !reflect.DeepEqual(expectedVal[i].sleeper, val[i].sleeper) {
 				return fmt.Errorf("[sleep] Expected %#v, Found %#v", expectedVal, val)
 			}
 		}
@@ -154,12 +154,12 @@ func TestInitService(t *testing.T) {
 			{
 				scenarioItemID: 1,
 				requester:      &requester.HttpRequester{},
-				sleep:          &RangeSleep{min: 300, max: 500},
+				sleeper:        &RangeSleep{min: 300, max: 500},
 			},
 			{
 				scenarioItemID: 2,
 				requester:      &requester.HttpRequester{},
-				sleep:          &DurationSleep{duration: 1000},
+				sleeper:        &DurationSleep{duration: 1000},
 			},
 			{
 				scenarioItemID: 3,
@@ -170,12 +170,12 @@ func TestInitService(t *testing.T) {
 			{
 				scenarioItemID: 1,
 				requester:      &requester.HttpRequester{},
-				sleep:          &RangeSleep{min: 300, max: 500},
+				sleeper:        &RangeSleep{min: 300, max: 500},
 			},
 			{
 				scenarioItemID: 2,
 				requester:      &requester.HttpRequester{},
-				sleep:          &DurationSleep{duration: 1000},
+				sleeper:        &DurationSleep{duration: 1000},
 			},
 			{
 				scenarioItemID: 3,
@@ -250,7 +250,7 @@ func TestDo(t *testing.T) {
 	requesters := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
-			sleep:          mockSleep,
+			sleeper:        mockSleep,
 			requester:      &MockRequester{ReturnSend: &types.ResponseItem{ScenarioItemID: 1}},
 		},
 		{
@@ -677,7 +677,7 @@ func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
 	}
 }
 
-func TestNewSleep(t *testing.T) {
+func TestnewSleeper(t *testing.T) {
 	t.Parallel()
 
 	sleepRange := "300-500"
@@ -693,17 +693,17 @@ func TestNewSleep(t *testing.T) {
 	}
 
 	// "range" sleep strategy test
-	sleep := newSleep(sleepRange)
+	sleep := newSleeper(sleepRange)
 	if !reflect.DeepEqual(sleep, expectedSleepRange) {
 		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
 	}
-	sleep = newSleep(sleepRangeReverse)
+	sleep = newSleeper(sleepRangeReverse)
 	if !reflect.DeepEqual(sleep, expectedSleepRange) {
 		t.Errorf("Expected %v, Found: %v", expectedSleepRange, sleep)
 	}
 
 	// "duration" sleep strategy test
-	sleep = newSleep(sleepDuration)
+	sleep = newSleeper(sleepDuration)
 	if !reflect.DeepEqual(sleep, exptectedSleepDuration) {
 		t.Errorf("Expected %v, Found: %v", exptectedSleepDuration, sleep)
 	}

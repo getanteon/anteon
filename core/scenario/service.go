@@ -91,8 +91,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 		response.ResponseItems = append(response.ResponseItems, res)
 
 		// Sleep before running the next step
-		if sr.sleep != nil {
-			sr.sleep.sleep()
+		if sr.sleeper != nil {
+			sr.sleeper.sleep()
 		}
 	}
 	return
@@ -132,7 +132,7 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			s.clients[proxy],
 			scenarioItemRequester{
 				scenarioItemID: si.ID,
-				sleep:          newSleep(si.Sleep),
+				sleeper:        newSleeper(si.Sleep),
 				requester:      r,
 			},
 		)
@@ -146,13 +146,13 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 }
 
 type scenarioItemRequester struct {
-	scenarioItemID int16
-	sleep          ISleep
+	scenarioItemID uint16
+	sleeper        Sleeper
 	requester      requester.Requester
 }
 
-// ISleep is the interface for implementing different sleep strategies.
-type ISleep interface {
+// Sleeper is the interface for implementing different sleep strategies.
+type Sleeper interface {
 	sleep()
 }
 
@@ -177,13 +177,13 @@ func (ds *DurationSleep) sleep() {
 	time.Sleep(time.Duration(ds.duration) * time.Millisecond)
 }
 
-// newSleep is the factor method for the ISleep implementations.
-func newSleep(sleepStr string) ISleep {
+// newSleeper is the factor method for the Sleeper implementations.
+func newSleeper(sleepStr string) Sleeper {
 	if sleepStr == "" {
 		return nil
 	}
 
-	var sl ISleep
+	var sl Sleeper
 
 	// Sleep field already validated in types.scenario.validate(). No need to check parsing errors here.
 	s := strings.Split(sleepStr, "-")
