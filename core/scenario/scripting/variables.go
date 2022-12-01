@@ -189,7 +189,12 @@ func (vi *VariableInjector) Inject(text string) (string, error) {
 }
 func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 	var err error
-	parsed := fasttemplate.New(text, "{{", "}}").ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+	template, err := fasttemplate.NewTemplate(text, "{{", "}}")
+	if err != nil {
+		return "", err
+	}
+
+	parsed := template.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		if _, ok := vi.fakerMap[tag]; !ok {
 			err = fmt.Errorf("%s is not a valid dynamic variable", tag)
 			return 0, nil
