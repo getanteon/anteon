@@ -40,7 +40,7 @@
 		"premparihar.gotestexplorer"
 	],
 	"mounts": [
-		"source=${env:HOME}/.zsh_history,target=/root/.zsh_history,type=bind,consistency=cached"
+		// "source=${env:HOME}/.zsh_history,target=/root/.zsh_history,type=bind,consistency=cached"
 		// "source=${env:HOME}/.bash_history,target=/root/.zsh_history,type=bind,consistency=cached"
 	]
 }
