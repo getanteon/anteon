@@ -38,9 +38,10 @@ import (
 	"github.com/google/uuid"
 	"go.ddosify.com/ddosify/core/scenario/scripting"
 	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
 	"golang.org/x/net/http2"
 )
+
+const DynamicVariableRegex = `\{{(_)[^}]+\}}`
 
 type HttpRequester struct {
 	ctx                  context.Context
@@ -84,7 +85,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAdd
 		return
 	}
 
-	re := regexp.MustCompile(util.DynamicVariableRegex)
+	re := regexp.MustCompile(DynamicVariableRegex)
 	if re.MatchString(h.packet.Payload) {
 		_, err = h.vi.Inject(h.packet.Payload)
 		if err != nil {
@@ -215,7 +216,7 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 }
 
 func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
-	re := regexp.MustCompile(util.DynamicVariableRegex)
+	re := regexp.MustCompile(DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
 	body := h.packet.Payload
