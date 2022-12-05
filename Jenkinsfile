@@ -1,7 +1,7 @@
 pipeline {
   agent {
     dockerfile {
-      filename 'Dockerfile.dev'
+      filename '.devcontainer/Dockerfile.dev'
     }
   }
   environment {
