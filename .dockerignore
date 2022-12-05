@@ -3,4 +3,3 @@ dist/
 *.out
 Jenkinsfile
 README.md
-.*
