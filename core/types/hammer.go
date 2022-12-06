@@ -36,7 +36,7 @@ const (
 	LoadTypeWaved       = "waved"
 
 	// Default Values
-	DefaultReqCount   = 100
+	DefaultIterCount  = 100
 	DefaultLoadType   = LoadTypeLinear
 	DefaultDuration   = 10
 	DefaultTimeout    = 5
@@ -56,8 +56,8 @@ type TimeRunCount []struct {
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
-	// Total request count
-	TotalReqCount int
+	// Total iteration count
+	IterationCount int
 
 	// Type of the load.
 	LoadType string

@@ -51,7 +51,7 @@ func newDummyHammer() types.Hammer {
 		ReportDestination: report.OutputTypeStdout,
 		LoadType:          types.LoadTypeLinear,
 		TestDuration:      1,
-		TotalReqCount:     1,
+		IterationCount:    1,
 		Scenario: types.Scenario{
 			Scenario: []types.ScenarioItem{
 				{
@@ -194,7 +194,7 @@ func TestRequestCount(t *testing.T) {
 			h.LoadType = test.loadType
 			h.TestDuration = test.duration
 			h.TimeRunCountMap = test.timeRunCount
-			h.TotalReqCount = test.reqCount
+			h.IterationCount = test.reqCount
 			h.Scenario.Scenario[0].URL = server.URL
 
 			now = time.Now()

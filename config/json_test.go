@@ -40,7 +40,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_empty.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
@@ -74,7 +74,120 @@ func TestCreateHammer(t *testing.T) {
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config.json"), ConfigTypeJson)
 	addr, _ := url.Parse("http://proxy_host:80")
 	expectedHammer := types.Hammer{
-		TotalReqCount:     1555,
+		IterationCount:    1555,
+		LoadType:          types.LoadTypeWaved,
+		TestDuration:      21,
+		ReportDestination: report.OutputTypeStdout,
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{
+				{
+					ID:       1,
+					Name:     "Example Name 1",
+					URL:      "https://app.servdown.com/accounts/login/?next=/",
+					Protocol: types.ProtocolHTTPS,
+					Method:   http.MethodGet,
+					Timeout:  3,
+					Sleep:    "1000",
+					Payload:  "payload str",
+					Custom: map[string]interface{}{
+						"keep-alive": true,
+					},
+				},
+				{
+					ID:       2,
+					Name:     "Example Name 2",
+					URL:      "http://test.com",
+					Protocol: types.ProtocolHTTP,
+					Method:   http.MethodPut,
+					Timeout:  2,
+					Sleep:    "300-500",
+					Headers: map[string]string{
+						"ContenType":    "application/xml",
+						"X-ddosify-key": "ajkndalnasd",
+					},
+				},
+			},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: "single",
+			Addr:     addr,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammer error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("\nExpected: %v,\n Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_iteration_count.json"), ConfigTypeJson)
+	addr, _ := url.Parse("http://proxy_host:80")
+	expectedHammer := types.Hammer{
+		IterationCount:    1555,
+		LoadType:          types.LoadTypeWaved,
+		TestDuration:      21,
+		ReportDestination: report.OutputTypeStdout,
+		Scenario: types.Scenario{
+			Scenario: []types.ScenarioItem{
+				{
+					ID:       1,
+					Name:     "Example Name 1",
+					URL:      "https://app.servdown.com/accounts/login/?next=/",
+					Protocol: types.ProtocolHTTPS,
+					Method:   http.MethodGet,
+					Timeout:  3,
+					Sleep:    "1000",
+					Payload:  "payload str",
+					Custom: map[string]interface{}{
+						"keep-alive": true,
+					},
+				},
+				{
+					ID:       2,
+					Name:     "Example Name 2",
+					URL:      "http://test.com",
+					Protocol: types.ProtocolHTTP,
+					Method:   http.MethodPut,
+					Timeout:  2,
+					Sleep:    "300-500",
+					Headers: map[string]string{
+						"ContenType":    "application/xml",
+						"X-ddosify-key": "ajkndalnasd",
+					},
+				},
+			},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: "single",
+			Addr:     addr,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammer error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("\nExpected: %v,\n Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_iteration_count_over_req_count.json"),
+		ConfigTypeJson)
+	addr, _ := url.Parse("http://proxy_host:80")
+	expectedHammer := types.Hammer{
+		IterationCount:    333,
 		LoadType:          types.LoadTypeWaved,
 		TestDuration:      21,
 		ReportDestination: report.OutputTypeStdout,
@@ -130,7 +243,7 @@ func TestCreateHammerManualLoad(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     35,
+		IterationCount:    35,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      18,
 		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
@@ -165,7 +278,7 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load_override.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     35,
+		IterationCount:    35,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      18,
 		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
@@ -356,7 +469,7 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
@@ -401,7 +514,7 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
@@ -437,7 +550,7 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
