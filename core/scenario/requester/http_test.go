@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
@@ -345,6 +346,44 @@ func TestInitRequest(t *testing.T) {
 					t.Errorf("Close Expected: %#v, Found: \n%#v", test.request.Close, h.request.Close)
 				}
 			}
+		}
+		t.Run(test.name, tf)
+	}
+}
+
+func TestDynamicVariableRegex(t *testing.T) {
+	// Sub Tests
+	tests := []struct {
+		name        string
+		url         string
+		shouldMatch bool
+	}{
+		{"Match1", "https://example.com/{{_abc}}", true},
+		{"Match2", "https://example.com/{{_timestamp}}", true},
+		{"Match3", "https://example.com/aaa/{{_timestamp}}", true},
+		{"Match4", "https://example.com/aaa/{{_timestamp}}/bbb", true},
+		{"Match5", "https://example.com/{{_timestamp}}/{_abc}", true},
+		{"Match6", "https://example.com/{{_abc/{{_timestamp}}", true},
+		{"Match7", "https://example.com/_aaa/{{_timestamp}}", true},
+
+		{"Not Match1", "https://example.com/{{_abc", false},
+		{"Not Match2", "https://example.com/{{_abc}", false},
+		{"Not Match3", "https://example.com/_abc", false},
+		{"Not Match4", "https://example.com/{{abc", false},
+		{"Not Match5", "https://example.com/abc", false},
+		{"Not Match6", "https://example.com/abc/{{cc}}", false},
+		{"Not Match7", "https://example.com/abc/{{cc}}/fcf", false},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			re := regexp.MustCompile(DynamicVariableRegex)
+			matched := re.MatchString(test.url)
+
+			if test.shouldMatch != matched {
+				t.Errorf("Name: %s, ShouldMatch: %t, Matched: %t\n", test.name, test.shouldMatch, matched)
+			}
+
 		}
 		t.Run(test.name, tf)
 	}
