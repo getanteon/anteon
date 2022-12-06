@@ -42,7 +42,7 @@ type stdoutJson struct {
 func (s *stdoutJson) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[int16]*ScenarioItemReport),
+		ItemReports: make(map[uint16]*ScenarioItemReport),
 	}
 	return
 }

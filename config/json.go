@@ -63,7 +63,7 @@ type multipartFormData struct {
 }
 
 type step struct {
-	Id               int16                  `json:"id"`
+	Id               uint16                 `json:"id"`
 	Name             string                 `json:"name"`
 	Url              string                 `json:"url"`
 	Protocol         string                 `json:"protocol"`
