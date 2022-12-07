@@ -59,7 +59,7 @@ type engine struct {
 }
 
 // NewEngine is the constructor of the engine.
-// Hammer is using for initializing the engine itself and its' external services.
+// Hammer is used for initializing the engine itself and its' external services.
 // Engine can be stopped by canceling the given ctx.
 func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	err = h.Validate()

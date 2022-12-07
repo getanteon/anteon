@@ -106,11 +106,9 @@ func main() {
 
 func createHammer() (h types.Hammer, err error) {
 	if *configPath != "" {
-		h, err = createHammerFromConfigFile()
-	} else {
-		h, err = createHammerFromFlags()
+		return createHammerFromConfigFile()
 	}
-	return h, err
+	return createHammerFromFlags()
 }
 
 var createHammerFromConfigFile = func() (h types.Hammer, err error) {
@@ -239,7 +237,7 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	*protocol = strings.ToUpper(*protocol)
-	scenario := types.ScenarioItem{
+	scenarioItem := types.ScenarioItem{
 		ID:       1,
 		Protocol: *protocol,
 		Method:   strings.ToUpper(*method),
@@ -250,6 +248,7 @@ func createScenario() (s types.Scenario, err error) {
 		Timeout:  *timeout,
 	}
 
+	// TODO : if whether certPath or certKeyPath doesn't exist and another one exists, we should return an error to user.
 	if *certPath != "" && *certKeyPath != "" {
 		cert, pool, e := types.ParseTLS(*certPath, *certKeyPath)
 		if e != nil {
@@ -257,11 +256,10 @@ func createScenario() (s types.Scenario, err error) {
 			return
 		}
 
-		scenario.Cert = cert
-		scenario.CertPool = pool
+		scenarioItem.Cert = cert
+		scenarioItem.CertPool = pool
 	}
-
-	s = types.Scenario{Scenario: []types.ScenarioItem{scenario}}
+	s = types.Scenario{Scenario: []types.ScenarioItem{scenarioItem}}
 
 	return
 }

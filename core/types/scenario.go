@@ -73,7 +73,7 @@ type Scenario struct {
 }
 
 func (s *Scenario) validate() error {
-	stepIds := make(map[int16]struct{}, len(s.Scenario))
+	stepIds := make(map[uint16]struct{}, len(s.Scenario))
 	for _, si := range s.Scenario {
 		if err := si.validate(); err != nil {
 			return err
@@ -91,7 +91,7 @@ func (s *Scenario) validate() error {
 // This struct should be able to include all necessary data in a network packet for SupportedProtocols.
 type ScenarioItem struct {
 	// ID of the Item. Should be given by the client.
-	ID int16
+	ID uint16
 
 	// Name of the Item.
 	Name string

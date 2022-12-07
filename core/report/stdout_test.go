@@ -183,9 +183,9 @@ func TestStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[int16]*ScenarioItemReport{
-			int16(1): itemReport1,
-			int16(2): itemReport2,
+		ItemReports: map[uint16]*ScenarioItemReport{
+			uint16(1): itemReport1,
+			uint16(2): itemReport2,
 		},
 	}
 
