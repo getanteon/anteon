@@ -48,7 +48,7 @@ type RequestError struct {
 	Reason string
 }
 
-// Custom error message method of RequestError
+// Custom error message method of ScenarioError
 func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
 }

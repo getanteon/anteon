@@ -83,7 +83,7 @@ type Hammer struct {
 
 // Validate validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
-	if len(h.Scenario.Scenario) == 0 {
+	if len(h.Scenario.Steps) == 0 {
 		return fmt.Errorf("scenario or target is empty")
 	} else if err := h.Scenario.validate(); err != nil {
 		return err

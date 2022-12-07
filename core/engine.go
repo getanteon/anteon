@@ -53,7 +53,7 @@ type engine struct {
 	reqCountArr []int
 	wg          sync.WaitGroup
 
-	responseChan chan *types.Response
+	resultChan chan *types.ScenarioResult
 
 	ctx context.Context
 }
@@ -109,8 +109,8 @@ func (e *engine) Init() (err error) {
 
 func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
-	e.responseChan = make(chan *types.Response, e.hammer.IterationCount)
-	go e.reportService.Start(e.responseChan)
+	e.resultChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+	go e.reportService.Start(e.resultChan)
 
 	defer func() {
 		ticker.Stop()
@@ -150,7 +150,7 @@ func (e *engine) runWorkers(c int) {
 }
 
 func (e *engine) runWorker(scenarioStartTime time.Time) {
-	var res *types.Response
+	var res *types.ScenarioResult
 	var err *types.RequestError
 
 	p := e.proxyService.GetProxy()
@@ -173,12 +173,12 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
-	e.responseChan <- res
+	e.resultChan <- res
 }
 
 func (e *engine) stop() {
 	e.wg.Wait()
-	close(e.responseChan)
+	close(e.resultChan)
 	<-e.reportService.DoneChan()
 	e.reportService.Report()
 	e.proxyService.Done()

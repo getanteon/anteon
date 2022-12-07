@@ -36,7 +36,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -65,7 +65,7 @@ func TestInitClient(t *testing.T) {
 	ctx := context.TODO()
 
 	// Basic Client
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -86,7 +86,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// Client with custom data
-	sWithCustomData := types.ScenarioItem{
+	sWithCustomData := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -118,7 +118,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// H2 Client
-	sHTTP2 := types.ScenarioItem{
+	sHTTP2 := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -145,7 +145,7 @@ func TestInitClient(t *testing.T) {
 	// Sub Tests
 	tests := []struct {
 		name         string
-		scenarioItem types.ScenarioItem
+		scenarioItem types.ScenarioStep
 		proxy        *url.URL
 		ctx          context.Context
 		tls          *tls.Config
@@ -210,7 +210,7 @@ func TestInitRequest(t *testing.T) {
 	ctx := context.TODO()
 
 	// Invalid request
-	sInvalid := types.ScenarioItem{
+	sInvalid := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   ":31:31:#",
@@ -219,7 +219,7 @@ func TestInitRequest(t *testing.T) {
 	}
 
 	// Basic request
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -231,7 +231,7 @@ func TestInitRequest(t *testing.T) {
 	expected.Header = make(http.Header)
 
 	// Request with auth
-	sWithAuth := types.ScenarioItem{
+	sWithAuth := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -248,7 +248,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithAuth.SetBasicAuth(sWithAuth.Auth.Username, sWithAuth.Auth.Password)
 
 	// Request With Headers
-	sWithHeaders := types.ScenarioItem{
+	sWithHeaders := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -276,7 +276,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
 	// Request keep-alive condition
-	sWithoutKeepAlive := types.ScenarioItem{
+	sWithoutKeepAlive := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -305,7 +305,7 @@ func TestInitRequest(t *testing.T) {
 	// Sub Tests
 	tests := []struct {
 		name         string
-		scenarioItem types.ScenarioItem
+		scenarioItem types.ScenarioStep
 		shouldErr    bool
 		request      *http.Request
 	}{

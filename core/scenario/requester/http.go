@@ -46,7 +46,7 @@ const DynamicVariableRegex = `\{{(_)[^}]+\}}`
 type HttpRequester struct {
 	ctx                  context.Context
 	proxyAddr            *url.URL
-	packet               types.ScenarioItem
+	packet               types.ScenarioStep
 	client               *http.Client
 	request              *http.Request
 	vi                   *scripting.VariableInjector
@@ -54,7 +54,7 @@ type HttpRequester struct {
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
-func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
+func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
@@ -144,7 +144,7 @@ func (h *HttpRequester) Done() {
 	h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send() (res *types.ResponseItem) {
+func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -188,15 +188,15 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 	}
 
 	// Finalize
-	res = &types.ResponseItem{
-		ScenarioItemID:   h.packet.ID,
-		ScenarioItemName: h.packet.Name,
-		RequestID:        uuid.New(),
-		StatusCode:       statusCode,
-		RequestTime:      reqStartTime,
-		Duration:         durations.totalDuration(),
-		ContentLength:    contentLength,
-		Err:              requestErr,
+	res = &types.ScenarioStepResult{
+		StepID:        h.packet.ID,
+		StepName:      h.packet.Name,
+		RequestID:     uuid.New(),
+		StatusCode:    statusCode,
+		RequestTime:   reqStartTime,
+		Duration:      durations.totalDuration(),
+		ContentLength: contentLength,
+		Err:           requestErr,
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),

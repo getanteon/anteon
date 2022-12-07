@@ -31,7 +31,7 @@ func newDummyHammer() Hammer {
 		Proxy:             proxy.Proxy{Strategy: proxy.ProxyTypeSingle},
 		ReportDestination: DefaultOutputType,
 		Scenario: Scenario{
-			Scenario: []ScenarioItem{
+			Steps: []ScenarioStep{
 				{
 					ID:       1,
 					Protocol: "HTTP",
@@ -69,7 +69,7 @@ func TestHammerValidAuth(t *testing.T) {
 	for _, v := range supportedAuthentications {
 		for _, a := range v {
 			h := newDummyHammer()
-			h.Scenario.Scenario[0].Auth = Auth{
+			h.Scenario.Steps[0].Auth = Auth{
 				Type:     a,
 				Username: "test",
 				Password: "123",
@@ -84,7 +84,7 @@ func TestHammerValidAuth(t *testing.T) {
 
 func TestHammerInValidAuth(t *testing.T) {
 	h := newDummyHammer()
-	h.Scenario.Scenario[0].Auth = Auth{
+	h.Scenario.Steps[0].Auth = Auth{
 		Type:     "invalidAuthType",
 		Username: "test",
 		Password: "123",
@@ -101,7 +101,7 @@ func TestHammerValidScenario(t *testing.T) {
 		for _, m := range supportedProtocolMethods[p] {
 			h := newDummyHammer()
 			h.Scenario = Scenario{
-				Scenario: []ScenarioItem{
+				Steps: []ScenarioStep{
 					{
 						ID:       1,
 						Protocol: p,
@@ -122,7 +122,7 @@ func TestHammerValidScenario(t *testing.T) {
 		for _, m := range supportedProtocolMethods[p] {
 			h := newDummyHammer()
 			h.Scenario = Scenario{
-				Scenario: []ScenarioItem{
+				Steps: []ScenarioStep{
 					{
 						ID:       1,
 						Protocol: p,
@@ -156,7 +156,7 @@ func TestHammerInvalidScenarioProtocol(t *testing.T) {
 	// Single Scenario
 	h := newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: "HTTPP",
@@ -171,7 +171,7 @@ func TestHammerInvalidScenarioProtocol(t *testing.T) {
 	// Multi Scenario
 	h = newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: SupportedProtocols[0],
@@ -193,7 +193,7 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	// Single Scenario
 	h := newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: SupportedProtocols[0],
@@ -208,7 +208,7 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	// Multi Scenario
 	h = newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: SupportedProtocols[0],
@@ -226,11 +226,11 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	}
 }
 
-func TestHammerEmptyScenarioItemID(t *testing.T) {
+func TestHammerEmptyScenarioStepID(t *testing.T) {
 	// Single Scenario
 	h := newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				Protocol: SupportedProtocols[0],
 				Method:   supportedProtocolMethods["HTTP"][1],
@@ -238,13 +238,13 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		},
 	}
 	if err := h.Validate(); err == nil {
-		t.Errorf("1- TestHammerEmptyScenarioItemID should be errored")
+		t.Errorf("1- TestHammerEmptyScenarioStepID should be errored")
 	}
 
 	// Multi Scenario
 	h = newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: SupportedProtocols[0],
@@ -257,15 +257,15 @@ func TestHammerEmptyScenarioItemID(t *testing.T) {
 		},
 	}
 	if err := h.Validate(); err == nil {
-		t.Errorf("2- TestHammerEmptyScenarioItemID should be errored")
+		t.Errorf("2- TestHammerEmptyScenarioStepID should be errored")
 	}
 }
 
-func TestHammerDuplicateScenarioItemID(t *testing.T) {
+func TestHammerDuplicateScenarioStepID(t *testing.T) {
 	// Single Scenario
 	h := newDummyHammer()
 	h.Scenario = Scenario{
-		Scenario: []ScenarioItem{
+		Steps: []ScenarioStep{
 			{
 				ID:       1,
 				Protocol: SupportedProtocols[0],
@@ -284,7 +284,7 @@ func TestHammerDuplicateScenarioItemID(t *testing.T) {
 		},
 	}
 	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerDuplicateScenarioItemID should be errored")
+		t.Errorf("TestHammerDuplicateScenarioStepID should be errored")
 	}
 }
 
@@ -324,7 +324,7 @@ func TestHammerStepSleep(t *testing.T) {
 
 			h := newDummyHammer()
 			h.Scenario = Scenario{
-				Scenario: []ScenarioItem{
+				Steps: []ScenarioStep{
 					{
 						ID:       1,
 						URL:      "target.com",

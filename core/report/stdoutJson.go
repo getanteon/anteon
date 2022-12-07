@@ -42,12 +42,12 @@ type stdoutJson struct {
 func (s *stdoutJson) Init() (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[uint16]*ScenarioItemReport),
+		StepResults: make(map[uint16]*ScenarioStepResult),
 	}
 	return
 }
 
-func (s *stdoutJson) Start(input chan *types.Response) {
+func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
 	for r := range input {
 		aggregate(s.result, r)
 	}
@@ -59,7 +59,7 @@ func (s *stdoutJson) Report() {
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
 
-	for _, itemReport := range s.result.ItemReports {
+	for _, itemReport := range s.result.StepResults {
 		durations := make(map[string]float32)
 		for d, s := range itemReport.Durations {
 			// Less precision for durations.
@@ -92,10 +92,10 @@ func (r Result) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ItemReport wraps ScenarioItemReport to add success/fails percentage values
-type ItemReport ScenarioItemReport
+// ItemReport wraps ScenarioStepReport to add success/fails percentage values
+type ItemReport ScenarioStepResult
 
-func (s ScenarioItemReport) MarshalJSON() ([]byte, error) {
+func (s ScenarioStepResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ItemReport
 		SuccesPerc int `json:"success_perc"`
