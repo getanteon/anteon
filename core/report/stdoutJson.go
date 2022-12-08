@@ -92,7 +92,7 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	s.doneChan <- struct{}{}
 }
 
-func getResponseInformation(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
+func decodeResponse(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
 	responseHeaders := make(map[string]string, 0)
 	for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
 		values := strings.Join(v, ",")
@@ -145,7 +145,7 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 			if sr.Err.Type != "" {
 				verboseInfo.Error = sr.Err.Error()
 			} else {
-				responseHeaders, responseBody, err := getResponseInformation(sr)
+				responseHeaders, responseBody, err := decodeResponse(sr)
 				if err != nil {
 					continue // TODO
 				}

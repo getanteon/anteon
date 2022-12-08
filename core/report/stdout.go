@@ -168,7 +168,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			if sr.Err.Type != "" {
 				verboseInfo.Error = sr.Err.Error()
 			} else {
-				responseHeaders, responseBody, err := getResponseInformation(sr)
+				responseHeaders, responseBody, err := decodeResponse(sr)
 				if err != nil {
 					continue
 				}
@@ -201,14 +201,24 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			}
 
 			fmt.Fprintln(w, "*")
-			valPretty, _ := json.MarshalIndent(verboseInfo.Response.Body, "", "  ")
-
-			fmt.Fprintf(w, "%s \n", valPretty)
+			contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+			printResponseBody(w, contentType, verboseInfo)
 
 			fmt.Fprintln(w)
 			fmt.Fprint(out, b.String())
 		}
 		aggregate(s.result, r)
+	}
+}
+
+func printResponseBody(w *tabwriter.Writer, contentType string, verboseInfo verboseHttpRequestInfo) {
+	if strings.Contains(contentType, "text/html") {
+		fmt.Fprintf(w, "%s \n", verboseInfo.Response.Body)
+	} else if strings.Contains(contentType, "application/json") {
+		valPretty, _ := json.MarshalIndent(verboseInfo.Response.Body, "", "  ")
+		fmt.Fprintf(w, "%s \n", valPretty)
+	} else {
+		fmt.Fprintf(w, "%s \n", verboseInfo.Response.Body)
 	}
 }
 
