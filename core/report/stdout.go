@@ -77,7 +77,6 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	if s.debug {
 		s.printInDebugMode(input)
 		s.doneChan <- struct{}{}
-		s.report() // TODO: remove in debug mode ?
 		return
 	}
 	go s.realTimePrintStart()
@@ -141,12 +140,13 @@ func (s *stdout) realTimePrintStop() {
 func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
 	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+	color.Set(color.FgYellow)
+	defer color.Unset()
 
 	for r := range input { // only 1 sc result expected
 		for _, sr := range r.StepResults {
-			color.Cyan("%s Step %d...\n", emoji.FuelPump, sr.StepID)
-
 			var verboseInfo verboseHttpRequestInfo
+			verboseInfo.StepId = sr.StepID
 			requestHeaders := make(map[string]string, 0)
 			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
 				values := strings.Join(v, ",")
@@ -162,13 +162,16 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				Url:     sr.DebugInfo["url"].(string),
 				Method:  sr.DebugInfo["method"].(string),
 				Headers: requestHeaders,
-				Body:    sr.DebugInfo["requestBody"], // TODO: io.ReadCloser
+				Body:    sr.DebugInfo["requestBody"],
 			}
 
 			if sr.Err.Type != "" {
 				verboseInfo.Error = sr.Err.Error()
 			} else {
-				responseHeaders, responseBody := getResponseInformation(sr)
+				responseHeaders, responseBody, err := getResponseInformation(sr)
+				if err != nil {
+					continue
+				}
 				verboseInfo.Response = struct {
 					StatusCode int               "json:\"statusCode\""
 					Headers    map[string]string "json:\"headers\""
@@ -180,13 +183,30 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				}
 			}
 
-			// TODO : change printing, structured text
+			b := strings.Builder{}
+			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
+			color.Cyan("\n\nSTEP %d\n", verboseInfo.StepId)
+			color.Cyan("-------------------------------------")
+			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
+			fmt.Fprintf(w, "> Method: \t%-5s \n", verboseInfo.Request.Method)
 
-			valPretty, _ := json.MarshalIndent(verboseInfo, "", "  ")
-			fmt.Fprintf(out, "%s http request: %s \n",
-				sr.RequestTime.UTC().String(), white(fmt.Sprintf(" %-6s",
-					valPretty)))
+			for hKey, hVal := range verboseInfo.Request.Headers {
+				fmt.Fprintf(w, "> %s:\t%-5s \n", hKey, hVal)
+			}
 
+			fmt.Fprintln(w, "*")
+			fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+			for hKey, hVal := range verboseInfo.Response.Headers {
+				fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
+			}
+
+			fmt.Fprintln(w, "*")
+			valPretty, _ := json.MarshalIndent(verboseInfo.Response.Body, "", "  ")
+
+			fmt.Fprintf(w, "%s \n", valPretty)
+
+			fmt.Fprintln(w)
+			fmt.Fprint(out, b.String())
 		}
 		aggregate(s.result, r)
 	}

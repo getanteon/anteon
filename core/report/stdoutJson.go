@@ -23,6 +23,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"math"
 	"net/http"
 	"strings"
@@ -91,7 +92,7 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	s.doneChan <- struct{}{}
 }
 
-func getResponseInformation(sr *types.ScenarioStepResult) (map[string]string, string) {
+func getResponseInformation(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
 	responseHeaders := make(map[string]string, 0)
 	for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
 		values := strings.Join(v, ",")
@@ -99,19 +100,19 @@ func getResponseInformation(sr *types.ScenarioStepResult) (map[string]string, st
 	}
 
 	contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-	var respBody string
+	var respBody interface{}
 	if strings.Contains(contentType, "text/html") {
-		// decode text/html
-		respBody = string(sr.DebugInfo["responseBody"].([]byte))
+		unescapedHmtl := html.UnescapeString(string(sr.DebugInfo["responseBody"].([]byte)))
+		respBody = unescapedHmtl
 	} else if strings.Contains(contentType, "application/json") {
 		err := json.Unmarshal(sr.DebugInfo["responseBody"].([]byte), &respBody)
 		if err != nil {
-			fmt.Println(err)
+			return responseHeaders, respBody, err
 		}
-		fmt.Println("application/json")
 	}
+	// TODO: other content types, xml
 
-	return responseHeaders, respBody
+	return responseHeaders, respBody, nil
 }
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
@@ -144,7 +145,10 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 			if sr.Err.Type != "" {
 				verboseInfo.Error = sr.Err.Error()
 			} else {
-				responseHeaders, responseBody := getResponseInformation(sr)
+				responseHeaders, responseBody, err := getResponseInformation(sr)
+				if err != nil {
+					continue // TODO
+				}
 				verboseInfo.Response = struct {
 					StatusCode int               "json:\"statusCode\""
 					Headers    map[string]string "json:\"headers\""

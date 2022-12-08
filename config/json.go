@@ -194,6 +194,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: j.Output,
+		Debug:             j.Debug,
 	}
 	return
 }
