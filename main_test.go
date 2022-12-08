@@ -142,7 +142,7 @@ func TestCreateHammer(t *testing.T) {
 
 			fromFileCalled := false
 			fromFlagsCalled := false
-			createHammerFromConfigFile = func() (h types.Hammer, err error) {
+			createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 				fromFileCalled = true
 				return
 			}

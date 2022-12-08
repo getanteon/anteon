@@ -75,6 +75,7 @@ var (
 	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
+	debug   = flag.Bool("debug", false, "See verbose result")
 )
 
 var (
@@ -106,12 +107,13 @@ func main() {
 
 func createHammer() (h types.Hammer, err error) {
 	if *configPath != "" {
-		return createHammerFromConfigFile()
+		// running with config and debug mode set from cli
+		return createHammerFromConfigFile(*debug)
 	}
 	return createHammerFromFlags()
 }
 
-var createHammerFromConfigFile = func() (h types.Hammer, err error) {
+var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 	f, err := os.Open(*configPath)
 	if err != nil {
 		return
@@ -130,6 +132,9 @@ var createHammerFromConfigFile = func() (h types.Hammer, err error) {
 	h, err = c.CreateHammer()
 	if err != nil {
 		return
+	}
+	if debug {
+		h.Debug = true // debug flag from cli overrides debug in config file
 	}
 	return
 }
@@ -188,6 +193,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: *output,
+		Debug:             *debug,
 	}
 	return
 }

@@ -106,6 +106,7 @@ type JsonReader struct {
 	Steps        []step       `json:"steps"`
 	Output       string       `json:"output"`
 	Proxy        string       `json:"proxy"`
+	Debug        bool         `json:"debug"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
