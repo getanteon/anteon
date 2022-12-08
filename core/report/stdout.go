@@ -62,7 +62,7 @@ var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 func (s *stdout) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		StepResults: make(map[uint16]*ScenarioStepResult),
+		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
 	s.debug = debug
 
@@ -77,6 +77,7 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	if s.debug {
 		s.printInDebugMode(input)
 		s.doneChan <- struct{}{}
+		s.report() // TODO: remove in debug mode ?
 		return
 	}
 	go s.realTimePrintStart()
@@ -88,89 +89,11 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	}
 
 	s.realTimePrintStop()
+	s.report()
 	s.doneChan <- struct{}{}
 }
 
-type verboseHttpRequestInfo struct {
-	Request struct {
-		Url     string            `json:"url"`
-		Method  string            `json:"method"`
-		Headers map[string]string `json:"headers"`
-	} `json:"request"`
-	Response struct {
-		StatusCode int               `json:"statusCode"`
-		Headers    map[string]string `json:"headers"`
-		Body       interface{}       `json:"body"`
-	} `json:"response"`
-}
-
-func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
-	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
-	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
-
-	for r := range input { // only 1 sc result expected
-		for _, sr := range r.StepResults {
-			requestHeaders := make(map[string]string, 0)
-			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
-				values := strings.Join(v, ",")
-				requestHeaders[k] = values
-			}
-
-			responseHeaders := make(map[string]string, 0)
-			for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
-				values := strings.Join(v, ",")
-				responseHeaders[k] = values
-			}
-
-			// TODO: may be a connection error or timeout, handle that case
-			// sr.Err.Reason
-
-			contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-			var respBody string
-			if strings.Contains(contentType, "text/html") {
-				// decode text/html
-				respBody = string(sr.DebugInfo["responseBody"].([]byte))
-			} else if strings.Contains(contentType, "application/json") {
-				err := json.Unmarshal(sr.DebugInfo["responseBody"].([]byte), &respBody)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println("application/json")
-			}
-
-			verboseInfo := verboseHttpRequestInfo{
-				Request: struct {
-					Url     string            "json:\"url\""
-					Method  string            "json:\"method\""
-					Headers map[string]string "json:\"headers\""
-				}{
-					Url:     sr.DebugInfo["url"].(string),
-					Method:  sr.DebugInfo["method"].(string),
-					Headers: requestHeaders,
-				},
-
-				Response: struct {
-					StatusCode int               "json:\"statusCode\""
-					Headers    map[string]string "json:\"headers\""
-					Body       interface{}       `json:"body"`
-				}{
-					StatusCode: sr.StatusCode,
-					Headers:    responseHeaders,
-					Body:       respBody,
-				},
-			}
-
-			valPretty, _ := json.MarshalIndent(verboseInfo, "", "  ")
-			fmt.Fprintf(out, "%s http request: %s \n",
-				sr.RequestTime.UTC().String(), white(fmt.Sprintf(" %-6s",
-					valPretty)))
-
-		}
-		aggregate(s.result, r)
-	}
-}
-
-func (s *stdout) Report() {
+func (s *stdout) report() {
 	s.printDetails()
 }
 
@@ -213,6 +136,60 @@ func (s *stdout) realTimePrintStop() {
 	// Last print.
 	s.liveResultPrint()
 	s.printTicker.Stop()
+}
+
+func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
+	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
+	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+
+	for r := range input { // only 1 sc result expected
+		for _, sr := range r.StepResults {
+			color.Cyan("%s Step %d...\n", emoji.FuelPump, sr.StepID)
+
+			var verboseInfo verboseHttpRequestInfo
+			requestHeaders := make(map[string]string, 0)
+			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
+				values := strings.Join(v, ",")
+				requestHeaders[k] = values
+			}
+
+			verboseInfo.Request = struct {
+				Url     string            "json:\"url\""
+				Method  string            "json:\"method\""
+				Headers map[string]string "json:\"headers\""
+				Body    interface{}       "json:\"body\""
+			}{
+				Url:     sr.DebugInfo["url"].(string),
+				Method:  sr.DebugInfo["method"].(string),
+				Headers: requestHeaders,
+				Body:    sr.DebugInfo["requestBody"], // TODO: io.ReadCloser
+			}
+
+			if sr.Err.Type != "" {
+				verboseInfo.Error = sr.Err.Error()
+			} else {
+				responseHeaders, responseBody := getResponseInformation(sr)
+				verboseInfo.Response = struct {
+					StatusCode int               "json:\"statusCode\""
+					Headers    map[string]string "json:\"headers\""
+					Body       interface{}       `json:"body"`
+				}{
+					StatusCode: sr.StatusCode,
+					Headers:    responseHeaders,
+					Body:       responseBody,
+				}
+			}
+
+			// TODO : change printing, structured text
+
+			valPretty, _ := json.MarshalIndent(verboseInfo, "", "  ")
+			fmt.Fprintf(out, "%s http request: %s \n",
+				sr.RequestTime.UTC().String(), white(fmt.Sprintf(" %-6s",
+					valPretty)))
+
+		}
+		aggregate(s.result, r)
+	}
 }
 
 // TODO:REFACTOR use template

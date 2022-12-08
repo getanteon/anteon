@@ -43,7 +43,7 @@ func TestInitStdoutJson(t *testing.T) {
 	}
 }
 
-func TestStdoutJsonStart(t *testing.T) {
+func TestStdoutJsonListenAndAggregate(t *testing.T) {
 	responses := []*types.ScenarioResult{
 		{
 			StartTime: time.Now(),
@@ -97,7 +97,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 	}
 
-	itemReport1 := &ScenarioStepResult{
+	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 2},
 		SuccessCount:   2,
 		FailedCount:    0,
@@ -108,7 +108,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioStepResult{
+	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
 		SuccessCount:   1,
 		FailedCount:    1,
@@ -124,7 +124,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		StepResults: map[uint16]*ScenarioStepResult{
+		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
@@ -135,7 +135,7 @@ func TestStdoutJsonStart(t *testing.T) {
 	s.Init(debug)
 
 	responseChan := make(chan *types.ScenarioResult, len(responses))
-	go s.Start(responseChan)
+	go s.listenAndAggregate(responseChan)
 
 	go func() {
 		for _, r := range responses {
@@ -162,7 +162,7 @@ func TestStdoutJsonStart(t *testing.T) {
 
 func TestStdoutJsonOutput(t *testing.T) {
 	// Arrange
-	itemReport1 := &ScenarioStepResult{
+	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 11},
 		SuccessCount:   11,
 		FailedCount:    0,
@@ -173,7 +173,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioStepResult{
+	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1, 200: 9},
 		SuccessCount:   9,
 		FailedCount:    2,
@@ -188,7 +188,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		SuccessCount: 9,
 		FailedCount:  2,
 		AvgDuration:  0.25637,
-		StepResults: map[uint16]*ScenarioStepResult{
+		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
@@ -249,7 +249,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 
 	// Act
 	s := &stdoutJson{result: &result}
-	s.Report()
+	s.report()
 
 	// Assert
 	if output != expectedOutput {

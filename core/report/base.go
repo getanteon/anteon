@@ -34,7 +34,6 @@ type ReportService interface {
 	DoneChan() <-chan struct{}
 	Init(debug bool) error
 	Start(input chan *types.ScenarioResult)
-	Report()
 }
 
 // NewReportService is the factory method of the ReportService.

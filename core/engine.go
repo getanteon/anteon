@@ -185,7 +185,6 @@ func (e *engine) stop() {
 	e.wg.Wait()
 	close(e.resultChan)
 	<-e.reportService.DoneChan()
-	e.reportService.Report()
 	e.proxyService.Done()
 	e.scenarioService.Done()
 }

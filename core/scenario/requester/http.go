@@ -195,6 +195,11 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
+	reqBody, err := io.ReadAll(httpReq.Body)
+	if err != nil {
+		return
+	}
+
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -209,7 +214,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 			"url":             httpReq.URL.String(),
 			"method":          httpReq.Method,
 			"requestHeaders":  httpReq.Header,
-			"requestBody":     httpReq.Body,
+			"requestBody":     reqBody,
 			"responseBody":    respBody,
 			"responseHeaders": respHeaders,
 		},

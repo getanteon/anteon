@@ -24,6 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
+	"strings"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -43,20 +45,23 @@ type stdoutJson struct {
 func (s *stdoutJson) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		StepResults: make(map[uint16]*ScenarioStepResult),
+		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
 	s.debug = debug
 	return
 }
 
 func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
-	for r := range input {
-		aggregate(s.result, r)
+	if s.debug {
+		s.printInDebugMode(input)
+		s.doneChan <- struct{}{}
+		return
 	}
-	s.doneChan <- struct{}{}
+	s.listenAndAggregate(input)
+	s.report()
 }
 
-func (s *stdoutJson) Report() {
+func (s *stdoutJson) report() {
 	p := 1e3
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
@@ -79,6 +84,89 @@ func (s *stdoutJson) DoneChan() <-chan struct{} {
 	return s.doneChan
 }
 
+func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
+	for r := range input {
+		aggregate(s.result, r)
+	}
+	s.doneChan <- struct{}{}
+}
+
+func getResponseInformation(sr *types.ScenarioStepResult) (map[string]string, string) {
+	responseHeaders := make(map[string]string, 0)
+	for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
+		values := strings.Join(v, ",")
+		responseHeaders[k] = values
+	}
+
+	contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+	var respBody string
+	if strings.Contains(contentType, "text/html") {
+		// decode text/html
+		respBody = string(sr.DebugInfo["responseBody"].([]byte))
+	} else if strings.Contains(contentType, "application/json") {
+		err := json.Unmarshal(sr.DebugInfo["responseBody"].([]byte), &respBody)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("application/json")
+	}
+
+	return responseHeaders, respBody
+}
+
+func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
+	stepDebugResults := struct {
+		DebugResults map[uint16]verboseHttpRequestInfo "json:\"steps\""
+	}{
+		DebugResults: map[uint16]verboseHttpRequestInfo{},
+	}
+	for r := range input { // only 1 sc result expected
+		for _, sr := range r.StepResults {
+			var verboseInfo verboseHttpRequestInfo
+			requestHeaders := make(map[string]string, 0)
+			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
+				values := strings.Join(v, ",")
+				requestHeaders[k] = values
+			}
+			verboseInfo.StepId = sr.StepID
+			verboseInfo.Request = struct {
+				Url     string            "json:\"url\""
+				Method  string            "json:\"method\""
+				Headers map[string]string "json:\"headers\""
+				Body    interface{}       "json:\"body\""
+			}{
+				Url:     sr.DebugInfo["url"].(string),
+				Method:  sr.DebugInfo["method"].(string),
+				Headers: requestHeaders,
+				Body:    sr.DebugInfo["requestBody"],
+			}
+
+			if sr.Err.Type != "" {
+				verboseInfo.Error = sr.Err.Error()
+			} else {
+				responseHeaders, responseBody := getResponseInformation(sr)
+				verboseInfo.Response = struct {
+					StatusCode int               "json:\"statusCode\""
+					Headers    map[string]string "json:\"headers\""
+					Body       interface{}       `json:"body"`
+				}{
+					StatusCode: sr.StatusCode,
+					Headers:    responseHeaders,
+					Body:       responseBody,
+				}
+			}
+
+			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo
+
+		}
+	}
+
+	valPretty, _ := json.MarshalIndent(stepDebugResults, "", "  ")
+	fmt.Fprintf(out, "%s \n",
+		white(fmt.Sprintf(" %-6s",
+			valPretty)))
+}
+
 // Report wraps Result to add success/fails percentage values
 type Report Result
 
@@ -95,9 +183,9 @@ func (r Result) MarshalJSON() ([]byte, error) {
 }
 
 // ItemReport wraps ScenarioStepReport to add success/fails percentage values
-type ItemReport ScenarioStepResult
+type ItemReport ScenarioStepResultSummary
 
-func (s ScenarioStepResult) MarshalJSON() ([]byte, error) {
+func (s ScenarioStepResultSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ItemReport
 		SuccesPerc int `json:"success_perc"`
@@ -121,4 +209,65 @@ var strKeyToJsonKey = map[string]string{
 	"serverProcessDuration": "server_processing",
 	"resDuration":           "response_read",
 	"duration":              "total",
+}
+
+type verboseHttpRequestInfo struct {
+	StepId  uint16 `json:"stepId"`
+	Request struct {
+		Url     string            `json:"url"`
+		Method  string            `json:"method"`
+		Headers map[string]string `json:"headers"`
+		Body    interface{}       `json:"body"`
+	} `json:"request"`
+	Response struct {
+		StatusCode int               `json:"statusCode"`
+		Headers    map[string]string `json:"headers"`
+		Body       interface{}       `json:"body"`
+	} `json:"response"`
+	Error string `json:"error"`
+}
+
+func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
+	if v.Error != "" {
+		type alias struct {
+			StepId  uint16 `json:"stepId"`
+			Request struct {
+				Url     string            `json:"url"`
+				Method  string            `json:"method"`
+				Headers map[string]string `json:"headers"`
+				Body    interface{}       `json:"body"`
+			} `json:"request"`
+			Error string `json:"error"`
+		}
+
+		a := alias{
+			Request: v.Request,
+			Error:   v.Error,
+			StepId:  v.StepId,
+		}
+		return json.Marshal(a)
+	}
+
+	type alias struct {
+		StepId  uint16 `json:"stepId"`
+		Request struct {
+			Url     string            `json:"url"`
+			Method  string            `json:"method"`
+			Headers map[string]string `json:"headers"`
+			Body    interface{}       `json:"body"`
+		} `json:"request"`
+		Response struct {
+			StatusCode int               `json:"statusCode"`
+			Headers    map[string]string `json:"headers"`
+			Body       interface{}       `json:"body"`
+		} `json:"response"`
+	}
+
+	a := alias{
+		StepId:   v.StepId,
+		Request:  v.Request,
+		Response: v.Response,
+	}
+	return json.Marshal(a)
+
 }

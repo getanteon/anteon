@@ -34,7 +34,7 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 		scenarioDuration += float32(sr.Duration.Seconds())
 
 		if _, ok := result.StepResults[sr.StepID]; !ok {
-			result.StepResults[sr.StepID] = &ScenarioStepResult{
+			result.StepResults[sr.StepID] = &ScenarioStepResultSummary{
 				Name:           sr.StepName,
 				StatusCodeDist: make(map[int]int, 0),
 				ErrorDist:      make(map[string]int),
@@ -75,10 +75,10 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 
 // Total test result, all scenario iterations combined
 type Result struct {
-	SuccessCount int64                          `json:"success_count"`
-	FailedCount  int64                          `json:"fail_count"`
-	AvgDuration  float32                        `json:"avg_duration"`
-	StepResults  map[uint16]*ScenarioStepResult `json:"steps"`
+	SuccessCount int64                                 `json:"success_count"`
+	FailedCount  int64                                 `json:"fail_count"`
+	AvgDuration  float32                               `json:"avg_duration"`
+	StepResults  map[uint16]*ScenarioStepResultSummary `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {
@@ -96,7 +96,7 @@ func (r *Result) failedPercentage() int {
 	return 100 - r.successPercentage()
 }
 
-type ScenarioStepResult struct {
+type ScenarioStepResultSummary struct {
 	Name           string             `json:"name"`
 	StatusCodeDist map[int]int        `json:"status_code_dist"`
 	ErrorDist      map[string]int     `json:"error_dist"`
@@ -105,7 +105,7 @@ type ScenarioStepResult struct {
 	FailedCount    int64              `json:"fail_count"`
 }
 
-func (s *ScenarioStepResult) successPercentage() int {
+func (s *ScenarioStepResultSummary) successPercentage() int {
 	if s.SuccessCount+s.FailedCount == 0 {
 		return 0
 	}
@@ -113,7 +113,7 @@ func (s *ScenarioStepResult) successPercentage() int {
 	return int(t * 100)
 }
 
-func (s *ScenarioStepResult) failedPercentage() int {
+func (s *ScenarioStepResultSummary) failedPercentage() int {
 	if s.SuccessCount+s.FailedCount == 0 {
 		return 0
 	}
