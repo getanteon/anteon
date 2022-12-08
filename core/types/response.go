@@ -65,6 +65,9 @@ type ScenarioStepResult struct {
 	// Error occurred at request time.
 	Err RequestError
 
+	// Detailed Debug Info
+	DebugInfo map[string]interface{}
+
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}
 }

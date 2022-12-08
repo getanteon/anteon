@@ -31,7 +31,8 @@ import (
 
 func TestInitStdoutJson(t *testing.T) {
 	sj := &stdoutJson{}
-	sj.Init()
+	debug := false
+	sj.Init(debug)
 
 	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -130,7 +131,8 @@ func TestStdoutJsonStart(t *testing.T) {
 	}
 
 	s := &stdoutJson{}
-	s.Init()
+	debug := false
+	s.Init(debug)
 
 	responseChan := make(chan *types.ScenarioResult, len(responses))
 	go s.Start(responseChan)

@@ -37,13 +37,15 @@ func init() {
 type stdoutJson struct {
 	doneChan chan struct{}
 	result   *Result
+	debug    bool
 }
 
-func (s *stdoutJson) Init() (err error) {
+func (s *stdoutJson) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResult),
 	}
+	s.debug = debug
 	return
 }
 

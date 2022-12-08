@@ -186,7 +186,7 @@ func TestInitService(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies)
+	err := service.Init(ctx, scenario, proxies, false)
 
 	// Assert
 	if err != nil {
@@ -220,7 +220,7 @@ func TestInitServiceFail(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies)
+	err := service.Init(ctx, scenario, proxies, false)
 
 	// Assert
 	if err == nil {
@@ -502,7 +502,7 @@ func TestGetOrCreateRequesters(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 	expectedClients := map[*url.URL][]scenarioItemRequester{
@@ -548,7 +548,7 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 
@@ -597,7 +597,7 @@ func TestGetOrCreateRequestersFailed(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	p, _ := url.Parse("http://proxy_server2.com:8080")
 

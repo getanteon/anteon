@@ -32,7 +32,7 @@ var AvailableOutputServices = make(map[string]ReportService)
 // ReportService is the interface that abstracts different report implementations.
 type ReportService interface {
 	DoneChan() <-chan struct{}
-	Init() error
+	Init(debug bool) error
 	Start(input chan *types.ScenarioResult)
 	Report()
 }

@@ -149,6 +149,8 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	var contentLength int64
 	var requestErr types.RequestError
 	var reqStartTime = time.Now()
+	var respBody []byte
+	var respHeaders http.Header
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
@@ -177,8 +179,14 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
 	if httpRes != nil {
-		io.Copy(ioutil.Discard, httpRes.Body)
+		respBody, err = io.ReadAll(httpRes.Body)
+		if err != nil {
+			return
+		}
+		// since upper line read body to EOF, no need for copying into ioutil.Discard
+		// io.Copy(ioutil.Discard, httpRes.Body)
 		httpRes.Body.Close()
+		respHeaders = httpRes.Header
 	}
 
 	var ddResTime time.Duration
@@ -197,6 +205,14 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		Duration:      durations.totalDuration(),
 		ContentLength: contentLength,
 		Err:           requestErr,
+		DebugInfo: map[string]interface{}{
+			"url":             httpReq.URL.String(),
+			"method":          httpReq.Method,
+			"requestHeaders":  httpReq.Header,
+			"requestBody":     httpReq.Body,
+			"responseBody":    respBody,
+			"responseHeaders": respHeaders,
+		},
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),

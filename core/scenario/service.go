@@ -44,6 +44,7 @@ type ScenarioService struct {
 	ctx      context.Context
 
 	clientMutex sync.Mutex
+	debug       bool
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -53,9 +54,10 @@ func NewScenarioService() *ScenarioService {
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
-func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL) (err error) {
+func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL, debug bool) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
+	s.debug = debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
 		err = s.createRequesters(p)

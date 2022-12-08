@@ -21,6 +21,7 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -49,24 +50,35 @@ type stdout struct {
 	result      *Result
 	printTicker *time.Ticker
 	mu          sync.Mutex
+	debug       bool
 }
 
+var white = color.New(color.FgHiWhite).SprintFunc()
 var blue = color.New(color.FgHiBlue).SprintFunc()
 var green = color.New(color.FgHiGreen).SprintFunc()
 var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
-func (s *stdout) Init() (err error) {
+func (s *stdout) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResult),
 	}
+	s.debug = debug
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
+	if s.debug {
+		color.Cyan("%s Running in debug mode, 1 iteration will be played... \n", emoji.Bug)
+	}
 	return
 }
 
 func (s *stdout) Start(input chan *types.ScenarioResult) {
+	if s.debug {
+		s.printInDebugMode(input)
+		s.doneChan <- struct{}{}
+		return
+	}
 	go s.realTimePrintStart()
 
 	for r := range input {
@@ -77,6 +89,85 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 
 	s.realTimePrintStop()
 	s.doneChan <- struct{}{}
+}
+
+type verboseHttpRequestInfo struct {
+	Request struct {
+		Url     string            `json:"url"`
+		Method  string            `json:"method"`
+		Headers map[string]string `json:"headers"`
+	} `json:"request"`
+	Response struct {
+		StatusCode int               `json:"statusCode"`
+		Headers    map[string]string `json:"headers"`
+		Body       interface{}       `json:"body"`
+	} `json:"response"`
+}
+
+func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
+	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
+	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+
+	for r := range input { // only 1 sc result expected
+		for _, sr := range r.StepResults {
+			requestHeaders := make(map[string]string, 0)
+			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
+				values := strings.Join(v, ",")
+				requestHeaders[k] = values
+			}
+
+			responseHeaders := make(map[string]string, 0)
+			for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
+				values := strings.Join(v, ",")
+				responseHeaders[k] = values
+			}
+
+			// TODO: may be a connection error or timeout, handle that case
+			// sr.Err.Reason
+
+			contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+			var respBody string
+			if strings.Contains(contentType, "text/html") {
+				// decode text/html
+				respBody = string(sr.DebugInfo["responseBody"].([]byte))
+			} else if strings.Contains(contentType, "application/json") {
+				err := json.Unmarshal(sr.DebugInfo["responseBody"].([]byte), &respBody)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("application/json")
+			}
+
+			verboseInfo := verboseHttpRequestInfo{
+				Request: struct {
+					Url     string            "json:\"url\""
+					Method  string            "json:\"method\""
+					Headers map[string]string "json:\"headers\""
+				}{
+					Url:     sr.DebugInfo["url"].(string),
+					Method:  sr.DebugInfo["method"].(string),
+					Headers: requestHeaders,
+				},
+
+				Response: struct {
+					StatusCode int               "json:\"statusCode\""
+					Headers    map[string]string "json:\"headers\""
+					Body       interface{}       `json:"body"`
+				}{
+					StatusCode: sr.StatusCode,
+					Headers:    responseHeaders,
+					Body:       respBody,
+				},
+			}
+
+			valPretty, _ := json.MarshalIndent(verboseInfo, "", "  ")
+			fmt.Fprintf(out, "%s http request: %s \n",
+				sr.RequestTime.UTC().String(), white(fmt.Sprintf(" %-6s",
+					valPretty)))
+
+		}
+		aggregate(s.result, r)
+	}
 }
 
 func (s *stdout) Report() {

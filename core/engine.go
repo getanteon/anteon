@@ -95,12 +95,17 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll()); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
 		return
 	}
 
-	if err = e.reportService.Init(); err != nil {
+	if err = e.reportService.Init(e.hammer.Debug); err != nil {
 		return
+	}
+
+	if e.hammer.Debug {
+		e.hammer.IterationCount = 1 // run once in debug mode
+		e.hammer.TestDuration = 1
 	}
 
 	e.initReqCountArr()

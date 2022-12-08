@@ -79,6 +79,9 @@ type Hammer struct {
 
 	// Dynamic field for extra parameters.
 	Others map[string]interface{}
+
+	// Debug mode on/off
+	Debug bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
