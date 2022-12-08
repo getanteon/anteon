@@ -43,25 +43,25 @@ func TestInitStdoutJson(t *testing.T) {
 }
 
 func TestStdoutJsonStart(t *testing.T) {
-	responses := []*types.Response{
+	responses := []*types.ScenarioResult{
 		{
 			StartTime: time.Now(),
-			ResponseItems: []*types.ResponseItem{
+			StepResults: []*types.ScenarioStepResult{
 				{
-					ScenarioItemID: 1,
-					StatusCode:     200,
-					RequestTime:    time.Now().Add(1),
-					Duration:       time.Duration(10) * time.Second,
+					StepID:      1,
+					StatusCode:  200,
+					RequestTime: time.Now().Add(1),
+					Duration:    time.Duration(10) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(5) * time.Second,
 						"connDuration": time.Duration(5) * time.Second,
 					},
 				},
 				{
-					ScenarioItemID: 2,
-					RequestTime:    time.Now().Add(2),
-					Duration:       time.Duration(30) * time.Second,
-					Err:            types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout},
+					StepID:      2,
+					RequestTime: time.Now().Add(2),
+					Duration:    time.Duration(30) * time.Second,
+					Err:         types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout},
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(10) * time.Second,
 						"connDuration": time.Duration(20) * time.Second,
@@ -71,22 +71,22 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 		{
 			StartTime: time.Now().Add(10),
-			ResponseItems: []*types.ResponseItem{
+			StepResults: []*types.ScenarioStepResult{
 				{
-					ScenarioItemID: 1,
-					StatusCode:     200,
-					RequestTime:    time.Now().Add(11),
-					Duration:       time.Duration(30) * time.Second,
+					StepID:      1,
+					StatusCode:  200,
+					RequestTime: time.Now().Add(11),
+					Duration:    time.Duration(30) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(10) * time.Second,
 						"connDuration": time.Duration(20) * time.Second,
 					},
 				},
 				{
-					ScenarioItemID: 2,
-					StatusCode:     401,
-					RequestTime:    time.Now().Add(12),
-					Duration:       time.Duration(60) * time.Second,
+					StepID:      2,
+					StatusCode:  401,
+					RequestTime: time.Now().Add(12),
+					Duration:    time.Duration(60) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(20) * time.Second,
 						"connDuration": time.Duration(40) * time.Second,
@@ -96,7 +96,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 	}
 
-	itemReport1 := &ScenarioItemReport{
+	itemReport1 := &ScenarioStepResult{
 		StatusCodeDist: map[int]int{200: 2},
 		SuccessCount:   2,
 		FailedCount:    0,
@@ -107,7 +107,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioItemReport{
+	itemReport2 := &ScenarioStepResult{
 		StatusCodeDist: map[int]int{401: 1},
 		SuccessCount:   1,
 		FailedCount:    1,
@@ -123,7 +123,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[uint16]*ScenarioItemReport{
+		StepResults: map[uint16]*ScenarioStepResult{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
@@ -132,7 +132,7 @@ func TestStdoutJsonStart(t *testing.T) {
 	s := &stdoutJson{}
 	s.Init()
 
-	responseChan := make(chan *types.Response, len(responses))
+	responseChan := make(chan *types.ScenarioResult, len(responses))
 	go s.Start(responseChan)
 
 	go func() {
@@ -160,7 +160,7 @@ func TestStdoutJsonStart(t *testing.T) {
 
 func TestStdoutJsonOutput(t *testing.T) {
 	// Arrange
-	itemReport1 := &ScenarioItemReport{
+	itemReport1 := &ScenarioStepResult{
 		StatusCodeDist: map[int]int{200: 11},
 		SuccessCount:   11,
 		FailedCount:    0,
@@ -171,7 +171,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioItemReport{
+	itemReport2 := &ScenarioStepResult{
 		StatusCodeDist: map[int]int{401: 1, 200: 9},
 		SuccessCount:   9,
 		FailedCount:    2,
@@ -186,7 +186,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		SuccessCount: 9,
 		FailedCount:  2,
 		AvgDuration:  0.25637,
-		ItemReports: map[uint16]*ScenarioItemReport{
+		StepResults: map[uint16]*ScenarioStepResult{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},

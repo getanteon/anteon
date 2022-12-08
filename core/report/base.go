@@ -33,7 +33,7 @@ var AvailableOutputServices = make(map[string]ReportService)
 type ReportService interface {
 	DoneChan() <-chan struct{}
 	Init() error
-	Start(input chan *types.Response)
+	Start(input chan *types.ScenarioResult)
 	Report()
 }
 

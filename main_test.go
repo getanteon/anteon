@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func resetFlags() {
-	*reqCount = types.DefaultReqCount
+	*iterCount = types.DefaultIterCount
 	*loadType = types.DefaultLoadType
 	*duration = types.DefaultDuration
 
@@ -72,8 +72,8 @@ func TestDefaultFlagValues(t *testing.T) {
 
 	flag.Parse()
 
-	if *reqCount != types.DefaultReqCount {
-		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultReqCount, *reqCount)
+	if *iterCount != types.DefaultIterCount {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultIterCount, *iterCount)
 	}
 	if *loadType != types.DefaultLoadType {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultLoadType, *loadType)
@@ -172,7 +172,7 @@ func TestCreateHammer(t *testing.T) {
 func TestCreateScenario(t *testing.T) {
 	url := "https://test.com"
 	valid := types.Scenario{
-		Scenario: []types.ScenarioItem{
+		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
 				Protocol: types.DefaultProtocol,
@@ -184,7 +184,7 @@ func TestCreateScenario(t *testing.T) {
 		},
 	}
 	validWithAuth := types.Scenario{
-		Scenario: []types.ScenarioItem{
+		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
 				Protocol: types.DefaultProtocol,
@@ -301,7 +301,7 @@ func TestCreateScenarioTLS(t *testing.T) {
 				if err != nil {
 					t.Errorf("Errored: %v", err)
 				}
-				if !reflect.DeepEqual(test.expected, s.Scenario[0].Cert) {
+				if !reflect.DeepEqual(test.expected, s.Steps[0].Cert) {
 					t.Errorf("Expected %v, Found %v", test.expected, s)
 				}
 			}

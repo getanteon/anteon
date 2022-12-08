@@ -36,7 +36,7 @@ func TestNewRequester(t *testing.T) {
 
 	// Valid output types
 	for _, o := range types.SupportedProtocols {
-		service, err := NewRequester(types.ScenarioItem{Protocol: o})
+		service, err := NewRequester(types.ScenarioStep{Protocol: o})
 
 		if err != nil {
 			t.Errorf("TestNewRequester %v", err)
@@ -48,7 +48,7 @@ func TestNewRequester(t *testing.T) {
 	}
 
 	// Invalid output type
-	_, err := NewRequester(types.ScenarioItem{Protocol: "invalid_protocol"})
+	_, err := NewRequester(types.ScenarioStep{Protocol: "invalid_protocol"})
 	if err == nil {
 		t.Errorf("TestNewRequester invalid protocol should errored")
 	}

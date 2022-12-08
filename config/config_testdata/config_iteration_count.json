@@ -1,0 +1,35 @@
+{
+    "iteration_count": 1555,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "protocol": "https",
+            "method": "GET",
+            "payload": "payload str",
+            "timeout": 3,
+            "sleep": "1000",
+            "others": {
+                "keep-alive": true
+            }
+        },
+        {
+            "id": 2,
+            "name": "Example Name 2",
+            "url": "http://test.com",
+            "protocol": "https",
+            "method": "PUT",
+            "headers": {
+                "ContenType": "application/xml",
+                "X-ddosify-key": "ajkndalnasd"
+            },
+            "timeout": 2,
+            "sleep": " 300-500"
+        }
+    ],
+    "output": "stdout",
+    "proxy": "http://proxy_host:80"
+}

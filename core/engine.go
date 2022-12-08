@@ -53,7 +53,7 @@ type engine struct {
 	reqCountArr []int
 	wg          sync.WaitGroup
 
-	responseChan chan *types.Response
+	resultChan chan *types.ScenarioResult
 
 	ctx context.Context
 }
@@ -109,8 +109,8 @@ func (e *engine) Init() (err error) {
 
 func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
-	e.responseChan = make(chan *types.Response, e.hammer.TotalReqCount)
-	go e.reportService.Start(e.responseChan)
+	e.resultChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+	go e.reportService.Start(e.resultChan)
 
 	defer func() {
 		ticker.Stop()
@@ -150,11 +150,12 @@ func (e *engine) runWorkers(c int) {
 }
 
 func (e *engine) runWorker(scenarioStartTime time.Time) {
-	var res *types.Response
+	var res *types.ScenarioResult
 	var err *types.RequestError
 
 	p := e.proxyService.GetProxy()
-	for i := 1; i <= 3; i++ {
+	retryCount := 3
+	for i := 1; i <= retryCount; i++ {
 		res, err = e.scenarioService.Do(p, scenarioStartTime)
 
 		if err != nil && err.Type == types.ErrorProxy {
@@ -172,12 +173,12 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
-	e.responseChan <- res
+	e.resultChan <- res
 }
 
 func (e *engine) stop() {
 	e.wg.Wait()
-	close(e.responseChan)
+	close(e.resultChan)
 	<-e.reportService.DoneChan()
 	e.reportService.Report()
 	e.proxyService.Done()
@@ -221,7 +222,7 @@ func (e *engine) createManualReqCountArr() {
 
 func (e *engine) createLinearReqCountArr() {
 	steps := make([]int, e.hammer.TestDuration)
-	createLinearDistArr(e.hammer.TotalReqCount, steps)
+	createLinearDistArr(e.hammer.IterationCount, steps)
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	for i := range steps {
 		tickArrStartIndex := i * tickPerSecond
@@ -232,7 +233,7 @@ func (e *engine) createLinearReqCountArr() {
 }
 
 func (e *engine) createIncrementalReqCountArr() {
-	steps := createIncrementalDistArr(e.hammer.TotalReqCount, e.hammer.TestDuration)
+	steps := createIncrementalDistArr(e.hammer.IterationCount, e.hammer.TestDuration)
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	for i := range steps {
 		tickArrStartIndex := i * tickPerSecond
@@ -249,13 +250,13 @@ func (e *engine) createWavedReqCountArr() {
 		quarterWaveCount = 1
 	}
 	qWaveDuration := int(e.hammer.TestDuration / quarterWaveCount)
-	reqCountPerQWave := int(e.hammer.TotalReqCount / quarterWaveCount)
+	reqCountPerQWave := int(e.hammer.IterationCount / quarterWaveCount)
 	tickArrStartIndex := 0
 
 	for i := 0; i < quarterWaveCount; i++ {
 		if i == quarterWaveCount-1 {
 			// Add remaining req count to the last wave
-			reqCountPerQWave += e.hammer.TotalReqCount - (reqCountPerQWave * quarterWaveCount)
+			reqCountPerQWave += e.hammer.IterationCount - (reqCountPerQWave * quarterWaveCount)
 		}
 
 		steps := createIncrementalDistArr(reqCountPerQWave, qWaveDuration)

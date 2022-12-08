@@ -46,9 +46,9 @@ const headerRegexp = `^*(.+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
-	reqCount = flag.Int("n", types.DefaultReqCount, "Total request count")
-	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
-	loadType = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
+	iterCount = flag.Int("n", types.DefaultIterCount, "Total iteration count")
+	duration  = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
+	loadType  = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
 
 	// TODO:V1 - Remove protocol flag at v1.
 	// Adjusting the protocol from both the target flag and this flag increases the complexity of the system&usage.
@@ -182,7 +182,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 	}
 
 	h = types.Hammer{
-		TotalReqCount:     *reqCount,
+		IterationCount:    *iterCount,
 		LoadType:          strings.ToLower(*loadType),
 		TestDuration:      *duration,
 		Scenario:          s,
@@ -237,7 +237,7 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	*protocol = strings.ToUpper(*protocol)
-	scenarioItem := types.ScenarioItem{
+	step := types.ScenarioStep{
 		ID:       1,
 		Protocol: *protocol,
 		Method:   strings.ToUpper(*method),
@@ -256,10 +256,10 @@ func createScenario() (s types.Scenario, err error) {
 			return
 		}
 
-		scenarioItem.Cert = cert
-		scenarioItem.CertPool = pool
+		step.Cert = cert
+		step.CertPool = pool
 	}
-	s = types.Scenario{Scenario: []types.ScenarioItem{scenarioItem}}
+	s = types.Scenario{Steps: []types.ScenarioStep{step}}
 
 	return
 }

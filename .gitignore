@@ -20,3 +20,5 @@ main
 dist/
 ddosify
 .vscode
+.idea/
+

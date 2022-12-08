@@ -98,7 +98,8 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount     int          `json:"request_count"`
+	ReqCount     *int         `json:"request_count"`
+	IterCount    *int         `json:"iteration_count"`
 	LoadType     string       `json:"load_type"`
 	Duration     int          `json:"duration"`
 	TimeRunCount timeRunCount `json:"manual_load"`
@@ -110,7 +111,6 @@ type JsonReader struct {
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
 	type jsonReaderAlias JsonReader
 	defaultFields := &jsonReaderAlias{
-		ReqCount: types.DefaultReqCount,
 		LoadType: types.DefaultLoadType,
 		Duration: types.DefaultDuration,
 		Output:   types.DefaultOutputType,
@@ -141,14 +141,14 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	// Scenario
 	s := types.Scenario{}
-	var si types.ScenarioItem
+	var si types.ScenarioStep
 	for _, step := range j.Steps {
-		si, err = stepToScenarioItem(step)
+		si, err = stepToScenarioStep(step)
 		if err != nil {
 			return
 		}
 
-		s.Scenario = append(s.Scenario, si)
+		s.Steps = append(s.Steps, si)
 	}
 
 	// Proxy
@@ -164,18 +164,29 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Addr:     proxyURL,
 	}
 
+	// for backwards compatibility
+	var iterationCount int
+	if j.IterCount != nil {
+		iterationCount = *j.IterCount
+	} else if j.ReqCount != nil {
+		iterationCount = *j.ReqCount
+	} else {
+		iterationCount = types.DefaultIterCount
+	}
+	j.IterCount = &iterationCount
+
 	// TimeRunCount
 	if len(j.TimeRunCount) > 0 {
-		j.ReqCount, j.Duration = 0, 0
+		*j.IterCount, j.Duration = 0, 0
 		for _, t := range j.TimeRunCount {
-			j.ReqCount += t.Count
+			*j.IterCount += t.Count
 			j.Duration += t.Duration
 		}
 	}
 
 	// Hammer
 	h = types.Hammer{
-		TotalReqCount:     j.ReqCount,
+		IterationCount:    *j.IterCount,
 		LoadType:          strings.ToLower(j.LoadType),
 		TestDuration:      j.Duration,
 		TimeRunCountMap:   types.TimeRunCount(j.TimeRunCount),
@@ -186,7 +197,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	return
 }
 
-func stepToScenarioItem(s step) (types.ScenarioItem, error) {
+func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	var payload string
 	var err error
 	if len(s.PayloadMultipart) > 0 {
@@ -196,12 +207,12 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 
 		payload, s.Headers["Content-Type"], err = prepareMultipartPayload(s.PayloadMultipart)
 		if err != nil {
-			return types.ScenarioItem{}, err
+			return types.ScenarioStep{}, err
 		}
 	} else if s.PayloadFile != "" {
 		buf, err := ioutil.ReadFile(s.PayloadFile)
 		if err != nil {
-			return types.ScenarioItem{}, err
+			return types.ScenarioStep{}, err
 		}
 
 		payload = string(buf)
@@ -218,12 +229,12 @@ func stepToScenarioItem(s step) (types.ScenarioItem, error) {
 	// Protocol & URL
 	s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
 	if err != nil {
-		return types.ScenarioItem{}, err
+		return types.ScenarioStep{}, err
 	}
 
 	s.Protocol = strings.ToUpper(s.Protocol)
 
-	item := types.ScenarioItem{
+	item := types.ScenarioStep{
 		ID:       s.Id,
 		Name:     s.Name,
 		URL:      s.Url,

@@ -40,12 +40,12 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_empty.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
@@ -74,12 +74,125 @@ func TestCreateHammer(t *testing.T) {
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config.json"), ConfigTypeJson)
 	addr, _ := url.Parse("http://proxy_host:80")
 	expectedHammer := types.Hammer{
-		TotalReqCount:     1555,
+		IterationCount:    1555,
 		LoadType:          types.LoadTypeWaved,
 		TestDuration:      21,
 		ReportDestination: report.OutputTypeStdout,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{
+			Steps: []types.ScenarioStep{
+				{
+					ID:       1,
+					Name:     "Example Name 1",
+					URL:      "https://app.servdown.com/accounts/login/?next=/",
+					Protocol: types.ProtocolHTTPS,
+					Method:   http.MethodGet,
+					Timeout:  3,
+					Sleep:    "1000",
+					Payload:  "payload str",
+					Custom: map[string]interface{}{
+						"keep-alive": true,
+					},
+				},
+				{
+					ID:       2,
+					Name:     "Example Name 2",
+					URL:      "http://test.com",
+					Protocol: types.ProtocolHTTP,
+					Method:   http.MethodPut,
+					Timeout:  2,
+					Sleep:    "300-500",
+					Headers: map[string]string{
+						"ContenType":    "application/xml",
+						"X-ddosify-key": "ajkndalnasd",
+					},
+				},
+			},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: "single",
+			Addr:     addr,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammer error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("\nExpected: %v,\n Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_iteration_count.json"), ConfigTypeJson)
+	addr, _ := url.Parse("http://proxy_host:80")
+	expectedHammer := types.Hammer{
+		IterationCount:    1555,
+		LoadType:          types.LoadTypeWaved,
+		TestDuration:      21,
+		ReportDestination: report.OutputTypeStdout,
+		Scenario: types.Scenario{
+			Steps: []types.ScenarioStep{
+				{
+					ID:       1,
+					Name:     "Example Name 1",
+					URL:      "https://app.servdown.com/accounts/login/?next=/",
+					Protocol: types.ProtocolHTTPS,
+					Method:   http.MethodGet,
+					Timeout:  3,
+					Sleep:    "1000",
+					Payload:  "payload str",
+					Custom: map[string]interface{}{
+						"keep-alive": true,
+					},
+				},
+				{
+					ID:       2,
+					Name:     "Example Name 2",
+					URL:      "http://test.com",
+					Protocol: types.ProtocolHTTP,
+					Method:   http.MethodPut,
+					Timeout:  2,
+					Sleep:    "300-500",
+					Headers: map[string]string{
+						"ContenType":    "application/xml",
+						"X-ddosify-key": "ajkndalnasd",
+					},
+				},
+			},
+		},
+		Proxy: proxy.Proxy{
+			Strategy: "single",
+			Addr:     addr,
+		},
+	}
+
+	h, err := jsonReader.CreateHammer()
+
+	if err != nil {
+		t.Errorf("TestCreateHammer error occurred: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedHammer, h) {
+		t.Errorf("\nExpected: %v,\n Found: %v", expectedHammer, h)
+	}
+}
+
+func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_iteration_count_over_req_count.json"),
+		ConfigTypeJson)
+	addr, _ := url.Parse("http://proxy_host:80")
+	expectedHammer := types.Hammer{
+		IterationCount:    333,
+		LoadType:          types.LoadTypeWaved,
+		TestDuration:      21,
+		ReportDestination: report.OutputTypeStdout,
+		Scenario: types.Scenario{
+			Steps: []types.ScenarioStep{
 				{
 					ID:       1,
 					Name:     "Example Name 1",
@@ -130,13 +243,13 @@ func TestCreateHammerManualLoad(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     35,
+		IterationCount:    35,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      18,
 		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
@@ -165,13 +278,13 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_manual_load_override.json"), ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     35,
+		IterationCount:    35,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      18,
 		TimeRunCountMap:   types.TimeRunCount{{Duration: 5, Count: 5}, {Duration: 6, Count: 10}, {Duration: 7, Count: 20}},
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
@@ -205,7 +318,7 @@ func TestCreateHammerPayload(t *testing.T) {
 		t.Errorf("TestCreateHammerPayload error occurred: %v", err)
 	}
 
-	steps := h.Scenario.Scenario
+	steps := h.Scenario.Steps
 
 	if steps[0].Payload != expectedPayloads[0] {
 		t.Errorf("Expected: %v, Found: %v", expectedPayloads[0], steps[0].Payload)
@@ -224,7 +337,7 @@ func TestCreateHammerMultipartPayload(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestCreateHammerMultipartPayload error occurred: %v", err)
 	}
-	steps := h.Scenario.Scenario
+	steps := h.Scenario.Steps
 
 	// Content-Type Header Check
 	val, ok := steps[0].Headers["Content-Type"]
@@ -260,7 +373,7 @@ func TestCreateHammerAuth(t *testing.T) {
 		t.Errorf("TestCreateHammerAuth error occurred: %v", err)
 	}
 
-	steps := h.Scenario.Scenario
+	steps := h.Scenario.Steps
 	if steps[0].Auth != expectedAuths[0] {
 		t.Errorf("Expected: %v, Found: %v", expectedAuths[0], steps[0].Auth)
 	}
@@ -280,7 +393,7 @@ func TestCreateHammerProtocol(t *testing.T) {
 		t.Errorf("TestCreateHammerProtocol error occurred: %v", err)
 	}
 
-	steps := h.Scenario.Scenario
+	steps := h.Scenario.Steps
 	for i := 0; i < len(steps); i++ {
 		if steps[i].Protocol != expectedProtocols[i] {
 			t.Errorf("Step: %d, 1: Expected: %v, Found: %v", i, expectedProtocols[i], steps[0].Protocol)
@@ -335,8 +448,8 @@ func TestCreateHammerTLS(t *testing.T) {
 	}
 
 	// We compare only Certificte because CertPool has pointers inside and it's hard to compare it
-	if !reflect.DeepEqual(certVal, h.Scenario.Scenario[0].Cert) {
-		t.Errorf("\nExpected: %#v, \nFound: %#v", certVal, h.Scenario.Scenario[0].Cert)
+	if !reflect.DeepEqual(certVal, h.Scenario.Steps[0].Cert) {
+		t.Errorf("\nExpected: %#v, \nFound: %#v", certVal, h.Scenario.Steps[0].Cert)
 	}
 }
 
@@ -356,12 +469,12 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
@@ -401,12 +514,12 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,
@@ -437,12 +550,12 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 
 	jsonReader, _ := NewConfigReader(config, ConfigTypeJson)
 	expectedHammer := types.Hammer{
-		TotalReqCount:     types.DefaultReqCount,
+		IterationCount:    types.DefaultIterCount,
 		LoadType:          types.DefaultLoadType,
 		TestDuration:      types.DefaultDuration,
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{{
+			Steps: []types.ScenarioStep{{
 				ID:       1,
 				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
 				Protocol: types.DefaultProtocol,

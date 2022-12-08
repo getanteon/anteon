@@ -67,29 +67,29 @@ var supportedAuthentications = map[string][]string{
 	},
 }
 
-// Scenario struct contains a list of ScenarioItem so scenario.ScenarioService can execute the scenario step by step.
+// Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
 type Scenario struct {
-	Scenario []ScenarioItem
+	Steps []ScenarioStep
 }
 
 func (s *Scenario) validate() error {
-	stepIds := make(map[uint16]struct{}, len(s.Scenario))
-	for _, si := range s.Scenario {
-		if err := si.validate(); err != nil {
+	stepIds := make(map[uint16]struct{}, len(s.Steps))
+	for _, st := range s.Steps {
+		if err := st.validate(); err != nil {
 			return err
 		}
 
-		if _, ok := stepIds[si.ID]; ok {
-			return fmt.Errorf("duplicate step id: %d", si.ID)
+		if _, ok := stepIds[st.ID]; ok {
+			return fmt.Errorf("duplicate step id: %d", st.ID)
 		}
-		stepIds[si.ID] = struct{}{}
+		stepIds[st.ID] = struct{}{}
 	}
 	return nil
 }
 
-// ScenarioItem represents one step of a Scenario.
+// ScenarioStep represents one step of a Scenario.
 // This struct should be able to include all necessary data in a network packet for SupportedProtocols.
-type ScenarioItem struct {
+type ScenarioStep struct {
 	// ID of the Item. Should be given by the client.
 	ID uint16
 
@@ -137,7 +137,7 @@ type Auth struct {
 	Password string
 }
 
-func (si *ScenarioItem) validate() error {
+func (si *ScenarioStep) validate() error {
 	if !util.StringInSlice(si.Protocol, SupportedProtocols[:]) {
 		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
 	}
