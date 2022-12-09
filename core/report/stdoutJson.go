@@ -23,10 +23,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
-	"html"
 	"math"
-	"net/http"
-	"strings"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -92,35 +89,6 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	s.doneChan <- struct{}{}
 }
 
-func decodeResponse(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
-	responseHeaders := make(map[string]string, 0)
-	for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
-		values := strings.Join(v, ",")
-		responseHeaders[k] = values
-	}
-
-	contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-	byteBody := sr.DebugInfo["responseBody"].([]byte)
-
-	var respBody interface{}
-	if strings.Contains(contentType, "text/html") {
-		unescapedHmtl := html.UnescapeString(string(byteBody))
-		respBody = unescapedHmtl
-	} else if strings.Contains(contentType, "application/json") {
-		err := json.Unmarshal(byteBody, &respBody)
-		if err != nil {
-			return responseHeaders, respBody, err
-		}
-	} else if strings.Contains(contentType, "application/xml") {
-		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
-		respBody = string(sr.DebugInfo["responseBody"].([]byte))
-	} else { // for remaining content-types return plain string
-		respBody = string(sr.DebugInfo["responseBody"].([]byte))
-	}
-
-	return responseHeaders, respBody, nil
-}
-
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	stepDebugResults := struct {
 		DebugResults map[uint16]verboseHttpRequestInfo "json:\"steps\""
@@ -129,45 +97,8 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	}
 	for r := range input { // only 1 sc result expected
 		for _, sr := range r.StepResults {
-			var verboseInfo verboseHttpRequestInfo
-			requestHeaders := make(map[string]string, 0)
-			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
-				values := strings.Join(v, ",")
-				requestHeaders[k] = values
-			}
-			verboseInfo.StepId = sr.StepID
-			verboseInfo.Request = struct {
-				Url     string            "json:\"url\""
-				Method  string            "json:\"method\""
-				Headers map[string]string "json:\"headers\""
-				Body    interface{}       "json:\"body\""
-			}{
-				Url:     sr.DebugInfo["url"].(string),
-				Method:  sr.DebugInfo["method"].(string),
-				Headers: requestHeaders,
-				Body:    sr.DebugInfo["requestBody"],
-			}
-
-			if sr.Err.Type != "" {
-				verboseInfo.Error = sr.Err.Error()
-			} else {
-				responseHeaders, responseBody, err := decodeResponse(sr)
-				if err != nil {
-					continue // TODO
-				}
-				verboseInfo.Response = struct {
-					StatusCode int               "json:\"statusCode\""
-					Headers    map[string]string "json:\"headers\""
-					Body       interface{}       `json:"body"`
-				}{
-					StatusCode: sr.StatusCode,
-					Headers:    responseHeaders,
-					Body:       responseBody,
-				}
-			}
-
+			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo
-
 		}
 	}
 
@@ -219,22 +150,6 @@ var strKeyToJsonKey = map[string]string{
 	"serverProcessDuration": "server_processing",
 	"resDuration":           "response_read",
 	"duration":              "total",
-}
-
-type verboseHttpRequestInfo struct {
-	StepId  uint16 `json:"stepId"`
-	Request struct {
-		Url     string            `json:"url"`
-		Method  string            `json:"method"`
-		Headers map[string]string `json:"headers"`
-		Body    interface{}       `json:"body"`
-	} `json:"request"`
-	Response struct {
-		StatusCode int               `json:"statusCode"`
-		Headers    map[string]string `json:"headers"`
-		Body       interface{}       `json:"body"`
-	} `json:"response"`
-	Error string `json:"error"`
 }
 
 func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {

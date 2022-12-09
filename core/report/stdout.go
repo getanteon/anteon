@@ -143,47 +143,11 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 	for r := range input { // only 1 sc result expected
 		for _, sr := range r.StepResults {
-			var verboseInfo verboseHttpRequestInfo
-			verboseInfo.StepId = sr.StepID
-			requestHeaders := make(map[string]string, 0)
-			for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
-				values := strings.Join(v, ",")
-				requestHeaders[k] = values
-			}
-
-			verboseInfo.Request = struct {
-				Url     string            "json:\"url\""
-				Method  string            "json:\"method\""
-				Headers map[string]string "json:\"headers\""
-				Body    interface{}       "json:\"body\""
-			}{
-				Url:     sr.DebugInfo["url"].(string),
-				Method:  sr.DebugInfo["method"].(string),
-				Headers: requestHeaders,
-				Body:    sr.DebugInfo["requestBody"],
-			}
-
-			if sr.Err.Type != "" {
-				verboseInfo.Error = sr.Err.Error()
-			} else {
-				responseHeaders, responseBody, err := decodeResponse(sr)
-				if err != nil {
-					continue
-				}
-				verboseInfo.Response = struct {
-					StatusCode int               "json:\"statusCode\""
-					Headers    map[string]string "json:\"headers\""
-					Body       interface{}       `json:"body"`
-				}{
-					StatusCode: sr.StatusCode,
-					Headers:    responseHeaders,
-					Body:       responseBody,
-				}
-			}
+			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 
 			b := strings.Builder{}
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
-			color.Cyan("\n\nSTEP %d\n", verboseInfo.StepId)
+			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
 			fmt.Fprintln(w, "***********  REQUEST  ***********")
 			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
@@ -192,19 +156,26 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			for hKey, hVal := range verboseInfo.Request.Headers {
 				fmt.Fprintf(w, "> %s:\t%-5s \n", hKey, hVal)
 			}
-
 			fmt.Fprintln(w, "*")
-			fmt.Fprintf(w, "> Body: \t%-5s \n", verboseInfo.Request.Body)
 
-			fmt.Fprintln(w, "***********  RESPONSE  ***********")
-			fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
-			for hKey, hVal := range verboseInfo.Response.Headers {
-				fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
+			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
+			fmt.Fprint(w, "> ")
+			printBody(w, contentType, verboseInfo.Request.Body)
+
+			fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
+			if verboseInfo.Error != "" {
+				fmt.Fprintf(w, "> Error: \t%-5s \n", verboseInfo.Error)
+			} else {
+				fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+				for hKey, hVal := range verboseInfo.Response.Headers {
+					fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
+				}
+
+				fmt.Fprintln(w, "*")
+				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+				fmt.Fprintf(w, "< ")
+				printBody(w, contentType, verboseInfo.Response.Body)
 			}
-
-			fmt.Fprintln(w, "*")
-			contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-			printResponseBody(w, contentType, verboseInfo)
 
 			fmt.Fprintln(w)
 			fmt.Fprint(out, b.String())
@@ -213,14 +184,14 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 	}
 }
 
-func printResponseBody(w *tabwriter.Writer, contentType string, verboseInfo verboseHttpRequestInfo) {
+func printBody(w *tabwriter.Writer, contentType string, body interface{}) {
 	if strings.Contains(contentType, "application/json") {
-		valPretty, _ := json.MarshalIndent(verboseInfo.Response.Body, "", "  ")
-		fmt.Fprintf(w, "< Body: \n%s", valPretty)
+		valPretty, _ := json.MarshalIndent(body, "", "  ")
+		fmt.Fprintf(w, "Body: \n%s", valPretty)
 	} else {
 		// html unescaped text
 		// if xml came as decoded, we could pretty print it like json
-		fmt.Fprintf(w, "< Body: \n%s", verboseInfo.Response.Body)
+		fmt.Fprintf(w, "Body: \n%s", body.(string))
 	}
 }
 

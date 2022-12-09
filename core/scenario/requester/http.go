@@ -25,7 +25,6 @@ import (
 	"context"
 	"crypto/tls"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -156,6 +155,10 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	trace := newTrace(durations, h.proxyAddr)
 	httpReq := h.prepareReq(trace)
 
+	var copiedReqBody bytes.Buffer
+	io.Copy(&copiedReqBody, httpReq.Body)
+	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+
 	// Action
 	httpRes, err := h.client.Do(httpReq)
 	durations.setResDur()
@@ -195,11 +198,6 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
-	reqBody, err := io.ReadAll(httpReq.Body)
-	if err != nil {
-		return
-	}
-
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -214,7 +212,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 			"url":             httpReq.URL.String(),
 			"method":          httpReq.Method,
 			"requestHeaders":  httpReq.Header,
-			"requestBody":     reqBody,
+			"requestBody":     copiedReqBody.Bytes(),
 			"responseBody":    respBody,
 			"responseHeaders": respHeaders,
 		},
@@ -245,7 +243,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 		body, _ = h.vi.Inject(h.packet.Payload)
 	}
 
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
 	httpReq.ContentLength = int64(len(body))
 
 	httpReq.URL, _ = url.Parse(h.packet.URL)
