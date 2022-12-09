@@ -103,11 +103,6 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.hammer.Debug {
-		e.hammer.IterationCount = 1 // run once in debug mode
-		e.hammer.TestDuration = 1
-	}
-
 	e.initReqCountArr()
 	return
 }
@@ -190,6 +185,10 @@ func (e *engine) stop() {
 }
 
 func (e *engine) initReqCountArr() {
+	if e.hammer.Debug {
+		e.reqCountArr = []int{1}
+		return
+	}
 	length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
 	e.reqCountArr = make([]int, length)
 

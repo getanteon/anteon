@@ -71,7 +71,8 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, pro
 // Do executes the scenario for the given proxy.
 // Returns "types.Response" filled by the requester of the given Proxy, injects the given startTime to the response
 // Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
-func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *types.ScenarioResult, err *types.RequestError) {
+func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
+	response *types.ScenarioResult, err *types.RequestError) {
 	response = &types.ScenarioResult{StepResults: []*types.ScenarioStepResult{}}
 	response.StartTime = startTime
 	response.ProxyAddr = proxy
