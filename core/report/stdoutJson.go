@@ -100,17 +100,23 @@ func decodeResponse(sr *types.ScenarioStepResult) (map[string]string, interface{
 	}
 
 	contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+	byteBody := sr.DebugInfo["responseBody"].([]byte)
+
 	var respBody interface{}
 	if strings.Contains(contentType, "text/html") {
-		unescapedHmtl := html.UnescapeString(string(sr.DebugInfo["responseBody"].([]byte)))
+		unescapedHmtl := html.UnescapeString(string(byteBody))
 		respBody = unescapedHmtl
 	} else if strings.Contains(contentType, "application/json") {
-		err := json.Unmarshal(sr.DebugInfo["responseBody"].([]byte), &respBody)
+		err := json.Unmarshal(byteBody, &respBody)
 		if err != nil {
 			return responseHeaders, respBody, err
 		}
+	} else if strings.Contains(contentType, "application/xml") {
+		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
+		respBody = string(sr.DebugInfo["responseBody"].([]byte))
+	} else { // for remaining content-types return plain string
+		respBody = string(sr.DebugInfo["responseBody"].([]byte))
 	}
-	// TODO: other content types, xml
 
 	return responseHeaders, respBody, nil
 }

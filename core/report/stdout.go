@@ -140,8 +140,6 @@ func (s *stdout) realTimePrintStop() {
 func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
 	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
-	color.Set(color.FgYellow)
-	defer color.Unset()
 
 	for r := range input { // only 1 sc result expected
 		for _, sr := range r.StepResults {
@@ -187,6 +185,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP %d\n", verboseInfo.StepId)
 			color.Cyan("-------------------------------------")
+			fmt.Fprintln(w, "***********  REQUEST  ***********")
 			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "> Method: \t%-5s \n", verboseInfo.Request.Method)
 
@@ -195,6 +194,9 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			}
 
 			fmt.Fprintln(w, "*")
+			fmt.Fprintf(w, "> Body: \t%-5s \n", verboseInfo.Request.Body)
+
+			fmt.Fprintln(w, "***********  RESPONSE  ***********")
 			fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 			for hKey, hVal := range verboseInfo.Response.Headers {
 				fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
@@ -212,13 +214,13 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 }
 
 func printResponseBody(w *tabwriter.Writer, contentType string, verboseInfo verboseHttpRequestInfo) {
-	if strings.Contains(contentType, "text/html") {
-		fmt.Fprintf(w, "%s \n", verboseInfo.Response.Body)
-	} else if strings.Contains(contentType, "application/json") {
+	if strings.Contains(contentType, "application/json") {
 		valPretty, _ := json.MarshalIndent(verboseInfo.Response.Body, "", "  ")
-		fmt.Fprintf(w, "%s \n", valPretty)
+		fmt.Fprintf(w, "< Body: \n%s", valPretty)
 	} else {
-		fmt.Fprintf(w, "%s \n", verboseInfo.Response.Body)
+		// html unescaped text
+		// if xml came as decoded, we could pretty print it like json
+		fmt.Fprintf(w, "< Body: \n%s", verboseInfo.Response.Body)
 	}
 }
 
