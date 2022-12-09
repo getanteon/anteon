@@ -140,7 +140,7 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			},
 		)
 
-		err = r.Init(s.ctx, si, proxy)
+		err = r.Init(s.ctx, si, proxy, s.debug)
 		if err != nil {
 			return
 		}

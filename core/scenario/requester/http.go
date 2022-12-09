@@ -50,16 +50,18 @@ type HttpRequester struct {
 	request              *http.Request
 	vi                   *scripting.VariableInjector
 	containsDynamicField map[string]bool
+	debug                bool
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
-func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL) (err error) {
+func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
 	h.vi = &scripting.VariableInjector{}
 	h.vi.Init()
 	h.containsDynamicField = make(map[string]bool)
+	h.debug = debug
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -148,16 +150,21 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	var contentLength int64
 	var requestErr types.RequestError
 	var reqStartTime = time.Now()
+
+	// for debug mode
+	var copiedReqBody bytes.Buffer
 	var respBody []byte
 	var respHeaders http.Header
+	var debugInfo map[string]interface{}
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
 	httpReq := h.prepareReq(trace)
 
-	var copiedReqBody bytes.Buffer
-	io.Copy(&copiedReqBody, httpReq.Body)
-	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	if h.debug {
+		io.Copy(&copiedReqBody, httpReq.Body)
+		httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	}
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
@@ -198,6 +205,17 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
+	if h.debug {
+		debugInfo = map[string]interface{}{
+			"url":             httpReq.URL.String(),
+			"method":          httpReq.Method,
+			"requestHeaders":  httpReq.Header,
+			"requestBody":     copiedReqBody.Bytes(),
+			"responseBody":    respBody,
+			"responseHeaders": respHeaders,
+		}
+	}
+
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -208,14 +226,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		Duration:      durations.totalDuration(),
 		ContentLength: contentLength,
 		Err:           requestErr,
-		DebugInfo: map[string]interface{}{
-			"url":             httpReq.URL.String(),
-			"method":          httpReq.Method,
-			"requestHeaders":  httpReq.Header,
-			"requestBody":     copiedReqBody.Bytes(),
-			"responseBody":    respBody,
-			"responseHeaders": respHeaders,
-		},
+		DebugInfo:     debugInfo,
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),

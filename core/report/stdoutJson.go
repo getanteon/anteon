@@ -95,7 +95,7 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	}{
 		DebugResults: map[uint16]verboseHttpRequestInfo{},
 	}
-	for r := range input { // only 1 sc result expected
+	for r := range input { // only 1 sc ScenarioResult expected
 		for _, sr := range r.StepResults {
 			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo

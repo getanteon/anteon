@@ -31,7 +31,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 
 	verboseInfo.StepId = sr.StepID
 	verboseInfo.StepName = sr.StepName
-	requestHeaders, requestBody, _ := decodeRequest(sr)
+	requestHeaders, requestBody, _ := decode(sr.DebugInfo["requestHeaders"].(http.Header),
+		sr.DebugInfo["requestBody"].([]byte))
 	verboseInfo.Request = struct {
 		Url     string            "json:\"url\""
 		Method  string            "json:\"method\""
@@ -47,7 +48,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	if sr.Err.Type != "" {
 		verboseInfo.Error = sr.Err.Error()
 	} else {
-		responseHeaders, responseBody, _ := decodeResponse(sr)
+		responseHeaders, responseBody, _ := decode(sr.DebugInfo["responseHeaders"].(http.Header),
+			sr.DebugInfo["responseBody"].([]byte))
 		// TODO what to do with error
 		verboseInfo.Response = struct {
 			StatusCode int               "json:\"statusCode\""
@@ -63,61 +65,30 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	return verboseInfo
 }
 
-func decodeRequest(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
-	requestHeaders := make(map[string]string, 0)
-	for k, v := range sr.DebugInfo["requestHeaders"].(http.Header) {
+func decode(headers http.Header, byteBody []byte) (map[string]string, interface{}, error) {
+	contentType := headers.Get("Content-Type")
+	var reqBody interface{}
+
+	hs := make(map[string]string, 0)
+	for k, v := range headers {
 		values := strings.Join(v, ",")
-		requestHeaders[k] = values
+		hs[k] = values
 	}
 
-	contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
-	byteBody := sr.DebugInfo["requestBody"].([]byte)
-
-	var respBody interface{}
 	if strings.Contains(contentType, "text/html") {
 		unescapedHmtl := html.UnescapeString(string(byteBody))
-		respBody = unescapedHmtl
+		reqBody = unescapedHmtl
 	} else if strings.Contains(contentType, "application/json") {
-		err := json.Unmarshal(byteBody, &respBody)
+		err := json.Unmarshal(byteBody, &reqBody)
 		if err != nil {
-			return requestHeaders, respBody, err
+			return hs, reqBody, err
 		}
 	} else if strings.Contains(contentType, "application/xml") {
 		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
-		respBody = string(byteBody)
+		reqBody = string(byteBody)
 	} else { // for remaining content-types return plain string
-		respBody = string(byteBody)
+		reqBody = string(byteBody)
 	}
 
-	return requestHeaders, respBody, nil
-
-}
-
-func decodeResponse(sr *types.ScenarioStepResult) (map[string]string, interface{}, error) {
-	responseHeaders := make(map[string]string, 0)
-	for k, v := range sr.DebugInfo["responseHeaders"].(http.Header) {
-		values := strings.Join(v, ",")
-		responseHeaders[k] = values
-	}
-
-	contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-	byteBody := sr.DebugInfo["responseBody"].([]byte)
-
-	var respBody interface{}
-	if strings.Contains(contentType, "text/html") {
-		unescapedHmtl := html.UnescapeString(string(byteBody))
-		respBody = unescapedHmtl
-	} else if strings.Contains(contentType, "application/json") {
-		err := json.Unmarshal(byteBody, &respBody)
-		if err != nil {
-			return responseHeaders, respBody, err
-		}
-	} else if strings.Contains(contentType, "application/xml") {
-		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
-		respBody = string(byteBody)
-	} else { // for remaining content-types return plain string
-		respBody = string(byteBody)
-	}
-
-	return responseHeaders, respBody, nil
+	return hs, reqBody, nil
 }

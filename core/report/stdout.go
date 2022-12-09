@@ -141,7 +141,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
 	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
 
-	for r := range input { // only 1 sc result expected
+	for r := range input { // only 1 ScenarioResult expected
 		for _, sr := range r.StepResults {
 			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 
@@ -162,10 +162,10 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			fmt.Fprint(w, "> ")
 			printBody(w, contentType, verboseInfo.Request.Body)
 
-			fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
 			if verboseInfo.Error != "" {
-				fmt.Fprintf(w, "> Error: \t%-5s \n", verboseInfo.Error)
+				fmt.Fprintf(w, "%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 			} else {
+				fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
 				fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				for hKey, hVal := range verboseInfo.Response.Headers {
 					fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
@@ -187,11 +187,11 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 func printBody(w *tabwriter.Writer, contentType string, body interface{}) {
 	if strings.Contains(contentType, "application/json") {
 		valPretty, _ := json.MarshalIndent(body, "", "  ")
-		fmt.Fprintf(w, "Body: \n%s", valPretty)
+		fmt.Fprintf(w, "Body: \n%s\n", valPretty)
 	} else {
 		// html unescaped text
 		// if xml came as decoded, we could pretty print it like json
-		fmt.Fprintf(w, "Body: \n%s", body.(string))
+		fmt.Fprintf(w, "Body: \n%s\n", body.(string))
 	}
 }
 

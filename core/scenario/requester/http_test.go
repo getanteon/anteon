@@ -47,7 +47,7 @@ func TestInit(t *testing.T) {
 	ctx := context.TODO()
 
 	h := &HttpRequester{}
-	h.Init(ctx, s, p)
+	h.Init(ctx, s, p, false)
 
 	if !reflect.DeepEqual(h.packet, s) {
 		t.Errorf("Expected %v, Found %v", s, h.packet)
@@ -160,7 +160,7 @@ func TestInitClient(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			h.Init(test.ctx, test.scenarioItem, test.proxy)
+			h.Init(test.ctx, test.scenarioItem, test.proxy, false)
 
 			transport := h.client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig
@@ -319,7 +319,7 @@ func TestInitRequest(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			err := h.Init(ctx, test.scenarioItem, p)
+			err := h.Init(ctx, test.scenarioItem, p, false)
 
 			if test.shouldErr {
 				if err == nil {

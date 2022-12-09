@@ -32,7 +32,7 @@ import (
 // Requester is the interface that abstracts different protocols' request sending implementations.
 // Protocol field in the types.ScenarioStep determines which requester implementation to use.
 type Requester interface {
-	Init(context.Context, types.ScenarioStep, *url.URL) error
+	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool) error
 	Send() *types.ScenarioStepResult
 	Done()
 }
