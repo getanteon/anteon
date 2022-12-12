@@ -193,8 +193,6 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		if err != nil {
 			return
 		}
-		// since upper line read body to EOF, no need for copying into ioutil.Discard
-		// io.Copy(ioutil.Discard, httpRes.Body)
 		httpRes.Body.Close()
 		respHeaders = httpRes.Header
 	}

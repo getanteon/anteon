@@ -351,6 +351,70 @@ func TestInitRequest(t *testing.T) {
 	}
 }
 
+func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
+	ctx := context.TODO()
+	// Basic request
+	payload := "reqbodypayload"
+	s := types.ScenarioStep{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://google.com",
+		Payload:  payload,
+		Headers:  map[string]string{"X": "y"},
+	}
+
+	expectedDebugInfo := map[string]interface{}{
+		"url":            "https://google.com",
+		"method":         http.MethodGet,
+		"requestHeaders": http.Header{"X": {"y"}},
+		"requestBody":    []byte(payload),
+		// did not fill below
+		"responseBody":    []byte{},
+		"responseHeaders": map[string][]string{},
+	}
+
+	// Sub Tests
+	tests := []struct {
+		name              string
+		scenarioStep      types.ScenarioStep
+		expectedDebugInfo map[string]interface{}
+	}{
+		{"Basic", s, expectedDebugInfo},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			h := &HttpRequester{}
+			debug := true
+			var proxy *url.URL
+			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
+			res := h.Send()
+
+			if len(res.DebugInfo) == 0 {
+				t.Errorf("debugInfo should have been populated on debug mode")
+			}
+
+			if test.expectedDebugInfo["method"] != res.DebugInfo["method"] {
+				t.Errorf("Method Expected %#v, Found: \n%#v", test.expectedDebugInfo["method"], res.DebugInfo["method"])
+			}
+			if test.expectedDebugInfo["url"] != res.DebugInfo["url"] {
+				t.Errorf("Url Expected %#v, Found: \n%#v", test.expectedDebugInfo["url"], res.DebugInfo["url"])
+			}
+			if !bytes.Equal(test.expectedDebugInfo["requestBody"].([]byte), res.DebugInfo["requestBody"].([]byte)) {
+				t.Errorf("RequestBody Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestBody"],
+					res.DebugInfo["requestBody"])
+			}
+			if !reflect.DeepEqual(test.expectedDebugInfo["requestHeaders"], res.DebugInfo["requestHeaders"]) {
+				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestHeaders"],
+					res.DebugInfo["requestHeaders"])
+			}
+
+		}
+		t.Run(test.name, tf)
+	}
+}
+
 func TestDynamicVariableRegex(t *testing.T) {
 	// Sub Tests
 	tests := []struct {

@@ -113,6 +113,36 @@ func TestCreateEngine(t *testing.T) {
 	}
 }
 
+func TestReqCountArrDebugMode(t *testing.T) {
+	t.Parallel()
+
+	hammer := newDummyHammer()
+	hammer.Debug = true
+	tests := []struct {
+		name   string
+		hammer types.Hammer
+	}{
+		{"DebugMode", hammer},
+	}
+
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			e, err := NewEngine(context.TODO(), test.hammer)
+			e.Init()
+			if err != nil {
+				t.Errorf("Should have been nil, got %v", err)
+			}
+
+			// one iteration one tick
+			if !reflect.DeepEqual(e.reqCountArr, []int{1}) {
+				t.Errorf("Debug mode reqCountArr should have only one iteration in one tick, got %v", e.reqCountArr)
+			}
+		})
+	}
+}
+
 // TODO: Add other load types as you implement
 func TestRequestCount(t *testing.T) {
 	t.Parallel()

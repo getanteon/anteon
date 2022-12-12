@@ -22,6 +22,8 @@ package report
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -255,4 +257,40 @@ func TestStdoutJsonOutput(t *testing.T) {
 	if output != expectedOutput {
 		t.Errorf("Expected: %v, Found: %v", expectedOutput, output)
 	}
+}
+
+func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
+	s := &stdoutJson{}
+	s.Init(true)
+	testDoneChan := make(chan struct{}, 1)
+
+	realOut := out
+	r, w, _ := os.Pipe()
+	out = w
+	defer func() {
+		out = realOut
+	}()
+
+	inputChan := make(chan *types.ScenarioResult, 1)
+	inputChan <- &types.ScenarioResult{}
+	close(inputChan)
+
+	go func() {
+		s.Start(inputChan)
+		w.Close()
+	}()
+
+	go func() {
+		// wait for print and debug
+		<-s.DoneChan()
+
+		printedOutput, _ := ioutil.ReadAll(r)
+		if !json.Valid(printedOutput) {
+			t.Errorf("Printed output is not valid json: %v", string(printedOutput))
+		}
+		testDoneChan <- struct{}{}
+	}()
+
+	<-testDoneChan
+
 }

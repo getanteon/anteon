@@ -169,6 +169,46 @@ func TestCreateHammer(t *testing.T) {
 	}
 }
 
+func TestDebugFlagOverridesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"DebugFlagShouldOverrideConfig",
+			[]string{"-config", "config/config_testdata/config_debug_false.json", "-debug"}},
+		{"UseConfigDebugKeyWhenNoDebugFlagSpecified",
+			[]string{"-config", "config/config_testdata/config_debug_mode.json", "-debug", "false"}},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			// Act
+			os.Args = append([]string{"cmd"}, test.args...)
+			flag.Parse()
+			h, err := createHammer()
+
+			if err != nil {
+				t.Errorf("createHammer return %v", err)
+			}
+
+			// Assert
+			if h.Debug != *debug {
+				t.Errorf("debug flag did not override config file")
+			}
+
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
 func TestCreateScenario(t *testing.T) {
 	url := "https://test.com"
 	valid := types.Scenario{

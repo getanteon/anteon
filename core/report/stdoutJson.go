@@ -23,6 +23,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 
 	"go.ddosify.com/ddosify/core/types"
@@ -102,7 +103,11 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 		}
 	}
 
-	valPretty, _ := json.MarshalIndent(stepDebugResults, "", "  ")
+	printPretty(out, stepDebugResults)
+}
+
+func printPretty(w io.Writer, info any) {
+	valPretty, _ := json.MarshalIndent(info, "", "  ")
 	fmt.Fprintf(out, "%s \n",
 		white(fmt.Sprintf(" %-6s",
 			valPretty)))
