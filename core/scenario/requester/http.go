@@ -24,7 +24,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -32,6 +35,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -168,33 +172,29 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
-	durations.setResDur()
-
-	// Error checking
 	if err != nil {
-		ue, ok := err.(*url.Error)
-
-		if ok {
-			requestErr = fetchErrType(ue.Err.Error())
-		} else {
-			requestErr = types.RequestError{Type: types.ErrorUnkown, Reason: err.Error()}
-		}
-
-	} else {
-		contentLength = httpRes.ContentLength
-		statusCode = httpRes.StatusCode
+		requestErr = generateRequestError(err)
 	}
+	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	var bodyReadErr error
 	if httpRes != nil {
-		respBody, err = io.ReadAll(httpRes.Body)
-		if err != nil {
-			return
+		if h.debug {
+			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
+		} else { // do not write into memory, just read
+			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
 		}
+		if bodyReadErr != nil {
+			requestErr = generateRequestError(bodyReadErr)
+		}
+
 		httpRes.Body.Close()
 		respHeaders = httpRes.Header
+		contentLength = httpRes.ContentLength
+		statusCode = httpRes.StatusCode
 	}
 
 	var ddResTime time.Duration
@@ -288,7 +288,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	return httpReq
 }
 
-// TODO:REFACTOR
+// TODO:Refactored in generateRequestError func, review and remove
 // Currently we can't detect exact error type by returned err.
 // But we need to find an elegant way instead of this.
 func fetchErrType(err string) types.RequestError {
@@ -316,6 +316,75 @@ func fetchErrType(err string) types.RequestError {
 	}
 
 	return requestErr
+}
+
+func generateRequestError(err error) types.RequestError {
+	var requestError types.RequestError = types.RequestError{
+		Type:   types.ErrorUnkown,
+		Reason: err.Error()}
+	var (
+		dnsErr     *net.DNSError
+		parseError *net.ParseError
+		opError    *net.OpError
+		addrError  *net.AddrError
+		// net package maps context errors to the historical internal net error values
+		// hint: net.go:425 mapErr func
+	)
+
+	// first check most deep causes
+	if errors.Is(err, syscall.ECONNRESET) {
+		requestError.Type = types.ErrorConn
+		requestError.Reason = fmt.Sprintf("%s", err.Error())
+	} else if errors.Is(err, syscall.ECONNREFUSED) {
+		requestError.Type = types.ErrorConn
+		requestError.Reason = types.ReasonConnRefused
+	} else if errors.As(err, &dnsErr) {
+		requestError.Type = types.ErrorDns
+		requestError.Reason = fmt.Sprintf("%s, Timeout: %t, Temporary: %t, HostNotFound: %t",
+			dnsErr.Error(), dnsErr.Timeout(), dnsErr.Temporary(), dnsErr.IsNotFound)
+	} else if errors.As(err, &parseError) {
+		requestError.Type = types.ErrorParse
+		requestError.Reason = fmt.Sprintf("%s, Timeout: %t, Temporary: %t",
+			parseError.Error(), parseError.Timeout(), parseError.Temporary())
+	} else if errors.As(err, &addrError) {
+		requestError.Type = types.ErrorAddr
+		requestError.Reason = fmt.Sprintf("%s, Timeout: %t, Temporary: %t",
+			addrError.Error(), addrError.Timeout(), addrError.Temporary())
+	} else if errors.As(err, &opError) {
+		requestError.Type = opError.Op
+		requestError.Reason = fmt.Sprintf("%s, Timeout: %t, Temporary: %t",
+			opError.Error(), opError.Timeout(), opError.Temporary())
+		if opError.Op == "proxyconnect" {
+			// TODO: review
+			if strings.Contains(opError.Error(), "connection refused") {
+				requestError = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
+			} else if strings.Contains(opError.Error(), "Client.Timeout") {
+				requestError = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
+			} else {
+				requestError.Type = types.ErrorProxy
+			}
+		}
+
+		// below errors are coming as net/http.httpError which does not wrap errors, forced to use strings.Contains
+	} else if errors.Is(err, context.DeadlineExceeded) ||
+		err.Error() == "i/o timeout" || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+		// err.Error() == "i/o timeout"  means errors.Is(err, net.timeoutError)  hint: net.go:425 mapErr func
+		requestError.Type = types.ErrorConn
+		requestError.Reason = "timeout"
+		// detect connection/read timeout
+
+		if strings.Contains(err.Error(), "Client.Timeout or context cancellation while reading body") {
+			requestError.Reason = types.ReasonReadTimeout
+		} else if strings.Contains(err.Error(), "Client.Timeout exceeded while awaiting headers") {
+			requestError.Reason = types.ReasonConnTimeout
+		}
+	} else if errors.Is(err, context.Canceled) || err.Error() == "operation was canceled" {
+		// err.Error() == "operation was canceled"  means errors.Is(err, net.errCanceled), hint: net.go:425 mapErr func
+		requestError.Type = types.ErrorIntented
+		requestError.Reason = types.ReasonCtxCanceled
+	}
+
+	return requestError
 }
 
 func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {

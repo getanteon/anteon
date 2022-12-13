@@ -27,8 +27,11 @@ const (
 	// Types
 	ErrorProxy    = "proxyError"
 	ErrorConn     = "connectionError"
-	ErrorUnkown   = "unkownError"
+	ErrorUnkown   = "unknownError"
 	ErrorIntented = "intentedError" // Errors for created intentionally
+	ErrorDns      = "dnsError"
+	ErrorParse    = "parseError"
+	ErrorAddr     = "addressError"
 
 	// Reasons
 	ReasonProxyFailed  = "proxy connection refused"
