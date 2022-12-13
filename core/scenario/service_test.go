@@ -241,6 +241,13 @@ func TestDo(t *testing.T) {
 				URL:      "test.com",
 				Timeout:  types.DefaultDuration,
 			},
+			{
+				ID:       2,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
 		},
 	}
 	p1, _ := url.Parse("http://proxy_server.com:80")
