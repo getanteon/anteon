@@ -94,7 +94,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		response.StepResults = append(response.StepResults, res)
 
 		// Sleep before running the next step
-		if sr.sleeper != nil && !s.debug {
+		if sr.sleeper != nil && len(s.scenario.Steps) > 1 {
 			sr.sleeper.sleep()
 		}
 	}
