@@ -75,7 +75,7 @@ var (
 	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
-	debug   = flag.Bool("debug", false, "Runs given config once prints curl-like verbose result")
+	debug   = flag.Bool("debug", false, "Iterates the scenario once and prints curl-like verbose result")
 )
 
 var (
