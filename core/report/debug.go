@@ -83,10 +83,8 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 		if err != nil {
 			return hs, reqBody, err
 		}
-	} else if strings.Contains(contentType, "application/xml") {
-		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
-		reqBody = string(byteBody)
 	} else { // for remaining content-types return plain string
+		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
 		reqBody = string(byteBody)
 	}
 

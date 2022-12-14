@@ -359,13 +359,13 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
-		URL:      "https://google.com",
+		URL:      "https://ddosify.com",
 		Payload:  payload,
 		Headers:  map[string]string{"X": "y"},
 	}
 
 	expectedDebugInfo := map[string]interface{}{
-		"url":            "https://google.com",
+		"url":            "https://ddosify.com",
 		"method":         http.MethodGet,
 		"requestHeaders": http.Header{"X": {"y"}},
 		"requestBody":    []byte(payload),
