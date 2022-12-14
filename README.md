@@ -161,6 +161,7 @@ ddosify [FLAG]
 | <span style="white-space: nowrap;">`--version`</span>    | Prints version, git commit, built date (utc), go information and quit | -    | -    | No |
 | <span style="white-space: nowrap;">`--cert_path`</span>    | A path to a certificate file (usually called 'cert.pem') | -    | -    | No |
 | <span style="white-space: nowrap;">`--cert_key_path`</span>    | A path to a certificate key file (usually called 'key.pem') | -    | -    | No |
+| <span style="white-space: nowrap;">`--debug`</span>    | Runs given config once prints curl-like verbose result. Note that this flag overrides json config.  |  `bool`     |  `false`     | No |
 
 ### Load Types
 
