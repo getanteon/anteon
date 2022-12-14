@@ -20,8 +20,5 @@ main
 dist/
 ddosify
 .vscode
-.idea/.gitignore
-.idea/ddosify.iml
-.idea/modules.xml
-.idea/vcs.xml
-.idea/workspace.xml
+.idea/
+
