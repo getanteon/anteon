@@ -44,6 +44,7 @@ type ScenarioService struct {
 	ctx      context.Context
 
 	clientMutex sync.Mutex
+	debug       bool
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -53,9 +54,10 @@ func NewScenarioService() *ScenarioService {
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
-func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL) (err error) {
+func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL, debug bool) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
+	s.debug = debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 	for _, p := range proxies {
 		err = s.createRequesters(p)
@@ -69,8 +71,9 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, pro
 // Do executes the scenario for the given proxy.
 // Returns "types.Response" filled by the requester of the given Proxy, injects the given startTime to the response
 // Returns error only if types.Response.Err.Type is types.ErrorProxy or types.ErrorIntented
-func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *types.Response, err *types.RequestError) {
-	response = &types.Response{ResponseItems: []*types.ResponseItem{}}
+func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
+	response *types.ScenarioResult, err *types.RequestError) {
+	response = &types.ScenarioResult{StepResults: []*types.ScenarioStepResult{}}
 	response.StartTime = startTime
 	response.ProxyAddr = proxy
 
@@ -88,10 +91,10 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (response *typ
 				return
 			}
 		}
-		response.ResponseItems = append(response.ResponseItems, res)
+		response.StepResults = append(response.StepResults, res)
 
 		// Sleep before running the next step
-		if sr.sleeper != nil {
+		if sr.sleeper != nil && len(s.scenario.Steps) > 1 {
 			sr.sleeper.sleep()
 		}
 	}
@@ -122,7 +125,7 @@ func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []sc
 
 func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 	s.clients[proxy] = []scenarioItemRequester{}
-	for _, si := range s.scenario.Scenario {
+	for _, si := range s.scenario.Steps {
 		var r requester.Requester
 		r, err = requester.NewRequester(si)
 		if err != nil {
@@ -137,7 +140,7 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			},
 		)
 
-		err = r.Init(s.ctx, si, proxy)
+		err = r.Init(s.ctx, si, proxy, s.debug)
 		if err != nil {
 			return
 		}

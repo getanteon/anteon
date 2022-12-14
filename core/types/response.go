@@ -27,25 +27,25 @@ import (
 	"github.com/google/uuid"
 )
 
-// Response is corresponding to Scenario. Each Scenario has a Response after the request is done.
-type Response struct {
+// ScenarioResult is corresponding to Scenario. Each Scenario has a ScenarioResult after the scenario is played.
+type ScenarioResult struct {
 	// First request start time for the Scenario
 	StartTime time.Time
 
-	ProxyAddr     *url.URL
-	ResponseItems []*ResponseItem
+	ProxyAddr   *url.URL
+	StepResults []*ScenarioStepResult
 
 	// Dynamic field for extra data needs in response object consumers.
 	Others map[string]interface{}
 }
 
-// ResponseItem is corresponding to ScenarioItem.
-type ResponseItem struct {
-	// ID of the ScenarioItem
-	ScenarioItemID uint16
+// ScenarioStepResult is corresponding to ScenarioStep.
+type ScenarioStepResult struct {
+	// ID of the ScenarioStep
+	StepID uint16
 
-	// Name of the ScenarioItem
-	ScenarioItemName string
+	// Name of the ScenarioStep
+	StepName string
 
 	// Each request has a unique ID.
 	RequestID uuid.UUID
@@ -64,6 +64,9 @@ type ResponseItem struct {
 
 	// Error occurred at request time.
 	Err RequestError
+
+	// Detailed Debug Info
+	DebugInfo map[string]interface{}
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}

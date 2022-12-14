@@ -46,9 +46,9 @@ const headerRegexp = `^*(.+):\s*(.+)`
 
 // We might consider to use Viper: https://github.com/spf13/viper
 var (
-	reqCount = flag.Int("n", types.DefaultReqCount, "Total request count")
-	duration = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
-	loadType = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
+	iterCount = flag.Int("n", types.DefaultIterCount, "Total iteration count")
+	duration  = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
+	loadType  = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
 
 	// TODO:V1 - Remove protocol flag at v1.
 	// Adjusting the protocol from both the target flag and this flag increases the complexity of the system&usage.
@@ -75,6 +75,7 @@ var (
 	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
+	debug   = flag.Bool("debug", false, "Iterates the scenario once and prints curl-like verbose result")
 )
 
 var (
@@ -106,12 +107,13 @@ func main() {
 
 func createHammer() (h types.Hammer, err error) {
 	if *configPath != "" {
-		return createHammerFromConfigFile()
+		// running with config and debug mode set from cli
+		return createHammerFromConfigFile(*debug)
 	}
 	return createHammerFromFlags()
 }
 
-var createHammerFromConfigFile = func() (h types.Hammer, err error) {
+var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 	f, err := os.Open(*configPath)
 	if err != nil {
 		return
@@ -131,6 +133,11 @@ var createHammerFromConfigFile = func() (h types.Hammer, err error) {
 	if err != nil {
 		return
 	}
+
+	if isFlagPassed("debug") {
+		h.Debug = debug // debug flag from cli overrides debug in config file
+	}
+
 	return
 }
 
@@ -182,12 +189,13 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 	}
 
 	h = types.Hammer{
-		TotalReqCount:     *reqCount,
+		IterationCount:    *iterCount,
 		LoadType:          strings.ToLower(*loadType),
 		TestDuration:      *duration,
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: *output,
+		Debug:             *debug,
 	}
 	return
 }
@@ -237,7 +245,7 @@ func createScenario() (s types.Scenario, err error) {
 	}
 
 	*protocol = strings.ToUpper(*protocol)
-	scenarioItem := types.ScenarioItem{
+	step := types.ScenarioStep{
 		ID:       1,
 		Protocol: *protocol,
 		Method:   strings.ToUpper(*method),
@@ -256,10 +264,10 @@ func createScenario() (s types.Scenario, err error) {
 			return
 		}
 
-		scenarioItem.Cert = cert
-		scenarioItem.CertPool = pool
+		step.Cert = cert
+		step.CertPool = pool
 	}
-	s = types.Scenario{Scenario: []types.ScenarioItem{scenarioItem}}
+	s = types.Scenario{Steps: []types.ScenarioStep{step}}
 
 	return
 }
@@ -313,4 +321,14 @@ func (h *header) String() string {
 func (h *header) Set(value string) error {
 	*h = append(*h, value)
 	return nil
+}
+
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }

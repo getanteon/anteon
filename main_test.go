@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func resetFlags() {
-	*reqCount = types.DefaultReqCount
+	*iterCount = types.DefaultIterCount
 	*loadType = types.DefaultLoadType
 	*duration = types.DefaultDuration
 
@@ -72,8 +72,8 @@ func TestDefaultFlagValues(t *testing.T) {
 
 	flag.Parse()
 
-	if *reqCount != types.DefaultReqCount {
-		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultReqCount, *reqCount)
+	if *iterCount != types.DefaultIterCount {
+		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultIterCount, *iterCount)
 	}
 	if *loadType != types.DefaultLoadType {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultLoadType, *loadType)
@@ -142,7 +142,7 @@ func TestCreateHammer(t *testing.T) {
 
 			fromFileCalled := false
 			fromFlagsCalled := false
-			createHammerFromConfigFile = func() (h types.Hammer, err error) {
+			createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 				fromFileCalled = true
 				return
 			}
@@ -169,10 +169,50 @@ func TestCreateHammer(t *testing.T) {
 	}
 }
 
+func TestDebugFlagOverridesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"DebugFlagShouldOverrideConfig",
+			[]string{"-config", "config/config_testdata/config_debug_false.json", "-debug"}},
+		{"UseConfigDebugKeyWhenNoDebugFlagSpecified",
+			[]string{"-config", "config/config_testdata/config_debug_mode.json", "-debug", "false"}},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			// Act
+			os.Args = append([]string{"cmd"}, test.args...)
+			flag.Parse()
+			h, err := createHammer()
+
+			if err != nil {
+				t.Errorf("createHammer return %v", err)
+			}
+
+			// Assert
+			if h.Debug != *debug {
+				t.Errorf("debug flag did not override config file")
+			}
+
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
 func TestCreateScenario(t *testing.T) {
 	url := "https://test.com"
 	valid := types.Scenario{
-		Scenario: []types.ScenarioItem{
+		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
 				Protocol: types.DefaultProtocol,
@@ -184,7 +224,7 @@ func TestCreateScenario(t *testing.T) {
 		},
 	}
 	validWithAuth := types.Scenario{
-		Scenario: []types.ScenarioItem{
+		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
 				Protocol: types.DefaultProtocol,
@@ -301,7 +341,7 @@ func TestCreateScenarioTLS(t *testing.T) {
 				if err != nil {
 					t.Errorf("Errored: %v", err)
 				}
-				if !reflect.DeepEqual(test.expected, s.Scenario[0].Cert) {
+				if !reflect.DeepEqual(test.expected, s.Steps[0].Cert) {
 					t.Errorf("Expected %v, Found %v", test.expected, s)
 				}
 			}

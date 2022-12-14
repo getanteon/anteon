@@ -23,6 +23,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 
 	"go.ddosify.com/ddosify/core/types"
@@ -37,29 +38,34 @@ func init() {
 type stdoutJson struct {
 	doneChan chan struct{}
 	result   *Result
+	debug    bool
 }
 
-func (s *stdoutJson) Init() (err error) {
+func (s *stdoutJson) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[uint16]*ScenarioItemReport),
+		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
+	s.debug = debug
 	return
 }
 
-func (s *stdoutJson) Start(input chan *types.Response) {
-	for r := range input {
-		aggregate(s.result, r)
+func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
+	if s.debug {
+		s.printInDebugMode(input)
+		s.doneChan <- struct{}{}
+		return
 	}
-	s.doneChan <- struct{}{}
+	s.listenAndAggregate(input)
+	s.report()
 }
 
-func (s *stdoutJson) Report() {
+func (s *stdoutJson) report() {
 	p := 1e3
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
 
-	for _, itemReport := range s.result.ItemReports {
+	for _, itemReport := range s.result.StepResults {
 		durations := make(map[string]float32)
 		for d, s := range itemReport.Durations {
 			// Less precision for durations.
@@ -77,6 +83,36 @@ func (s *stdoutJson) DoneChan() <-chan struct{} {
 	return s.doneChan
 }
 
+func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
+	for r := range input {
+		aggregate(s.result, r)
+	}
+	s.doneChan <- struct{}{}
+}
+
+func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
+	stepDebugResults := struct {
+		DebugResults map[uint16]verboseHttpRequestInfo "json:\"steps\""
+	}{
+		DebugResults: map[uint16]verboseHttpRequestInfo{},
+	}
+	for r := range input { // only 1 sc ScenarioResult expected
+		for _, sr := range r.StepResults {
+			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
+			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo
+		}
+	}
+
+	printPretty(out, stepDebugResults)
+}
+
+func printPretty(w io.Writer, info any) {
+	valPretty, _ := json.MarshalIndent(info, "", "  ")
+	fmt.Fprintf(out, "%s \n",
+		white(fmt.Sprintf(" %-6s",
+			valPretty)))
+}
+
 // Report wraps Result to add success/fails percentage values
 type Report Result
 
@@ -92,10 +128,10 @@ func (r Result) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ItemReport wraps ScenarioItemReport to add success/fails percentage values
-type ItemReport ScenarioItemReport
+// ItemReport wraps ScenarioStepReport to add success/fails percentage values
+type ItemReport ScenarioStepResultSummary
 
-func (s ScenarioItemReport) MarshalJSON() ([]byte, error) {
+func (s ScenarioStepResultSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ItemReport
 		SuccesPerc int `json:"success_perc"`
@@ -119,4 +155,49 @@ var strKeyToJsonKey = map[string]string{
 	"serverProcessDuration": "server_processing",
 	"resDuration":           "response_read",
 	"duration":              "total",
+}
+
+func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
+	if v.Error != "" {
+		type alias struct {
+			StepId  uint16 `json:"stepId"`
+			Request struct {
+				Url     string            `json:"url"`
+				Method  string            `json:"method"`
+				Headers map[string]string `json:"headers"`
+				Body    interface{}       `json:"body"`
+			} `json:"request"`
+			Error string `json:"error"`
+		}
+
+		a := alias{
+			Request: v.Request,
+			Error:   v.Error,
+			StepId:  v.StepId,
+		}
+		return json.Marshal(a)
+	}
+
+	type alias struct {
+		StepId  uint16 `json:"stepId"`
+		Request struct {
+			Url     string            `json:"url"`
+			Method  string            `json:"method"`
+			Headers map[string]string `json:"headers"`
+			Body    interface{}       `json:"body"`
+		} `json:"request"`
+		Response struct {
+			StatusCode int               `json:"statusCode"`
+			Headers    map[string]string `json:"headers"`
+			Body       interface{}       `json:"body"`
+		} `json:"response"`
+	}
+
+	a := alias{
+		StepId:   v.StepId,
+		Request:  v.Request,
+		Response: v.Response,
+	}
+	return json.Marshal(a)
+
 }

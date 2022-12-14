@@ -51,9 +51,9 @@ func newDummyHammer() types.Hammer {
 		ReportDestination: report.OutputTypeStdout,
 		LoadType:          types.LoadTypeLinear,
 		TestDuration:      1,
-		TotalReqCount:     1,
+		IterationCount:    1,
 		Scenario: types.Scenario{
-			Scenario: []types.ScenarioItem{
+			Steps: []types.ScenarioStep{
 				{
 					ID:       1,
 					Protocol: "HTTP",
@@ -108,6 +108,36 @@ func TestCreateEngine(t *testing.T) {
 				if e.reportService == nil {
 					t.Errorf("Report Service should be created")
 				}
+			}
+		})
+	}
+}
+
+func TestReqCountArrDebugMode(t *testing.T) {
+	t.Parallel()
+
+	hammer := newDummyHammer()
+	hammer.Debug = true
+	tests := []struct {
+		name   string
+		hammer types.Hammer
+	}{
+		{"DebugMode", hammer},
+	}
+
+	for _, tc := range tests {
+		test := tc
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			e, err := NewEngine(context.TODO(), test.hammer)
+			e.Init()
+			if err != nil {
+				t.Errorf("Should have been nil, got %v", err)
+			}
+
+			// one iteration one tick
+			if !reflect.DeepEqual(e.reqCountArr, []int{1}) {
+				t.Errorf("Debug mode reqCountArr should have only one iteration in one tick, got %v", e.reqCountArr)
 			}
 		})
 	}
@@ -194,8 +224,8 @@ func TestRequestCount(t *testing.T) {
 			h.LoadType = test.loadType
 			h.TestDuration = test.duration
 			h.TimeRunCountMap = test.timeRunCount
-			h.TotalReqCount = test.reqCount
-			h.Scenario.Scenario[0].URL = server.URL
+			h.IterationCount = test.reqCount
+			h.Scenario.Steps[0].URL = server.URL
 
 			now = time.Now()
 			timeReqMap = make(map[int]int, 0)
@@ -264,7 +294,7 @@ func TestRequestData(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
+	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:       1,
 		Protocol: "HTTP",
 		Method:   "GET",
@@ -337,7 +367,7 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario = types.Scenario{
-		Scenario: []types.ScenarioItem{
+		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
 				Protocol: "HTTP",
@@ -430,8 +460,8 @@ func TestRequestTimeout(t *testing.T) {
 			defer server.Close()
 
 			h := newDummyHammer()
-			h.Scenario.Scenario[0].Timeout = test.timeout
-			h.Scenario.Scenario[0].URL = server.URL
+			h.Scenario.Steps[0].Timeout = test.timeout
+			h.Scenario.Steps[0].URL = server.URL
 
 			e, err := NewEngine(context.TODO(), h)
 			if err != nil {
@@ -484,7 +514,7 @@ func TestEngineResult(t *testing.T) {
 
 			h := newDummyHammer()
 			h.TestDuration = 2
-			h.Scenario.Scenario[0].URL = server.URL
+			h.Scenario.Steps[0].URL = server.URL
 
 			ctx, cancel := context.WithCancel(context.Background())
 			e, err := NewEngine(ctx, h)
@@ -534,7 +564,7 @@ func TestDynamicData(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
+	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:       1,
 		Protocol: "HTTP",
 		Method:   "GET",
@@ -653,7 +683,7 @@ func TestTLSMutualAuth(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
+	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:       1,
 		Protocol: "HTTPS",
 		Method:   "GET",
@@ -665,18 +695,18 @@ func TestTLSMutualAuth(t *testing.T) {
 		t.Errorf("Failed to parse certs %v", err)
 	}
 
-	h.Scenario.Scenario[0].Cert = certVal
-	h.Scenario.Scenario[0].CertPool = poolVal
+	h.Scenario.Steps[0].Cert = certVal
+	h.Scenario.Steps[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    h.Scenario.Scenario[0].CertPool,
-		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+		ClientCAs:    h.Scenario.Steps[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Steps[0].Cert},
 	}
 
 	server.StartTLS()
 
-	h.Scenario.Scenario[0].URL = server.URL
+	h.Scenario.Steps[0].URL = server.URL
 
 	// Act
 	e, err := NewEngine(context.TODO(), h)
@@ -722,7 +752,7 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{
+	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:       1,
 		Protocol: "HTTPS",
 		Method:   "GET",
@@ -734,22 +764,22 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 		t.Errorf("Failed to parse certs %v", err)
 	}
 
-	h.Scenario.Scenario[0].Cert = certVal
-	h.Scenario.Scenario[0].CertPool = poolVal
+	h.Scenario.Steps[0].Cert = certVal
+	h.Scenario.Steps[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    h.Scenario.Scenario[0].CertPool,
-		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+		ClientCAs:    h.Scenario.Steps[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Steps[0].Cert},
 	}
 
 	server.StartTLS()
 
-	h.Scenario.Scenario[0].URL = server.URL
+	h.Scenario.Steps[0].URL = server.URL
 
 	// invalidate the certs
-	h.Scenario.Scenario[0].CertPool = nil
-	h.Scenario.Scenario[0].Cert = tls.Certificate{}
+	h.Scenario.Steps[0].CertPool = nil
+	h.Scenario.Steps[0].Cert = tls.Certificate{}
 
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
@@ -802,7 +832,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Scenario[0] = types.ScenarioItem{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
+	h.Scenario.Steps[0] = types.ScenarioStep{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
 
 	// here we use server certs first
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
@@ -810,18 +840,18 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 		t.Errorf("Failed to parse certs %v", err)
 	}
 
-	h.Scenario.Scenario[0].Cert = certVal
-	h.Scenario.Scenario[0].CertPool = poolVal
+	h.Scenario.Steps[0].Cert = certVal
+	h.Scenario.Steps[0].CertPool = poolVal
 
 	server.TLS = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    h.Scenario.Scenario[0].CertPool,
-		Certificates: []tls.Certificate{h.Scenario.Scenario[0].Cert},
+		ClientCAs:    h.Scenario.Steps[0].CertPool,
+		Certificates: []tls.Certificate{h.Scenario.Steps[0].Cert},
 	}
 
 	server.StartTLS()
 
-	h.Scenario.Scenario[0].URL = server.URL
+	h.Scenario.Steps[0].URL = server.URL
 
 	// here we use different certs
 	// so the server and client has different pairs
@@ -830,8 +860,8 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 		t.Errorf("Failed to parse certs %v", err)
 	}
 
-	h.Scenario.Scenario[0].Cert = certVal
-	h.Scenario.Scenario[0].CertPool = poolVal
+	h.Scenario.Steps[0].Cert = certVal
+	h.Scenario.Steps[0].CertPool = poolVal
 
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {

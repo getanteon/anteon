@@ -27,36 +27,36 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func aggregate(result *Result, response *types.Response) {
+func aggregate(result *Result, scr *types.ScenarioResult) {
 	var scenarioDuration float32
 	errOccured := false
-	for _, rr := range response.ResponseItems {
-		scenarioDuration += float32(rr.Duration.Seconds())
+	for _, sr := range scr.StepResults {
+		scenarioDuration += float32(sr.Duration.Seconds())
 
-		if _, ok := result.ItemReports[rr.ScenarioItemID]; !ok {
-			result.ItemReports[rr.ScenarioItemID] = &ScenarioItemReport{
-				Name:           rr.ScenarioItemName,
+		if _, ok := result.StepResults[sr.StepID]; !ok {
+			result.StepResults[sr.StepID] = &ScenarioStepResultSummary{
+				Name:           sr.StepName,
 				StatusCodeDist: make(map[int]int, 0),
 				ErrorDist:      make(map[string]int),
 				Durations:      map[string]float32{},
 			}
 		}
-		item := result.ItemReports[rr.ScenarioItemID]
+		stepResult := result.StepResults[sr.StepID]
 
-		if rr.Err.Type != "" {
+		if sr.Err.Type != "" {
 			errOccured = true
-			item.FailedCount++
-			item.ErrorDist[rr.Err.Reason]++
+			stepResult.FailedCount++
+			stepResult.ErrorDist[sr.Err.Reason]++
 		} else {
-			item.StatusCodeDist[rr.StatusCode]++
-			item.SuccessCount++
+			stepResult.StatusCodeDist[sr.StatusCode]++
+			stepResult.SuccessCount++
 
-			totalDur := float32(item.SuccessCount-1)*item.Durations["duration"] + float32(rr.Duration.Seconds())
-			item.Durations["duration"] = totalDur / float32(item.SuccessCount)
-			for k, v := range rr.Custom {
+			totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
+			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount)
+			for k, v := range sr.Custom {
 				if strings.Contains(k, "Duration") {
-					totalDur := float32(item.SuccessCount-1)*item.Durations[k] + float32(v.(time.Duration).Seconds())
-					item.Durations[k] = float32(totalDur / float32(item.SuccessCount))
+					totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations[k] + float32(v.(time.Duration).Seconds())
+					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount))
 				}
 			}
 		}
@@ -73,11 +73,12 @@ func aggregate(result *Result, response *types.Response) {
 	}
 }
 
+// Total test result, all scenario iterations combined
 type Result struct {
-	SuccessCount int64                          `json:"success_count"`
-	FailedCount  int64                          `json:"fail_count"`
-	AvgDuration  float32                        `json:"avg_duration"`
-	ItemReports  map[uint16]*ScenarioItemReport `json:"steps"`
+	SuccessCount int64                                 `json:"success_count"`
+	FailedCount  int64                                 `json:"fail_count"`
+	AvgDuration  float32                               `json:"avg_duration"`
+	StepResults  map[uint16]*ScenarioStepResultSummary `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {
@@ -95,7 +96,7 @@ func (r *Result) failedPercentage() int {
 	return 100 - r.successPercentage()
 }
 
-type ScenarioItemReport struct {
+type ScenarioStepResultSummary struct {
 	Name           string             `json:"name"`
 	StatusCodeDist map[int]int        `json:"status_code_dist"`
 	ErrorDist      map[string]int     `json:"error_dist"`
@@ -104,7 +105,7 @@ type ScenarioItemReport struct {
 	FailedCount    int64              `json:"fail_count"`
 }
 
-func (s *ScenarioItemReport) successPercentage() int {
+func (s *ScenarioStepResultSummary) successPercentage() int {
 	if s.SuccessCount+s.FailedCount == 0 {
 		return 0
 	}
@@ -112,7 +113,7 @@ func (s *ScenarioItemReport) successPercentage() int {
 	return int(t * 100)
 }
 
-func (s *ScenarioItemReport) failedPercentage() int {
+func (s *ScenarioStepResultSummary) failedPercentage() int {
 	if s.SuccessCount+s.FailedCount == 0 {
 		return 0
 	}

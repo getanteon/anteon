@@ -36,7 +36,7 @@ const (
 	LoadTypeWaved       = "waved"
 
 	// Default Values
-	DefaultReqCount   = 100
+	DefaultIterCount  = 100
 	DefaultLoadType   = LoadTypeLinear
 	DefaultDuration   = 10
 	DefaultTimeout    = 5
@@ -56,8 +56,8 @@ type TimeRunCount []struct {
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
-	// Total request count
-	TotalReqCount int
+	// Total iteration count
+	IterationCount int
 
 	// Type of the load.
 	LoadType string
@@ -79,11 +79,14 @@ type Hammer struct {
 
 	// Dynamic field for extra parameters.
 	Others map[string]interface{}
+
+	// Debug mode on/off
+	Debug bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
 func (h *Hammer) Validate() error {
-	if len(h.Scenario.Scenario) == 0 {
+	if len(h.Scenario.Steps) == 0 {
 		return fmt.Errorf("scenario or target is empty")
 	} else if err := h.Scenario.validate(); err != nil {
 		return err

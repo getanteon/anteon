@@ -27,8 +27,11 @@ const (
 	// Types
 	ErrorProxy    = "proxyError"
 	ErrorConn     = "connectionError"
-	ErrorUnkown   = "unkownError"
+	ErrorUnkown   = "unknownError"
 	ErrorIntented = "intentedError" // Errors for created intentionally
+	ErrorDns      = "dnsError"
+	ErrorParse    = "parseError"
+	ErrorAddr     = "addressError"
 
 	// Reasons
 	ReasonProxyFailed  = "proxy connection refused"
@@ -48,7 +51,7 @@ type RequestError struct {
 	Reason string
 }
 
-// Custom error message method of RequestError
+// Custom error message method of ScenarioError
 func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
 }

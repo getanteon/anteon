@@ -25,7 +25,6 @@ import (
 	"context"
 	"crypto/tls"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -46,21 +45,23 @@ const DynamicVariableRegex = `\{{(_)[^}]+\}}`
 type HttpRequester struct {
 	ctx                  context.Context
 	proxyAddr            *url.URL
-	packet               types.ScenarioItem
+	packet               types.ScenarioStep
 	client               *http.Client
 	request              *http.Request
 	vi                   *scripting.VariableInjector
 	containsDynamicField map[string]bool
+	debug                bool
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
-func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioItem, proxyAddr *url.URL) (err error) {
+func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
 	h.vi = &scripting.VariableInjector{}
 	h.vi.Init()
 	h.containsDynamicField = make(map[string]bool)
+	h.debug = debug
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -144,41 +145,52 @@ func (h *HttpRequester) Done() {
 	h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send() (res *types.ResponseItem) {
+func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
 	var reqStartTime = time.Now()
 
+	// for debug mode
+	var copiedReqBody bytes.Buffer
+	var respBody []byte
+	var respHeaders http.Header
+	var debugInfo map[string]interface{}
+
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
 	httpReq := h.prepareReq(trace)
 
+	if h.debug {
+		io.Copy(&copiedReqBody, httpReq.Body)
+		httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	}
+
 	// Action
 	httpRes, err := h.client.Do(httpReq)
-	durations.setResDur()
-
-	// Error checking
 	if err != nil {
-		ue, ok := err.(*url.Error)
-
-		if ok {
-			requestErr = fetchErrType(ue.Err.Error())
-		} else {
-			requestErr = types.RequestError{Type: types.ErrorUnkown, Reason: err.Error()}
-		}
-
-	} else {
-		contentLength = httpRes.ContentLength
-		statusCode = httpRes.StatusCode
+		requestErr = fetchErrType(err)
 	}
+	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
+	var bodyReadErr error
 	if httpRes != nil {
-		io.Copy(ioutil.Discard, httpRes.Body)
+		if h.debug {
+			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
+		} else { // do not write into memory, just read
+			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
+		}
+		if bodyReadErr != nil {
+			requestErr = fetchErrType(bodyReadErr)
+		}
+
 		httpRes.Body.Close()
+		respHeaders = httpRes.Header
+		contentLength = httpRes.ContentLength
+		statusCode = httpRes.StatusCode
 	}
 
 	var ddResTime time.Duration
@@ -187,16 +199,28 @@ func (h *HttpRequester) Send() (res *types.ResponseItem) {
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
+	if h.debug {
+		debugInfo = map[string]interface{}{
+			"url":             httpReq.URL.String(),
+			"method":          httpReq.Method,
+			"requestHeaders":  httpReq.Header,
+			"requestBody":     copiedReqBody.Bytes(),
+			"responseBody":    respBody,
+			"responseHeaders": respHeaders,
+		}
+	}
+
 	// Finalize
-	res = &types.ResponseItem{
-		ScenarioItemID:   h.packet.ID,
-		ScenarioItemName: h.packet.Name,
-		RequestID:        uuid.New(),
-		StatusCode:       statusCode,
-		RequestTime:      reqStartTime,
-		Duration:         durations.totalDuration(),
-		ContentLength:    contentLength,
-		Err:              requestErr,
+	res = &types.ScenarioStepResult{
+		StepID:        h.packet.ID,
+		StepName:      h.packet.Name,
+		RequestID:     uuid.New(),
+		StatusCode:    statusCode,
+		RequestTime:   reqStartTime,
+		Duration:      durations.totalDuration(),
+		ContentLength: contentLength,
+		Err:           requestErr,
+		DebugInfo:     debugInfo,
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),
@@ -224,7 +248,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 		body, _ = h.vi.Inject(h.packet.Payload)
 	}
 
-	httpReq.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
 	httpReq.ContentLength = int64(len(body))
 
 	httpReq.URL, _ = url.Parse(h.packet.URL)
@@ -260,31 +284,37 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	return httpReq
 }
 
-// TODO:REFACTOR
 // Currently we can't detect exact error type by returned err.
 // But we need to find an elegant way instead of this.
-func fetchErrType(err string) types.RequestError {
-	var requestErr types.RequestError
-	if strings.Contains(err, "proxyconnect") {
-		if strings.Contains(err, "connection refused") {
-			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
-		} else if strings.Contains(err, "Client.Timeout") {
-			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
+func fetchErrType(err error) types.RequestError {
+	var requestErr types.RequestError = types.RequestError{
+		Type:   types.ErrorUnkown,
+		Reason: err.Error()}
+
+	ue, ok := err.(*url.Error)
+	if ok {
+		errString := ue.Error()
+		if strings.Contains(errString, "proxyconnect") {
+			if strings.Contains(errString, "connection refused") {
+				requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
+			} else if strings.Contains(errString, "Client.Timeout") {
+				requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyTimeout}
+			} else {
+				requestErr = types.RequestError{Type: types.ErrorProxy, Reason: errString}
+			}
+		} else if strings.Contains(errString, context.DeadlineExceeded.Error()) {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
+		} else if strings.Contains(errString, "i/o timeout") {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
+		} else if strings.Contains(errString, "connection refused") {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
+		} else if strings.Contains(errString, context.Canceled.Error()) {
+			requestErr = types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
+		} else if strings.Contains(errString, "connection reset by peer") {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: "connection reset by peer"}
 		} else {
-			requestErr = types.RequestError{Type: types.ErrorProxy, Reason: err}
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: errString}
 		}
-	} else if strings.Contains(err, context.DeadlineExceeded.Error()) {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
-	} else if strings.Contains(err, "i/o timeout") {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
-	} else if strings.Contains(err, "connection refused") {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnRefused}
-	} else if strings.Contains(err, context.Canceled.Error()) {
-		requestErr = types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
-	} else if strings.Contains(err, "connection reset by peer") {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: "connection reset by peer"}
-	} else {
-		requestErr = types.RequestError{Type: types.ErrorConn, Reason: err}
 	}
 
 	return requestErr

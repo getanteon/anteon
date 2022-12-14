@@ -36,7 +36,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -47,7 +47,7 @@ func TestInit(t *testing.T) {
 	ctx := context.TODO()
 
 	h := &HttpRequester{}
-	h.Init(ctx, s, p)
+	h.Init(ctx, s, p, false)
 
 	if !reflect.DeepEqual(h.packet, s) {
 		t.Errorf("Expected %v, Found %v", s, h.packet)
@@ -65,7 +65,7 @@ func TestInitClient(t *testing.T) {
 	ctx := context.TODO()
 
 	// Basic Client
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -86,7 +86,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// Client with custom data
-	sWithCustomData := types.ScenarioItem{
+	sWithCustomData := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -118,7 +118,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// H2 Client
-	sHTTP2 := types.ScenarioItem{
+	sHTTP2 := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -145,7 +145,7 @@ func TestInitClient(t *testing.T) {
 	// Sub Tests
 	tests := []struct {
 		name         string
-		scenarioItem types.ScenarioItem
+		scenarioItem types.ScenarioStep
 		proxy        *url.URL
 		ctx          context.Context
 		tls          *tls.Config
@@ -160,7 +160,7 @@ func TestInitClient(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			h.Init(test.ctx, test.scenarioItem, test.proxy)
+			h.Init(test.ctx, test.scenarioItem, test.proxy, false)
 
 			transport := h.client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig
@@ -210,7 +210,7 @@ func TestInitRequest(t *testing.T) {
 	ctx := context.TODO()
 
 	// Invalid request
-	sInvalid := types.ScenarioItem{
+	sInvalid := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   ":31:31:#",
@@ -219,7 +219,7 @@ func TestInitRequest(t *testing.T) {
 	}
 
 	// Basic request
-	s := types.ScenarioItem{
+	s := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -231,7 +231,7 @@ func TestInitRequest(t *testing.T) {
 	expected.Header = make(http.Header)
 
 	// Request with auth
-	sWithAuth := types.ScenarioItem{
+	sWithAuth := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -248,7 +248,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithAuth.SetBasicAuth(sWithAuth.Auth.Username, sWithAuth.Auth.Password)
 
 	// Request With Headers
-	sWithHeaders := types.ScenarioItem{
+	sWithHeaders := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -276,7 +276,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
 	// Request keep-alive condition
-	sWithoutKeepAlive := types.ScenarioItem{
+	sWithoutKeepAlive := types.ScenarioStep{
 		ID:       1,
 		Protocol: types.ProtocolHTTPS,
 		Method:   http.MethodGet,
@@ -305,7 +305,7 @@ func TestInitRequest(t *testing.T) {
 	// Sub Tests
 	tests := []struct {
 		name         string
-		scenarioItem types.ScenarioItem
+		scenarioItem types.ScenarioStep
 		shouldErr    bool
 		request      *http.Request
 	}{
@@ -319,7 +319,7 @@ func TestInitRequest(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			err := h.Init(ctx, test.scenarioItem, p)
+			err := h.Init(ctx, test.scenarioItem, p, false)
 
 			if test.shouldErr {
 				if err == nil {
@@ -346,6 +346,70 @@ func TestInitRequest(t *testing.T) {
 					t.Errorf("Close Expected: %#v, Found: \n%#v", test.request.Close, h.request.Close)
 				}
 			}
+		}
+		t.Run(test.name, tf)
+	}
+}
+
+func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
+	ctx := context.TODO()
+	// Basic request
+	payload := "reqbodypayload"
+	s := types.ScenarioStep{
+		ID:       1,
+		Protocol: types.ProtocolHTTPS,
+		Method:   http.MethodGet,
+		URL:      "https://ddosify.com",
+		Payload:  payload,
+		Headers:  map[string]string{"X": "y"},
+	}
+
+	expectedDebugInfo := map[string]interface{}{
+		"url":            "https://ddosify.com",
+		"method":         http.MethodGet,
+		"requestHeaders": http.Header{"X": {"y"}},
+		"requestBody":    []byte(payload),
+		// did not fill below
+		"responseBody":    []byte{},
+		"responseHeaders": map[string][]string{},
+	}
+
+	// Sub Tests
+	tests := []struct {
+		name              string
+		scenarioStep      types.ScenarioStep
+		expectedDebugInfo map[string]interface{}
+	}{
+		{"Basic", s, expectedDebugInfo},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			h := &HttpRequester{}
+			debug := true
+			var proxy *url.URL
+			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
+			res := h.Send()
+
+			if len(res.DebugInfo) == 0 {
+				t.Errorf("debugInfo should have been populated on debug mode")
+			}
+
+			if test.expectedDebugInfo["method"] != res.DebugInfo["method"] {
+				t.Errorf("Method Expected %#v, Found: \n%#v", test.expectedDebugInfo["method"], res.DebugInfo["method"])
+			}
+			if test.expectedDebugInfo["url"] != res.DebugInfo["url"] {
+				t.Errorf("Url Expected %#v, Found: \n%#v", test.expectedDebugInfo["url"], res.DebugInfo["url"])
+			}
+			if !bytes.Equal(test.expectedDebugInfo["requestBody"].([]byte), res.DebugInfo["requestBody"].([]byte)) {
+				t.Errorf("RequestBody Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestBody"],
+					res.DebugInfo["requestBody"])
+			}
+			if !reflect.DeepEqual(test.expectedDebugInfo["requestHeaders"], res.DebugInfo["requestHeaders"]) {
+				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestHeaders"],
+					res.DebugInfo["requestHeaders"])
+			}
+
 		}
 		t.Run(test.name, tf)
 	}

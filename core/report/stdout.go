@@ -21,6 +21,7 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -49,24 +50,35 @@ type stdout struct {
 	result      *Result
 	printTicker *time.Ticker
 	mu          sync.Mutex
+	debug       bool
 }
 
+var white = color.New(color.FgHiWhite).SprintFunc()
 var blue = color.New(color.FgHiBlue).SprintFunc()
 var green = color.New(color.FgHiGreen).SprintFunc()
 var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
-func (s *stdout) Init() (err error) {
+func (s *stdout) Init(debug bool) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
-		ItemReports: make(map[uint16]*ScenarioItemReport),
+		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
+	s.debug = debug
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
+	if s.debug {
+		color.Cyan("%s Running in debug mode, 1 iteration will be played... \n", emoji.Bug)
+	}
 	return
 }
 
-func (s *stdout) Start(input chan *types.Response) {
+func (s *stdout) Start(input chan *types.ScenarioResult) {
+	if s.debug {
+		s.printInDebugMode(input)
+		s.doneChan <- struct{}{}
+		return
+	}
 	go s.realTimePrintStart()
 
 	for r := range input {
@@ -76,10 +88,11 @@ func (s *stdout) Start(input chan *types.Response) {
 	}
 
 	s.realTimePrintStop()
+	s.report()
 	s.doneChan <- struct{}{}
 }
 
-func (s *stdout) Report() {
+func (s *stdout) report() {
 	s.printDetails()
 }
 
@@ -124,6 +137,63 @@ func (s *stdout) realTimePrintStop() {
 	s.printTicker.Stop()
 }
 
+func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
+	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
+	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+
+	for r := range input { // only 1 ScenarioResult expected
+		for _, sr := range r.StepResults {
+			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
+
+			b := strings.Builder{}
+			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
+			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
+			color.Cyan("-------------------------------------")
+			fmt.Fprintln(w, "***********  REQUEST  ***********")
+			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
+			fmt.Fprintf(w, "> Method: \t%-5s \n", verboseInfo.Request.Method)
+
+			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Request Headers: ")))
+			for hKey, hVal := range verboseInfo.Request.Headers {
+				fmt.Fprintf(w, "> %s:\t%-5s \n", hKey, hVal)
+			}
+
+			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
+			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Request Body: ")))
+			printBody(w, contentType, verboseInfo.Request.Body)
+
+			if verboseInfo.Error != "" {
+				fmt.Fprintf(w, "%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
+			} else {
+				fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
+				fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Response Headers: ")))
+				for hKey, hVal := range verboseInfo.Response.Headers {
+					fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
+				}
+
+				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Response Body: ")))
+				printBody(w, contentType, verboseInfo.Response.Body)
+			}
+
+			fmt.Fprintln(w)
+			fmt.Fprint(out, b.String())
+		}
+	}
+}
+
+func printBody(w *tabwriter.Writer, contentType string, body interface{}) {
+	if strings.Contains(contentType, "application/json") {
+		valPretty, _ := json.MarshalIndent(body, "", "  ")
+		fmt.Fprintf(w, "%s\n", valPretty)
+	} else {
+		// html unescaped text
+		// if xml came as decoded, we could pretty print it like json
+		fmt.Fprintf(w, "%s\n", body.(string))
+	}
+}
+
 // TODO:REFACTOR use template
 func (s *stdout) printDetails() {
 	color.Set(color.FgHiCyan)
@@ -136,7 +206,7 @@ func (s *stdout) printDetails() {
 	fmt.Fprintln(w, "-------------------------------------")
 
 	keys := make([]int, 0)
-	for k := range s.result.ItemReports {
+	for k := range s.result.StepResults {
 		keys = append(keys, int(k))
 	}
 
@@ -145,7 +215,7 @@ func (s *stdout) printDetails() {
 	sort.Ints(keys)
 
 	for _, k := range keys {
-		v := s.result.ItemReports[uint16(k)]
+		v := s.result.StepResults[uint16(k)]
 
 		if len(keys) > 1 {
 			stepHeader := v.Name

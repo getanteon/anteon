@@ -22,6 +22,8 @@ package report
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -31,7 +33,8 @@ import (
 
 func TestInitStdoutJson(t *testing.T) {
 	sj := &stdoutJson{}
-	sj.Init()
+	debug := false
+	sj.Init(debug)
 
 	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -42,26 +45,26 @@ func TestInitStdoutJson(t *testing.T) {
 	}
 }
 
-func TestStdoutJsonStart(t *testing.T) {
-	responses := []*types.Response{
+func TestStdoutJsonListenAndAggregate(t *testing.T) {
+	responses := []*types.ScenarioResult{
 		{
 			StartTime: time.Now(),
-			ResponseItems: []*types.ResponseItem{
+			StepResults: []*types.ScenarioStepResult{
 				{
-					ScenarioItemID: 1,
-					StatusCode:     200,
-					RequestTime:    time.Now().Add(1),
-					Duration:       time.Duration(10) * time.Second,
+					StepID:      1,
+					StatusCode:  200,
+					RequestTime: time.Now().Add(1),
+					Duration:    time.Duration(10) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(5) * time.Second,
 						"connDuration": time.Duration(5) * time.Second,
 					},
 				},
 				{
-					ScenarioItemID: 2,
-					RequestTime:    time.Now().Add(2),
-					Duration:       time.Duration(30) * time.Second,
-					Err:            types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout},
+					StepID:      2,
+					RequestTime: time.Now().Add(2),
+					Duration:    time.Duration(30) * time.Second,
+					Err:         types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout},
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(10) * time.Second,
 						"connDuration": time.Duration(20) * time.Second,
@@ -71,22 +74,22 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 		{
 			StartTime: time.Now().Add(10),
-			ResponseItems: []*types.ResponseItem{
+			StepResults: []*types.ScenarioStepResult{
 				{
-					ScenarioItemID: 1,
-					StatusCode:     200,
-					RequestTime:    time.Now().Add(11),
-					Duration:       time.Duration(30) * time.Second,
+					StepID:      1,
+					StatusCode:  200,
+					RequestTime: time.Now().Add(11),
+					Duration:    time.Duration(30) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(10) * time.Second,
 						"connDuration": time.Duration(20) * time.Second,
 					},
 				},
 				{
-					ScenarioItemID: 2,
-					StatusCode:     401,
-					RequestTime:    time.Now().Add(12),
-					Duration:       time.Duration(60) * time.Second,
+					StepID:      2,
+					StatusCode:  401,
+					RequestTime: time.Now().Add(12),
+					Duration:    time.Duration(60) * time.Second,
 					Custom: map[string]interface{}{
 						"dnsDuration":  time.Duration(20) * time.Second,
 						"connDuration": time.Duration(40) * time.Second,
@@ -96,7 +99,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 	}
 
-	itemReport1 := &ScenarioItemReport{
+	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 2},
 		SuccessCount:   2,
 		FailedCount:    0,
@@ -107,7 +110,7 @@ func TestStdoutJsonStart(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioItemReport{
+	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
 		SuccessCount:   1,
 		FailedCount:    1,
@@ -123,17 +126,18 @@ func TestStdoutJsonStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		ItemReports: map[uint16]*ScenarioItemReport{
+		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
 	}
 
 	s := &stdoutJson{}
-	s.Init()
+	debug := false
+	s.Init(debug)
 
-	responseChan := make(chan *types.Response, len(responses))
-	go s.Start(responseChan)
+	responseChan := make(chan *types.ScenarioResult, len(responses))
+	go s.listenAndAggregate(responseChan)
 
 	go func() {
 		for _, r := range responses {
@@ -160,7 +164,7 @@ func TestStdoutJsonStart(t *testing.T) {
 
 func TestStdoutJsonOutput(t *testing.T) {
 	// Arrange
-	itemReport1 := &ScenarioItemReport{
+	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 11},
 		SuccessCount:   11,
 		FailedCount:    0,
@@ -171,7 +175,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioItemReport{
+	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1, 200: 9},
 		SuccessCount:   9,
 		FailedCount:    2,
@@ -186,7 +190,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		SuccessCount: 9,
 		FailedCount:  2,
 		AvgDuration:  0.25637,
-		ItemReports: map[uint16]*ScenarioItemReport{
+		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
@@ -247,10 +251,46 @@ func TestStdoutJsonOutput(t *testing.T) {
 
 	// Act
 	s := &stdoutJson{result: &result}
-	s.Report()
+	s.report()
 
 	// Assert
 	if output != expectedOutput {
 		t.Errorf("Expected: %v, Found: %v", expectedOutput, output)
 	}
+}
+
+func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
+	s := &stdoutJson{}
+	s.Init(true)
+	testDoneChan := make(chan struct{}, 1)
+
+	realOut := out
+	r, w, _ := os.Pipe()
+	out = w
+	defer func() {
+		out = realOut
+	}()
+
+	inputChan := make(chan *types.ScenarioResult, 1)
+	inputChan <- &types.ScenarioResult{}
+	close(inputChan)
+
+	go func() {
+		s.Start(inputChan)
+		w.Close()
+	}()
+
+	go func() {
+		// wait for print and debug
+		<-s.DoneChan()
+
+		printedOutput, _ := ioutil.ReadAll(r)
+		if !json.Valid(printedOutput) {
+			t.Errorf("Printed output is not valid json: %v", string(printedOutput))
+		}
+		testDoneChan <- struct{}{}
+	}()
+
+	<-testDoneChan
+
 }

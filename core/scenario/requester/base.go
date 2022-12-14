@@ -30,15 +30,15 @@ import (
 )
 
 // Requester is the interface that abstracts different protocols' request sending implementations.
-// Protocol field in the types.ScenarioItem determines which requester implementation to use.
+// Protocol field in the types.ScenarioStep determines which requester implementation to use.
 type Requester interface {
-	Init(context.Context, types.ScenarioItem, *url.URL) error
-	Send() *types.ResponseItem
+	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool) error
+	Send() *types.ScenarioStepResult
 	Done()
 }
 
 // NewRequester is the factory method of the Requester.
-func NewRequester(s types.ScenarioItem) (requester Requester, err error) {
+func NewRequester(s types.ScenarioStep) (requester Requester, err error) {
 	if strings.EqualFold(s.Protocol, types.ProtocolHTTP) ||
 		strings.EqualFold(s.Protocol, types.ProtocolHTTPS) {
 		requester = &HttpRequester{}
