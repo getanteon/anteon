@@ -142,7 +142,7 @@ func TestCreateHammer(t *testing.T) {
 
 			fromFileCalled := false
 			fromFlagsCalled := false
-			createHammerFromConfigFile = func() (h types.Hammer, err error) {
+			createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 				fromFileCalled = true
 				return
 			}
@@ -163,6 +163,46 @@ func TestCreateHammer(t *testing.T) {
 			if fromFlagsCalled != test.fromFlags {
 				t.Errorf("createHammerFromFlagsCalled expected %v found %v", test.fromFlags, fromFlagsCalled)
 			}
+		}
+
+		t.Run(test.name, tf)
+	}
+}
+
+func TestDebugFlagOverridesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"DebugFlagShouldOverrideConfig",
+			[]string{"-config", "config/config_testdata/config_debug_false.json", "-debug"}},
+		{"UseConfigDebugKeyWhenNoDebugFlagSpecified",
+			[]string{"-config", "config/config_testdata/config_debug_mode.json", "-debug", "false"}},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			resetFlags()
+			oldArgs := os.Args
+			defer func() {
+				os.Args = oldArgs
+			}()
+
+			// Act
+			os.Args = append([]string{"cmd"}, test.args...)
+			flag.Parse()
+			h, err := createHammer()
+
+			if err != nil {
+				t.Errorf("createHammer return %v", err)
+			}
+
+			// Assert
+			if h.Debug != *debug {
+				t.Errorf("debug flag did not override config file")
+			}
+
 		}
 
 		t.Run(test.name, tf)

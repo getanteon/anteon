@@ -75,6 +75,7 @@ var (
 	certKeyPath = flag.String("cert_key_path", "", "A path to a certificate key file (usually called 'key.pem')")
 
 	version = flag.Bool("version", false, "Prints version, git commit, built date (utc), go information and quit")
+	debug   = flag.Bool("debug", false, "Iterates the scenario once and prints curl-like verbose result")
 )
 
 var (
@@ -106,12 +107,13 @@ func main() {
 
 func createHammer() (h types.Hammer, err error) {
 	if *configPath != "" {
-		return createHammerFromConfigFile()
+		// running with config and debug mode set from cli
+		return createHammerFromConfigFile(*debug)
 	}
 	return createHammerFromFlags()
 }
 
-var createHammerFromConfigFile = func() (h types.Hammer, err error) {
+var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 	f, err := os.Open(*configPath)
 	if err != nil {
 		return
@@ -131,6 +133,11 @@ var createHammerFromConfigFile = func() (h types.Hammer, err error) {
 	if err != nil {
 		return
 	}
+
+	if isFlagPassed("debug") {
+		h.Debug = debug // debug flag from cli overrides debug in config file
+	}
+
 	return
 }
 
@@ -188,6 +195,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: *output,
+		Debug:             *debug,
 	}
 	return
 }
@@ -313,4 +321,14 @@ func (h *header) String() string {
 func (h *header) Set(value string) error {
 	*h = append(*h, value)
 	return nil
+}
+
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }

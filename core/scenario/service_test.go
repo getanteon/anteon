@@ -43,7 +43,7 @@ type MockRequester struct {
 	ReturnSend *types.ScenarioStepResult
 }
 
-func (m *MockRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL) (err error) {
+func (m *MockRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool) (err error) {
 	m.InitCalled = true
 	if m.FailInit {
 		return fmt.Errorf(m.FailInitMsg)
@@ -186,7 +186,7 @@ func TestInitService(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies)
+	err := service.Init(ctx, scenario, proxies, false)
 
 	// Assert
 	if err != nil {
@@ -220,7 +220,7 @@ func TestInitServiceFail(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies)
+	err := service.Init(ctx, scenario, proxies, false)
 
 	// Assert
 	if err == nil {
@@ -236,6 +236,13 @@ func TestDo(t *testing.T) {
 		Steps: []types.ScenarioStep{
 			{
 				ID:       1,
+				Protocol: types.DefaultProtocol,
+				Method:   types.DefaultMethod,
+				URL:      "test.com",
+				Timeout:  types.DefaultDuration,
+			},
+			{
+				ID:       2,
 				Protocol: types.DefaultProtocol,
 				Method:   types.DefaultMethod,
 				URL:      "test.com",
@@ -502,7 +509,7 @@ func TestGetOrCreateRequesters(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 	expectedClients := map[*url.URL][]scenarioItemRequester{
@@ -548,7 +555,7 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 
@@ -597,7 +604,7 @@ func TestGetOrCreateRequestersFailed(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies)
+	service.Init(ctx, scenario, proxies, false)
 
 	p, _ := url.Parse("http://proxy_server2.com:8080")
 

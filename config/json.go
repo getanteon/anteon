@@ -106,6 +106,7 @@ type JsonReader struct {
 	Steps        []step       `json:"steps"`
 	Output       string       `json:"output"`
 	Proxy        string       `json:"proxy"`
+	Debug        bool         `json:"debug"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -193,6 +194,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Scenario:          s,
 		Proxy:             p,
 		ReportDestination: j.Output,
+		Debug:             j.Debug,
 	}
 	return
 }

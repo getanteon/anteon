@@ -95,11 +95,11 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll()); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
 		return
 	}
 
-	if err = e.reportService.Init(); err != nil {
+	if err = e.reportService.Init(e.hammer.Debug); err != nil {
 		return
 	}
 
@@ -180,12 +180,15 @@ func (e *engine) stop() {
 	e.wg.Wait()
 	close(e.resultChan)
 	<-e.reportService.DoneChan()
-	e.reportService.Report()
 	e.proxyService.Done()
 	e.scenarioService.Done()
 }
 
 func (e *engine) initReqCountArr() {
+	if e.hammer.Debug {
+		e.reqCountArr = []int{1}
+		return
+	}
 	length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))
 	e.reqCountArr = make([]int, length)
 

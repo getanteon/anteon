@@ -32,14 +32,14 @@ import (
 func TestScenarioStepReport(t *testing.T) {
 	tests := []struct {
 		name              string
-		s                 ScenarioStepResult
+		s                 ScenarioStepResultSummary
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-F:0", ScenarioStepResult{FailedCount: 0, SuccessCount: 0}, 0, 0},
-		{"S:0-F:1", ScenarioStepResult{FailedCount: 1, SuccessCount: 0}, 0, 100},
-		{"S:1-F:0", ScenarioStepResult{FailedCount: 0, SuccessCount: 1}, 100, 0},
-		{"S:3-F:9", ScenarioStepResult{FailedCount: 9, SuccessCount: 3}, 25, 75},
+		{"S:0-F:0", ScenarioStepResultSummary{FailedCount: 0, SuccessCount: 0}, 0, 0},
+		{"S:0-F:1", ScenarioStepResultSummary{FailedCount: 1, SuccessCount: 0}, 0, 100},
+		{"S:1-F:0", ScenarioStepResultSummary{FailedCount: 0, SuccessCount: 1}, 100, 0},
+		{"S:3-F:9", ScenarioStepResultSummary{FailedCount: 9, SuccessCount: 3}, 25, 75},
 	}
 
 	for _, test := range tests {
@@ -91,7 +91,8 @@ func TestResult(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	s := &stdout{}
-	s.Init()
+	debug := false
+	s.Init(debug)
 
 	if s.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -156,7 +157,7 @@ func TestStart(t *testing.T) {
 		},
 	}
 
-	itemReport1 := &ScenarioStepResult{
+	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 2},
 		SuccessCount:   2,
 		FailedCount:    0,
@@ -167,7 +168,7 @@ func TestStart(t *testing.T) {
 		},
 		ErrorDist: map[string]int{},
 	}
-	itemReport2 := &ScenarioStepResult{
+	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
 		SuccessCount:   1,
 		FailedCount:    1,
@@ -183,14 +184,15 @@ func TestStart(t *testing.T) {
 		SuccessCount: 1,
 		FailedCount:  1,
 		AvgDuration:  90,
-		StepResults: map[uint16]*ScenarioStepResult{
+		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
 	}
 
 	s := &stdout{}
-	s.Init()
+	debug := false
+	s.Init(debug)
 
 	responseChan := make(chan *types.ScenarioResult, len(responses))
 	go s.Start(responseChan)
