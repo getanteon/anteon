@@ -367,7 +367,7 @@ func generateRequestError(err error) types.RequestError {
 
 		// below errors are coming as net/http.httpError which does not wrap errors, forced to use strings.Contains
 	} else if errors.Is(err, context.DeadlineExceeded) ||
-		err.Error() == "i/o timeout" || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+		strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 		// err.Error() == "i/o timeout"  means errors.Is(err, net.timeoutError)  hint: net.go:425 mapErr func
 		requestError.Type = types.ErrorConn
 		requestError.Reason = "timeout"
