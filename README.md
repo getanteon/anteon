@@ -100,6 +100,8 @@ curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/inst
 
 ### Go install from source (macOS, FreeBSD, Linux, Windows)
 
+*Minimum supported Go version is 1.18*
+
 ```bash
 go install -v go.ddosify.com/ddosify@latest
 ```
