@@ -1,9 +1,8 @@
 // This file contains full features of Ddosify as a reference. Don't use it directly.
 {
-    "request_count": 20, // This field will be deprecated, please use iteration_count instead.
+    "request_count": 30, // This field will be deprecated, please use iteration_count instead.
     "iteration_count": 30,
-    "request_count": 20, // this field will be deprecated, use iteration_count
-    "debug" : "false, // use this field for debugging, see verbose result
+    "debug" : false, // use this field for debugging, see verbose result
     "load_type": "linear",
     "duration": 5,
     "manual_load": [

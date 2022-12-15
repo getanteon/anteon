@@ -294,3 +294,68 @@ func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
 	<-testDoneChan
 
 }
+
+func TestVerboseHttpInfoMarshallingErrorCase(t *testing.T) {
+	errorStr := "there is error"
+	vError := verboseHttpRequestInfo{
+		StepId:   0,
+		StepName: "",
+		Request: struct {
+			Url     string            "json:\"url\""
+			Method  string            "json:\"method\""
+			Headers map[string]string "json:\"headers\""
+			Body    interface{}       "json:\"body\""
+		}{},
+		Error: errorStr,
+	}
+
+	bytesWithErrorAndNoResponse, _ := vError.MarshalJSON()
+
+	var aliasStruct map[string]interface{}
+	json.Unmarshal(bytesWithErrorAndNoResponse, &aliasStruct)
+
+	val, errExists := aliasStruct["error"]
+	_, respExists := aliasStruct["response"]
+
+	if !errExists {
+		t.Errorf("Verbose Http Info should have error key")
+	} else if val != errorStr {
+		t.Errorf("Verbose Http Info should have error value as : %s, found: %s", errorStr, val)
+	} else if respExists {
+		t.Errorf("Verbose Http Info should not have response in case of error")
+	}
+}
+
+func TestVerboseHttpInfoMarshallingSuccessCase(t *testing.T) {
+	noErrorStr := ""
+	vSuccess := verboseHttpRequestInfo{
+		StepId:   0,
+		StepName: "",
+		Request: struct {
+			Url     string            "json:\"url\""
+			Method  string            "json:\"method\""
+			Headers map[string]string "json:\"headers\""
+			Body    interface{}       "json:\"body\""
+		}{},
+		Response: struct {
+			StatusCode int               "json:\"statusCode\""
+			Headers    map[string]string "json:\"headers\""
+			Body       interface{}       "json:\"body\""
+		}{},
+		Error: noErrorStr,
+	}
+
+	bytesWithResponseAndNoError, _ := vSuccess.MarshalJSON()
+
+	var aliasStruct map[string]interface{}
+	json.Unmarshal(bytesWithResponseAndNoError, &aliasStruct)
+
+	_, errExists := aliasStruct["error"]
+	_, respExists := aliasStruct["response"]
+
+	if errExists {
+		t.Errorf("Verbose Http Info should not have error key in success case")
+	} else if !respExists {
+		t.Errorf("Verbose Http Info should have response in success case")
+	}
+}
