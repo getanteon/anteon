@@ -20,7 +20,13 @@
 package report
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -218,4 +224,105 @@ func TestStart(t *testing.T) {
 	if !reflect.DeepEqual(*s.result, expectedResult) {
 		t.Errorf("2Expected %#v, Found %#v", expectedResult, *s.result)
 	}
+}
+
+func TestPrintJsonBody(t *testing.T) {
+	var byteArr []byte
+	buffer := bytes.NewBuffer(byteArr)
+
+	contentTypeJson := "application/json"
+	body := map[string]interface{}{"x": "y"}
+	printBody(buffer, contentTypeJson, body)
+
+	printedBody := buffer.Bytes()
+
+	if !json.Valid(printedBody) {
+		t.Errorf("Printed body is not valid json: %v", string(printedBody))
+	}
+}
+
+func TestPrintBodyAsString(t *testing.T) {
+	var byteArr []byte
+	buffer := bytes.NewBuffer(byteArr)
+
+	contentTypeAny := "any"
+	body := "argentina"
+	printBody(buffer, contentTypeAny, body)
+
+	printedBody := buffer.Bytes()
+
+	if string(printedBody) != body {
+		t.Errorf("Printed body does not match expected: %s, found: %v", body, string(printedBody))
+	}
+}
+
+func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
+	s := &stdout{}
+	s.Init(true)
+	testDoneChan := make(chan struct{}, 1)
+
+	// listen to output
+	realOut := out
+	r, w, _ := os.Pipe()
+	out = w
+	defer func() {
+		out = realOut
+	}()
+
+	inputChan := make(chan *types.ScenarioResult, 1)
+	inputChan <- &types.ScenarioResult{
+		StepResults: []*types.ScenarioStepResult{
+			{
+				StepID:        0,
+				StepName:      "",
+				RequestID:     [16]byte{},
+				StatusCode:    0,
+				RequestTime:   time.Time{},
+				Duration:      0,
+				ContentLength: 0,
+				Err:           types.RequestError{},
+				DebugInfo: map[string]interface{}{
+					"requestBody":     []byte{},
+					"requestHeaders":  http.Header{},
+					"url":             "",
+					"method":          "",
+					"responseBody":    []byte{},
+					"responseHeaders": http.Header{},
+				},
+				Custom: map[string]interface{}{},
+			},
+		},
+	}
+	close(inputChan)
+
+	go func() {
+		s.Start(inputChan)
+		w.Close()
+	}()
+
+	go func() {
+		// wait for print and debug
+		<-s.DoneChan()
+
+		printedOutput, err := ioutil.ReadAll(r)
+		t.Log(err)
+		t.Log(printedOutput)
+
+		outStr := string(printedOutput)
+		if !strings.Contains(outStr, "REQUEST") ||
+			!strings.Contains(outStr, "Request Headers:") ||
+			!strings.Contains(outStr, "Request Body:") ||
+			!strings.Contains(outStr, "RESPONSE") ||
+			!strings.Contains(outStr, "StatusCode:") ||
+			!strings.Contains(outStr, "Response Headers:") ||
+			!strings.Contains(outStr, "Response Body:") {
+
+			t.Errorf("One or multiple headlines are missing in stdout debug mode")
+		}
+
+		testDoneChan <- struct{}{}
+	}()
+
+	<-testDoneChan
+
 }
