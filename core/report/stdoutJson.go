@@ -106,7 +106,7 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	printPretty(out, stepDebugResults)
 }
 
-func printPretty(w io.Writer, info interface{}) {
+func printPretty(w io.Writer, info any) {
 	valPretty, _ := json.MarshalIndent(info, "", "  ")
 	fmt.Fprintf(out, "%s \n",
 		white(fmt.Sprintf(" %-6s",
