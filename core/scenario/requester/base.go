@@ -34,6 +34,7 @@ import (
 type Requester interface {
 	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool) error
 	Send() *types.ScenarioStepResult
+	SetEnvironment(map[string]interface{})
 	Done()
 }
 

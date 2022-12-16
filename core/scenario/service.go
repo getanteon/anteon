@@ -81,9 +81,11 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	if e != nil {
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
-
+	envs := s.scenario.Envs
 	for _, sr := range requesters {
+		sr.requester.SetEnvironment(envs)
 		res := sr.requester.Send()
+
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
 			if res.Err.Type == types.ErrorIntented {
@@ -97,8 +99,16 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		if sr.sleeper != nil && len(s.scenario.Steps) > 1 {
 			sr.sleeper.sleep()
 		}
+
+		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 	}
 	return
+}
+
+func enrichEnvFromPrevStep(m1 map[string]interface{}, m2 map[string]interface{}) {
+	for k, v := range m2 {
+		m1[k] = v
+	}
 }
 
 func (s *ScenarioService) Done() {

@@ -40,6 +40,8 @@ type MockRequester struct {
 	FailInit    bool
 	FailInitMsg string
 
+	EnvsSet bool
+
 	ReturnSend *types.ScenarioStepResult
 }
 
@@ -54,6 +56,10 @@ func (m *MockRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 func (m *MockRequester) Send() (res *types.ScenarioStepResult) {
 	m.SendCalled = true
 	return m.ReturnSend
+}
+
+func (m *MockRequester) SetEnvironment(envs map[string]interface{}) {
+	m.EnvsSet = true
 }
 
 func (m *MockRequester) Done() {

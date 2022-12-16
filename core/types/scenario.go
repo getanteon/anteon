@@ -29,7 +29,6 @@ import (
 	"strconv"
 	"strings"
 
-	validator "github.com/asaskevich/govalidator"
 	"go.ddosify.com/ddosify/core/util"
 )
 
@@ -70,6 +69,7 @@ var supportedAuthentications = map[string][]string{
 // Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
 type Scenario struct {
 	Steps []ScenarioStep
+	Envs  map[string]interface{}
 }
 
 func (s *Scenario) validate() error {
@@ -150,9 +150,10 @@ func (si *ScenarioStep) validate() error {
 	if si.ID == 0 {
 		return fmt.Errorf("step ID should be greater than zero")
 	}
-	if !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
-		return fmt.Errorf("target is not valid: %s", si.URL)
-	}
+	// TODOcorr: refactor here, env var url fails
+	// if !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
+	// 	return fmt.Errorf("target is not valid: %s", si.URL)
+	// }
 	if si.Sleep != "" {
 		sleep := strings.Split(si.Sleep, "-")
 
@@ -204,21 +205,22 @@ func ParseTLS(certFile, keyFile string) (tls.Certificate, *x509.CertPool, error)
 // If url is not valid, then error will be returned
 func AdjustUrlProtocol(url string, proto string) (string, string, error) {
 	var err error
-	if !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
-		err = fmt.Errorf("target is not valid: %s", url)
-	} else {
-		tempURL := strings.ToUpper(url)
-		if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
-			proto = ProtocolHTTPS
-		} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
-			proto = ProtocolHTTP
-		} else {
-			if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
-				!strings.HasPrefix(tempURL, ProtocolHTTPS) {
-				url = strings.ToLower(proto) + "://" + url
-			}
-		}
-	}
+	// TODOcorr: refactor here, env vars fails in if
+	// if !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
+	// 	err = fmt.Errorf("target is not valid: %s", url)
+	// } else {
+	// 	tempURL := strings.ToUpper(url)
+	// 	if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
+	// 		proto = ProtocolHTTPS
+	// 	} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
+	// 		proto = ProtocolHTTP
+	// 	} else {
+	// 		if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
+	// 			!strings.HasPrefix(tempURL, ProtocolHTTPS) {
+	// 			url = strings.ToLower(proto) + "://" + url
+	// 		}
+	// 	}
+	// }
 
 	return url, proto, err
 }

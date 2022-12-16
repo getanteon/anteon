@@ -98,15 +98,16 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount     *int         `json:"request_count"`
-	IterCount    *int         `json:"iteration_count"`
-	LoadType     string       `json:"load_type"`
-	Duration     int          `json:"duration"`
-	TimeRunCount timeRunCount `json:"manual_load"`
-	Steps        []step       `json:"steps"`
-	Output       string       `json:"output"`
-	Proxy        string       `json:"proxy"`
-	Debug        bool         `json:"debug"`
+	ReqCount     *int                   `json:"request_count"`
+	IterCount    *int                   `json:"iteration_count"`
+	LoadType     string                 `json:"load_type"`
+	Duration     int                    `json:"duration"`
+	TimeRunCount timeRunCount           `json:"manual_load"`
+	Steps        []step                 `json:"steps"`
+	Output       string                 `json:"output"`
+	Proxy        string                 `json:"proxy"`
+	Envs         map[string]interface{} `json:"env"`
+	Debug        bool                   `json:"debug"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -141,7 +142,9 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	// Scenario
-	s := types.Scenario{}
+	s := types.Scenario{
+		Envs: j.Envs,
+	}
 	var si types.ScenarioStep
 	for _, step := range j.Steps {
 		si, err = stepToScenarioStep(step)

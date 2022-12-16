@@ -41,6 +41,7 @@ import (
 )
 
 const DynamicVariableRegex = `\{{(_)[^}]+\}}`
+const EnvironmentVariableRegex = `\{{[^_]\w+\}}`
 
 type HttpRequester struct {
 	ctx                  context.Context
@@ -50,7 +51,9 @@ type HttpRequester struct {
 	request              *http.Request
 	vi                   *scripting.VariableInjector
 	containsDynamicField map[string]bool
+	containsEnvVar       map[string]bool
 	debug                bool
+	envs                 map[string]interface{}
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -61,6 +64,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.vi = &scripting.VariableInjector{}
 	h.vi.Init()
 	h.containsDynamicField = make(map[string]bool)
+	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
 
 	// TlsConfig
@@ -87,6 +91,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	}
 
 	re := regexp.MustCompile(DynamicVariableRegex)
+	envRegex := regexp.MustCompile(EnvironmentVariableRegex)
 	if re.MatchString(h.packet.Payload) {
 		_, err = h.vi.Inject(h.packet.Payload)
 		if err != nil {
@@ -101,6 +106,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 			return
 		}
 		h.containsDynamicField["url"] = true
+	}
+	// TODOcorr: add  envRegex.MatchString other than url: body, header ....
+	if envRegex.MatchString(h.packet.URL) {
+		h.containsEnvVar["url"] = true
 	}
 
 	for k, values := range h.request.Header {
@@ -171,6 +180,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	if err != nil {
 		requestErr = fetchErrType(err)
 	}
+	// TODOcorr : populate res.ExtractedEnvs
 	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
@@ -228,6 +238,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
+		ExtractedEnvs: map[string]interface{}{},
 	}
 	if h.packet.Protocol == types.ProtocolHTTPS {
 		res.Custom["tlsDuration"] = durations.getTLSDur()
@@ -254,6 +265,12 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	httpReq.URL, _ = url.Parse(h.packet.URL)
 	if h.containsDynamicField["url"] {
 		u, _ := h.vi.Inject(h.packet.URL)
+		httpReq.URL, _ = url.Parse(u)
+	}
+
+	// TODOcorr : inject for other types than url : body, header ....
+	if h.containsEnvVar["url"] {
+		u, _ := h.vi.InjectEnvVariables(h.packet.URL, h.envs)
 		httpReq.URL, _ = url.Parse(u)
 	}
 
@@ -479,6 +496,14 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			m.Unlock()
 		},
 	}
+}
+
+func (h *HttpRequester) SetEnvironment(envs map[string]interface{}) {
+	stepEnvs := make(map[string]interface{})
+	for k, v := range envs {
+		stepEnvs[k] = v
+	}
+	h.envs = stepEnvs
 }
 
 type duration struct {

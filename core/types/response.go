@@ -70,4 +70,6 @@ type ScenarioStepResult struct {
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}
+
+	ExtractedEnvs map[string]interface{}
 }
