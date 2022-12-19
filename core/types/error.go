@@ -25,13 +25,14 @@ import "fmt"
 // Constants for custom error types and reasons
 const (
 	// Types
-	ErrorProxy    = "proxyError"
-	ErrorConn     = "connectionError"
-	ErrorUnkown   = "unknownError"
-	ErrorIntented = "intentedError" // Errors for created intentionally
-	ErrorDns      = "dnsError"
-	ErrorParse    = "parseError"
-	ErrorAddr     = "addressError"
+	ErrorProxy          = "proxyError"
+	ErrorConn           = "connectionError"
+	ErrorUnkown         = "unknownError"
+	ErrorIntented       = "intentedError" // Errors for created intentionally
+	ErrorDns            = "dnsError"
+	ErrorParse          = "parseError"
+	ErrorAddr           = "addressError"
+	ErrorInvalidRequest = "invalidRequestError"
 
 	// Reasons
 	ReasonProxyFailed  = "proxy connection refused"

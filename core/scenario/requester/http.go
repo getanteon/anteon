@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -50,6 +51,7 @@ type HttpRequester struct {
 	client               *http.Client
 	request              *http.Request
 	vi                   *scripting.VariableInjector
+	ri                   *scripting.RegexReplacer
 	containsDynamicField map[string]bool
 	containsEnvVar       map[string]bool
 	debug                bool
@@ -63,6 +65,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.proxyAddr = proxyAddr
 	h.vi = &scripting.VariableInjector{}
 	h.vi.Init()
+	h.ri = scripting.CreateRegexReplacer(EnvironmentVariableRegex)
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
@@ -168,7 +171,20 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
-	httpReq := h.prepareReq(trace)
+	httpReq, err := h.prepareReq(trace)
+
+	if err != nil { // could not prepare req
+		requestErr.Type = types.ErrorInvalidRequest
+		requestErr.Reason = fmt.Sprintf("Could not prepare req, %s", err.Error())
+		res = &types.ScenarioStepResult{
+			StepID:    h.packet.ID,
+			StepName:  h.packet.Name,
+			RequestID: uuid.New(),
+			Err:       requestErr,
+		}
+
+		return res
+	}
 
 	if h.debug {
 		io.Copy(&copiedReqBody, httpReq.Body)
@@ -250,7 +266,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	return
 }
 
-func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
+func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
@@ -270,7 +286,10 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 
 	// TODOcorr : inject for other types than url : body, header ....
 	if h.containsEnvVar["url"] {
-		u, _ := h.vi.InjectEnvVariables(h.packet.URL, h.envs)
+		u, err := h.ri.Inject(h.packet.URL, h.envs)
+		if err != nil {
+			return nil, err
+		}
 		httpReq.URL, _ = url.Parse(u)
 	}
 
@@ -298,7 +317,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) *http.Request {
 	}
 
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	return httpReq
+	return httpReq, nil
 }
 
 // Currently we can't detect exact error type by returned err.

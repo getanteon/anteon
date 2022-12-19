@@ -158,6 +158,22 @@ var strKeyToJsonKey = map[string]string{
 }
 
 func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
+	// could not prepare req, correlation
+	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
+		type alias struct {
+			StepId   uint16 `json:"stepId"`
+			StepName string `json:"stepName"`
+			Error    string `json:"error"`
+		}
+
+		a := alias{
+			Error:    v.Error,
+			StepId:   v.StepId,
+			StepName: v.StepName,
+		}
+		return json.Marshal(a)
+	}
+
 	if v.Error != "" {
 		type alias struct {
 			StepId   uint16 `json:"stepId"`

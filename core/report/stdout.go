@@ -150,6 +150,12 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
+			if verboseInfo.Error != "" && isVerboseInfoRequestEmpty(verboseInfo.Request) {
+				fmt.Fprintf(w, "%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
+				fmt.Fprintln(w)
+				fmt.Fprint(out, b.String())
+				break
+			}
 			fmt.Fprintln(w, "***********  REQUEST  ***********")
 			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "> Method: \t%-5s \n", verboseInfo.Request.Method)
