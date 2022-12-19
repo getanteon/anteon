@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -43,6 +44,9 @@ const (
 
 	// Max sleep in ms (90s)
 	maxSleep = 90000
+
+	// Should match environment variables
+	EnvironmentVariableRegex = `\{{[^_]\w+\}}`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
@@ -74,9 +78,25 @@ type Scenario struct {
 
 func (s *Scenario) validate() error {
 	stepIds := make(map[uint16]struct{}, len(s.Steps))
+	definedEnvs := map[string]struct{}{}
+
+	for key := range s.Envs {
+		definedEnvs[key] = struct{}{} // exist
+	}
+
 	for _, st := range s.Steps {
 		if err := st.validate(); err != nil {
 			return err
+		}
+
+		// and check if used envs in current step has already been defined or not
+		if err := checkEnvsValidInStep(&st, definedEnvs); err != nil {
+			return err
+		}
+
+		// enrich Envs map with captured envs from each step
+		for _, ce := range st.CapturedEnvs {
+			definedEnvs[ce.Name] = struct{}{}
 		}
 
 		if _, ok := stepIds[st.ID]; ok {
@@ -84,6 +104,21 @@ func (s *Scenario) validate() error {
 		}
 		stepIds[st.ID] = struct{}{}
 	}
+	return nil
+}
+
+func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) error {
+	r := regexp.MustCompile(EnvironmentVariableRegex)
+
+	matches := r.FindAllString(st.URL, -1)
+	for _, v := range matches {
+		if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // TODOcorr: check boundaries
+			return fmt.Errorf("%s is not defined by global and captured environments up to step %d (%s)", v, st.ID, st.Name)
+		}
+	}
+
+	// TODOcorr: add check for payload header...
+
 	return nil
 }
 
@@ -128,6 +163,14 @@ type ScenarioStep struct {
 
 	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests
 	Custom map[string]interface{}
+
+	CapturedEnvs []CapturedEnv
+}
+
+type CapturedEnv struct {
+	JsonPath string `json:"jsonPath"`
+	Xpath    string `json:"xpath"`
+	Name     string `json:"as"`
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.

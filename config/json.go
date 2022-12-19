@@ -62,6 +62,11 @@ type multipartFormData struct {
 	Src   string `json:"src"`
 }
 
+type capturePath struct {
+	JsonPath string `json:"jsonPath"`
+	XPath    string `json:"xPath"`
+}
+
 type step struct {
 	Id               uint16                 `json:"id"`
 	Name             string                 `json:"name"`
@@ -78,6 +83,7 @@ type step struct {
 	Others           map[string]interface{} `json:"others"`
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
+	CaptureEnv       map[string]capturePath `json:"captureEnv"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -239,18 +245,28 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 
 	s.Protocol = strings.ToUpper(s.Protocol)
 
+	capturedEnvs := []types.CapturedEnv{}
+	for name, path := range s.CaptureEnv {
+		capturedEnvs = append(capturedEnvs, types.CapturedEnv{
+			JsonPath: path.JsonPath,
+			Xpath:    path.XPath,
+			Name:     name,
+		})
+	}
+
 	item := types.ScenarioStep{
-		ID:       s.Id,
-		Name:     s.Name,
-		URL:      s.Url,
-		Protocol: s.Protocol,
-		Auth:     types.Auth(s.Auth),
-		Method:   strings.ToUpper(s.Method),
-		Headers:  s.Headers,
-		Payload:  payload,
-		Timeout:  s.Timeout,
-		Sleep:    strings.ReplaceAll(s.Sleep, " ", ""),
-		Custom:   s.Others,
+		ID:           s.Id,
+		Name:         s.Name,
+		URL:          s.Url,
+		Protocol:     s.Protocol,
+		Auth:         types.Auth(s.Auth),
+		Method:       strings.ToUpper(s.Method),
+		Headers:      s.Headers,
+		Payload:      payload,
+		Timeout:      s.Timeout,
+		Sleep:        strings.ReplaceAll(s.Sleep, " ", ""),
+		Custom:       s.Others,
+		CapturedEnvs: capturedEnvs,
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {
