@@ -31,8 +31,7 @@ import (
 // Protocol field in the types.ScenarioStep determines which requester implementation to use.
 type Requester interface {
 	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool) error
-	Send() *types.ScenarioStepResult
-	SetEnvironment(map[string]interface{})
+	Send(envs map[string]interface{}) *types.ScenarioStepResult
 	Done()
 }
 

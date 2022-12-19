@@ -158,7 +158,7 @@ func (h *HttpRequester) Done() {
 	h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
+func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -172,7 +172,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
-	httpReq, err := h.prepareReq(trace)
+	httpReq, err := h.prepareReq(envs, trace)
 
 	if err != nil { // could not prepare req
 		requestErr.Type = types.ErrorInvalidRequest
@@ -269,7 +269,7 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 	return
 }
 
-func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) (*http.Request, error) {
+func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
@@ -293,7 +293,7 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) (*http.Request,
 		hostURL, _ = h.vi.Inject(hostURL)
 	}
 	if h.containsEnvVar["url"] {
-		hostURL, errURL = h.ri.Inject(hostURL, h.envs)
+		hostURL, errURL = h.ri.Inject(hostURL, envs)
 		if errURL != nil {
 			return nil, errURL
 		}
@@ -530,14 +530,6 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			m.Unlock()
 		},
 	}
-}
-
-func (h *HttpRequester) SetEnvironment(envs map[string]interface{}) {
-	stepEnvs := make(map[string]interface{})
-	for k, v := range envs {
-		stepEnvs[k] = v
-	}
-	h.envs = stepEnvs
 }
 
 type duration struct {

@@ -379,7 +379,8 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 			debug := true
 			var proxy *url.URL
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
-			res := h.Send()
+			envs := map[string]interface{}{}
+			res := h.Send(envs)
 
 			if len(res.DebugInfo) == 0 {
 				t.Errorf("debugInfo should have been populated on debug mode")

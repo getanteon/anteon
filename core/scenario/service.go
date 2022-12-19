@@ -83,8 +83,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	}
 	envs := s.scenario.Envs
 	for _, sr := range requesters {
-		sr.requester.SetEnvironment(envs)
-		res := sr.requester.Send()
+		res := sr.requester.Send(envs)
 
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
