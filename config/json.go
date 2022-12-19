@@ -71,7 +71,6 @@ type step struct {
 	Id               uint16                 `json:"id"`
 	Name             string                 `json:"name"`
 	Url              string                 `json:"url"`
-	Protocol         string                 `json:"protocol"`
 	Auth             auth                   `json:"auth"`
 	Method           string                 `json:"method"`
 	Headers          map[string]string      `json:"headers"`
@@ -89,9 +88,9 @@ type step struct {
 func (s *step) UnmarshalJSON(data []byte) error {
 	type stepAlias step
 	defaultFields := &stepAlias{
-		Protocol: types.DefaultProtocol,
-		Method:   types.DefaultMethod,
-		Timeout:  types.DefaultTimeout,
+		// Protocol: types.DefaultProtocol, // TODOcorr: remove protocol
+		Method:  types.DefaultMethod,
+		Timeout: types.DefaultTimeout,
 	}
 
 	err := json.Unmarshal(data, defaultFields)
@@ -238,14 +237,17 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 
 	// TODO:V1 - Remove protocol flag at v1
 	// Protocol & URL
-	s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
+	// s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
+	// if err != nil {
+	// 	return types.ScenarioStep{}, err
+	// }
+
+	err = types.IsTargetValid(s.Url)
 	if err != nil {
 		return types.ScenarioStep{}, err
 	}
 
-	s.Protocol = strings.ToUpper(s.Protocol)
-
-	capturedEnvs := []types.CapturedEnv{}
+	var capturedEnvs []types.CapturedEnv
 	for name, path := range s.CaptureEnv {
 		capturedEnvs = append(capturedEnvs, types.CapturedEnv{
 			JsonPath: path.JsonPath,
@@ -258,7 +260,6 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		ID:           s.Id,
 		Name:         s.Name,
 		URL:          s.Url,
-		Protocol:     s.Protocol,
 		Auth:         types.Auth(s.Auth),
 		Method:       strings.ToUpper(s.Method),
 		Headers:      s.Headers,

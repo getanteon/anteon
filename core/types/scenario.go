@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 
+	validator "github.com/asaskevich/govalidator"
 	"go.ddosify.com/ddosify/core/util"
 )
 
@@ -46,28 +47,23 @@ const (
 	maxSleep = 90000
 
 	// Should match environment variables
-	EnvironmentVariableRegex = `\{{[^_]\w+\}}`
+	EnvironmentVariableRegexStr = `\{{[^_]\w+\}}`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
 var SupportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
-var supportedProtocolMethods = map[string][]string{
-	ProtocolHTTP: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
-		http.MethodPatch, http.MethodHead, http.MethodOptions,
-	},
-	ProtocolHTTPS: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
-		http.MethodPatch, http.MethodHead, http.MethodOptions,
-	},
+var supportedProtocolMethods = []string{
+	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+	http.MethodPatch, http.MethodHead, http.MethodOptions,
 }
-var supportedAuthentications = map[string][]string{
-	ProtocolHTTP: {
-		AuthHttpBasic,
-	},
-	ProtocolHTTPS: {
-		AuthHttpBasic,
-	},
+var supportedAuthentications = []string{
+	AuthHttpBasic,
+}
+
+var envVarRegexp *regexp.Regexp
+
+func init() {
+	envVarRegexp = regexp.MustCompile(EnvironmentVariableRegexStr)
 }
 
 // Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
@@ -108,9 +104,7 @@ func (s *Scenario) validate() error {
 }
 
 func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) error {
-	r := regexp.MustCompile(EnvironmentVariableRegex)
-
-	matches := r.FindAllString(st.URL, -1)
+	matches := envVarRegexp.FindAllString(st.URL, -1)
 	for _, v := range matches {
 		if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // TODOcorr: check boundaries
 			return fmt.Errorf("%s is not defined by global and captured environments up to step %d (%s)", v, st.ID, st.Name)
@@ -130,9 +124,6 @@ type ScenarioStep struct {
 
 	// Name of the Item.
 	Name string
-
-	// Protocol of the requests.
-	Protocol string
 
 	// Request Method
 	Method string
@@ -181,22 +172,18 @@ type Auth struct {
 }
 
 func (si *ScenarioStep) validate() error {
-	if !util.StringInSlice(si.Protocol, SupportedProtocols[:]) {
-		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
-	}
-	if !util.StringInSlice(si.Method, supportedProtocolMethods[si.Protocol][:]) {
+	if !util.StringInSlice(si.Method, supportedProtocolMethods) {
 		return fmt.Errorf("unsupported Request Method: %s", si.Method)
 	}
-	if si.Auth != (Auth{}) && !util.StringInSlice(si.Auth.Type, supportedAuthentications[si.Protocol][:]) {
-		return fmt.Errorf("unsupported Authentication Method (%s) For Protocol (%s) ", si.Auth.Type, si.Protocol)
+	if si.Auth != (Auth{}) && !util.StringInSlice(si.Auth.Type, supportedAuthentications) {
+		return fmt.Errorf("unsupported Authentication Method (%s) ", si.Auth.Type)
 	}
 	if si.ID == 0 {
 		return fmt.Errorf("step ID should be greater than zero")
 	}
-	// TODOcorr: refactor here, env var url fails
-	// if !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
-	// 	return fmt.Errorf("target is not valid: %s", si.URL)
-	// }
+	if !envVarRegexp.MatchString(si.URL) && !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
+		return fmt.Errorf("target is not valid: %s", si.URL)
+	}
 	if si.Sleep != "" {
 		sleep := strings.Split(si.Sleep, "-")
 
@@ -248,22 +235,28 @@ func ParseTLS(certFile, keyFile string) (tls.Certificate, *x509.CertPool, error)
 // If url is not valid, then error will be returned
 func AdjustUrlProtocol(url string, proto string) (string, string, error) {
 	var err error
-	// TODOcorr: refactor here, env vars fails in if
-	// if !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
-	// 	err = fmt.Errorf("target is not valid: %s", url)
-	// } else {
-	// 	tempURL := strings.ToUpper(url)
-	// 	if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
-	// 		proto = ProtocolHTTPS
-	// 	} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
-	// 		proto = ProtocolHTTP
-	// 	} else {
-	// 		if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
-	// 			!strings.HasPrefix(tempURL, ProtocolHTTPS) {
-	// 			url = strings.ToLower(proto) + "://" + url
-	// 		}
-	// 	}
-	// }
+	if !envVarRegexp.MatchString(url) && !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
+		err = fmt.Errorf("target is not valid: %s", url)
+	} else {
+		tempURL := strings.ToUpper(url)
+		if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
+			proto = ProtocolHTTPS
+		} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
+			proto = ProtocolHTTP
+		} else {
+			if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
+				!strings.HasPrefix(tempURL, ProtocolHTTPS) {
+				url = strings.ToLower(proto) + "://" + url
+			}
+		}
+	}
 
 	return url, proto, err
+}
+
+func IsTargetValid(url string) error {
+	if !envVarRegexp.MatchString(url) && !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
+		return fmt.Errorf("target is not valid: %s", url)
+	}
+	return nil
 }

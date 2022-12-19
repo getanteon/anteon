@@ -37,11 +37,10 @@ import (
 
 func TestInit(t *testing.T) {
 	s := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Timeout:  types.DefaultTimeout,
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Timeout: types.DefaultTimeout,
 	}
 	p, _ := url.Parse("https://127.0.0.1:80")
 	ctx := context.TODO()
@@ -66,11 +65,10 @@ func TestInitClient(t *testing.T) {
 
 	// Basic Client
 	s := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Timeout:  types.DefaultTimeout,
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Timeout: types.DefaultTimeout,
 	}
 	expectedTLS := &tls.Config{
 		InsecureSkipVerify: true,
@@ -87,11 +85,10 @@ func TestInitClient(t *testing.T) {
 
 	// Client with custom data
 	sWithCustomData := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Timeout:  types.DefaultTimeout,
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Timeout: types.DefaultTimeout,
 		Custom: map[string]interface{}{
 			"disable-redirect":    true,
 			"keep-alive":          false,
@@ -119,11 +116,10 @@ func TestInitClient(t *testing.T) {
 
 	// H2 Client
 	sHTTP2 := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Timeout:  types.DefaultTimeout,
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Timeout: types.DefaultTimeout,
 		Custom: map[string]interface{}{
 			"h2": true,
 		},
@@ -211,20 +207,18 @@ func TestInitRequest(t *testing.T) {
 
 	// Invalid request
 	sInvalid := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   ":31:31:#",
-		URL:      "https://test.com",
-		Payload:  "payloadtest",
+		ID:      1,
+		Method:  ":31:31:#",
+		URL:     "https://test.com",
+		Payload: "payloadtest",
 	}
 
 	// Basic request
 	s := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Payload:  "payloadtest",
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Payload: "payloadtest",
 	}
 	expected, _ := http.NewRequest(s.Method, s.URL, bytes.NewBufferString(s.Payload))
 	expected.Close = false
@@ -232,11 +226,10 @@ func TestInitRequest(t *testing.T) {
 
 	// Request with auth
 	sWithAuth := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Payload:  "payloadtest",
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Payload: "payloadtest",
 		Auth: types.Auth{
 			Username: "test",
 			Password: "123",
@@ -249,11 +242,10 @@ func TestInitRequest(t *testing.T) {
 
 	// Request With Headers
 	sWithHeaders := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.localhost",
-		Payload:  "payloadtest",
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.localhost",
+		Payload: "payloadtest",
 		Auth: types.Auth{
 			Username: "test",
 			Password: "123",
@@ -277,11 +269,10 @@ func TestInitRequest(t *testing.T) {
 
 	// Request keep-alive condition
 	sWithoutKeepAlive := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://test.com",
-		Payload:  "payloadtest",
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://test.com",
+		Payload: "payloadtest",
 		Auth: types.Auth{
 			Username: "test",
 			Password: "123",
@@ -356,12 +347,11 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 	// Basic request
 	payload := "reqbodypayload"
 	s := types.ScenarioStep{
-		ID:       1,
-		Protocol: types.ProtocolHTTPS,
-		Method:   http.MethodGet,
-		URL:      "https://ddosify.com",
-		Payload:  payload,
-		Headers:  map[string]string{"X": "y"},
+		ID:      1,
+		Method:  http.MethodGet,
+		URL:     "https://ddosify.com",
+		Payload: payload,
+		Headers: map[string]string{"X": "y"},
 	}
 
 	expectedDebugInfo := map[string]interface{}{

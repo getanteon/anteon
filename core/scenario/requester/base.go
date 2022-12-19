@@ -22,9 +22,7 @@ package requester
 
 import (
 	"context"
-	"fmt"
 	"net/url"
-	"strings"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -40,11 +38,6 @@ type Requester interface {
 
 // NewRequester is the factory method of the Requester.
 func NewRequester(s types.ScenarioStep) (requester Requester, err error) {
-	if strings.EqualFold(s.Protocol, types.ProtocolHTTP) ||
-		strings.EqualFold(s.Protocol, types.ProtocolHTTPS) {
-		requester = &HttpRequester{}
-	} else {
-		err = fmt.Errorf("unsupported requester")
-	}
+	requester = &HttpRequester{} // we have only HttpRequester type for now, add check for rpc in future
 	return
 }

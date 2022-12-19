@@ -110,6 +110,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		}
 		h.containsDynamicField["url"] = true
 	}
+
 	// TODOcorr: add  envRegex.MatchString other than url: body, header ....
 	if envRegex.MatchString(h.packet.URL) {
 		h.containsEnvVar["url"] = true
@@ -256,9 +257,11 @@ func (h *HttpRequester) Send() (res *types.ScenarioStepResult) {
 		},
 		ExtractedEnvs: map[string]interface{}{},
 	}
-	if h.packet.Protocol == types.ProtocolHTTPS {
+
+	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
 		res.Custom["tlsDuration"] = durations.getTLSDur()
 	}
+
 	if ddResTime != 0 {
 		res.Custom["ddResponseTime"] = ddResTime
 	}
@@ -278,21 +281,30 @@ func (h *HttpRequester) prepareReq(trace *httptrace.ClientTrace) (*http.Request,
 	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
 	httpReq.ContentLength = int64(len(body))
 
-	httpReq.URL, _ = url.Parse(h.packet.URL)
-	if h.containsDynamicField["url"] {
-		u, _ := h.vi.Inject(h.packet.URL)
-		httpReq.URL, _ = url.Parse(u)
-	}
-
 	// TODOcorr : inject for other types than url : body, header ....
+
+	// url
+	hostURL := h.packet.URL
+	var errURL error
+	httpReq.URL, _ = url.Parse(hostURL)
+
+	// url injections
+	if h.containsDynamicField["url"] {
+		hostURL, _ = h.vi.Inject(hostURL)
+	}
 	if h.containsEnvVar["url"] {
-		u, err := h.ri.Inject(h.packet.URL, h.envs)
-		if err != nil {
-			return nil, err
+		hostURL, errURL = h.ri.Inject(hostURL, h.envs)
+		if errURL != nil {
+			return nil, errURL
 		}
-		httpReq.URL, _ = url.Parse(u)
 	}
 
+	httpReq.URL, errURL = url.Parse(hostURL)
+	if errURL != nil {
+		return nil, errURL
+	}
+
+	// header
 	if h.containsDynamicField["header"] {
 		for k, values := range httpReq.Header {
 			for _, v := range values {
@@ -397,6 +409,9 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 }
 
 func (h *HttpRequester) initRequestInstance() (err error) {
+	// TODOcorr: https://{{TARGET_URL}} could not be parsed, invalidHost
+	// give a basic url for now here to avoid initiating request every time
+	// validUrl := "app.ddosify.com"
 	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
 		return

@@ -55,10 +55,9 @@ func newDummyHammer() types.Hammer {
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{
 				{
-					ID:       1,
-					Protocol: "HTTP",
-					Method:   "GET",
-					URL:      "http://127.0.0.1",
+					ID:     1,
+					Method: "GET",
+					URL:    "http://127.0.0.1",
 				},
 			},
 		},
@@ -295,12 +294,11 @@ func TestRequestData(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTP",
-		Method:   "GET",
-		URL:      server.URL + "/get_test_data",
-		Headers:  map[string]string{"Test1": "Test1Value", "Test2": "Test2Value"},
-		Payload:  "Body content",
+		ID:      1,
+		Method:  "GET",
+		URL:     server.URL + "/get_test_data",
+		Headers: map[string]string{"Test1": "Test1Value", "Test2": "Test2Value"},
+		Payload: "Body content",
 	}
 
 	// Act
@@ -369,20 +367,18 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	h.Scenario = types.Scenario{
 		Steps: []types.ScenarioStep{
 			{
-				ID:       1,
-				Protocol: "HTTP",
-				Method:   "GET",
-				URL:      server.URL + "/api_get",
-				Headers:  map[string]string{"Test": "h1"},
-				Payload:  "Body 1",
+				ID:      1,
+				Method:  "GET",
+				URL:     server.URL + "/api_get",
+				Headers: map[string]string{"Test": "h1"},
+				Payload: "Body 1",
 			},
 			{
-				ID:       2,
-				Protocol: "HTTP",
-				Method:   "POST",
-				URL:      server.URL + "/api_post",
-				Headers:  map[string]string{"Test": "h2"},
-				Payload:  "Body 2",
+				ID:      2,
+				Method:  "POST",
+				URL:     server.URL + "/api_post",
+				Headers: map[string]string{"Test": "h2"},
+				Payload: "Body 2",
 			},
 		}}
 
@@ -565,10 +561,9 @@ func TestDynamicData(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTP",
-		Method:   "GET",
-		URL:      server.URL + "/get_test_data/{{_randomInt}}",
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "/get_test_data/{{_randomInt}}",
 		Headers: map[string]string{
 			"Test1":            "{{_randomInt}}",
 			"{{_randomInt}}":   "Test2Value",
@@ -684,10 +679,9 @@ func TestTLSMutualAuth(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
+		ID:     1,
+		Method: "GET",
+		URL:    "",
 	}
 
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
@@ -753,10 +747,9 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
+		ID:     1,
+		Method: "GET",
+		URL:    "",
 	}
 
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
@@ -832,7 +825,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Steps[0] = types.ScenarioStep{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
+	h.Scenario.Steps[0] = types.ScenarioStep{ID: 1, Method: "GET", URL: ""}
 
 	// here we use server certs first
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())

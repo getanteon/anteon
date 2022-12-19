@@ -47,7 +47,6 @@ func resetFlags() {
 	*loadType = types.DefaultLoadType
 	*duration = types.DefaultDuration
 
-	*protocol = types.DefaultProtocol
 	*method = types.DefaultMethod
 	*payload = ""
 	*auth = ""
@@ -80,9 +79,6 @@ func TestDefaultFlagValues(t *testing.T) {
 	}
 	if *duration != types.DefaultDuration {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultDuration, *duration)
-	}
-	if *protocol != types.DefaultProtocol {
-		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultProtocol, *protocol)
 	}
 	if *method != types.DefaultMethod {
 		t.Errorf("TestDefaultFlagValues failed, expected %#v, found %#v", types.DefaultMethod, *method)
@@ -214,24 +210,22 @@ func TestCreateScenario(t *testing.T) {
 	valid := types.Scenario{
 		Steps: []types.ScenarioStep{
 			{
-				ID:       1,
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				URL:      url,
-				Timeout:  types.DefaultTimeout,
-				Headers:  map[string]string{},
+				ID:      1,
+				Method:  types.DefaultMethod,
+				URL:     url,
+				Timeout: types.DefaultTimeout,
+				Headers: map[string]string{},
 			},
 		},
 	}
 	validWithAuth := types.Scenario{
 		Steps: []types.ScenarioStep{
 			{
-				ID:       1,
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				URL:      url,
-				Timeout:  types.DefaultTimeout,
-				Headers:  map[string]string{},
+				ID:      1,
+				Method:  types.DefaultMethod,
+				URL:     url,
+				Timeout: types.DefaultTimeout,
+				Headers: map[string]string{},
 				Auth: types.Auth{
 					Type:     types.AuthHttpBasic,
 					Username: "testuser",

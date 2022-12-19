@@ -222,25 +222,3 @@ func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
 	})
 	return parsed, err
 }
-
-func (vi *VariableInjector) InjectEnvVariables(text string, envs map[string]interface{}) (string, error) {
-	var err error
-	template, err := fasttemplate.NewTemplate(text, "{{", "}}")
-	if err != nil {
-		return "", err
-	}
-
-	parsed := template.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		if _, ok := envs[tag]; !ok {
-			err = fmt.Errorf("%s is not a valid environment variable", tag)
-			return 0, nil
-		}
-
-		// res := reflect.ValueOf(envs[tag]).Call(nil)[0].Interface()
-
-		// TODOcorr: check here, for now its only string for url case
-		return w.Write([]byte(envs[tag].(string)))
-
-	})
-	return parsed, err
-}
