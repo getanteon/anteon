@@ -89,10 +89,10 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	if strings.Contains(contentType, "text/html") {
 		unescapedHmtl := html.UnescapeString(string(byteBody))
 		reqBody = unescapedHmtl
-	} else if strings.Contains(contentType, "application/json") || json.Valid(byteBody) {
+	} else if strings.Contains(contentType, "application/json") {
 		err := json.Unmarshal(byteBody, &reqBody)
 		if err != nil {
-			return hs, reqBody, err
+			reqBody = string(byteBody)
 		}
 	} else { // for remaining content-types return plain string
 		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure

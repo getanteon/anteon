@@ -42,6 +42,7 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 			}
 		}
 
+		//values
 		ri.replaceJson(textJson, vars)
 
 		replacedBytes, err := json.Marshal(textJson)
