@@ -36,7 +36,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go.ddosify.com/ddosify/core/scenario/scripting"
+	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
+	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 	"golang.org/x/net/http2"
 )
@@ -50,12 +51,14 @@ type HttpRequester struct {
 	packet               types.ScenarioStep
 	client               *http.Client
 	request              *http.Request
-	vi                   *scripting.VariableInjector
-	ri                   *scripting.RegexReplacer
+	vi                   *injection.VariableInjector
+	ri                   *injection.RegexReplacer
 	containsDynamicField map[string]bool
 	containsEnvVar       map[string]bool
 	debug                bool
 	envs                 map[string]interface{}
+	dynamicRgx           *regexp.Regexp
+	envRgx               *regexp.Regexp
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -63,12 +66,14 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
-	h.vi = &scripting.VariableInjector{}
+	h.vi = &injection.VariableInjector{}
 	h.vi.Init()
-	h.ri = scripting.CreateRegexReplacer(EnvironmentVariableRegex)
+	h.ri = injection.CreateRegexReplacer(EnvironmentVariableRegex)
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
+	h.dynamicRgx = regexp.MustCompile(DynamicVariableRegex)
+	h.envRgx = regexp.MustCompile(EnvironmentVariableRegex)
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -93,9 +98,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		return
 	}
 
-	re := regexp.MustCompile(DynamicVariableRegex)
-	envRegex := regexp.MustCompile(EnvironmentVariableRegex)
-	if re.MatchString(h.packet.Payload) {
+	if h.dynamicRgx.MatchString(h.packet.Payload) {
 		_, err = h.vi.Inject(h.packet.Payload)
 		if err != nil {
 			return
@@ -103,7 +106,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		h.containsDynamicField["body"] = true
 	}
 
-	if re.MatchString(h.packet.URL) {
+	if h.dynamicRgx.MatchString(h.packet.URL) {
 		_, err = h.vi.Inject(h.packet.URL)
 		if err != nil {
 			return
@@ -112,13 +115,13 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	}
 
 	// TODOcorr: add  envRegex.MatchString other than url: body, header ....
-	if envRegex.MatchString(h.packet.URL) {
+	if h.envRgx.MatchString(h.packet.URL) {
 		h.containsEnvVar["url"] = true
 	}
 
 	for k, values := range h.request.Header {
 		for _, v := range values {
-			if re.MatchString(k) || re.MatchString(v) {
+			if h.dynamicRgx.MatchString(k) || h.dynamicRgx.MatchString(v) {
 				_, err = h.vi.Inject(k)
 				if err != nil {
 					return
@@ -129,12 +132,14 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 					return
 				}
 				h.containsDynamicField["header"] = true
-				break
+			}
+			if h.envRgx.MatchString(k) || h.envRgx.MatchString(v) {
+				h.containsEnvVar["header"] = true
 			}
 		}
 	}
 
-	if re.MatchString(h.packet.Auth.Username) || re.MatchString(h.packet.Auth.Password) {
+	if h.dynamicRgx.MatchString(h.packet.Auth.Username) || h.dynamicRgx.MatchString(h.packet.Auth.Password) {
 		_, err = h.vi.Inject(h.packet.Auth.Username)
 		if err != nil {
 			return
@@ -169,6 +174,10 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var respBody []byte
 	var respHeaders http.Header
 	var debugInfo map[string]interface{}
+	var bodyRead bool
+	var bodyReadErr error
+	var extractedVars map[string]interface{}
+	extractedVars = make(map[string]interface{})
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
@@ -197,21 +206,32 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	if err != nil {
 		requestErr = fetchErrType(err)
 	}
-	// TODOcorr : populate res.ExtractedEnvs
 	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
-	var bodyReadErr error
 	if httpRes != nil {
-		if h.debug {
+		if len(h.packet.CapturedEnvs) > 0 {
 			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
-		} else { // do not write into memory, just read
-			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
+			bodyRead = true
+			if bodyReadErr != nil {
+				requestErr = fetchErrType(bodyReadErr)
+			}
+			if err := h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars); err != nil {
+				requestErr = fetchErrType(err)
+			}
 		}
-		if bodyReadErr != nil {
-			requestErr = fetchErrType(bodyReadErr)
+
+		if !bodyRead {
+			if h.debug {
+				respBody, bodyReadErr = io.ReadAll(httpRes.Body)
+			} else { // do not write into memory, just read
+				_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
+			}
+			if bodyReadErr != nil {
+				requestErr = fetchErrType(bodyReadErr)
+			}
 		}
 
 		httpRes.Body.Close()
@@ -255,7 +275,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
-		ExtractedEnvs: map[string]interface{}{},
+		ExtractedEnvs: extractedVars,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -318,6 +338,32 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 					httpReq.Header.Del(k)
 				}
 				httpReq.Header.Set(kk, vv)
+			}
+		}
+	}
+
+	if h.containsEnvVar["header"] {
+		for k, v := range httpReq.Header {
+			// check vals
+			for i, vv := range v {
+				if h.envRgx.MatchString(vv) {
+					vvv, err := h.ri.Inject(vv, envs)
+					if err != nil {
+						return nil, err
+					}
+					v[i] = vvv
+				}
+			}
+			httpReq.Header.Set(k, strings.Join(v, ","))
+
+			// check keys
+			if h.envRgx.MatchString(k) {
+				kk, err := h.ri.Inject(k, envs)
+				if err != nil {
+					return nil, err
+				}
+				httpReq.Header.Del(k)
+				httpReq.Header.Set(kk, strings.Join(v, ","))
 			}
 		}
 	}
@@ -409,10 +455,11 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 }
 
 func (h *HttpRequester) initRequestInstance() (err error) {
-	// TODOcorr: https://{{TARGET_URL}} could not be parsed, invalidHost
+	// TODOcorr: https://{{TARGET_URL}} or http://{{TARGET_URL}} could not be parsed, invalidHost
 	// give a basic url for now here to avoid initiating request every time
-	// validUrl := "app.ddosify.com"
-	h.request, err = http.NewRequest(h.packet.Method, h.packet.URL, bytes.NewBufferString(h.packet.Payload))
+	// override later on prepareReq
+	tempValidUrl := "app.ddosify.com"
+	h.request, err = http.NewRequest(h.packet.Method, tempValidUrl, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
 		return
 	}
@@ -530,6 +577,25 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			m.Unlock()
 		},
 	}
+}
+
+func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
+	extractedVars map[string]interface{}) error {
+	for _, ce := range h.packet.CapturedEnvs {
+		if ce.From == "header" {
+			err := extraction.ExtractAndPopulate(header, ce, extractedVars)
+			if err != nil {
+				return err
+			}
+		} else if ce.From == "body" {
+			err := extraction.ExtractAndPopulate(respBody, ce, extractedVars)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 type duration struct {

@@ -162,6 +162,8 @@ type CapturedEnv struct {
 	JsonPath string `json:"jsonPath"`
 	Xpath    string `json:"xpath"`
 	Name     string `json:"as"`
+	From     string `json:"from"`
+	Key      string `json:"key"`
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.

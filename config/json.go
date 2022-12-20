@@ -65,6 +65,8 @@ type multipartFormData struct {
 type capturePath struct {
 	JsonPath string `json:"jsonPath"`
 	XPath    string `json:"xPath"`
+	From     string `json:"from"` // body,header
+	Key      string `json:"key"`  // header key
 }
 
 type step struct {
@@ -253,6 +255,8 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 			JsonPath: path.JsonPath,
 			Xpath:    path.XPath,
 			Name:     name,
+			From:     path.From,
+			Key:      path.Key,
 		})
 	}
 
