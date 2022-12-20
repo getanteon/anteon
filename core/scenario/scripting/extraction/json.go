@@ -1,6 +1,8 @@
 package extraction
 
 import (
+	"encoding/json"
+
 	"github.com/tidwall/gjson"
 )
 
@@ -43,7 +45,9 @@ func (je JsonExtractor) ExtractFromByteSlice(source []byte, jsonPath string) (in
 	case gjson.True:
 		return true, nil
 	case gjson.JSON:
-		return result.Raw, nil
+		j := map[string]interface{}{}
+		json.Unmarshal([]byte(result.Raw), &j)
+		return j, nil
 	default:
 		return "", nil
 	}

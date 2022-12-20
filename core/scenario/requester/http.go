@@ -98,6 +98,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		return
 	}
 
+	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
 		_, err = h.vi.Inject(h.packet.Payload)
 		if err != nil {
@@ -106,6 +107,11 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		h.containsDynamicField["body"] = true
 	}
 
+	if h.envRgx.MatchString(h.packet.Payload) {
+		h.containsEnvVar["body"] = true
+	}
+
+	// url
 	if h.dynamicRgx.MatchString(h.packet.URL) {
 		_, err = h.vi.Inject(h.packet.URL)
 		if err != nil {
@@ -114,11 +120,11 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		h.containsDynamicField["url"] = true
 	}
 
-	// TODOcorr: add  envRegex.MatchString other than url: body, header ....
 	if h.envRgx.MatchString(h.packet.URL) {
 		h.containsEnvVar["url"] = true
 	}
 
+	// header
 	for k, values := range h.request.Header {
 		for _, v := range values {
 			if h.dynamicRgx.MatchString(k) || h.dynamicRgx.MatchString(v) {
@@ -139,6 +145,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		}
 	}
 
+	// basicauth
 	if h.dynamicRgx.MatchString(h.packet.Auth.Username) || h.dynamicRgx.MatchString(h.packet.Auth.Password) {
 		_, err = h.vi.Inject(h.packet.Auth.Username)
 		if err != nil {
@@ -293,22 +300,23 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	re := regexp.MustCompile(DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
+	// body
 	body := h.packet.Payload
 	if h.containsDynamicField["body"] {
-		body, _ = h.vi.Inject(h.packet.Payload)
+		body, _ = h.vi.Inject(body)
+	}
+	if h.containsEnvVar["body"] {
+		body, _ = h.ri.Inject(body, envs)
 	}
 
 	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
 	httpReq.ContentLength = int64(len(body))
-
-	// TODOcorr : inject for other types than url : body, header ....
 
 	// url
 	hostURL := h.packet.URL
 	var errURL error
 	httpReq.URL, _ = url.Parse(hostURL)
 
-	// url injections
 	if h.containsDynamicField["url"] {
 		hostURL, _ = h.vi.Inject(hostURL)
 	}

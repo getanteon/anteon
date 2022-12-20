@@ -89,7 +89,7 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	if strings.Contains(contentType, "text/html") {
 		unescapedHmtl := html.UnescapeString(string(byteBody))
 		reqBody = unescapedHmtl
-	} else if strings.Contains(contentType, "application/json") {
+	} else if strings.Contains(contentType, "application/json") || json.Valid(byteBody) {
 		err := json.Unmarshal(byteBody, &reqBody)
 		if err != nil {
 			return hs, reqBody, err
