@@ -9,7 +9,7 @@ import (
 
 func ExtractAndPopulate(source interface{}, ce types.EnvCaptureConf, extractedVars map[string]interface{}) error {
 	je := JsonExtractor{}
-	f := func(source interface{}, jsonPath string) (interface{}, error) {
+	extract := func(source interface{}, jsonPath string) (interface{}, error) {
 		switch s := source.(type) {
 		case []byte: // from response body
 			return je.ExtractFromByteSlice(s, jsonPath)
@@ -32,7 +32,7 @@ func ExtractAndPopulate(source interface{}, ce types.EnvCaptureConf, extractedVa
 	// from body
 	if ce.From == "body" {
 		if ce.JsonPath != "" {
-			val, err := f(source, ce.JsonPath)
+			val, err := extract(source, ce.JsonPath)
 			if err != nil {
 				return err
 			}

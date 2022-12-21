@@ -22,11 +22,13 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 	injectStrFunc := func(s string) string {
 		truncated := s[2 : len(s)-2] // {{...}}
 		if env, ok := vars[truncated]; ok {
-			return fmt.Sprint(env) // TODOcorr check string/interface{}
+			return fmt.Sprint(env)
 		}
 		errors = append(errors, fmt.Errorf("%s could not be extracted from previous steps", truncated))
 		return s // return back
 	}
+
+	// TODOcorr: xml injection
 
 	// json injection
 	if json.Valid([]byte(text)) {
@@ -65,20 +67,30 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 
 // recursive json replace
 func (ri *RegexReplacer) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
+
+	getEnvironmentValue := func(match string) (interface{}, error) {
+		truncated := match[2 : len(match)-2]
+		if env, ok := vars[truncated]; !ok {
+			return "", fmt.Errorf("%s could not be extracted from previous steps", truncated)
+		} else {
+			return env, nil
+		}
+
+	}
+
 	for k, v := range textJson { // check ints
 		vv, isStr := v.(string)
 		if isStr {
 			if ri.r.MatchString(vv) {
-				truncated := vv[2 : len(vv)-2]
-				if env, ok := vars[truncated]; !ok {
-					return fmt.Errorf("%s could not be extracted from previous steps", truncated)
+				env, err := getEnvironmentValue(vv)
+				if err != nil {
+					return err
 				} else {
 					if _, err := json.Marshal(env); err == nil {
 						// object, set directly
 						textJson[k] = env
 						continue
 					}
-
 				}
 			}
 		} else if vv, isObject := v.(map[string]interface{}); isObject {
