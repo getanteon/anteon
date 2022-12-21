@@ -76,22 +76,18 @@ func (s *Scenario) validate() error {
 	stepIds := make(map[uint16]struct{}, len(s.Steps))
 	definedEnvs := map[string]struct{}{}
 
+	// add global envs
 	for key := range s.Envs {
 		definedEnvs[key] = struct{}{} // exist
 	}
 
 	for _, st := range s.Steps {
-		if err := st.validate(); err != nil {
-			return err
-		}
-
-		// and check if used envs in current step has already been defined or not
-		if err := checkEnvsValidInStep(&st, definedEnvs); err != nil {
+		if err := st.validate(definedEnvs); err != nil {
 			return err
 		}
 
 		// enrich Envs map with captured envs from each step
-		for _, ce := range st.CapturedEnvs {
+		for _, ce := range st.EnvsToCapture {
 			definedEnvs[ce.Name] = struct{}{}
 		}
 
@@ -104,16 +100,46 @@ func (s *Scenario) validate() error {
 }
 
 func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) error {
-	matches := envVarRegexp.FindAllString(st.URL, -1)
-	for _, v := range matches {
-		if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // TODOcorr: check boundaries
-			return fmt.Errorf("%s is not defined by global and captured environments up to step %d (%s)", v, st.ID, st.Name)
+	var err error
+	matchInEnvs := func(matches []string) error {
+		for _, v := range matches {
+			if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // {{....}}
+				return EnvironmentNotDefinedError{
+					msg: fmt.Sprintf("%s is not defined to use by global and captured environments", v),
+				}
+			}
+		}
+		return nil
+	}
+
+	f := func(source string) error {
+		matches := envVarRegexp.FindAllString(source, -1)
+		return matchInEnvs(matches)
+	}
+
+	// check env usage in url
+	err = f(st.URL)
+	if err != nil {
+		return err
+	}
+
+	// check env usage in header
+	for k, v := range st.Headers {
+		err = f(k)
+		if err != nil {
+			return err
+		}
+
+		err = f(v)
+		if err != nil {
+			return err
 		}
 	}
 
-	// TODOcorr: add check for payload header...
+	// check env usage in payload
+	err = f(st.Payload)
+	return err
 
-	return nil
 }
 
 // ScenarioStep represents one step of a Scenario.
@@ -155,10 +181,10 @@ type ScenarioStep struct {
 	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests
 	Custom map[string]interface{}
 
-	CapturedEnvs []CapturedEnv
+	EnvsToCapture []EnvCaptureConf
 }
 
-type CapturedEnv struct {
+type EnvCaptureConf struct {
 	JsonPath string `json:"jsonPath"`
 	Xpath    string `json:"xpath"`
 	Name     string `json:"as"`
@@ -173,7 +199,7 @@ type Auth struct {
 	Password string
 }
 
-func (si *ScenarioStep) validate() error {
+func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 	if !util.StringInSlice(si.Method, supportedProtocolMethods) {
 		return fmt.Errorf("unsupported Request Method: %s", si.Method)
 	}
@@ -206,6 +232,14 @@ func (si *ScenarioStep) validate() error {
 			}
 		}
 	}
+	// check if referred envs in current step has already been defined or not
+	if err := checkEnvsValidInStep(si, definedEnvs); err != nil {
+		return ScenarioValidationError{
+			msg:        fmt.Sprintf("ScenarioValidationError %v", err),
+			wrappedErr: err,
+		}
+	}
+
 	return nil
 }
 

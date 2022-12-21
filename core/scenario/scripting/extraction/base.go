@@ -7,7 +7,7 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func ExtractAndPopulate(source interface{}, ce types.CapturedEnv, extractedVars map[string]interface{}) error {
+func ExtractAndPopulate(source interface{}, ce types.EnvCaptureConf, extractedVars map[string]interface{}) error {
 	je := JsonExtractor{}
 	f := func(source interface{}, jsonPath string) (interface{}, error) {
 		switch s := source.(type) {

@@ -219,7 +219,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
 	if httpRes != nil {
-		if len(h.packet.CapturedEnvs) > 0 {
+		if len(h.packet.EnvsToCapture) > 0 {
 			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
 			bodyRead = true
 			if bodyReadErr != nil {
@@ -589,7 +589,7 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
 	extractedVars map[string]interface{}) error {
-	for _, ce := range h.packet.CapturedEnvs {
+	for _, ce := range h.packet.EnvsToCapture {
 		if ce.From == "header" {
 			err := extraction.ExtractAndPopulate(header, ce, extractedVars)
 			if err != nil {

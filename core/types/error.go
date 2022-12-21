@@ -56,3 +56,29 @@ type RequestError struct {
 func (e *RequestError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
 }
+
+type ScenarioValidationError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (sc ScenarioValidationError) Error() string {
+	return sc.msg
+}
+
+func (sc ScenarioValidationError) Unwrap() error {
+	return sc.wrappedErr
+}
+
+type EnvironmentNotDefinedError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (sc EnvironmentNotDefinedError) Error() string {
+	return sc.msg
+}
+
+func (sc EnvironmentNotDefinedError) Unwrap() error {
+	return sc.wrappedErr
+}

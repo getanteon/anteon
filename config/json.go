@@ -249,9 +249,9 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		return types.ScenarioStep{}, err
 	}
 
-	var capturedEnvs []types.CapturedEnv
+	var capturedEnvs []types.EnvCaptureConf
 	for name, path := range s.CaptureEnv {
-		capturedEnvs = append(capturedEnvs, types.CapturedEnv{
+		capturedEnvs = append(capturedEnvs, types.EnvCaptureConf{
 			JsonPath: path.JsonPath,
 			Xpath:    path.XPath,
 			Name:     name,
@@ -261,17 +261,17 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	}
 
 	item := types.ScenarioStep{
-		ID:           s.Id,
-		Name:         s.Name,
-		URL:          s.Url,
-		Auth:         types.Auth(s.Auth),
-		Method:       strings.ToUpper(s.Method),
-		Headers:      s.Headers,
-		Payload:      payload,
-		Timeout:      s.Timeout,
-		Sleep:        strings.ReplaceAll(s.Sleep, " ", ""),
-		Custom:       s.Others,
-		CapturedEnvs: capturedEnvs,
+		ID:            s.Id,
+		Name:          s.Name,
+		URL:           s.Url,
+		Auth:          types.Auth(s.Auth),
+		Method:        strings.ToUpper(s.Method),
+		Headers:       s.Headers,
+		Payload:       payload,
+		Timeout:       s.Timeout,
+		Sleep:         strings.ReplaceAll(s.Sleep, " ", ""),
+		Custom:        s.Others,
+		EnvsToCapture: capturedEnvs,
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {
