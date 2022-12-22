@@ -24,6 +24,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -660,19 +661,22 @@ func TestGlobalEnvs(t *testing.T) {
 	requestCalled := false
 	headerKey := "HEADER_KEY"
 	var gotHeaderVal string
-	mux := http.NewServeMux()
+
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		requestCalled = true
 		gotHeaderVal = r.Header.Get(headerKey)
 	}
-	path := "xxx/234"
+
+	path := "/xxx"
+	mux := http.NewServeMux()
 	mux.HandleFunc(path, handler)
 
-	server := httptest.NewServer(http.HandlerFunc(handler))
+	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	// Prepare
 	h := newDummyHammer()
+	h.Debug = true
 	h.Scenario.Envs = map[string]interface{}{
 		"URL_PATH":   path,
 		"HEADER_VAL": "headerValToBeInjected",
@@ -680,7 +684,7 @@ func TestGlobalEnvs(t *testing.T) {
 	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:     1,
 		Method: "GET",
-		URL:    server.URL + "/{{URL_PATH}}",
+		URL:    server.URL + "{{URL_PATH}}",
 		Headers: map[string]string{
 			"HEADER_KEY": "{{HEADER_VAL}}",
 		},
@@ -712,6 +716,139 @@ func TestGlobalEnvs(t *testing.T) {
 	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
 	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
 		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s", expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCapturedEnvsFromJsonBody(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	headerKey := "HEADER_KEY"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		body := struct {
+			Num      int    `json:"num"`
+			Name     string `json:"name"`
+			Champion bool   `json:"isChampion"`
+			Squad    struct {
+				Results map[string]string `json:"results"`
+				Players []string          `json:"players"`
+			} `json:"squad"`
+		}{
+			Num:      25,
+			Name:     "Argentina",
+			Champion: true,
+			Squad: struct {
+				Results map[string]string `json:"results"`
+				Players []string          "json:\"players\""
+			}{
+				Results: map[string]string{"SAR": "1-2",
+					"MEX": "2-1",
+					"POL": "2-0",
+					"AUS": "2-0",
+					"HOL": "4-2",
+					"CRO": "2-0",
+					"FRA": "CHAMPIONS",
+				},
+				Players: []string{"messi", "alvarez", "dimaria", "enzo"},
+			},
+		}
+
+		w.Header().Set("Argentina", "Messi")
+
+		byteBody, _ := json.Marshal(body)
+		w.Write(byteBody)
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/json-body"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+		"HEADER_VAL":         "headerValToBeInjected",
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		Headers: map[string]string{
+			"HEADER_KEY": "{{HEADER_VAL}}",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "CHAMPION", From: "body", JsonPath: "isChampion"},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			"HEADER_KEY": "{{HEADER_VAL}}",
+		},
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+		Payload: "{\n    \"ARGENTINA\" : \"{{CHAMPION}}\"\n}", // json escaped string, use payload_file instead
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestGlobalAndCapturedVars test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
+	}
+
+	expectedReqPayloadOnSecondReq := true
+	if secondReqBody["ARGENTINA"].(bool) != expectedReqPayloadOnSecondReq {
+		t.Errorf("TestGlobalAndCapturedVars second req body could not be set from envs, expected : %t, got: %s",
+			expectedReqPayloadOnSecondReq, secondReqBody)
 	}
 
 }
