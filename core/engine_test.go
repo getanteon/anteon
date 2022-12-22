@@ -653,6 +653,69 @@ func TestDynamicData(t *testing.T) {
 	}
 }
 
+func TestGlobalEnvs(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "HEADER_KEY"
+	var gotHeaderVal string
+	mux := http.NewServeMux()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+	path := "xxx/234"
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"URL_PATH":   path,
+		"HEADER_VAL": "headerValToBeInjected",
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "/{{URL_PATH}}",
+		Headers: map[string]string{
+			"HEADER_KEY": "{{HEADER_VAL}}",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestGlobalAndCapturedVars test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s", expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
 // The test creates a web server with Certificate auth,
 // then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {
