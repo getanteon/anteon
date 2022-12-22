@@ -255,7 +255,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 			JsonPath: path.JsonPath,
 			Xpath:    path.XPath,
 			Name:     name,
-			From:     path.From,
+			From:     types.SourceType(path.From),
 			Key:      path.Key,
 		})
 	}

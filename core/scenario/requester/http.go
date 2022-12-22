@@ -39,11 +39,9 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/types/regex"
 	"golang.org/x/net/http2"
 )
-
-const DynamicVariableRegex = `\{{(_)[^}]+\}}`
-const EnvironmentVariableRegex = `\{{[^_]\w+\}}`
 
 type HttpRequester struct {
 	ctx                  context.Context
@@ -68,12 +66,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.proxyAddr = proxyAddr
 	h.vi = &injection.VariableInjector{}
 	h.vi.Init()
-	h.ri = injection.CreateRegexReplacer(EnvironmentVariableRegex)
+	h.ri = injection.CreateRegexReplacer(regex.EnvironmentVariableRegex)
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
-	h.dynamicRgx = regexp.MustCompile(DynamicVariableRegex)
-	h.envRgx = regexp.MustCompile(EnvironmentVariableRegex)
+	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
+	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
 
 	// TlsConfig
 	tlsConfig := h.initTLSConfig()
@@ -297,7 +295,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 }
 
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
-	re := regexp.MustCompile(DynamicVariableRegex)
+	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 
 	// body
@@ -589,17 +587,16 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
 	extractedVars map[string]interface{}) error {
+	var err error
 	for _, ce := range h.packet.EnvsToCapture {
-		if ce.From == "header" {
-			err := extraction.ExtractAndPopulate(header, ce, extractedVars)
-			if err != nil {
-				return err
-			}
-		} else if ce.From == "body" {
-			err := extraction.ExtractAndPopulate(respBody, ce, extractedVars)
-			if err != nil {
-				return err
-			}
+		switch ce.From {
+		case types.Header:
+			err = extraction.ExtractAndPopulate(header, ce, extractedVars)
+		case types.Body:
+			err = extraction.ExtractAndPopulate(respBody, ce, extractedVars)
+		}
+		if err != nil {
+			return err
 		}
 	}
 

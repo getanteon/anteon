@@ -184,12 +184,19 @@ type ScenarioStep struct {
 	EnvsToCapture []EnvCaptureConf
 }
 
+type SourceType string
+
+const (
+	Header SourceType = "header"
+	Body   SourceType = "body"
+)
+
 type EnvCaptureConf struct {
-	JsonPath string `json:"jsonPath"`
-	Xpath    string `json:"xpath"`
-	Name     string `json:"as"`
-	From     string `json:"from"`
-	Key      string `json:"key"`
+	JsonPath string     `json:"jsonPath"`
+	Xpath    string     `json:"xpath"`
+	Name     string     `json:"as"`
+	From     SourceType `json:"from"`
+	Key      string     `json:"key"`
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.
@@ -232,6 +239,13 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 			}
 		}
 	}
+
+	for _, conf := range si.EnvsToCapture {
+		if !(conf.From == Header || conf.From == Body) {
+			return fmt.Errorf("invalid \"from\" type in capture env : %s", conf.From)
+		}
+	}
+
 	// check if referred envs in current step has already been defined or not
 	if err := checkEnvsValidInStep(si, definedEnvs); err != nil {
 		return ScenarioValidationError{
