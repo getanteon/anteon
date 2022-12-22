@@ -790,6 +790,7 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	}
 
 	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	jsonPath := "isChampion"
 	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:     1,
 		Method: "GET",
@@ -804,7 +805,7 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 			Password: "{{_randomBankAccountBic}}",
 		},
 		EnvsToCapture: []types.EnvCaptureConf{
-			{Name: "CHAMPION", From: "body", JsonPath: "isChampion"},
+			{Name: "CHAMPION", From: "body", JsonPath: &jsonPath},
 		},
 	}
 	h.Scenario.Steps[1] = types.ScenarioStep{

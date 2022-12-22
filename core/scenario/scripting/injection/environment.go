@@ -24,7 +24,8 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 		if env, ok := vars[truncated]; ok {
 			return fmt.Sprint(env)
 		}
-		errors = append(errors, fmt.Errorf("%s could not be extracted from previous steps", truncated))
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
 		return s // return back
 	}
 

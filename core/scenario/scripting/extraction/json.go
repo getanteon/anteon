@@ -56,7 +56,7 @@ func (je JsonExtractor) ExtractFromString(source string, jsonPath string) (inter
 	case gjson.False:
 		return false, nil
 	case gjson.Number:
-		return result.Float(), nil // TODO: check for int
+		return result.Float(), nil
 	case gjson.True:
 		return true, nil
 	case gjson.JSON:
@@ -77,7 +77,7 @@ func (je JsonExtractor) ExtractFromByteSlice(source []byte, jsonPath string) (in
 	case gjson.False:
 		return false, nil
 	case gjson.Number:
-		return result.Float(), nil // TODO: check for int
+		return result.Float(), nil
 	case gjson.True:
 		return true, nil
 	case gjson.JSON:

@@ -191,12 +191,18 @@ const (
 	Body   SourceType = "body"
 )
 
+type RegexCaptureConf struct {
+	Exp *string `json:"exp"`
+	No  int     `json:"matchNo"`
+}
+
 type EnvCaptureConf struct {
-	JsonPath string     `json:"jsonPath"`
-	Xpath    string     `json:"xpath"`
-	Name     string     `json:"as"`
-	From     SourceType `json:"from"`
-	Key      string     `json:"key"`
+	JsonPath *string           `json:"jsonPath"`
+	Xpath    *string           `json:"xpath"`
+	RegExp   *RegexCaptureConf `json:"regExp"`
+	Name     string            `json:"as"`
+	From     SourceType        `json:"from"`
+	Key      *string           `json:"key"` // headerKey
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.

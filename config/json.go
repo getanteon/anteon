@@ -62,11 +62,16 @@ type multipartFormData struct {
 	Src   string `json:"src"`
 }
 
+type RegexCaptureConf struct {
+	Exp *string `json:"exp"`
+	No  int     `json:"matchNo"`
+}
 type capturePath struct {
-	JsonPath string `json:"jsonPath"`
-	XPath    string `json:"xPath"`
-	From     string `json:"from"` // body,header
-	Key      string `json:"key"`  // header key
+	JsonPath *string           `json:"jsonPath"`
+	XPath    *string           `json:"xPath"`
+	RegExp   *RegexCaptureConf `json:"regExp"`
+	From     string            `json:"from"`      // body,header
+	Key      *string           `json:"headerKey"` // header key
 }
 
 type step struct {
@@ -251,13 +256,22 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 
 	var capturedEnvs []types.EnvCaptureConf
 	for name, path := range s.CaptureEnv {
-		capturedEnvs = append(capturedEnvs, types.EnvCaptureConf{
+		capConf := types.EnvCaptureConf{
 			JsonPath: path.JsonPath,
 			Xpath:    path.XPath,
 			Name:     name,
 			From:     types.SourceType(path.From),
 			Key:      path.Key,
-		})
+		}
+
+		if path.RegExp != nil {
+			capConf.RegExp = &types.RegexCaptureConf{
+				Exp: path.RegExp.Exp,
+				No:  path.RegExp.No,
+			}
+		}
+
+		capturedEnvs = append(capturedEnvs, capConf)
 	}
 
 	item := types.ScenarioStep{

@@ -297,14 +297,17 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-
+	var err error
 	// body
 	body := h.packet.Payload
 	if h.containsDynamicField["body"] {
 		body, _ = h.vi.Inject(body)
 	}
 	if h.containsEnvVar["body"] {
-		body, _ = h.ri.Inject(body, envs)
+		body, err = h.ri.Inject(body, envs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
