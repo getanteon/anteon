@@ -21,6 +21,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/base64"
@@ -931,6 +932,164 @@ func TestContinueTestOnCaptureError(t *testing.T) {
 	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) { // default value ""
 		t.Errorf("TestContinueTestOnCaptureError header val could not be set from envs, must be default value, expected : %s, got: %s",
 			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureHeaderWithRegex(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	headerKey := "Argentina"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "BallondorWinner"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Header().Set(headerKey, "messi_10alvarez9")
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	regex := "[a-z]+_[0-9]+"
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "header", Key: &headerKey, RegExp: &types.RegexCaptureConf{Exp: &regex, No: 0}},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			secondReqInjectedHeaderKey: "{{GOAT}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureHeaderWithRegex test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := "messi_10"
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf(
+			"TestCaptureHeaderWithRegex header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureStringPayloadWithRegex(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	var secondReqBody []byte
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Write([]byte("messi_10alvarez9"))
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		secondReqBody, _ = io.ReadAll(r.Body)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	regex := "[a-z]+_[0-9]+"
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "body", RegExp: &types.RegexCaptureConf{Exp: &regex, No: 0}},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:      2,
+		Method:  "GET",
+		URL:     server.URL + pathSecond,
+		Payload: "{{GOAT}}",
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureHeaderWithRegex test server has not been called, url path injection failed")
+	}
+
+	expectedBodyVal := []byte("messi_10")
+	if !bytes.Equal(secondReqBody, expectedBodyVal) {
+		t.Errorf(
+			"TestCaptureHeaderWithRegex header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedBodyVal, secondReqBody)
 	}
 
 }

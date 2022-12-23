@@ -3,6 +3,7 @@ package extraction
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -157,5 +158,24 @@ func TestJsonExtractFromByteSlice_JsonFloatArray(t *testing.T) {
 
 	if !reflect.DeepEqual(val, expected) {
 		t.Errorf("TestJsonExtractFromByteSlice_JsonArray failed, expected %#v, found %#v", expected, val)
+	}
+}
+
+func TestJsonExtractFromByteSlice_JsonPathNotFound(t *testing.T) {
+	payload := map[string]interface{}{
+		"age": "24",
+	}
+
+	byteSlice, _ := json.Marshal(payload)
+	je := JsonExtractor{}
+	val, err := je.extractFromByteSlice(byteSlice, "age2")
+
+	expected := "json path not found"
+	if !strings.EqualFold(err.Error(), expected) {
+		t.Errorf("TestJsonExtractFromByteSlice_NotFoundJsonPath failed, expected %#v, found %#v", expected, err)
+	}
+
+	if !reflect.DeepEqual(val, "") {
+		t.Errorf("TestJsonExtractFromByteSlice_NotFoundJsonPath failed, expected %#v, found %#v", expected, val)
 	}
 }

@@ -14,7 +14,8 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
 	case types.Header:
 		header := source.(http.Header)
 		if ce.Key != nil { // key specified
-			if val = header.Get(*ce.Key); val == "" {
+			val = header.Get(*ce.Key)
+			if val == "" {
 				err = fmt.Errorf("Http Header %s not found", *ce.Key)
 			} else {
 				if ce.RegExp != nil { // run regex for found value

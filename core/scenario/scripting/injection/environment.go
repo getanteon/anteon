@@ -22,7 +22,23 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 	injectStrFunc := func(s string) string {
 		truncated := s[2 : len(s)-2] // {{...}}
 		if env, ok := vars[truncated]; ok {
-			return fmt.Sprint(env)
+			switch env.(type) {
+			case string:
+				return env.(string)
+			case []byte:
+				return string(env.([]byte))
+			case int:
+				return fmt.Sprintf("%d", env)
+			case float64:
+				return fmt.Sprintf("%f", env)
+			case bool:
+				if env == true {
+					return "true"
+				}
+				return "false"
+			default:
+				return fmt.Sprint(env)
+			}
 		}
 		errors = append(errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
