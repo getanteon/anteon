@@ -45,8 +45,6 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 		return s // return back
 	}
 
-	// TODOcorr: xml injection
-
 	// json injection
 	if json.Valid([]byte(text)) {
 		textJson := map[string]interface{}{}
@@ -70,8 +68,8 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 		}
 
 		return string(replacedBytes), nil
-
 	}
+
 	// string injection
 	replaced := ri.r.ReplaceAllStringFunc(text, injectStrFunc)
 	if len(errors) == 0 {

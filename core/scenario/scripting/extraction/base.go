@@ -35,8 +35,13 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
 			case []byte:
 				val, err = re.extractFromByteSlice(source.([]byte), ce.RegExp.No)
 			}
+		} else if ce.Xpath != nil {
+			switch source.(type) {
+			case []byte:
+				val, err = extractFromXml(source, *ce.Xpath)
+			}
+
 		}
-		// TODOcorr: add xpath
 	}
 
 	if err != nil {
@@ -56,6 +61,16 @@ func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 		return je.extractFromByteSlice(s, jsonPath)
 	case string: // from response header
 		return je.extractFromString(s, jsonPath)
+	default:
+		return "", fmt.Errorf("Unsupported type for extraction source")
+	}
+}
+
+func extractFromXml(source interface{}, xPath string) (interface{}, error) {
+	xe := XmlExtractor{}
+	switch s := source.(type) {
+	case []byte: // from response body
+		return xe.extractFromByteSlice(s, xPath)
 	default:
 		return "", fmt.Errorf("Unsupported type for extraction source")
 	}

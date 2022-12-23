@@ -146,44 +146,6 @@ func TestHammerEmptyScenario(t *testing.T) {
 	}
 }
 
-// TODOcorr : remove protocol test
-// func TestHammerInvalidScenarioProtocol(t *testing.T) {
-// 	// Single Scenario
-// 	h := newDummyHammer()
-// 	h.Scenario = Scenario{
-// 		Steps: []ScenarioStep{
-// 			{
-// 				ID:       1,
-// 				Protocol: "HTTPP",
-// 				Method:   supportedProtocolMethods["HTTP"][1],
-// 			},
-// 		},
-// 	}
-// 	if err := h.Validate(); err == nil {
-// 		t.Errorf("TestHammerInvalidScenario errored")
-// 	}
-
-// 	// Multi Scenario
-// 	h = newDummyHammer()
-// 	h.Scenario = Scenario{
-// 		Steps: []ScenarioStep{
-// 			{
-// 				ID:       1,
-// 				Protocol: SupportedProtocols[0],
-// 				Method:   supportedProtocolMethods["HTTP"][1],
-// 			},
-// 			{
-// 				ID:       1,
-// 				Protocol: "HTTPP",
-// 				Method:   supportedProtocolMethods["HTTP"][1],
-// 			},
-// 		},
-// 	}
-// 	if err := h.Validate(); err == nil {
-// 		t.Errorf("TestHammerInvalidScenario errored")
-// 	}
-// }
-
 func TestHammerInvalidScenarioMethod(t *testing.T) {
 	// Single Scenario
 	h := newDummyHammer()

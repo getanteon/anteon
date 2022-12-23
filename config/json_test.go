@@ -435,34 +435,6 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 	}
 }
 
-// TODOcorr : remove protocol test
-// func TestCreateHammerProtocol(t *testing.T) {
-// 	t.Parallel()
-// 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_protocol.json"), ConfigTypeJson)
-// 	expectedProtocols := []string{"HTTPS", "HTTP"}
-
-// 	h, err := jsonReader.CreateHammer()
-// 	if err != nil {
-// 		t.Errorf("TestCreateHammerProtocol error occurred: %v", err)
-// 	}
-
-// 	steps := h.Scenario.Steps
-// 	for i := 0; i < len(steps); i++ {
-// 		if steps[i].Protocol != expectedProtocols[i] {
-// 			t.Errorf("Step: %d, 1: Expected: %v, Found: %v", i, expectedProtocols[i], steps[0].Protocol)
-// 		}
-
-// 		url, err := url.Parse(steps[i].URL)
-// 		if err != nil {
-// 			t.Errorf("Step: %d, TestCreateHammerProtocol-SchemeCheck error occurred: %v", i, err)
-// 		}
-
-// 		if strings.ToUpper(url.Scheme) != expectedProtocols[i] {
-// 			t.Errorf("Step: %d, 2: Expected: %v, Found: %v", i, expectedProtocols[i], url.Scheme)
-// 		}
-// 	}
-// }
-
 func TestCreateHammerInvalidTarget(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_invalid_target.json"), ConfigTypeJson)

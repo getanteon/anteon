@@ -95,7 +95,6 @@ type step struct {
 func (s *step) UnmarshalJSON(data []byte) error {
 	type stepAlias step
 	defaultFields := &stepAlias{
-		// Protocol: types.DefaultProtocol, // TODOcorr: remove protocol
 		Method:  types.DefaultMethod,
 		Timeout: types.DefaultTimeout,
 	}

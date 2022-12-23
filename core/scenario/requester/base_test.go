@@ -30,26 +30,3 @@ var protocolStrategiesStructMap = map[string]reflect.Type{
 	types.ProtocolHTTP:  reflect.TypeOf(&HttpRequester{}),
 	types.ProtocolHTTPS: reflect.TypeOf(&HttpRequester{}),
 }
-
-// TODOcorr: remove this test
-// func TestNewRequester(t *testing.T) {
-
-// 	// Valid output types
-// 	for _, o := range types.SupportedProtocols {
-// 		service, err := NewRequester(types.ScenarioStep{})
-
-// 		if err != nil {
-// 			t.Errorf("TestNewRequester %v", err)
-// 		}
-
-// 		if reflect.TypeOf(service) != protocolStrategiesStructMap[o] {
-// 			t.Errorf("Expected %v, Found %v", protocolStrategiesStructMap[o], reflect.TypeOf(service))
-// 		}
-// 	}
-
-// 	// Invalid output type
-// 	_, err := NewRequester(types.ScenarioStep{Protocol: "invalid_protocol"})
-// 	if err == nil {
-// 		t.Errorf("TestNewRequester invalid protocol should errored")
-// 	}
-// }

@@ -197,36 +197,6 @@ func TestInitService(t *testing.T) {
 	}
 }
 
-// TODOcorr: remove this test, this was checking NewRequester and protocol check
-// func TestInitServiceFail(t *testing.T) {
-// 	t.Parallel()
-
-// 	// Arrange
-// 	scenario := types.Scenario{
-// 		Steps: []types.ScenarioStep{
-// 			{
-// 				ID:      1,
-// 				Method:  types.DefaultMethod,
-// 				URL:     "invalidProtocol://test.com",
-// 				Timeout: types.DefaultDuration,
-// 			},
-// 		},
-// 	}
-// 	p1, _ := url.Parse("http://proxy_server.com:80")
-// 	p2, _ := url.Parse("http://proxy_server2.com:8000")
-// 	proxies := []*url.URL{p1, p2}
-// 	ctx := context.TODO()
-
-// 	// Act
-// 	service := ScenarioService{}
-// 	err := service.Init(ctx, scenario, proxies, false)
-
-// 	// Assert // TODOcorr: removed invalid protocol
-// 	if err == nil {
-// 		t.Fatalf("TestInitFunc should be errored")
-// 	}
-// }
-
 func TestDo(t *testing.T) {
 	t.Parallel()
 
@@ -575,73 +545,6 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-// TODOcorr: invalid protocol test
-// func TestGetOrCreateRequestersFailed(t *testing.T) {
-// 	t.Parallel()
-
-// 	// Arrange
-// 	scenario := types.Scenario{
-// 		Steps: []types.ScenarioStep{
-// 			{
-// 				ID:      1,
-// 				Method:  types.DefaultMethod,
-// 				URL:     "test.com",
-// 				Timeout: types.DefaultDuration,
-// 			},
-// 		},
-// 	}
-// 	// Left empty proxies to bypass Init method. So we can errored createRequesters method
-// 	proxies := []*url.URL{}
-// 	ctx := context.TODO()
-
-// 	service := ScenarioService{}
-// 	service.Init(ctx, scenario, proxies, false)
-
-// 	p, _ := url.Parse("http://proxy_server2.com:8080")
-
-// 	// Act
-// 	_, err := service.getOrCreateRequesters(p)
-
-// 	// Assert
-// 	if err == nil {
-// 		t.Fatalf("TestGetOrCreateRequestersFailed should be errored")
-// 	}
-// }
-
-// No need to test happy path for createRequesters, TestInitService already tests it.
-// TODOcorr: remove test invalidProtocol
-// func TestCreateRequestersErrorOnNewRequester(t *testing.T) {
-// 	t.Parallel()
-
-// 	// Arrange
-// 	scenario := types.Scenario{
-// 		Steps: []types.ScenarioStep{
-// 			{
-// 				ID:      1,
-// 				Method:  types.DefaultMethod,
-// 				URL:     "test.com",
-// 				Timeout: types.DefaultDuration,
-// 			},
-// 		},
-// 	}
-// 	p, _ := url.Parse("http://proxy_server.com:80")
-// 	ctx := context.TODO()
-
-// 	service := ScenarioService{
-// 		clients:  map[*url.URL][]scenarioItemRequester{},
-// 		scenario: scenario,
-// 		ctx:      ctx,
-// 	}
-
-// 	// Act
-// 	err := service.createRequesters(p)
-
-// 	// Assert
-// 	if err == nil {
-// 		t.Fatal("TestCreateRequestersFailOnNewRequester should be errored")
-// 	}
-// }
 
 func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
 	t.Parallel()
