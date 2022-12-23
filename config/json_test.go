@@ -376,6 +376,65 @@ func TestCreateHammerAuth(t *testing.T) {
 	}
 }
 
+func TestCreateHammerGlobalEnvs(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_global_envs.json"), ConfigTypeJson)
+	expectedGlobalEnvs := map[string]interface{}{
+		"HTTPBIN": "https://httpbin.ddosify.com",
+		"LOCAL":   "http://localhost:8084/hello",
+	}
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerGlobalEnvs error occurred: %v", err)
+	}
+
+	globalEnvs := h.Scenario.Envs
+
+	if !reflect.DeepEqual(globalEnvs, expectedGlobalEnvs) {
+		t.Errorf("TestCreateHammerGlobalEnvs global envs got: %#v expected: %#v", globalEnvs, expectedGlobalEnvs)
+	}
+}
+
+func TestCreateHammerCaptureEnvs(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_capture_environment.json"), ConfigTypeJson)
+	jsonPath := "num"
+	expectedEnvsToCapture0 := []types.EnvCaptureConf{{
+		Name:     "NUM",
+		From:     types.Body,
+		JsonPath: &jsonPath,
+	}}
+
+	regex := ""
+	expectedEnvsToCapture1 := []types.EnvCaptureConf{{
+		Name:     "REGEX_MATCH_ENV",
+		From:     types.Body,
+		JsonPath: &jsonPath,
+		RegExp: &types.RegexCaptureConf{
+			Exp: &regex,
+			No:  1,
+		},
+	}}
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerCaptureEnvs error occurred: %v", err)
+	}
+
+	envsToCapture0 := h.Scenario.Steps[0].EnvsToCapture
+
+	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCapture0) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCapture0)
+	}
+
+	envsToCapture1 := h.Scenario.Steps[1].EnvsToCapture
+
+	if !reflect.DeepEqual(envsToCapture1, expectedEnvsToCapture1) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture1, expectedEnvsToCapture1)
+	}
+}
+
 // TODOcorr : remove protocol test
 // func TestCreateHammerProtocol(t *testing.T) {
 // 	t.Parallel()

@@ -67,11 +67,11 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath *string           `json:"jsonPath"`
-	XPath    *string           `json:"xPath"`
-	RegExp   *RegexCaptureConf `json:"regExp"`
-	From     string            `json:"from"`      // body,header
-	Key      *string           `json:"headerKey"` // header key
+	JsonPath  *string           `json:"jsonPath"`
+	XPath     *string           `json:"xPath"`
+	RegExp    *RegexCaptureConf `json:"regExp"`
+	From      string            `json:"from"`      // body,header
+	HeaderKey *string           `json:"headerKey"` // header key
 }
 
 type step struct {
@@ -261,7 +261,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 			Xpath:    path.XPath,
 			Name:     name,
 			From:     types.SourceType(path.From),
-			Key:      path.Key,
+			Key:      path.HeaderKey,
 		}
 
 		if path.RegExp != nil {
