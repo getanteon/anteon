@@ -26,11 +26,19 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 			return jStrSlice, err
 		}
 
+		jFloatSlice := []float64{}
+		err = json.Unmarshal([]byte(result.Raw), &jFloatSlice)
+		if err == nil {
+			return jFloatSlice, err
+		}
+
 		jIntSlice := []int{}
 		err = json.Unmarshal([]byte(result.Raw), &jIntSlice)
 		if err == nil {
 			return jIntSlice, err
 		}
+
+		// TODOcorr: int64
 	}
 
 	if result.IsBool() {
