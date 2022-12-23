@@ -182,13 +182,17 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var debugInfo map[string]interface{}
 	var bodyRead bool
 	var bodyReadErr error
-	var extractedVars map[string]interface{}
-	extractedVars = make(map[string]interface{})
-	var captureWarnings []string
+	var extractedVars = make(map[string]interface{})
+	var captureWarnings = make([]string, 0)
+
+	var usableVars = make(map[string]interface{}, len(envs))
+	for k, v := range envs {
+		usableVars[k] = v
+	}
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
-	httpReq, err := h.prepareReq(envs, trace)
+	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
 		requestErr.Type = types.ErrorInvalidRequest
@@ -281,6 +285,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
 		ExtractedEnvs: extractedVars,
+		UsableEnvs:    usableVars,
 		Warnings:      captureWarnings,
 	}
 
@@ -590,8 +595,9 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
-	extractedVars map[string]interface{}) (warnings []string) {
+	extractedVars map[string]interface{}) []string {
 	var err error
+	warnings := make([]string, 0)
 	var captureError extraction.EnvironmentCaptureError
 	for _, ce := range h.packet.EnvsToCapture {
 		var val interface{}
@@ -610,7 +616,7 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 		extractedVars[ce.Name] = val
 	}
 
-	return
+	return warnings
 }
 
 type duration struct {

@@ -23,11 +23,13 @@ type verboseResponse struct {
 }
 
 type verboseHttpRequestInfo struct {
-	StepId   uint16          `json:"stepId"`
-	StepName string          `json:"stepName"`
-	Request  verboseRequest  `json:"request"`
-	Response verboseResponse `json:"response"`
-	Error    string          `json:"error"`
+	StepId   uint16                 `json:"stepId"`
+	StepName string                 `json:"stepName"`
+	Request  verboseRequest         `json:"request"`
+	Response verboseResponse        `json:"response"`
+	Envs     map[string]interface{} `json:"envs"`
+	Warnings []string               `json:"warnings"`
+	Error    string                 `json:"error"`
 }
 
 func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) verboseHttpRequestInfo {
@@ -72,7 +74,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			Body:       responseBody,
 		}
 	}
-
+	verboseInfo.Envs = sr.UsableEnvs
+	verboseInfo.Warnings = sr.Warnings
 	return verboseInfo
 }
 

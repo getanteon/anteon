@@ -23,5 +23,5 @@ func (xe XmlExtractor) extractFromByteSlice(source []byte, xPath string) (interf
 		return nil, fmt.Errorf("no match")
 	}
 
-	return []byte(foundNode.InnerText()), nil
+	return foundNode.InnerText(), nil
 }

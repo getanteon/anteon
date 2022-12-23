@@ -81,7 +81,10 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	if e != nil {
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
-	envs := s.scenario.Envs
+	envs := make(map[string]interface{}, len(s.scenario.Envs))
+	for k, v := range s.scenario.Envs {
+		envs[k] = v
+	}
 	for _, sr := range requesters {
 		res := sr.requester.Send(envs)
 

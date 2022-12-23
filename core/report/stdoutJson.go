@@ -161,23 +161,29 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	// could not prepare req, correlation
 	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
 		type alias struct {
-			StepId   uint16 `json:"stepId"`
-			StepName string `json:"stepName"`
-			Error    string `json:"error"`
+			StepId   uint16                 `json:"stepId"`
+			StepName string                 `json:"stepName"`
+			Envs     map[string]interface{} `json:"envs"`
+			Warnings []string               `json:"warnings"`
+			Error    string                 `json:"error"`
 		}
 
 		a := alias{
 			Error:    v.Error,
 			StepId:   v.StepId,
 			StepName: v.StepName,
+			Warnings: v.Warnings,
+			Envs:     v.Envs,
 		}
 		return json.Marshal(a)
 	}
 
 	if v.Error != "" {
 		type alias struct {
-			StepId   uint16 `json:"stepId"`
-			StepName string `json:"stepName"`
+			StepId   uint16                 `json:"stepId"`
+			StepName string                 `json:"stepName"`
+			Envs     map[string]interface{} `json:"envs"`
+			Warnings []string               `json:"warnings"`
 			Request  struct {
 				Url     string            `json:"url"`
 				Method  string            `json:"method"`
@@ -192,13 +198,17 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 			Error:    v.Error,
 			StepId:   v.StepId,
 			StepName: v.StepName,
+			Warnings: v.Warnings,
+			Envs:     v.Envs,
 		}
 		return json.Marshal(a)
 	}
 
 	type alias struct {
-		StepId   uint16 `json:"stepId"`
-		StepName string `json:"stepName"`
+		StepId   uint16                 `json:"stepId"`
+		StepName string                 `json:"stepName"`
+		Envs     map[string]interface{} `json:"envs"`
+		Warnings []string               `json:"warnings"`
 		Request  struct {
 			Url     string            `json:"url"`
 			Method  string            `json:"method"`
@@ -217,6 +227,8 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 		StepName: v.StepName,
 		Request:  v.Request,
 		Response: v.Response,
+		Warnings: v.Warnings,
+		Envs:     v.Envs,
 	}
 	return json.Marshal(a)
 
