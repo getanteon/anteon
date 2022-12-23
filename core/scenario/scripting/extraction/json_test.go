@@ -9,7 +9,7 @@ func TestJsonExtractFromString(t *testing.T) {
 	json := `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
 	je := JsonExtractor{}
 
-	val, _ := je.ExtractFromString(json, "name.last")
+	val, _ := je.extractFromString(json, "name.last")
 
 	if val != "Prichard" {
 		t.Errorf("Json Extract Error")
@@ -27,7 +27,7 @@ func TestJsonExtractFromByteSlice(t *testing.T) {
 
 	byteSlice, _ := json.Marshal(payload)
 	je := JsonExtractor{}
-	val, _ := je.ExtractFromByteSlice(byteSlice, "name.last")
+	val, _ := je.extractFromByteSlice(byteSlice, "name.last")
 
 	if val != "Prichard" {
 		t.Errorf("Json Extract Error")

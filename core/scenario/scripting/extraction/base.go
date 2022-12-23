@@ -3,69 +3,61 @@ package extraction
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func ExtractAndPopulate(source interface{}, ce types.EnvCaptureConf, extractedVars map[string]interface{}) error {
+func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
 	var val interface{}
 	var err error
 	switch ce.From {
 	case types.Header:
 		header := source.(http.Header)
 		if ce.Key != nil { // key specified
-			if val = header.Get(*ce.Key); val != "" {
+			if val = header.Get(*ce.Key); val == "" {
 				err = fmt.Errorf("Http Header %s not found", *ce.Key)
+			} else {
+				if ce.RegExp != nil { // run regex for found value
+					re := CreateRegexExtractor(*ce.RegExp.Exp)
+					val, err = re.extractFromString(val.(string), ce.RegExp.No)
+				}
 			}
-		} else if ce.RegExp != nil { // run regex for each key and value
-			val, err = extractFromHttpHeader(header, ce.RegExp)
 		}
 	case types.Body:
 		if ce.JsonPath != nil {
 			val, err = extractFromJson(source, *ce.JsonPath)
 		} else if ce.RegExp != nil {
-			// TODOcorr
+			re := CreateRegexExtractor(*ce.RegExp.Exp)
+			switch source.(type) {
+			case string:
+				val, err = re.extractFromString(source.(string), ce.RegExp.No)
+			case []byte:
+				val, err = re.extractFromByteSlice(source.([]byte), ce.RegExp.No)
+			}
 		}
-
 		// TODOcorr: add xpath
 	}
 
 	if err != nil {
-		return EnvironmentCaptureError{
+		return "", EnvironmentCaptureError{
 			msg:        fmt.Sprintf("env capture failed for %s, %v", ce.Name, err),
 			wrappedErr: err,
 		}
 	}
+	return val, nil
 
-	extractedVars[ce.Name] = val
-	return nil
 }
 
 func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 	je := JsonExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
-		return je.ExtractFromByteSlice(s, jsonPath)
+		return je.extractFromByteSlice(s, jsonPath)
 	case string: // from response header
-		return je.ExtractFromString(s, jsonPath)
+		return je.extractFromString(s, jsonPath)
 	default:
 		return "", fmt.Errorf("Unsupported type for extraction source")
 	}
-}
-
-func extractFromHttpHeader(header http.Header, regexConf *types.RegexCaptureConf) (interface{}, error) {
-	var match interface{}
-	var err error
-	re := CreateRegexExtractor(*regexConf.Exp)
-	for k, v := range header {
-		if match, err = re.ExtractFromString(k, regexConf.No); err == nil { // key match
-			break
-		} else if match, err = re.ExtractFromString(strings.Join(v, " "), regexConf.No); err == nil { // value match
-			break
-		}
-	}
-	return match, err
 }
 
 type EnvironmentCaptureError struct { // UnWrappable

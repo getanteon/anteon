@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -183,6 +184,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var bodyReadErr error
 	var extractedVars map[string]interface{}
 	extractedVars = make(map[string]interface{})
+	var captureWarnings []string
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
@@ -223,9 +225,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
-			if err := h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars); err != nil {
-				requestErr = fetchErrType(err)
-			}
+			captureWarnings = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
 		}
 
 		if !bodyRead {
@@ -281,6 +281,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
 		ExtractedEnvs: extractedVars,
+		Warnings:      captureWarnings,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -589,21 +590,27 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
-	extractedVars map[string]interface{}) error {
+	extractedVars map[string]interface{}) (warnings []string) {
 	var err error
+	var captureError extraction.EnvironmentCaptureError
 	for _, ce := range h.packet.EnvsToCapture {
+		var val interface{}
 		switch ce.From {
 		case types.Header:
-			err = extraction.ExtractAndPopulate(header, ce, extractedVars)
+			val, err = extraction.Extract(header, ce)
 		case types.Body:
-			err = extraction.ExtractAndPopulate(respBody, ce, extractedVars)
+			val, err = extraction.Extract(respBody, ce)
 		}
-		if err != nil {
-			return err
+		if err != nil && errors.As(err, &captureError) {
+			// do not terminate in case of a capture error, continue capturing
+			extractedVars[ce.Name] = "" // default value for not extracted envs
+			warnings = append(warnings, fmt.Sprintf("%s could not be captured", ce.Name))
+			continue
 		}
+		extractedVars[ce.Name] = val
 	}
 
-	return nil
+	return
 }
 
 type duration struct {

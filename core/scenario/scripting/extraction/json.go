@@ -44,9 +44,13 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 	return nil, fmt.Errorf("json could not be unmarshaled")
 }
 
-func (je JsonExtractor) ExtractFromString(source string, jsonPath string) (interface{}, error) {
+func (je JsonExtractor) extractFromString(source string, jsonPath string) (interface{}, error) {
 	result := gjson.Get(source, jsonPath)
-	// TODOcorr: write test for below
+
+	// path not found
+	if result.Raw == "" && result.Type == gjson.Null {
+		return "", fmt.Errorf("json path not found")
+	}
 
 	switch result.Type {
 	case gjson.String:
@@ -66,8 +70,13 @@ func (je JsonExtractor) ExtractFromString(source string, jsonPath string) (inter
 	}
 }
 
-func (je JsonExtractor) ExtractFromByteSlice(source []byte, jsonPath string) (interface{}, error) {
+func (je JsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (interface{}, error) {
 	result := gjson.GetBytes(source, jsonPath)
+
+	// path not found
+	if result.Raw == "" && result.Type == gjson.Null {
+		return "", fmt.Errorf("json path not found")
+	}
 
 	switch result.Type {
 	case gjson.String:

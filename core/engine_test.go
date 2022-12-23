@@ -826,30 +826,111 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	// Act
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
-		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
 	}
 
 	err = e.Init()
 	if err != nil {
-		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
 	}
 
 	e.Start()
 
 	if !firstRequestCalled || !secondRequestCalled {
-		t.Errorf("TestGlobalAndCapturedVars test server has not been called, url path injection failed")
+		t.Errorf("TestCapturedEnvsFromJsonBody test server has not been called, url path injection failed")
 	}
 
 	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
 	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
-		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s",
+		t.Errorf("TestCapturedEnvsFromJsonBody header val could not be set from envs, expected : %s, got: %s",
 			expectedHeaderVal, gotHeaderVal)
 	}
 
 	expectedReqPayloadOnSecondReq := true
 	if secondReqBody["ARGENTINA"].(bool) != expectedReqPayloadOnSecondReq {
-		t.Errorf("TestGlobalAndCapturedVars second req body could not be set from envs, expected : %t, got: %s",
+		t.Errorf("TestCapturedEnvsFromJsonBody second req body could not be set from envs, expected : %t, got: %s",
 			expectedReqPayloadOnSecondReq, secondReqBody)
+	}
+
+}
+
+func TestContinueTestOnCaptureError(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	notExistHeaderKey := "NO_HEADER_KEY"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "INJECTED_HEADER"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Header().Set("Argentina", "Messi")
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "HEADER_VAL", From: "header", Key: &notExistHeaderKey},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			"INJECTED_HEADER": "{{HEADER_VAL}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestContinueTestOnCaptureError test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := ""
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) { // default value ""
+		t.Errorf("TestContinueTestOnCaptureError header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
 	}
 
 }
