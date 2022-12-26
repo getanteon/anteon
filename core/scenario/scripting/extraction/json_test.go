@@ -56,7 +56,7 @@ func TestJsonExtractFromByteSlice_Object(t *testing.T) {
 }
 
 func TestJsonExtractFromByteSlice_Float(t *testing.T) {
-	var expected float64 = 52
+	var expected float64 = 52.2
 	payload := map[string]interface{}{
 		"age": expected,
 	}
@@ -65,7 +65,8 @@ func TestJsonExtractFromByteSlice_Float(t *testing.T) {
 	je := JsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
-	if !reflect.DeepEqual(val, expected) {
+	val2 := val.(float64) // json number -> float64
+	if !reflect.DeepEqual(val2, expected) {
 		t.Errorf("TestJsonExtractFromByteSlice_Object failed, expected %#v, found %#v", expected, val)
 	}
 }
@@ -80,7 +81,7 @@ func TestJsonExtractFromByteSlice_Int(t *testing.T) {
 	je := JsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
-	val2 := val.(float64) // json number -> float64
+	val2 := val.(int64) // json number -> float64
 	if !reflect.DeepEqual(int(val2), expected) {
 		t.Errorf("TestJsonExtractFromByteSlice_Object failed, expected %#v, found %#v", expected, val)
 	}
