@@ -38,6 +38,13 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 		if err == nil {
 			return jIntSlice, err
 		}
+
+		jBoolSlice := []bool{}
+		err = json.Unmarshal([]byte(result.Raw), &jBoolSlice)
+		if err == nil {
+			return jBoolSlice, err
+		}
+
 	}
 
 	if result.IsBool() {

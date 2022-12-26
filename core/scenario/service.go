@@ -85,10 +85,12 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
 
+	// start envs separately for each iteration
 	envs := make(map[string]interface{}, len(s.scenario.Envs))
 	for k, v := range s.scenario.Envs {
 		envs[k] = v
 	}
+	// inject dynamic variables beforehand for each iteration
 	injectDynamicVars(envs)
 
 	for _, sr := range requesters {

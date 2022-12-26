@@ -68,7 +68,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.vi = &injection.VariableInjector{}
 	h.vi.Init()
 	h.ri = &injection.EnvironmentInjector{}
-	h.ri.Init(regex.EnvironmentVariableRegex)
+	h.ri.Init()
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug

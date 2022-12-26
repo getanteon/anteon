@@ -191,7 +191,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			printBody(w, contentType, verboseInfo.Request.Body)
 
 			if verboseInfo.Error != "" {
-				fmt.Fprintf(w, "%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
+				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 			} else {
 				fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
 				fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)

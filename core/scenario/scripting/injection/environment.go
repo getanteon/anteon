@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"go.ddosify.com/ddosify/core/types/regex"
 )
 
 type EnvironmentInjector struct {
-	r *regexp.Regexp
+	r  *regexp.Regexp
+	jr *regexp.Regexp
 }
 
-func (ei *EnvironmentInjector) Init(regex string) {
-	ei.r = regexp.MustCompile(regex)
+func (ei *EnvironmentInjector) Init() {
+	ei.r = regexp.MustCompile(regex.EnvironmentVariableRegex)
+	ei.jr = regexp.MustCompile(regex.JsonEnvironmentVarRegex)
 }
 
 func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) (string, error) {
@@ -32,10 +36,7 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 			case float64:
 				return fmt.Sprintf("%f", env)
 			case bool:
-				if env == true {
-					return "true"
-				}
-				return "false"
+				return fmt.Sprintf("%t", env)
 			default:
 				return fmt.Sprint(env)
 			}
@@ -44,30 +45,25 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
 		return s // return back
 	}
+	injecToJsonByteFunc := func(s []byte) []byte {
+		truncated := s[3 : len(s)-3] // "{{...}}"
+		if env, ok := vars[string(truncated)]; ok {
+			mEnv, _ := json.Marshal(env)
+			return mEnv
+		}
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+		return s // return back
+	}
 
 	// json injection
 	if json.Valid([]byte(text)) {
-		textJson := map[string]interface{}{}
-		json.Unmarshal([]byte(text), &textJson)
-
-		// keys
-		for k, v := range textJson {
-			if ei.r.MatchString(k) {
-				replaced := ei.r.ReplaceAllStringFunc(k, injectStrFunc)
-				textJson[replaced] = v
-				delete(textJson, k)
-			}
+		// ei.r = regexp.MustCompile(regex.JsonEnvironmentVarRegex)
+		bText := []byte(text)
+		if ei.jr.Match(bText) {
+			replacedBytes := ei.jr.ReplaceAllFunc(bText, injecToJsonByteFunc)
+			return string(replacedBytes), nil
 		}
-
-		//values
-		ei.replaceJson(textJson, vars)
-
-		replacedBytes, err := json.Marshal(textJson)
-		if err != nil || !json.Valid(replacedBytes) {
-			return "", err
-		}
-
-		return string(replacedBytes), nil
 	}
 
 	// string injection
@@ -78,41 +74,6 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 
 	return replaced, unifyErrors(errors)
 
-}
-
-// recursive json replace
-func (ei *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
-
-	getEnvironmentValue := func(match string) (interface{}, error) {
-		truncated := match[2 : len(match)-2]
-		if env, ok := vars[truncated]; !ok {
-			return "", fmt.Errorf("%s could not be extracted from previous steps", truncated)
-		} else {
-			return env, nil
-		}
-	}
-
-	for k, v := range textJson { // check ints
-		vv, isStr := v.(string)
-		if isStr {
-			if ei.r.MatchString(vv) {
-				env, err := getEnvironmentValue(vv)
-				if err != nil {
-					return err
-				} else {
-					if _, err := json.Marshal(env); err == nil {
-						// object, set directly
-						textJson[k] = env
-						continue
-					}
-				}
-			}
-		} else if vv, isObject := v.(map[string]interface{}); isObject {
-			ei.replaceJson(vv, vars)
-		}
-
-	}
-	return nil
 }
 
 func unifyErrors(errors []error) error {

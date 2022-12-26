@@ -793,12 +793,9 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	h.Scenario.Steps = make([]types.ScenarioStep, 2)
 	jsonPath := "isChampion"
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:     1,
-		Method: "GET",
-		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
-		Headers: map[string]string{
-			"HEADER_KEY": "{{HEADER_VAL}}",
-		},
+		ID:      1,
+		Method:  "GET",
+		URL:     server.URL + "{{FIRST_REQ_URL_PATH}}",
 		Payload: "{{_randomJobArea}}",
 		Auth: types.Auth{
 			Type:     types.AuthHttpBasic,
