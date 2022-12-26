@@ -216,6 +216,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	httpRes, err := h.client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
+		captureWarnings = h.captureEnvironmentVariables(nil, nil, extractedVars)
 	}
 	durations.setResDur()
 
@@ -599,6 +600,17 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 	var err error
 	warnings := make([]string, 0)
 	var captureError extraction.EnvironmentCaptureError
+
+	// request failed, only set default value for later steps
+	if header == nil && respBody == nil {
+		for _, ce := range h.packet.EnvsToCapture {
+			extractedVars[ce.Name] = "" // default value for not extracted envs
+			warnings = append(warnings, fmt.Sprintf("%s could not be captured", ce.Name))
+		}
+		return warnings
+	}
+
+	// extract from response
 	for _, ce := range h.packet.EnvsToCapture {
 		var val interface{}
 		switch ce.From {
