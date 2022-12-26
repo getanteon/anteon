@@ -7,17 +7,21 @@ import (
 	"strings"
 )
 
-type RegexReplacer struct {
+type EnvironmentInjector struct {
 	r *regexp.Regexp
 }
 
-func CreateRegexReplacer(regex string) *RegexReplacer {
-	return &RegexReplacer{
+func (ei *EnvironmentInjector) Init(regex string) {
+	ei.r = regexp.MustCompile(regex)
+}
+
+func CreateEnvironmentInjector(regex string) *EnvironmentInjector {
+	return &EnvironmentInjector{
 		r: regexp.MustCompile(regex),
 	}
 }
 
-func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (string, error) {
+func (ri *EnvironmentInjector) Inject(text string, vars map[string]interface{}) (string, error) {
 	errors := []error{}
 	injectStrFunc := func(s string) string {
 		truncated := s[2 : len(s)-2] // {{...}}
@@ -83,7 +87,7 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 }
 
 // recursive json replace
-func (ri *RegexReplacer) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
+func (ri *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
 
 	getEnvironmentValue := func(match string) (interface{}, error) {
 		truncated := match[2 : len(match)-2]

@@ -9,7 +9,8 @@ import (
 )
 
 func TestInjectionRegexReplacer(t *testing.T) {
-	replacer := CreateRegexReplacer(regex.EnvironmentVariableRegex)
+	replacer := EnvironmentInjector{}
+	replacer.Init(regex.EnvironmentVariableRegex)
 
 	// injection to text target
 	targetURL := "{{target}}/{{path}}/{{id}}"

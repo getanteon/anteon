@@ -51,7 +51,7 @@ type HttpRequester struct {
 	client               *http.Client
 	request              *http.Request
 	vi                   *injection.VariableInjector
-	ri                   *injection.RegexReplacer
+	ri                   *injection.EnvironmentInjector
 	containsDynamicField map[string]bool
 	containsEnvVar       map[string]bool
 	debug                bool
@@ -67,7 +67,8 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.proxyAddr = proxyAddr
 	h.vi = &injection.VariableInjector{}
 	h.vi.Init()
-	h.ri = injection.CreateRegexReplacer(regex.EnvironmentVariableRegex)
+	h.ri = &injection.EnvironmentInjector{}
+	h.ri.Init(regex.EnvironmentVariableRegex)
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
