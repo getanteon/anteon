@@ -33,6 +33,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -718,7 +719,6 @@ func TestGlobalEnvs(t *testing.T) {
 	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
 		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s", expectedHeaderVal, gotHeaderVal)
 	}
-
 }
 
 func TestCapturedEnvsFromJsonBody(t *testing.T) {
@@ -1092,6 +1092,130 @@ func TestCaptureStringPayloadWithRegex(t *testing.T) {
 			expectedBodyVal, secondReqBody)
 	}
 
+}
+
+func TestBothDynamicVarAndEnvVar(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "country"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"URL_PATH":           path,
+		"COUNTRY_HEADER_KEY": headerKey,
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"{{COUNTRY_HEADER_KEY}}": "{{_randomCountry}}",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestBothDynamicVarAndEnvVar test server has not been called, url path injection failed")
+	}
+
+	if strings.EqualFold(gotHeaderVal, "") {
+		t.Errorf("TestBothDynamicVarAndEnvVar dynamic var could not be set, expected a country, got: %s", "")
+	}
+}
+
+func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "composite"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"A":             "B",
+		"URL_PATH":      path,
+		"COMPOSITE_KEY": headerKey,
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"{{COMPOSITE_KEY}}": "{{_randomBoolean}}-{{A}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection test server has not been called, url path injection failed")
+	}
+
+	re := regexp.MustCompile("(true|false|)-B")
+	if !re.MatchString(gotHeaderVal) {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection gotHeaderVal did not match expected regex, got: %s", gotHeaderVal)
+	}
 }
 
 // The test creates a web server with Certificate auth,

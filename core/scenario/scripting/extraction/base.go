@@ -40,7 +40,6 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
 			case []byte:
 				val, err = extractFromXml(source, *ce.Xpath)
 			}
-
 		}
 	}
 

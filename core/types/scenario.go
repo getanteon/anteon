@@ -181,6 +181,7 @@ type ScenarioStep struct {
 	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests
 	Custom map[string]interface{}
 
+	// Envs to capture from response of this step
 	EnvsToCapture []EnvCaptureConf
 }
 
@@ -202,7 +203,7 @@ type EnvCaptureConf struct {
 	RegExp   *RegexCaptureConf `json:"regExp"`
 	Name     string            `json:"as"`
 	From     SourceType        `json:"from"`
-	Key      *string           `json:"key"` // headerKey
+	Key      *string           `json:"headerKey"` // headerKey
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.
@@ -247,16 +248,43 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 	}
 
 	for _, conf := range si.EnvsToCapture {
-		if !(conf.From == Header || conf.From == Body) {
-			return fmt.Errorf("invalid \"from\" type in capture env : %s", conf.From)
+		err := validateCaptureConf(conf)
+		if err != nil {
+			return wrapAsScenarioValidationError(err)
 		}
 	}
 
 	// check if referred envs in current step has already been defined or not
 	if err := checkEnvsValidInStep(si, definedEnvs); err != nil {
-		return ScenarioValidationError{
-			msg:        fmt.Sprintf("ScenarioValidationError %v", err),
-			wrappedErr: err,
+		return wrapAsScenarioValidationError(err)
+	}
+
+	return nil
+}
+
+func wrapAsScenarioValidationError(err error) ScenarioValidationError {
+	return ScenarioValidationError{
+		msg:        fmt.Sprintf("ScenarioValidationError %v", err),
+		wrappedErr: err,
+	}
+}
+
+func validateCaptureConf(conf EnvCaptureConf) error {
+	if !(conf.From == Header || conf.From == Body) {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("invalid \"from\" type in capture env : %s", conf.From),
+		}
+	}
+
+	if conf.From == Header && conf.Key == nil {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("%s, header key must be specified", conf.Name),
+		}
+	}
+
+	if conf.From == Body && conf.JsonPath == nil && conf.RegExp == nil && conf.Xpath == nil {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("%s, one of jsonPath, regExp, xPath key must be specified when extracting from body", conf.Name),
 		}
 	}
 

@@ -405,3 +405,52 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		t.Run(test.name, tf)
 	}
 }
+
+func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
+	ctx := context.TODO()
+	// Failed request
+	envName := "ENV_NAME"
+	headerKey := "key"
+	s := types.ScenarioStep{
+		ID:     1,
+		Method: http.MethodGet,
+		URL:    "https://ddosifyInvalid.com",
+		EnvsToCapture: []types.EnvCaptureConf{{
+			JsonPath: new(string),
+			Xpath:    new(string),
+			RegExp:   &types.RegexCaptureConf{},
+			Name:     envName,
+			From:     types.Header,
+			Key:      &headerKey,
+		}},
+	}
+
+	expectedExtractedEnvs := map[string]interface{}{
+		envName: "",
+	}
+
+	// Sub Tests
+	tests := []struct {
+		name                  string
+		scenarioStep          types.ScenarioStep
+		expectedExtractedEnvs map[string]interface{}
+	}{
+		{"ExtractedEnvShouldBeEmptyStringWhenReqFailure", s, expectedExtractedEnvs},
+	}
+
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			h := &HttpRequester{}
+			debug := true
+			var proxy *url.URL
+			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
+			envs := map[string]interface{}{}
+			res := h.Send(envs)
+
+			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
+				t.Errorf("Extracted env should be set empty string on req failure")
+			}
+		}
+		t.Run(test.name, tf)
+	}
+}

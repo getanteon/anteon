@@ -82,3 +82,16 @@ func (sc EnvironmentNotDefinedError) Error() string {
 func (sc EnvironmentNotDefinedError) Unwrap() error {
 	return sc.wrappedErr
 }
+
+type CaptureConfigError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (sc CaptureConfigError) Error() string {
+	return sc.msg
+}
+
+func (sc CaptureConfigError) Unwrap() error {
+	return sc.wrappedErr
+}
