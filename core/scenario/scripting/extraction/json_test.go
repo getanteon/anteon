@@ -7,18 +7,7 @@ import (
 	"testing"
 )
 
-func TestJsonExtractFromString(t *testing.T) {
-	json := `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
-	je := JsonExtractor{}
-
-	val, _ := je.extractFromString(json, "name.last")
-
-	if val != "Prichard" {
-		t.Errorf("Json Extract Error")
-	}
-}
-
-func TestJsonExtractFromByteSlice_String(t *testing.T) {
+func TestJsonExtract_String(t *testing.T) {
 	payload := map[string]interface{}{
 		"name": map[string]interface{}{
 			"first": "Janet",
@@ -34,9 +23,15 @@ func TestJsonExtractFromByteSlice_String(t *testing.T) {
 	if val != "Prichard" {
 		t.Errorf("Json Extract Error")
 	}
+
+	val, _ = je.extractFromString(string(byteSlice), "name.last")
+
+	if val != "Prichard" {
+		t.Errorf("Json Extract Error")
+	}
 }
 
-func TestJsonExtractFromByteSlice_Object(t *testing.T) {
+func TestJsonExtract_Object(t *testing.T) {
 	expected := map[string]interface{}{
 		"first": "Janet",
 		"last":  "Prichard",
@@ -51,11 +46,17 @@ func TestJsonExtractFromByteSlice_Object(t *testing.T) {
 	val, _ := je.extractFromByteSlice(byteSlice, "name")
 
 	if !reflect.DeepEqual(val, expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_Object failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_Object failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "name")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_Object failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_Float(t *testing.T) {
+func TestJsonExtract_Float(t *testing.T) {
 	var expected float64 = 52.2
 	payload := map[string]interface{}{
 		"age": expected,
@@ -67,11 +68,18 @@ func TestJsonExtractFromByteSlice_Float(t *testing.T) {
 
 	val2 := val.(float64) // json number -> float64
 	if !reflect.DeepEqual(val2, expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_Object failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_Float failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	val22 := val.(float64) // json number -> float64
+	if !reflect.DeepEqual(val22, expected) {
+		t.Errorf("TestJsonExtract_Float failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_Int(t *testing.T) {
+func TestJsonExtract_Int(t *testing.T) {
 	var expected int = 52
 	payload := map[string]interface{}{
 		"age": expected,
@@ -83,11 +91,18 @@ func TestJsonExtractFromByteSlice_Int(t *testing.T) {
 
 	val2 := val.(int64) // json number -> float64
 	if !reflect.DeepEqual(int(val2), expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_Object failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_Int failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	val22 := val.(int64) // json number -> float64
+	if !reflect.DeepEqual(int(val22), expected) {
+		t.Errorf("TestJsonExtract_Int failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_Nil(t *testing.T) {
+func TestJsonExtract_Nil(t *testing.T) {
 	payload := map[string]interface{}{
 		"age": nil,
 	}
@@ -97,26 +112,44 @@ func TestJsonExtractFromByteSlice_Nil(t *testing.T) {
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, nil) {
-		t.Errorf("TestJsonExtractFromByteSlice_Nil failed, expected %#v, found %#v", nil, val)
+		t.Errorf("TestJsonExtract_Nil failed, expected %#v, found %#v", nil, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, nil) {
+		t.Errorf("TestJsonExtract_Nil failed, expected %#v, found %#v", nil, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_Bool(t *testing.T) {
+func TestJsonExtract_Bool(t *testing.T) {
+	je := JsonExtractor{}
 	expected := true
 	payload := map[string]interface{}{
 		"age": expected,
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_Bool failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_Bool failed, expected %#v, found %#v", expected, val)
+	}
+
+	expected = false
+	payload = map[string]interface{}{
+		"age": expected,
+	}
+	byteSlice, _ = json.Marshal(payload)
+
+	val, _ = je.extractFromByteSlice(byteSlice, "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_Bool failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_JsonArray(t *testing.T) {
+func TestJsonExtract_JsonArray(t *testing.T) {
 	expected := []string{"a", "b"}
 	payload := map[string]interface{}{
 		"age": expected,
@@ -127,11 +160,17 @@ func TestJsonExtractFromByteSlice_JsonArray(t *testing.T) {
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_JsonArray failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_JsonArray failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonArray failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_JsonIntArray(t *testing.T) {
+func TestJsonExtract_JsonIntArray(t *testing.T) {
 	expected := []int{2, 4}
 	payload := map[string]interface{}{
 		"age": expected,
@@ -143,11 +182,17 @@ func TestJsonExtractFromByteSlice_JsonIntArray(t *testing.T) {
 
 	expectedFloat := []float64{2, 4}
 	if !reflect.DeepEqual(val, expectedFloat) {
-		t.Errorf("TestJsonExtractFromByteSlice_JsonArray failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_JsonIntArray failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, expectedFloat) {
+		t.Errorf("TestJsonExtract_JsonIntArray failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_JsonFloatArray(t *testing.T) {
+func TestJsonExtract_JsonFloatArray(t *testing.T) {
 	expected := []float64{2.33, 4.55}
 	payload := map[string]interface{}{
 		"age": expected,
@@ -158,11 +203,17 @@ func TestJsonExtractFromByteSlice_JsonFloatArray(t *testing.T) {
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_JsonArray failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_JsonFloatArray failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonFloatArray failed, expected %#v, found %#v", expected, val)
 	}
 }
 
-func TestJsonExtractFromByteSlice_JsonPathNotFound(t *testing.T) {
+func TestJsonExtract_JsonPathNotFound(t *testing.T) {
 	payload := map[string]interface{}{
 		"age": "24",
 	}
@@ -173,10 +224,20 @@ func TestJsonExtractFromByteSlice_JsonPathNotFound(t *testing.T) {
 
 	expected := "json path not found"
 	if !strings.EqualFold(err.Error(), expected) {
-		t.Errorf("TestJsonExtractFromByteSlice_NotFoundJsonPath failed, expected %#v, found %#v", expected, err)
+		t.Errorf("TestJsonExtract_JsonPathNotFound failed, expected %#v, found %#v", expected, err)
 	}
 
 	if !reflect.DeepEqual(val, "") {
-		t.Errorf("TestJsonExtractFromByteSlice_NotFoundJsonPath failed, expected %#v, found %#v", expected, val)
+		t.Errorf("TestJsonExtract_JsonPathNotFound failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, err = je.extractFromString(string(byteSlice), "age2")
+
+	if !strings.EqualFold(err.Error(), expected) {
+		t.Errorf("TestJsonExtract_JsonPathNotFound failed, expected %#v, found %#v", expected, err)
+	}
+
+	if !reflect.DeepEqual(val, "") {
+		t.Errorf("TestJsonExtract_JsonPathNotFound failed, expected %#v, found %#v", expected, val)
 	}
 }

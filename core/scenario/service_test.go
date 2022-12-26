@@ -651,3 +651,31 @@ func TestSleep(t *testing.T) {
 	}
 
 }
+
+func TestInjectDynamicVars(t *testing.T) {
+	invalidDynamicKey := "{{_randomDdppdd}}"
+	envs := map[string]interface{}{
+		"country":            "{{_randomCountry}}",
+		"X":                  "Y",
+		"{{xx}}":             "xx",
+		"notFoundDynamicKey": invalidDynamicKey,
+	}
+
+	beforeLen := len(envs)
+
+	injectDynamicVars(envs)
+
+	afterLen := len(envs)
+
+	if beforeLen != afterLen {
+		t.Errorf("number of envs changed during dynamic var injection")
+	}
+
+	if val, ok := envs["country"]; !ok || val == "{{_randomCountry}}" {
+		t.Errorf("injection failure")
+	}
+
+	if val, ok := envs["notFoundDynamicKey"]; !ok || val != invalidDynamicKey {
+		t.Errorf("not found key should stay same")
+	}
+}
