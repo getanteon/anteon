@@ -15,13 +15,7 @@ func (ei *EnvironmentInjector) Init(regex string) {
 	ei.r = regexp.MustCompile(regex)
 }
 
-func CreateEnvironmentInjector(regex string) *EnvironmentInjector {
-	return &EnvironmentInjector{
-		r: regexp.MustCompile(regex),
-	}
-}
-
-func (ri *EnvironmentInjector) Inject(text string, vars map[string]interface{}) (string, error) {
+func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) (string, error) {
 	errors := []error{}
 	injectStrFunc := func(s string) string {
 		truncated := s[2 : len(s)-2] // {{...}}
@@ -58,15 +52,15 @@ func (ri *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 
 		// keys
 		for k, v := range textJson {
-			if ri.r.MatchString(k) {
-				replaced := ri.r.ReplaceAllStringFunc(k, injectStrFunc)
+			if ei.r.MatchString(k) {
+				replaced := ei.r.ReplaceAllStringFunc(k, injectStrFunc)
 				textJson[replaced] = v
 				delete(textJson, k)
 			}
 		}
 
 		//values
-		ri.replaceJson(textJson, vars)
+		ei.replaceJson(textJson, vars)
 
 		replacedBytes, err := json.Marshal(textJson)
 		if err != nil || !json.Valid(replacedBytes) {
@@ -77,7 +71,7 @@ func (ri *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 	}
 
 	// string injection
-	replaced := ri.r.ReplaceAllStringFunc(text, injectStrFunc)
+	replaced := ei.r.ReplaceAllStringFunc(text, injectStrFunc)
 	if len(errors) == 0 {
 		return replaced, nil
 	}
@@ -87,7 +81,7 @@ func (ri *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 }
 
 // recursive json replace
-func (ri *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
+func (ei *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars map[string]interface{}) error {
 
 	getEnvironmentValue := func(match string) (interface{}, error) {
 		truncated := match[2 : len(match)-2]
@@ -101,7 +95,7 @@ func (ri *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars
 	for k, v := range textJson { // check ints
 		vv, isStr := v.(string)
 		if isStr {
-			if ri.r.MatchString(vv) {
+			if ei.r.MatchString(vv) {
 				env, err := getEnvironmentValue(vv)
 				if err != nil {
 					return err
@@ -114,7 +108,7 @@ func (ri *EnvironmentInjector) replaceJson(textJson map[string]interface{}, vars
 				}
 			}
 		} else if vv, isObject := v.(map[string]interface{}); isObject {
-			ri.replaceJson(vv, vars)
+			ei.replaceJson(vv, vars)
 		}
 
 	}
