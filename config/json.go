@@ -241,13 +241,6 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		s.Auth.Type = types.AuthHttpBasic
 	}
 
-	// TODO:V1 - Remove protocol flag at v1
-	// Protocol & URL
-	// s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
-	// if err != nil {
-	// 	return types.ScenarioStep{}, err
-	// }
-
 	err = types.IsTargetValid(s.Url)
 	if err != nil {
 		return types.ScenarioStep{}, err

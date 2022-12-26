@@ -1,15 +1,34 @@
 package extraction
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
-	var val interface{}
-	var err error
+func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("Unknown panic")
+			}
+			val = nil
+		}
+	}()
+
+	if source == nil {
+		return "", EnvironmentCaptureError{
+			msg: fmt.Sprintf("source is nil %s", ce.Name),
+		}
+	}
+
 	switch ce.From {
 	case types.Header:
 		header := source.(http.Header)

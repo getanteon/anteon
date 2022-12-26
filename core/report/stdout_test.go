@@ -309,7 +309,8 @@ func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 		t.Log(printedOutput)
 
 		outStr := string(printedOutput)
-		if !strings.Contains(outStr, "REQUEST") ||
+		if !strings.Contains(outStr, "ENVIRONMENT") ||
+			!strings.Contains(outStr, "REQUEST") ||
 			!strings.Contains(outStr, "Request Headers:") ||
 			!strings.Contains(outStr, "Request Body:") ||
 			!strings.Contains(outStr, "RESPONSE") ||

@@ -102,35 +102,63 @@ func TestScenarioStepValid_EnvVariableInURL(t *testing.T) {
 
 func TestScenarioStep_InvalidCaptureConfig(t *testing.T) {
 	url := "https://test.com"
-	headerKey := "headerKey"
-	st := ScenarioStep{
-		ID:       22,
-		Name:     "",
-		Method:   http.MethodGet,
-		Auth:     Auth{},
-		Cert:     tls.Certificate{},
-		CertPool: &x509.CertPool{},
-		Headers:  map[string]string{},
-		Payload:  "",
-		URL:      url,
-		Timeout:  0,
-		Sleep:    "",
-		Custom:   map[string]interface{}{},
+
+	stEmptyFromField := ScenarioStep{
+		ID:     22,
+		Name:   "",
+		Method: http.MethodGet,
+		URL:    url,
 		EnvsToCapture: []EnvCaptureConf{{
 			Name: "FromHeader",
-			Key:  &headerKey,
-		},
-		},
+			From: "",
+		}},
+	}
+
+	stNoHeaderKey := ScenarioStep{
+		ID:     22,
+		Name:   "",
+		Method: http.MethodGet,
+		URL:    url,
+		EnvsToCapture: []EnvCaptureConf{{
+			Name: "FromHeader",
+			From: SourceType(Header),
+		}},
+	}
+
+	stNoBodySpecifierKey := ScenarioStep{
+		ID:     22,
+		Name:   "",
+		Method: http.MethodGet,
+		URL:    url,
+		EnvsToCapture: []EnvCaptureConf{{
+			Name: "FromBody",
+			From: SourceType(Body),
+		}},
 	}
 
 	definedEnvs := map[string]struct{}{}
-	err := st.validate(definedEnvs)
 
-	var captureConfigError CaptureConfigError
-
-	if !errors.As(err, &captureConfigError) {
-		t.Errorf("Should be CaptureConfigError")
+	tests := []struct {
+		name string
+		st   ScenarioStep
+	}{
+		{"NoHeaderKey", stNoHeaderKey},
+		{"NoBodySpecifierKey", stNoBodySpecifierKey},
+		{"EmptyFromField", stEmptyFromField},
 	}
 
-	t.Logf("%v", captureConfigError)
+	for _, test := range tests {
+		tf := func(t *testing.T) {
+			// Arrange
+			err := test.st.validate(definedEnvs)
+
+			var captureConfigError CaptureConfigError
+
+			if !errors.As(err, &captureConfigError) {
+				t.Errorf("Should be CaptureConfigError")
+			}
+		}
+
+		t.Run(test.name, tf)
+	}
 }

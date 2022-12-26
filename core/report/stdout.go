@@ -150,6 +150,27 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
+			fmt.Fprintln(w, "***********  ENVIRONMENT  ***********")
+			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Usable Environment Variables: ")))
+			for eKey, eVal := range verboseInfo.Envs {
+				switch eVal.(type) {
+				case map[string]interface{}:
+					valPretty, _ := json.MarshalIndent(eVal, "", "  ")
+					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+				case []string:
+					valPretty, _ := json.MarshalIndent(eVal, "", "  ")
+					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+				default:
+					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+				}
+			}
+			if len(verboseInfo.Warnings) > 0 {
+				fmt.Fprintln(w, "***********  WARNINGS  ***********")
+				for _, wVal := range verboseInfo.Warnings {
+					fmt.Fprintf(w, ">\t%-5s \n", fmt.Sprint(wVal))
+				}
+			}
+
 			if verboseInfo.Error != "" && isVerboseInfoRequestEmpty(verboseInfo.Request) {
 				fmt.Fprintf(w, "%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 				fmt.Fprintln(w)

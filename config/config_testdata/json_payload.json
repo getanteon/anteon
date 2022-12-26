@@ -1,0 +1,10 @@
+{
+    "a" : "b",
+    "hol" : "{{HOL_RESULT}}",
+    "x" :{
+        "z" :55,
+        "squad" : "{{SQUAD}}",
+        "players" : "{{PLAYERS}}"
+    },
+    "isChampion" : "{{CHAMPION}}"
+}
