@@ -27,6 +27,8 @@ func (ri *RegexReplacer) Inject(text string, vars map[string]interface{}) (strin
 				return env.(string)
 			case []byte:
 				return string(env.([]byte))
+			case int64:
+				return fmt.Sprintf("%d", env)
 			case int:
 				return fmt.Sprintf("%d", env)
 			case float64:
@@ -90,7 +92,6 @@ func (ri *RegexReplacer) replaceJson(textJson map[string]interface{}, vars map[s
 		} else {
 			return env, nil
 		}
-
 	}
 
 	for k, v := range textJson { // check ints

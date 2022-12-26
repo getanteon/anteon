@@ -3,6 +3,7 @@ package extraction
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tidwall/gjson"
 )
@@ -37,8 +38,6 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 		if err == nil {
 			return jIntSlice, err
 		}
-
-		// TODOcorr: int64
 	}
 
 	if result.IsBool() {
@@ -68,7 +67,11 @@ func (je JsonExtractor) extractFromString(source string, jsonPath string) (inter
 	case gjson.False:
 		return false, nil
 	case gjson.Number:
-		return result.Float(), nil
+		number := result.String()
+		if strings.Contains(number, ".") { // float
+			return result.Float(), nil
+		}
+		return result.Int(), nil
 	case gjson.True:
 		return true, nil
 	case gjson.JSON:
@@ -94,7 +97,11 @@ func (je JsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (in
 	case gjson.False:
 		return false, nil
 	case gjson.Number:
-		return result.Float(), nil
+		number := result.String()
+		if strings.Contains(number, ".") { // float
+			return result.Float(), nil
+		}
+		return result.Int(), nil
 	case gjson.True:
 		return true, nil
 	case gjson.JSON:

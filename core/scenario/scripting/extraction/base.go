@@ -17,12 +17,12 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (interface{}, error) {
 			val = header.Get(*ce.Key)
 			if val == "" {
 				err = fmt.Errorf("Http Header %s not found", *ce.Key)
-			} else {
-				if ce.RegExp != nil { // run regex for found value
-					re := CreateRegexExtractor(*ce.RegExp.Exp)
-					val, err = re.extractFromString(val.(string), ce.RegExp.No)
-				}
+			} else if ce.RegExp != nil { // run regex for found value
+				re := CreateRegexExtractor(*ce.RegExp.Exp)
+				val, err = re.extractFromString(val.(string), ce.RegExp.No)
 			}
+		} else {
+			err = fmt.Errorf("Http Header key not specified")
 		}
 	case types.Body:
 		if ce.JsonPath != nil {
