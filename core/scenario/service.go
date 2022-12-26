@@ -24,13 +24,16 @@ import (
 	"context"
 	"math/rand"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
+	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/types/regex"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
@@ -81,10 +84,13 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	if e != nil {
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
+
 	envs := make(map[string]interface{}, len(s.scenario.Envs))
 	for k, v := range s.scenario.Envs {
 		envs[k] = v
 	}
+	injectDynamicVars(envs)
+
 	for _, sr := range requesters {
 		res := sr.requester.Send(envs)
 
@@ -158,6 +164,22 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 		}
 	}
 	return err
+}
+
+func injectDynamicVars(envs map[string]interface{}) {
+	dynamicRgx := regexp.MustCompile(regex.DynamicVariableRegex)
+	vi := &injection.VariableInjector{}
+	vi.Init()
+	for k, v := range envs {
+		vStr := v.(string)
+		if dynamicRgx.MatchString(vStr) {
+			injected, err := vi.Inject(vStr)
+			if err != nil {
+				continue
+			}
+			envs[k] = injected
+		}
+	}
 }
 
 type scenarioItemRequester struct {
