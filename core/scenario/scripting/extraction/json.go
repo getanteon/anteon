@@ -8,7 +8,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type JsonExtractor struct {
+type jsonExtractor struct {
 }
 
 var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
@@ -59,7 +59,7 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 	return nil, fmt.Errorf("json could not be unmarshaled")
 }
 
-func (je JsonExtractor) extractFromString(source string, jsonPath string) (interface{}, error) {
+func (je jsonExtractor) extractFromString(source string, jsonPath string) (interface{}, error) {
 	result := gjson.Get(source, jsonPath)
 
 	// path not found
@@ -89,7 +89,7 @@ func (je JsonExtractor) extractFromString(source string, jsonPath string) (inter
 	}
 }
 
-func (je JsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (interface{}, error) {
+func (je jsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (interface{}, error) {
 	result := gjson.GetBytes(source, jsonPath)
 
 	// path not found

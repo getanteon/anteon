@@ -170,12 +170,12 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 
 func injectDynamicVars(envs map[string]interface{}) {
 	dynamicRgx := regexp.MustCompile(regex.DynamicVariableRegex)
-	vi := &injection.VariableInjector{}
+	vi := &injection.EnvironmentInjector{}
 	vi.Init()
 	for k, v := range envs {
 		vStr := v.(string)
 		if dynamicRgx.MatchString(vStr) {
-			injected, err := vi.Inject(vStr)
+			injected, err := vi.Inject(vStr, true)
 			if err != nil {
 				continue
 			}

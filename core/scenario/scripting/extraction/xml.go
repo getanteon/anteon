@@ -7,10 +7,10 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
-type XmlExtractor struct {
+type xmlExtractor struct {
 }
 
-func (xe XmlExtractor) extractFromByteSlice(source []byte, xPath string) (interface{}, error) {
+func (xe xmlExtractor) extractFromByteSlice(source []byte, xPath string) (interface{}, error) {
 	reader := bytes.NewBuffer(source)
 	rootNode, err := xmlquery.Parse(reader)
 	if err != nil {

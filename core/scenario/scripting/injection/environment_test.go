@@ -1,6 +1,7 @@
 package injection
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 func TestInjectionRegexReplacer(t *testing.T) {
 	replacer := EnvironmentInjector{}
 	replacer.Init()
-
 	// injection to text target
 	targetURL := "{{target}}/{{path}}/{{id}}/{{boolField}}/{{floatField}}/{{uuidField}}"
 	uuid := uuid.New()
@@ -85,7 +85,14 @@ func TestInjectionRegexReplacer(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			got, err := replacer.Inject(test.target, test.envs)
+			replacer.SetInjectableFunc(func(s string) (interface{}, error) {
+				env, ok := test.envs[s]
+				if ok {
+					return env, nil
+				}
+				return nil, fmt.Errorf("env not found")
+			})
+			got, err := replacer.Inject(test.target, false)
 
 			if err != nil {
 				t.Errorf("injection failed %v", err)

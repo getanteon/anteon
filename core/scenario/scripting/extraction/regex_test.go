@@ -8,7 +8,8 @@ import (
 func TestRegexExtractFromString(t *testing.T) {
 	regex := "[a-z]+_[0-9]+"
 
-	re := CreateRegexExtractor(regex)
+	re := regexExtractor{}
+	re.Init(regex)
 
 	source := "messi_10alvarez_9"
 
@@ -27,7 +28,8 @@ func TestRegexExtractFromString(t *testing.T) {
 func TestRegexExtractFromStringNoMatch(t *testing.T) {
 	regex := "[a-z]+_[0-9]+"
 
-	re := CreateRegexExtractor(regex)
+	re := regexExtractor{}
+	re.Init(regex)
 
 	source := "messialvarez"
 

@@ -17,7 +17,7 @@ func TestJsonExtract_String(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "name.last")
 
 	if val != "Prichard" {
@@ -42,7 +42,7 @@ func TestJsonExtract_Object(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "name")
 
 	if !reflect.DeepEqual(val, expected) {
@@ -63,7 +63,7 @@ func TestJsonExtract_Float(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	val2 := val.(float64) // json number -> float64
@@ -86,7 +86,7 @@ func TestJsonExtract_Int(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	val2 := val.(int64) // json number -> float64
@@ -108,7 +108,7 @@ func TestJsonExtract_Nil(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, nil) {
@@ -123,7 +123,7 @@ func TestJsonExtract_Nil(t *testing.T) {
 }
 
 func TestJsonExtract_Bool(t *testing.T) {
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	expected := true
 	expected1 := false
 
@@ -160,7 +160,7 @@ func TestJsonExtract_JsonArray(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
@@ -181,7 +181,7 @@ func TestJsonExtract_JsonIntArray(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	expectedFloat := []float64{2, 4}
@@ -203,7 +203,7 @@ func TestJsonExtract_JsonFloatArray(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
@@ -224,7 +224,7 @@ func TestJsonExtract_JsonBoolArray(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
 
 	if !reflect.DeepEqual(val, expected) {
@@ -244,7 +244,7 @@ func TestJsonExtract_JsonPathNotFound(t *testing.T) {
 	}
 
 	byteSlice, _ := json.Marshal(payload)
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	val, err := je.extractFromByteSlice(byteSlice, "age2")
 
 	expected := "json path not found"

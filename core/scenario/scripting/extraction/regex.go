@@ -5,17 +5,15 @@ import (
 	"regexp"
 )
 
-type RegexExtractor struct {
+type regexExtractor struct {
 	r *regexp.Regexp
 }
 
-func CreateRegexExtractor(regex string) *RegexExtractor {
-	return &RegexExtractor{
-		r: regexp.MustCompile(regex),
-	}
+func (ri *regexExtractor) Init(regex string) {
+	ri.r = regexp.MustCompile(regex)
 }
 
-func (ri *RegexExtractor) extractFromString(text string, matchNo int) (string, error) {
+func (ri *regexExtractor) extractFromString(text string, matchNo int) (string, error) {
 	matches := ri.r.FindAllString(text, -1)
 
 	if matches == nil {
@@ -28,7 +26,7 @@ func (ri *RegexExtractor) extractFromString(text string, matchNo int) (string, e
 	return matches[0], nil
 }
 
-func (ri *RegexExtractor) extractFromByteSlice(text []byte, matchNo int) ([]byte, error) {
+func (ri *regexExtractor) extractFromByteSlice(text []byte, matchNo int) ([]byte, error) {
 	matches := ri.r.FindAll(text, -1)
 
 	if matches == nil {

@@ -50,12 +50,10 @@ type HttpRequester struct {
 	packet               types.ScenarioStep
 	client               *http.Client
 	request              *http.Request
-	vi                   *injection.VariableInjector
-	ri                   *injection.EnvironmentInjector
+	ei                   *injection.EnvironmentInjector
 	containsDynamicField map[string]bool
 	containsEnvVar       map[string]bool
 	debug                bool
-	envs                 map[string]interface{}
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
 }
@@ -65,10 +63,8 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
-	h.vi = &injection.VariableInjector{}
-	h.vi.Init()
-	h.ri = &injection.EnvironmentInjector{}
-	h.ri.Init()
+	h.ei = &injection.EnvironmentInjector{}
+	h.ei.Init()
 	h.containsDynamicField = make(map[string]bool)
 	h.containsEnvVar = make(map[string]bool)
 	h.debug = debug
@@ -100,7 +96,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
-		_, err = h.vi.Inject(h.packet.Payload)
+		_, err = h.ei.Inject(h.packet.Payload, true)
 		if err != nil {
 			return
 		}
@@ -113,7 +109,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// url
 	if h.dynamicRgx.MatchString(h.packet.URL) {
-		_, err = h.vi.Inject(h.packet.URL)
+		_, err = h.ei.Inject(h.packet.URL, true)
 		if err != nil {
 			return
 		}
@@ -128,12 +124,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	for k, values := range h.request.Header {
 		for _, v := range values {
 			if h.dynamicRgx.MatchString(k) || h.dynamicRgx.MatchString(v) {
-				_, err = h.vi.Inject(k)
+				_, err = h.ei.Inject(k, true)
 				if err != nil {
 					return
 				}
 
-				_, err = h.vi.Inject(v)
+				_, err = h.ei.Inject(v, true)
 				if err != nil {
 					return
 				}
@@ -147,12 +143,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// basicauth
 	if h.dynamicRgx.MatchString(h.packet.Auth.Username) || h.dynamicRgx.MatchString(h.packet.Auth.Password) {
-		_, err = h.vi.Inject(h.packet.Auth.Username)
+		_, err = h.ei.Inject(h.packet.Auth.Username, true)
 		if err != nil {
 			return
 		}
 
-		_, err = h.vi.Inject(h.packet.Auth.Password)
+		_, err = h.ei.Inject(h.packet.Auth.Password, true)
 		if err != nil {
 			return
 		}
@@ -190,6 +186,14 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	for k, v := range envs {
 		usableVars[k] = v
 	}
+
+	h.ei.SetInjectableFunc(func(s string) (interface{}, error) {
+		env, ok := usableVars[s]
+		if ok {
+			return env, nil
+		}
+		return nil, fmt.Errorf("env not found")
+	})
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
@@ -309,10 +313,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	// body
 	body := h.packet.Payload
 	if h.containsDynamicField["body"] {
-		body, _ = h.vi.Inject(body)
+		body, _ = h.ei.Inject(body, true)
 	}
 	if h.containsEnvVar["body"] {
-		body, err = h.ri.Inject(body, envs)
+		body, err = h.ei.Inject(body, false)
 		if err != nil {
 			return nil, err
 		}
@@ -327,10 +331,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	httpReq.URL, _ = url.Parse(hostURL)
 
 	if h.containsDynamicField["url"] {
-		hostURL, _ = h.vi.Inject(hostURL)
+		hostURL, _ = h.ei.Inject(hostURL, true)
 	}
 	if h.containsEnvVar["url"] {
-		hostURL, errURL = h.ri.Inject(hostURL, envs)
+		hostURL, errURL = h.ei.Inject(hostURL, false)
 		if errURL != nil {
 			return nil, errURL
 		}
@@ -348,10 +352,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 				kk := k
 				vv := v
 				if re.MatchString(v) {
-					vv, _ = h.vi.Inject(v)
+					vv, _ = h.ei.Inject(v, true)
 				}
 				if re.MatchString(k) {
-					kk, _ = h.vi.Inject(k)
+					kk, _ = h.ei.Inject(k, true)
 					httpReq.Header.Del(k)
 				}
 				httpReq.Header.Set(kk, vv)
@@ -364,7 +368,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 			// check vals
 			for i, vv := range v {
 				if h.envRgx.MatchString(vv) {
-					vvv, err := h.ri.Inject(vv, envs)
+					vvv, err := h.ei.Inject(vv, false)
 					if err != nil {
 						return nil, err
 					}
@@ -375,7 +379,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 
 			// check keys
 			if h.envRgx.MatchString(k) {
-				kk, err := h.ri.Inject(k, envs)
+				kk, err := h.ei.Inject(k, false)
 				if err != nil {
 					return nil, err
 				}
@@ -386,8 +390,8 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	}
 
 	if h.containsDynamicField["basicauth"] {
-		username, _ := h.vi.Inject(h.packet.Auth.Username)
-		password, _ := h.vi.Inject(h.packet.Auth.Password)
+		username, _ := h.ei.Inject(h.packet.Auth.Username, true)
+		password, _ := h.ei.Inject(h.packet.Auth.Password, true)
 		httpReq.SetBasicAuth(username, password)
 	}
 
@@ -600,7 +604,7 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 	extractedVars map[string]interface{}) []string {
 	var err error
 	warnings := make([]string, 0)
-	var captureError extraction.EnvironmentCaptureError
+	var captureError extraction.ExtractionError
 
 	// request failed, only set default value for later steps
 	if header == nil && respBody == nil {

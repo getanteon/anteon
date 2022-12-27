@@ -24,7 +24,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 	}()
 
 	if source == nil {
-		return "", EnvironmentCaptureError{
+		return "", ExtractionError{
 			msg: fmt.Sprintf("source is nil %s", ce.Name),
 		}
 	}
@@ -53,7 +53,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 	}
 
 	if err != nil {
-		return "", EnvironmentCaptureError{
+		return "", ExtractionError{
 			msg:        fmt.Sprintf("env capture failed for %s, %v", ce.Name, err),
 			wrappedErr: err,
 		}
@@ -63,7 +63,8 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 }
 
 func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val interface{}, err error) {
-	re := CreateRegexExtractor(*regexConf.Exp)
+	re := regexExtractor{}
+	re.Init(*regexConf.Exp)
 	switch s := source.(type) {
 	case []byte: // from response body
 		return re.extractFromByteSlice(s, regexConf.No)
@@ -75,7 +76,7 @@ func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val
 }
 
 func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
-	je := JsonExtractor{}
+	je := jsonExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
 		return je.extractFromByteSlice(s, jsonPath)
@@ -87,7 +88,7 @@ func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 }
 
 func extractFromXml(source interface{}, xPath string) (interface{}, error) {
-	xe := XmlExtractor{}
+	xe := xmlExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
 		return xe.extractFromByteSlice(s, xPath)
@@ -96,15 +97,15 @@ func extractFromXml(source interface{}, xPath string) (interface{}, error) {
 	}
 }
 
-type EnvironmentCaptureError struct { // UnWrappable
+type ExtractionError struct { // UnWrappable
 	msg        string
 	wrappedErr error
 }
 
-func (sc EnvironmentCaptureError) Error() string {
+func (sc ExtractionError) Error() string {
 	return sc.msg
 }
 
-func (sc EnvironmentCaptureError) Unwrap() error {
+func (sc ExtractionError) Unwrap() error {
 	return sc.wrappedErr
 }

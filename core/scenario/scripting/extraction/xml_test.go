@@ -17,7 +17,7 @@ func TestXmlExtraction(t *testing.T) {
 	</channel>
 	</rss>`, expected)
 
-	xe := XmlExtractor{}
+	xe := xmlExtractor{}
 	xpath := "//item/title"
 	val, err := xe.extractFromByteSlice([]byte(xmlSource), xpath)
 
@@ -41,7 +41,7 @@ func TestXmlExtraction_PathNotFound(t *testing.T) {
 	</channel>
 	</rss>`, expected)
 
-	xe := XmlExtractor{}
+	xe := xmlExtractor{}
 	xpath := "//item3/title"
 	_, err := xe.extractFromByteSlice([]byte(xmlSource), xpath)
 
@@ -53,7 +53,7 @@ func TestXmlExtraction_PathNotFound(t *testing.T) {
 func TestInvalidXml(t *testing.T) {
 	xmlSource := `invalid xml source`
 
-	xe := XmlExtractor{}
+	xe := xmlExtractor{}
 	xpath := "//item3/title"
 	_, err := xe.extractFromByteSlice([]byte(xmlSource), xpath)
 
