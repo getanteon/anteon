@@ -34,7 +34,7 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 			case int:
 				return fmt.Sprintf("%d", env)
 			case float64:
-				return fmt.Sprintf("%f", env)
+				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
 			case bool:
 				return fmt.Sprintf("%t", env)
 			default:
@@ -48,8 +48,10 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 	injectToJsonByteFunc := func(s []byte) []byte {
 		truncated := s[3 : len(s)-3] // "{{...}}"
 		if env, ok := vars[string(truncated)]; ok {
-			mEnv, _ := json.Marshal(env)
-			return mEnv
+			mEnv, err := json.Marshal(env)
+			if err == nil {
+				return mEnv
+			}
 		}
 		errors = append(errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))

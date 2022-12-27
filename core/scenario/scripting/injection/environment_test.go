@@ -3,6 +3,8 @@ package injection
 import (
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestInjectionRegexReplacer(t *testing.T) {
@@ -10,13 +12,17 @@ func TestInjectionRegexReplacer(t *testing.T) {
 	replacer.Init()
 
 	// injection to text target
-	targetURL := "{{target}}/{{path}}/{{id}}"
+	targetURL := "{{target}}/{{path}}/{{id}}/{{boolField}}/{{floatField}}/{{uuidField}}"
+	uuid := uuid.New()
 	stringEnvs := map[string]interface{}{
-		"target": "https://app.ddosify.com",
-		"path":   "load/test-results",
-		"id":     234,
+		"target":     "https://app.ddosify.com",
+		"path":       "load/test-results",
+		"id":         234,
+		"boolField":  true,
+		"floatField": 22.3,
+		"uuidField":  uuid,
 	}
-	expectedURL := "https://app.ddosify.com/load/test-results/234"
+	expectedURL := "https://app.ddosify.com/load/test-results/234/true/22.3/" + uuid.String()
 
 	// injection to flat json target
 	targetJson := `{

@@ -49,3 +49,15 @@ func TestXmlExtraction_PathNotFound(t *testing.T) {
 		t.Errorf("TestXmlExtraction_PathNotFound, should be err, got :%v", err)
 	}
 }
+
+func TestInvalidXml(t *testing.T) {
+	xmlSource := `invalid xml source`
+
+	xe := XmlExtractor{}
+	xpath := "//item3/title"
+	_, err := xe.extractFromByteSlice([]byte(xmlSource), xpath)
+
+	if err == nil {
+		t.Errorf("TestInvalidXml, should be err, got :%v", err)
+	}
+}

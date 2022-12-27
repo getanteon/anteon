@@ -37,8 +37,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 			if val == "" {
 				err = fmt.Errorf("Http Header %s not found", *ce.Key)
 			} else if ce.RegExp != nil { // run regex for found value
-				re := CreateRegexExtractor(*ce.RegExp.Exp)
-				val, err = re.extractFromString(val.(string), ce.RegExp.No)
+				val, err = extractWithRegex(val, *ce.RegExp)
 			}
 		} else {
 			err = fmt.Errorf("Http Header key not specified")
@@ -47,18 +46,9 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 		if ce.JsonPath != nil {
 			val, err = extractFromJson(source, *ce.JsonPath)
 		} else if ce.RegExp != nil {
-			re := CreateRegexExtractor(*ce.RegExp.Exp)
-			switch source.(type) {
-			case string:
-				val, err = re.extractFromString(source.(string), ce.RegExp.No)
-			case []byte:
-				val, err = re.extractFromByteSlice(source.([]byte), ce.RegExp.No)
-			}
+			val, err = extractWithRegex(source, *ce.RegExp)
 		} else if ce.Xpath != nil {
-			switch source.(type) {
-			case []byte:
-				val, err = extractFromXml(source, *ce.Xpath)
-			}
+			val, err = extractFromXml(source, *ce.Xpath)
 		}
 	}
 
@@ -70,6 +60,18 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 	}
 	return val, nil
 
+}
+
+func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val interface{}, err error) {
+	re := CreateRegexExtractor(*regexConf.Exp)
+	switch s := source.(type) {
+	case []byte: // from response body
+		return re.extractFromByteSlice(s, regexConf.No)
+	case string: // from response header
+		return re.extractFromString(s, regexConf.No)
+	default:
+		return "", fmt.Errorf("Unsupported type for extraction source")
+	}
 }
 
 func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {

@@ -213,7 +213,7 @@ func (vi *VariableInjector) Inject(text string) (string, error) {
 			case int:
 				return fmt.Sprintf("%d", env)
 			case float64:
-				return fmt.Sprintf("%f", env)
+				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
 			case bool:
 				return fmt.Sprintf("%t", env)
 			default:
@@ -230,8 +230,10 @@ func (vi *VariableInjector) Inject(text string) (string, error) {
 		truncated := s[4 : len(s)-3] //"{{_...}}"
 		fakeData, err := vi.getFakeData(string(truncated))
 		if err == nil {
-			mEnv, _ := json.Marshal(fakeData)
-			return mEnv
+			mEnv, err := json.Marshal(fakeData)
+			if err == nil {
+				return mEnv
+			}
 		}
 
 		errors = append(errors,

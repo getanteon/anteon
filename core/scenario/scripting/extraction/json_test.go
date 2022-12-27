@@ -125,14 +125,18 @@ func TestJsonExtract_Nil(t *testing.T) {
 func TestJsonExtract_Bool(t *testing.T) {
 	je := JsonExtractor{}
 	expected := true
+	expected1 := false
+
 	payload := map[string]interface{}{
-		"age": expected,
+		"age":  expected,
+		"age1": expected1,
 	}
 
 	byteSlice, _ := json.Marshal(payload)
 	val, _ := je.extractFromByteSlice(byteSlice, "age")
+	val1, _ := je.extractFromByteSlice(byteSlice, "age1")
 
-	if !reflect.DeepEqual(val, expected) {
+	if !reflect.DeepEqual(val, expected) || !reflect.DeepEqual(val1, expected1) {
 		t.Errorf("TestJsonExtract_Bool failed, expected %#v, found %#v", expected, val)
 	}
 
@@ -142,7 +146,7 @@ func TestJsonExtract_Bool(t *testing.T) {
 	}
 	byteSlice, _ = json.Marshal(payload)
 
-	val, _ = je.extractFromByteSlice(byteSlice, "age")
+	val, _ = je.extractFromString(string(byteSlice), "age")
 
 	if !reflect.DeepEqual(val, expected) {
 		t.Errorf("TestJsonExtract_Bool failed, expected %#v, found %#v", expected, val)
@@ -210,6 +214,27 @@ func TestJsonExtract_JsonFloatArray(t *testing.T) {
 
 	if !reflect.DeepEqual(val, expected) {
 		t.Errorf("TestJsonExtract_JsonFloatArray failed, expected %#v, found %#v", expected, val)
+	}
+}
+
+func TestJsonExtract_JsonBoolArray(t *testing.T) {
+	expected := []bool{true, false}
+	payload := map[string]interface{}{
+		"age": expected,
+	}
+
+	byteSlice, _ := json.Marshal(payload)
+	je := JsonExtractor{}
+	val, _ := je.extractFromByteSlice(byteSlice, "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonBoolArray failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonBoolArray failed, expected %#v, found %#v", expected, val)
 	}
 }
 
