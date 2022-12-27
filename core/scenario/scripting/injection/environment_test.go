@@ -1,7 +1,6 @@
 package injection
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -85,14 +84,7 @@ func TestInjectionRegexReplacer(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			replacer.SetInjectableFunc(func(s string) (interface{}, error) {
-				env, ok := test.envs[s]
-				if ok {
-					return env, nil
-				}
-				return nil, fmt.Errorf("env not found")
-			})
-			got, err := replacer.Inject(test.target, false)
+			got, err := replacer.InjectEnv(test.target, test.envs)
 
 			if err != nil {
 				t.Errorf("injection failed %v", err)

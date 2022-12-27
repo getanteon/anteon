@@ -96,7 +96,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
-		_, err = h.ei.Inject(h.packet.Payload, true)
+		_, err = h.ei.InjectDynamic(h.packet.Payload)
 		if err != nil {
 			return
 		}
@@ -109,7 +109,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// url
 	if h.dynamicRgx.MatchString(h.packet.URL) {
-		_, err = h.ei.Inject(h.packet.URL, true)
+		_, err = h.ei.InjectDynamic(h.packet.URL)
 		if err != nil {
 			return
 		}
@@ -124,12 +124,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	for k, values := range h.request.Header {
 		for _, v := range values {
 			if h.dynamicRgx.MatchString(k) || h.dynamicRgx.MatchString(v) {
-				_, err = h.ei.Inject(k, true)
+				_, err = h.ei.InjectDynamic(k)
 				if err != nil {
 					return
 				}
 
-				_, err = h.ei.Inject(v, true)
+				_, err = h.ei.InjectDynamic(v)
 				if err != nil {
 					return
 				}
@@ -143,12 +143,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// basicauth
 	if h.dynamicRgx.MatchString(h.packet.Auth.Username) || h.dynamicRgx.MatchString(h.packet.Auth.Password) {
-		_, err = h.ei.Inject(h.packet.Auth.Username, true)
+		_, err = h.ei.InjectDynamic(h.packet.Auth.Username)
 		if err != nil {
 			return
 		}
 
-		_, err = h.ei.Inject(h.packet.Auth.Password, true)
+		_, err = h.ei.InjectDynamic(h.packet.Auth.Password)
 		if err != nil {
 			return
 		}
@@ -186,14 +186,6 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	for k, v := range envs {
 		usableVars[k] = v
 	}
-
-	h.ei.SetInjectableFunc(func(s string) (interface{}, error) {
-		env, ok := usableVars[s]
-		if ok {
-			return env, nil
-		}
-		return nil, fmt.Errorf("env not found")
-	})
 
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
@@ -313,10 +305,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	// body
 	body := h.packet.Payload
 	if h.containsDynamicField["body"] {
-		body, _ = h.ei.Inject(body, true)
+		body, _ = h.ei.InjectDynamic(body)
 	}
 	if h.containsEnvVar["body"] {
-		body, err = h.ei.Inject(body, false)
+		body, err = h.ei.InjectEnv(body, envs)
 		if err != nil {
 			return nil, err
 		}
@@ -331,10 +323,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	httpReq.URL, _ = url.Parse(hostURL)
 
 	if h.containsDynamicField["url"] {
-		hostURL, _ = h.ei.Inject(hostURL, true)
+		hostURL, _ = h.ei.InjectDynamic(hostURL)
 	}
 	if h.containsEnvVar["url"] {
-		hostURL, errURL = h.ei.Inject(hostURL, false)
+		hostURL, errURL = h.ei.InjectEnv(hostURL, envs)
 		if errURL != nil {
 			return nil, errURL
 		}
@@ -352,10 +344,10 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 				kk := k
 				vv := v
 				if re.MatchString(v) {
-					vv, _ = h.ei.Inject(v, true)
+					vv, _ = h.ei.InjectDynamic(v)
 				}
 				if re.MatchString(k) {
-					kk, _ = h.ei.Inject(k, true)
+					kk, _ = h.ei.InjectDynamic(k)
 					httpReq.Header.Del(k)
 				}
 				httpReq.Header.Set(kk, vv)
@@ -368,7 +360,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 			// check vals
 			for i, vv := range v {
 				if h.envRgx.MatchString(vv) {
-					vvv, err := h.ei.Inject(vv, false)
+					vvv, err := h.ei.InjectEnv(vv, envs)
 					if err != nil {
 						return nil, err
 					}
@@ -379,7 +371,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 
 			// check keys
 			if h.envRgx.MatchString(k) {
-				kk, err := h.ei.Inject(k, false)
+				kk, err := h.ei.InjectEnv(k, envs)
 				if err != nil {
 					return nil, err
 				}
@@ -390,8 +382,8 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	}
 
 	if h.containsDynamicField["basicauth"] {
-		username, _ := h.ei.Inject(h.packet.Auth.Username, true)
-		password, _ := h.ei.Inject(h.packet.Auth.Password, true)
+		username, _ := h.ei.InjectDynamic(h.packet.Auth.Username)
+		password, _ := h.ei.InjectDynamic(h.packet.Auth.Password)
 		httpReq.SetBasicAuth(username, password)
 	}
 
