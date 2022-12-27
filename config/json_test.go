@@ -406,11 +406,10 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 		JsonPath: &jsonPath,
 	}}
 
-	regex := ""
+	regex := "[a-z]+_[0-9]+"
 	expectedEnvsToCapture1 := []types.EnvCaptureConf{{
-		Name:     "REGEX_MATCH_ENV",
-		From:     types.Body,
-		JsonPath: &jsonPath,
+		Name: "REGEX_MATCH_ENV",
+		From: types.Body,
 		RegExp: &types.RegexCaptureConf{
 			Exp: &regex,
 			No:  1,

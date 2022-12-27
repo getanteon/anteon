@@ -41,6 +41,7 @@ import (
 	"time"
 
 	"github.com/ddosify/go-faker/faker"
+	"go.ddosify.com/ddosify/config"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
@@ -929,6 +930,136 @@ func TestContinueTestOnCaptureError(t *testing.T) {
 	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) { // default value ""
 		t.Errorf("TestContinueTestOnCaptureError header val could not be set from envs, must be default value, expected : %s, got: %s",
 			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureEnvironmentsJsonPayload(t *testing.T) {
+	t.Parallel()
+	firstRequestCalled := false
+	secondRequestCalled := false
+	secondReqBody := make(map[string]interface{}, 0)
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		body := struct {
+			Num      int    `json:"num"`
+			Name     string `json:"name"`
+			Champion bool   `json:"isChampion"`
+			Squad    struct {
+				Results map[string]string `json:"results"`
+				Players []string          `json:"players"`
+			} `json:"squad"`
+		}{
+			Num:      25,
+			Name:     "Argentina",
+			Champion: true,
+			Squad: struct {
+				Results map[string]string `json:"results"`
+				Players []string          "json:\"players\""
+			}{
+				Results: map[string]string{"SAR": "1-2",
+					"MEX": "2-1",
+					"POL": "2-0",
+					"AUS": "2-0",
+					"HOL": "4-2",
+					"CRO": "2-0",
+					"FRA": "CHAMPIONS",
+				},
+				Players: []string{"messi", "alvarez", "dimaria", "enzo"},
+			},
+		}
+
+		w.Header().Set("Argentina", "Messi")
+		w.Header().Set("Content-Type", "application/json")
+
+		byteBody, _ := json.Marshal(body)
+		w.Write(byteBody)
+	}
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// read config, create hammer
+	configPath := "../config/config_testdata/config_inject_json.json"
+	f, err := os.Open(configPath)
+	if err != nil {
+		t.Errorf("could not open test config %v", err)
+	}
+
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("could not read test config %v", err)
+	}
+	c, err := config.NewConfigReader(byteValue, config.ConfigTypeJson)
+	if err != nil {
+		t.Errorf("could not create json config reader %v", err)
+	}
+	h, err := c.CreateHammer()
+	if err != nil {
+		t.Errorf("could not create hammer, %v", err)
+	}
+
+	// set test servers paths
+	h.Scenario.Steps[0].URL = server.URL + pathFirst
+	h.Scenario.Steps[1].URL = server.URL + pathSecond
+
+	// run engine
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload error occurred %v", err)
+	}
+
+	e.Start()
+
+	// assert
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload test server has not been called, url path injection failed")
+	}
+
+	if _, ok := secondReqBody["boolField"].(bool); !ok {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload bool field could not be injected to json payload")
+	}
+	if _, ok := secondReqBody["numField"].(float64); !ok {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload num field could not be injected to json payload")
+	}
+	if _, ok := secondReqBody["strField"].(string); !ok {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload string field could not be injected to json payload")
+	}
+
+	for _, v := range secondReqBody["numArrayField"].([]interface{}) {
+		if _, ok := v.(float64); !ok {
+			t.Errorf("TestCaptureEnvironmentsJsonPayload num array field could not be injected to json payload")
+		}
+	}
+
+	for _, v := range secondReqBody["strArrayField"].([]interface{}) {
+		if _, ok := v.(string); !ok {
+			t.Errorf("TestCaptureEnvironmentsJsonPayload str array field could not be injected to json payload")
+		}
+	}
+
+	obj, _ := secondReqBody["obj"].(map[string]interface{})
+	if _, ok := obj["objectField"].(map[string]interface{}); !ok {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload object field could not be injected to json payload")
+	}
+	if _, ok := obj["arrayField"].([]interface{}); !ok {
+		t.Errorf("TestCaptureEnvironmentsJsonPayload array field could not be injected to json payload")
 	}
 
 }
