@@ -1,19 +1,31 @@
 package injection
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
-	"strconv"
+	"regexp"
 
 	"github.com/ddosify/go-faker/faker"
-	"github.com/google/uuid"
-	"github.com/valyala/fasttemplate"
+	"go.ddosify.com/ddosify/core/types/regex"
 )
 
 type VariableInjector struct {
 	faker    faker.Faker
 	fakerMap map[string]interface{}
+	dr       *regexp.Regexp
+	jdr      *regexp.Regexp
+}
+
+func (vi *VariableInjector) getFakeData(key string) (interface{}, error) {
+	var fakeFunc interface{}
+	var keyExists bool
+	if fakeFunc, keyExists = vi.fakerMap[key]; !keyExists {
+		return nil, fmt.Errorf("%s is not a valid dynamic variable", key)
+	}
+
+	res := reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
+	return res, nil
 }
 
 func (vi *VariableInjector) Init() {
@@ -181,44 +193,64 @@ func (vi *VariableInjector) Init() {
 		"randomFloat":  vi.faker.RandomFloat,
 		"randomString": vi.faker.RandomString,
 	}
-
+	vi.dr = regexp.MustCompile(regex.DynamicVariableRegex)
+	vi.jdr = regexp.MustCompile(regex.JsonDynamicVariableRegex)
 }
 
 func (vi *VariableInjector) Inject(text string) (string, error) {
-	return vi.fakeDataInjector(text)
-}
-func (vi *VariableInjector) fakeDataInjector(text string) (string, error) {
-	var err error
-	template, err := fasttemplate.NewTemplate(text, "{{_", "}}")
-	if err != nil {
-		return "", err
+	errors := []error{}
+	injectStrFunc := func(s string) string {
+		truncated := s[3 : len(s)-2] // {{_...}}
+		env, err := vi.getFakeData(string(truncated))
+		if err == nil {
+			switch env.(type) {
+			case string:
+				return env.(string)
+			case []byte:
+				return string(env.([]byte))
+			case int64:
+				return fmt.Sprintf("%d", env)
+			case int:
+				return fmt.Sprintf("%d", env)
+			case float64:
+				return fmt.Sprintf("%f", env)
+			case bool:
+				return fmt.Sprintf("%t", env)
+			default:
+				return fmt.Sprint(env)
+			}
+		}
+
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+		return s
 	}
 
-	parsed := template.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		if _, ok := vi.fakerMap[tag]; !ok {
-			err = fmt.Errorf("%s is not a valid dynamic variable", tag)
-			return 0, nil
+	injectToJsonByteFunc := func(s []byte) []byte {
+		truncated := s[4 : len(s)-3] //"{{_...}}"
+		fakeData, err := vi.getFakeData(string(truncated))
+		if err == nil {
+			mEnv, _ := json.Marshal(fakeData)
+			return mEnv
 		}
 
-		res := reflect.ValueOf(vi.fakerMap[tag]).Call(nil)[0].Interface()
-
-		var p string
-		switch res.(type) {
-		case int:
-			p = strconv.Itoa(res.(int))
-		case int64:
-			p = strconv.FormatInt(res.(int64), 10)
-		case float64:
-			p = fmt.Sprintf("%f", res.(float64))
-		case uuid.UUID:
-			p = res.(uuid.UUID).String()
-		case bool:
-			p = strconv.FormatBool(res.(bool))
-		default:
-			p = res.(string)
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+		return s
+	}
+	// json injection
+	bText := []byte(text)
+	if json.Valid(bText) {
+		if vi.jdr.Match(bText) {
+			replacedBytes := vi.jdr.ReplaceAllFunc(bText, injectToJsonByteFunc)
+			return string(replacedBytes), nil
 		}
-		return w.Write([]byte(p))
+	}
 
-	})
-	return parsed, err
+	// string injection
+	replaced := vi.dr.ReplaceAllStringFunc(text, injectStrFunc)
+	if len(errors) == 0 {
+		return replaced, nil
+	}
+	return replaced, unifyErrors(errors)
 }

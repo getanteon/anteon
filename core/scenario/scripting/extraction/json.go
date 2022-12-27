@@ -12,9 +12,10 @@ type JsonExtractor struct {
 }
 
 var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
+	bRaw := []byte(result.Raw)
 	if result.IsObject() {
 		jObject := map[string]interface{}{}
-		err := json.Unmarshal([]byte(result.Raw), &jObject)
+		err := json.Unmarshal(bRaw, &jObject)
 		if err == nil {
 			return jObject, err
 		}
@@ -22,25 +23,25 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 
 	if result.IsArray() {
 		jStrSlice := []string{}
-		err := json.Unmarshal([]byte(result.Raw), &jStrSlice)
+		err := json.Unmarshal(bRaw, &jStrSlice)
 		if err == nil {
 			return jStrSlice, err
 		}
 
 		jFloatSlice := []float64{}
-		err = json.Unmarshal([]byte(result.Raw), &jFloatSlice)
+		err = json.Unmarshal(bRaw, &jFloatSlice)
 		if err == nil {
 			return jFloatSlice, err
 		}
 
 		jIntSlice := []int{}
-		err = json.Unmarshal([]byte(result.Raw), &jIntSlice)
+		err = json.Unmarshal(bRaw, &jIntSlice)
 		if err == nil {
 			return jIntSlice, err
 		}
 
 		jBoolSlice := []bool{}
-		err = json.Unmarshal([]byte(result.Raw), &jBoolSlice)
+		err = json.Unmarshal(bRaw, &jBoolSlice)
 		if err == nil {
 			return jBoolSlice, err
 		}
@@ -49,7 +50,7 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 
 	if result.IsBool() {
 		jBool := false
-		err := json.Unmarshal([]byte(result.Raw), &jBool)
+		err := json.Unmarshal(bRaw, &jBool)
 		if err == nil {
 			return jBool, err
 		}

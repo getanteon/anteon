@@ -43,9 +43,9 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 		}
 		errors = append(errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s // return back
+		return s
 	}
-	injecToJsonByteFunc := func(s []byte) []byte {
+	injectToJsonByteFunc := func(s []byte) []byte {
 		truncated := s[3 : len(s)-3] // "{{...}}"
 		if env, ok := vars[string(truncated)]; ok {
 			mEnv, _ := json.Marshal(env)
@@ -53,15 +53,14 @@ func (ei *EnvironmentInjector) Inject(text string, vars map[string]interface{}) 
 		}
 		errors = append(errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s // return back
+		return s
 	}
 
 	// json injection
-	if json.Valid([]byte(text)) {
-		// ei.r = regexp.MustCompile(regex.JsonEnvironmentVarRegex)
-		bText := []byte(text)
+	bText := []byte(text)
+	if json.Valid(bText) {
 		if ei.jr.Match(bText) {
-			replacedBytes := ei.jr.ReplaceAllFunc(bText, injecToJsonByteFunc)
+			replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
 			return string(replacedBytes), nil
 		}
 	}
