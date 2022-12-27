@@ -934,7 +934,7 @@ func TestContinueTestOnCaptureError(t *testing.T) {
 
 }
 
-func TestCaptureEnvironmentsJsonPayload(t *testing.T) {
+func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 	t.Parallel()
 	firstRequestCalled := false
 	secondRequestCalled := false
@@ -1017,49 +1017,124 @@ func TestCaptureEnvironmentsJsonPayload(t *testing.T) {
 	// run engine
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload error occurred %v", err)
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
 	}
 
 	err = e.Init()
 	if err != nil {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload error occurred %v", err)
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
 	}
 
 	e.Start()
 
 	// assert
 	if !firstRequestCalled || !secondRequestCalled {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload test server has not been called, url path injection failed")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload test server has not been called, url path injection failed")
 	}
 
 	if _, ok := secondReqBody["boolField"].(bool); !ok {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload bool field could not be injected to json payload")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload bool field could not be injected to json payload")
 	}
 	if _, ok := secondReqBody["numField"].(float64); !ok {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload num field could not be injected to json payload")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload num field could not be injected to json payload")
 	}
 	if _, ok := secondReqBody["strField"].(string); !ok {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload string field could not be injected to json payload")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload string field could not be injected to json payload")
 	}
 
 	for _, v := range secondReqBody["numArrayField"].([]interface{}) {
 		if _, ok := v.(float64); !ok {
-			t.Errorf("TestCaptureEnvironmentsJsonPayload num array field could not be injected to json payload")
+			t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload num array field could not be injected to json payload")
 		}
 	}
 
 	for _, v := range secondReqBody["strArrayField"].([]interface{}) {
 		if _, ok := v.(string); !ok {
-			t.Errorf("TestCaptureEnvironmentsJsonPayload str array field could not be injected to json payload")
+			t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload str array field could not be injected to json payload")
 		}
 	}
 
 	obj, _ := secondReqBody["obj"].(map[string]interface{})
 	if _, ok := obj["objectField"].(map[string]interface{}); !ok {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload object field could not be injected to json payload")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload object field could not be injected to json payload")
 	}
 	if _, ok := obj["arrayField"].([]interface{}); !ok {
-		t.Errorf("TestCaptureEnvironmentsJsonPayload array field could not be injected to json payload")
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload array field could not be injected to json payload")
+	}
+
+}
+
+func TestEnvInjectToXmlPayload(t *testing.T) {
+	t.Parallel()
+	requestCalled := false
+	readReqBody := make([]byte, 0)
+	injectedEnv := "hello"
+	expectedReqBody := []byte(
+		fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" ?>
+						<rss version="2.0">
+						<channel>
+						<item>
+							<title>%s</title>
+						</item>
+						</channel>
+						</rss>`, injectedEnv))
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		readReqBody, _ = io.ReadAll(r.Body)
+	}
+
+	pathFirst := "/header-capture"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// read config, create hammer
+	configPath := "../config/config_testdata/config_inject_xml.json"
+	f, err := os.Open(configPath)
+	if err != nil {
+		t.Errorf("could not open test config %v", err)
+	}
+
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("could not read test config %v", err)
+	}
+	c, err := config.NewConfigReader(byteValue, config.ConfigTypeJson)
+	if err != nil {
+		t.Errorf("could not create json config reader %v", err)
+	}
+	h, err := c.CreateHammer()
+	if err != nil {
+		t.Errorf("could not create hammer, %v", err)
+	}
+
+	// set test servers paths
+	h.Scenario.Steps[0].URL = server.URL + pathFirst
+
+	// run engine
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestInjectXmlPayload error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestInjectXmlPayload error occurred %v", err)
+	}
+
+	e.Start()
+
+	// assert
+	if !requestCalled {
+		t.Errorf("TestInjectXmlPayload test server has not been called, url path injection failed")
+	}
+
+	if bytes.Equal(readReqBody, expectedReqBody) {
+
 	}
 
 }
