@@ -515,7 +515,7 @@ Ddosify enables you to capture variables from steps using **jsonPath**, **xPath*
 
 > **:warning: Points to keep in mind**
 > - You must specify **'headerKey'** when capturing from header.
-> - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.mdon) doc.
+> - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
 > - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
 
 You can use **debug** parameter to validate your config.
