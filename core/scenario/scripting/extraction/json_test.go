@@ -247,7 +247,7 @@ func TestJsonExtract_JsonPathNotFound(t *testing.T) {
 	je := jsonExtractor{}
 	val, err := je.extractFromByteSlice(byteSlice, "age2")
 
-	expected := "json path not found"
+	expected := "no match for this jsonPath"
 	if !strings.EqualFold(err.Error(), expected) {
 		t.Errorf("TestJsonExtract_JsonPathNotFound failed, expected %#v, found %#v", expected, err)
 	}

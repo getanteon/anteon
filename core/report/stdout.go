@@ -191,11 +191,11 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
 
-			if verboseInfo.Error != "" { // warning and error
-				if len(verboseInfo.Warnings) > 0 {
-					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
-					for _, wVal := range verboseInfo.Warnings {
-						fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+			if verboseInfo.Error != "" { // failed captures and error
+				if len(verboseInfo.FailedCaptures) > 0 {
+					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Failed Captures")))
+					for wKey, wVal := range verboseInfo.FailedCaptures {
+						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
 					}
 				}
 				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
@@ -212,10 +212,10 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
 
-				if len(verboseInfo.Warnings) > 0 {
-					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
-					for _, wVal := range verboseInfo.Warnings {
-						fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+				if len(verboseInfo.FailedCaptures) > 0 {
+					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Failed Captures")))
+					for wKey, wVal := range verboseInfo.FailedCaptures {
+						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
 					}
 				}
 			}

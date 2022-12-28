@@ -25,7 +25,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 
 	if source == nil {
 		return "", ExtractionError{
-			msg: fmt.Sprintf("source is nil %s", ce.Name),
+			msg: "source is nil",
 		}
 	}
 
@@ -35,12 +35,12 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 		if ce.Key != nil { // key specified
 			val = header.Get(*ce.Key)
 			if val == "" {
-				err = fmt.Errorf("Http Header %s not found", *ce.Key)
+				err = fmt.Errorf("http header %s not found", *ce.Key)
 			} else if ce.RegExp != nil { // run regex for found value
 				val, err = extractWithRegex(val, *ce.RegExp)
 			}
 		} else {
-			err = fmt.Errorf("Http Header key not specified")
+			err = fmt.Errorf("http header key not specified")
 		}
 	case types.Body:
 		if ce.JsonPath != nil {
@@ -54,7 +54,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 
 	if err != nil {
 		return "", ExtractionError{
-			msg:        fmt.Sprintf("env capture failed for %s, %v", ce.Name, err),
+			msg:        fmt.Sprintf("%v", err),
 			wrappedErr: err,
 		}
 	}

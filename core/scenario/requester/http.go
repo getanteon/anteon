@@ -180,7 +180,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var bodyRead bool
 	var bodyReadErr error
 	var extractedVars = make(map[string]interface{})
-	var captureWarnings = make([]string, 0)
+	var failedCaptures = make(map[string]string, 0)
 
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
@@ -213,7 +213,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	httpRes, err := h.client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
-		captureWarnings = h.captureEnvironmentVariables(nil, nil, extractedVars)
+		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
 	}
 	durations.setResDur()
 
@@ -227,7 +227,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
-			captureWarnings = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
+			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
 		}
 
 		if !bodyRead {
@@ -282,9 +282,9 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
-		ExtractedEnvs: extractedVars,
-		UsableEnvs:    usableVars,
-		Warnings:      captureWarnings,
+		ExtractedEnvs:  extractedVars,
+		UsableEnvs:     usableVars,
+		FailedCaptures: failedCaptures,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -593,18 +593,18 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
-	extractedVars map[string]interface{}) []string {
+	extractedVars map[string]interface{}) map[string]string {
 	var err error
-	warnings := make([]string, 0)
+	failedCaptures := make(map[string]string, 0)
 	var captureError extraction.ExtractionError
 
 	// request failed, only set default value for later steps
 	if header == nil && respBody == nil {
 		for _, ce := range h.packet.EnvsToCapture {
 			extractedVars[ce.Name] = "" // default value for not extracted envs
-			warnings = append(warnings, fmt.Sprintf("%s could not be captured", ce.Name))
+			failedCaptures[ce.Name] = "request failed"
 		}
-		return warnings
+		return failedCaptures
 	}
 
 	// extract from response
@@ -619,13 +619,13 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 		if err != nil && errors.As(err, &captureError) {
 			// do not terminate in case of a capture error, continue capturing
 			extractedVars[ce.Name] = "" // default value for not extracted envs
-			warnings = append(warnings, fmt.Sprintf("%s could not be captured", ce.Name))
+			failedCaptures[ce.Name] = captureError.Error()
 			continue
 		}
 		extractedVars[ce.Name] = val
 	}
 
-	return warnings
+	return failedCaptures
 }
 
 type duration struct {

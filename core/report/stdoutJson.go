@@ -161,30 +161,30 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	// could not prepare req, correlation
 	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
 		type alias struct {
-			StepId   uint16                 `json:"stepId"`
-			StepName string                 `json:"stepName"`
-			Envs     map[string]interface{} `json:"envs"`
-			Warnings []string               `json:"warnings"`
-			Error    string                 `json:"error"`
+			StepId         uint16                 `json:"stepId"`
+			StepName       string                 `json:"stepName"`
+			Envs           map[string]interface{} `json:"envs"`
+			FailedCaptures map[string]string      `json:"failedCaptures"`
+			Error          string                 `json:"error"`
 		}
 
 		a := alias{
-			Error:    v.Error,
-			StepId:   v.StepId,
-			StepName: v.StepName,
-			Warnings: v.Warnings,
-			Envs:     v.Envs,
+			Error:          v.Error,
+			StepId:         v.StepId,
+			StepName:       v.StepName,
+			FailedCaptures: v.FailedCaptures,
+			Envs:           v.Envs,
 		}
 		return json.Marshal(a)
 	}
 
 	if v.Error != "" {
 		type alias struct {
-			StepId   uint16                 `json:"stepId"`
-			StepName string                 `json:"stepName"`
-			Envs     map[string]interface{} `json:"envs"`
-			Warnings []string               `json:"warnings"`
-			Request  struct {
+			StepId         uint16                 `json:"stepId"`
+			StepName       string                 `json:"stepName"`
+			Envs           map[string]interface{} `json:"envs"`
+			FailedCaptures map[string]string      `json:"failedCaptures"`
+			Request        struct {
 				Url     string            `json:"url"`
 				Method  string            `json:"method"`
 				Headers map[string]string `json:"headers"`
@@ -194,22 +194,22 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 		}
 
 		a := alias{
-			Request:  v.Request,
-			Error:    v.Error,
-			StepId:   v.StepId,
-			StepName: v.StepName,
-			Warnings: v.Warnings,
-			Envs:     v.Envs,
+			Request:        v.Request,
+			Error:          v.Error,
+			StepId:         v.StepId,
+			StepName:       v.StepName,
+			FailedCaptures: v.FailedCaptures,
+			Envs:           v.Envs,
 		}
 		return json.Marshal(a)
 	}
 
 	type alias struct {
-		StepId   uint16                 `json:"stepId"`
-		StepName string                 `json:"stepName"`
-		Envs     map[string]interface{} `json:"envs"`
-		Warnings []string               `json:"warnings"`
-		Request  struct {
+		StepId         uint16                 `json:"stepId"`
+		StepName       string                 `json:"stepName"`
+		Envs           map[string]interface{} `json:"envs"`
+		FailedCaptures map[string]string      `json:"failedCaptures"`
+		Request        struct {
 			Url     string            `json:"url"`
 			Method  string            `json:"method"`
 			Headers map[string]string `json:"headers"`
@@ -223,12 +223,12 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	}
 
 	a := alias{
-		StepId:   v.StepId,
-		StepName: v.StepName,
-		Request:  v.Request,
-		Response: v.Response,
-		Warnings: v.Warnings,
-		Envs:     v.Envs,
+		StepId:         v.StepId,
+		StepName:       v.StepName,
+		Request:        v.Request,
+		Response:       v.Response,
+		FailedCaptures: v.FailedCaptures,
+		Envs:           v.Envs,
 	}
 	return json.Marshal(a)
 

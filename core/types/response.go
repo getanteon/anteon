@@ -77,6 +77,6 @@ type ScenarioStepResult struct {
 	// Captured envs in this step
 	ExtractedEnvs map[string]interface{}
 
-	// Warnings about step result or env capture
-	Warnings []string
+	// Failed captures and their reasons
+	FailedCaptures map[string]string
 }

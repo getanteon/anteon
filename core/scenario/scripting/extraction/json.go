@@ -64,7 +64,7 @@ func (je jsonExtractor) extractFromString(source string, jsonPath string) (inter
 
 	// path not found
 	if result.Raw == "" && result.Type == gjson.Null {
-		return "", fmt.Errorf("json path not found")
+		return "", fmt.Errorf("no match for this jsonPath")
 	}
 
 	switch result.Type {
@@ -94,7 +94,7 @@ func (je jsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (in
 
 	// path not found
 	if result.Raw == "" && result.Type == gjson.Null {
-		return "", fmt.Errorf("json path not found")
+		return "", fmt.Errorf("no match for this jsonPath")
 	}
 
 	switch result.Type {
