@@ -143,7 +143,7 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 6. ### Correlation (Captured Variables)
 
     	ddosify -config ddosify_config_correlation.json
-   Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation-on-Config-File).
+   Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
