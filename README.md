@@ -524,7 +524,7 @@ You can use **debug** parameter to validate your config.
 ddosify -config ddosify_config_correlation.json -debug
 ```
 
-#### Capture With JsonPath
+### Capture With JsonPath
 ```json
 {
     "steps": [
@@ -541,7 +541,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-#### Capture With XPath	
+### Capture With XPath	
 ```json
 {
     "steps": [
@@ -554,7 +554,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-#### Capture With Regular Expressions
+### Capture With Regular Expressions
 ```json
 {
     "steps": [
@@ -567,7 +567,7 @@ ddosify -config ddosify_config_correlation.json -debug
     ]
 }
 ```
-#### Capture Header Value
+### Capture Header Value
 ```json
 {
     "steps": [
@@ -580,7 +580,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-#### Scenario-Scoped Variables
+### Scenario-Scoped Variables
 ```json
 {
    "env":{
