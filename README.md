@@ -29,6 +29,9 @@
 
 📌 **Parameterization** - Use dynamic variables just like on Postman.
 
+📌 **Correlation** -  Extract variables from earlier phases and pass them on to the following ones.
+
+
 ## Installation
 
 `ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows.
@@ -83,7 +86,7 @@ pkg install ddosify
 - Run ddosify: 
 
 ```bash
-.\ddosify.exe -t target_site.com
+.\ddosify.exe -t http://target_site.com
 ```
 
 ### Using the convenience script (macOS and Linux)
@@ -111,19 +114,19 @@ This section aims to show you how to use Ddosify without deep dive into its deta
     
 1. ### Simple load test
 
-		ddosify -t target_site.com
+		ddosify -t http://target_site.com
 
     The above command runs a load test with the default value that is 100 requests in 10 seconds.
 
 2. ### Using some of the features
 
-		ddosify -t target_site.com -n 1000 -d 20 -p HTTPS -m PUT -T 7 -P http://proxy_server.com:80
+		ddosify -t http://target_site.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80
 
     Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
 
 3. ### Usage for CI/CD pipelines (JSON output)
 
-    	ddosify -t target_site.com -o stdout-json | jq .avg_duration
+    	ddosify -t http://target_site.com -o stdout-json | jq .avg_duration
 
     Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic. 
 
@@ -134,8 +137,13 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
 5. ### Load test with Dynamic Variables (Parameterization)
 
-    	ddosify -t target_site.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'
+    	ddosify -t http://target_site.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'
     Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
+
+6. ### Correlation (Captured Variables)
+
+    	ddosify -config ddosify_config_correlation.json
+   Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation-on-Config-File).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
@@ -150,7 +158,7 @@ ddosify [FLAG]
 | `-t`   | Target website URL. Example: https://ddosify.com         | `string` | - | Yes        |
 | `-n`   | Total iteration count                                      | `int`    | `100`   | No         |
 | `-d`   | Test duration in seconds.                                | `int`    | `10`    | No         |
-| `-p`   | Protocol of the request. Supported protocols are *HTTP, HTTPS*. HTTP/2 support is only available by using a config file as described. More protocols will be added.                                | `string`    | `HTTPS`    | No         |
+`HTTPS`    | No         |
 | `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS* | `string`    | `GET`    | No  |
 | `-b`   | The payload of the network packet. AKA body for the HTTP.  | `string`    | -    | No         |
 | `-a`   | Basic authentication. Usage: `-a username:password`        | `string`    | -    | No         |
@@ -170,7 +178,7 @@ ddosify [FLAG]
 #### Linear
 
 ```bash
-ddosify -t target_site.com -l linear
+ddosify -t http://target_site.com -l linear
 ```
 
 Result:
@@ -182,7 +190,7 @@ Result:
 #### Incremental
 
 ```bash
-ddosify -t target_site.com -l incremental
+ddosify -t http://target_site.com -l incremental
 ```
 
 Result:
@@ -193,7 +201,7 @@ Result:
 #### Waved
 
 ```bash
-ddosify -t target_site.com -l waved
+ddosify -t http://target_site.com -l waved
 ```
 
 Result:
@@ -251,6 +259,20 @@ There is an example config file at [config_examples/config.json](/config_example
 - `output` *optional*
 
     This is the equivalent of the `-o` flag.
+- `env` *optional*
+    Scenario-scoped global variables. Note that dynamic variables changes every iteration. 
+    ```json
+    "steps": [
+        {
+            "id": 1,
+            "url": "http://target.com/endpoint1",
+            "env": {
+                    "COMPANY_NAME" :"Ddosify",
+                    "randomCountry" : "{{_randomCountry}}"
+            }
+        },
+    ]
+    ``` 
 
 - `steps` *mandatory*
 
@@ -268,10 +290,6 @@ There is an example config file at [config_examples/config.json](/config_example
     - `name` *optional* <a name="#step-name"></a>
     
         Name of the step.
-    
-    - `protocol` *optional*
-
-        This is the equivalent of the `-p` flag.
 
     - `method` *optional*
 
@@ -355,6 +373,22 @@ There is an example config file at [config_examples/config.json](/config_example
 
         This is the equivalent of the `-T` flag. 
 
+    - `captureEnv` *optional*
+
+        Config for extraction of variables to use them in next steps. 
+        **Example:** Capture *NUM* variable from steps response body;
+        ```json
+        "steps": [
+            {
+                "id": 1,
+                "url": "http://target.com/endpoint1",
+                "captureEnv": {
+                     "NUM" :{"from":"body","jsonPath":"num"},
+                }
+            },
+        ]
+        ``` 
+
     - `sleep` *optional* <a name="#sleep"></a>
 
         Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
@@ -364,12 +398,12 @@ There is an example config file at [config_examples/config.json](/config_example
         "steps": [
             {
                 "id": 1,
-                "url": "target.com/endpoint1",
+                "url": "http://target.com/endpoint1",
                 "sleep": "1000"
             },
             {
                 "id": 2,
-                "url": "target.com/endpoint2",
+                "url": "http://target.com/endpoint2",
             }
         ]
         ```
@@ -379,12 +413,12 @@ There is an example config file at [config_examples/config.json](/config_example
         "steps": [
             {
                 "id": 1,
-                "url": "target.com/endpoint1",
+                "url": "http://target.com/endpoint1",
                 "sleep": "300-500"
             },
             {
                 "id": 2,
-                "url": "target.com/endpoint2",
+                "url": "http://target.com/endpoint2",
             }
         ]
         ```
@@ -422,7 +456,7 @@ The full list of dynamic variables can be found in the [Ddosify Docs](https://do
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
 
 ```bash
-ddosify -t target_site.com/?key={{_randomString}} -d 10 -n 100
+ddosify -t http://target_site.com/?key={{_randomString}} -d 10 -n 100
 ```
 
 ### Parameterization on Headers
@@ -430,7 +464,7 @@ ddosify -t target_site.com/?key={{_randomString}} -d 10 -n 100
 Ddosify sends *100* GET requests in *10* seconds with random `Transaction-Type` and `Country` headers.
 
 ```bash
-ddosify -t target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
+ddosify -t http://target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
 ```
 
 ### Parameterization on Payload (Body)
@@ -438,7 +472,7 @@ ddosify -t target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransacti
 Ddosify sends *100* GET requests in *10* seconds with random `latitude` and `longitude` values in body. 
 
 ```bash
-ddosify -t target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
+ddosify -t http://target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
 ```
 
 ### Parameterization on Basic Authentication
@@ -446,7 +480,7 @@ ddosify -t target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", 
 Ddosify sends *100* GET requests in *10* seconds with random `username` and `password` with basic authentication.
 
 ```bash
-ddosify -t target_site.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
+ddosify -t http://target_site.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
 ```
 
 ### Parameterization on Config File
@@ -458,8 +492,8 @@ ddosify -config ddosify_config_dynamic.json
 ```
 
 
+
 ```json
-// ddosify_config_dynamic.json
 {
     "iteration_count": 100,
     "load_type": "linear",
@@ -468,7 +502,6 @@ ddosify -config ddosify_config_dynamic.json
         {
             "id": 1,
             "url": "https://test_site1.com/?key={{_randomString}}",
-            "protocol": "https",
             "method": "POST",
             "headers": {
                 "User-Key": "{{_randomInt}}"
@@ -477,6 +510,158 @@ ddosify -config ddosify_config_dynamic.json
     ]
 }
 ```
+### Correlation on Config File
+Ddosify enables you to capture variables from steps using **jsonPath**, **xPath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
+
+> **:warning: Points to keep in mind**
+> - You must specify **'headerKey'** when capturing from header.
+> - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.mdon) doc.
+> - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
+
+You can use **debug** parameter to validate your config.
+
+```bash
+ddosify -config ddosify_config_correlation.json -debug
+```
+
+##### Capture With JsonPath
+```json
+{
+    "steps": [
+        {
+            "captureEnv": {
+                "NUM" :{"from":"body","jsonPath":"num"},
+                "NAME" :{"from":"body","jsonPath":"name"},
+                "SQUAD" :{"from":"body","jsonPath":"squad"},
+                "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
+                "MESSI" : {"from":"body","jsonPath":"squad.players.0"},             
+            }         
+        }
+    ]
+}
+```
+
+##### Capture With XPath	
+```json
+{
+    "steps": [
+        {
+            "captureEnv": {
+                "TITLE" :{"from":"body","xPath":"//item/title"},             
+            }         
+        }
+    ]
+}
+```
+
+##### Capture With Regular Expressions
+```json
+{
+    "steps": [
+        {
+            "captureEnv": {
+               "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}} ,
+               "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
+            }         
+        }
+    ]
+}
+```
+##### Capture Header Value
+```json
+{
+    "steps": [
+        {
+            "captureEnv": {
+                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
+            }         
+        }
+    ]
+}
+```
+
+##### Scenario-Scoped Variables
+```json
+{
+   "env":{
+        "TARGET_URL" : "http://localhost:8084/hello",
+        "USER_KEY" : "ABC",
+        "COMPANY_NAME" : "Ddosify",
+        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+    },
+}
+```
+
+
+
+#### :hammer: Overall Config and Injection
+```json
+// ddosify_config_correlation.json
+{
+    "iteration_count": 100,
+    "load_type": "linear",
+    "duration": 10,
+    "steps": [
+        {
+            "id": 1,
+            "url": "{{TARGET_URL}}",
+            "method": "POST",
+            "headers": {
+                "User-Key": "{{USER_KEY}}"
+            },
+            "payload" : "{{COMPANY_NAME}}",
+            "captureEnv": {
+                "NUM" :{"from":"body","jsonPath":"num"},
+                "NAME" :{"from":"body","jsonPath":"name"},
+                "SQUAD" :{"from":"body","jsonPath":"squad"},
+                "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
+                "MESSI" : {"from":"body","jsonPath":"squad.players.0"},
+                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
+                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}}             
+            }         
+        },
+        {
+            "id": 2,
+            "url": "{{TARGET_URL}}",
+            "method": "POST",
+            "headers": {
+                "User-Key": "{{USER_KEY}}",
+                "Authorization": "{{TOKEN}}",
+                "Content-Type" : "{{CONTENT_TYPE}}"
+            },
+            "payload_file" : "payload.json",
+            "captureEnv": {
+                "TITLE" :{"from":"body","xPath":"//item/title"},
+                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+            }
+        }
+    ],
+    "env":{
+        "TARGET_URL" : "http://localhost:8084/hello",
+        "USER_KEY" : "ABC",
+        "COMPANY_NAME" : "Ddosify",
+        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+    },
+}
+```
+```json
+// payload.json.json
+{
+    "boolField" : "{{_randomBoolean}}",
+    "numField" : "{{NUM}}",
+    "strField" : "{{NAME}}",
+    "numArrayField" : ["{{NUM}}",34],
+    "strArrayField" : ["{{NAME}}","hello"],
+    "mixedArrayField" : ["{{NUM}}",34,"{{NAME}}","{{SQUAD}}"],
+    "{{NAME}}" : "messi",
+    "obj" :{
+        "numField" : "{{NUM}}",
+        "objectField" : "{{SQUAD}}",
+        "arrayField" : "{{PLAYERS}}"
+    }
+}
+```
+
 
 ## Common Issues
 

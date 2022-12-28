@@ -191,9 +191,15 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
 
-			if verboseInfo.Error != "" {
+			if verboseInfo.Error != "" { // warning and error
+				if len(verboseInfo.Warnings) > 0 {
+					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
+					for _, wVal := range verboseInfo.Warnings {
+						fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+					}
+				}
 				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
-			} else {
+			} else { // response and warning
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -205,11 +211,12 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\t%s\n\t\t", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
-			}
-			if len(verboseInfo.Warnings) > 0 {
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
-				for _, wVal := range verboseInfo.Warnings {
-					fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+
+				if len(verboseInfo.Warnings) > 0 {
+					fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
+					for _, wVal := range verboseInfo.Warnings {
+						fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+					}
 				}
 			}
 
