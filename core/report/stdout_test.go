@@ -309,14 +309,12 @@ func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 		t.Log(printedOutput)
 
 		outStr := string(printedOutput)
-		if !strings.Contains(outStr, "ENVIRONMENT") ||
-			!strings.Contains(outStr, "REQUEST") ||
-			!strings.Contains(outStr, "Request Headers:") ||
-			!strings.Contains(outStr, "Request Body:") ||
-			!strings.Contains(outStr, "RESPONSE") ||
-			!strings.Contains(outStr, "StatusCode:") ||
-			!strings.Contains(outStr, "Response Headers:") ||
-			!strings.Contains(outStr, "Response Body:") {
+		if !strings.Contains(outStr, "Environment Variables") ||
+			!strings.Contains(outStr, "- Request") ||
+			!strings.Contains(outStr, "Headers:") ||
+			!strings.Contains(outStr, "Body:") ||
+			!strings.Contains(outStr, "- Response") ||
+			!strings.Contains(outStr, "StatusCode:") {
 
 			t.Errorf("One or multiple headlines are missing in stdout debug mode")
 		}

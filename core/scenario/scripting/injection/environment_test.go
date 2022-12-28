@@ -1,6 +1,7 @@
 package injection
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -95,5 +96,15 @@ func TestInjectionRegexReplacer(t *testing.T) {
 			}
 		}
 		t.Run(test.name, tf)
+	}
+}
+
+func ExampleEnvironmentInjector() {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	randInt, err := replacer.InjectDynamic("{{_randomInt}}")
+	if err == nil {
+		fmt.Println(randInt)
 	}
 }

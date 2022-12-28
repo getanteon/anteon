@@ -150,24 +150,24 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
-			fmt.Fprintln(w, "***********  ENVIRONMENT  ***********")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Usable Environment Variables: ")))
+			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
+
 			for eKey, eVal := range verboseInfo.Envs {
 				switch eVal.(type) {
 				case map[string]interface{}:
-					valPretty, _ := json.MarshalIndent(eVal, "", "  ")
-					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					valPretty, _ := json.Marshal(eVal)
+					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
 				case []string:
-					valPretty, _ := json.MarshalIndent(eVal, "", "  ")
-					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					valPretty, _ := json.Marshal(eVal)
+					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+				case []float64:
+					valPretty, _ := json.Marshal(eVal)
+					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+				case []bool:
+					valPretty, _ := json.Marshal(eVal)
+					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
 				default:
-					fmt.Fprintf(w, "> %s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
-				}
-			}
-			if len(verboseInfo.Warnings) > 0 {
-				fmt.Fprintln(w, "***********  WARNINGS  ***********")
-				for _, wVal := range verboseInfo.Warnings {
-					fmt.Fprintf(w, ">\t%-5s \n", fmt.Sprint(wVal))
+					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
 				}
 			}
 
@@ -177,32 +177,40 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprint(out, b.String())
 				break
 			}
-			fmt.Fprintln(w, "***********  REQUEST  ***********")
-			fmt.Fprintf(w, "> Target: \t%-5s \n", verboseInfo.Request.Url)
-			fmt.Fprintf(w, "> Method: \t%-5s \n", verboseInfo.Request.Method)
+			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Request")))
+			fmt.Fprintf(w, "\tTarget: \t%s \n", verboseInfo.Request.Url)
+			fmt.Fprintf(w, "\tMethod: \t%s \n", verboseInfo.Request.Method)
 
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Request Headers: ")))
+			fmt.Fprintf(w, "\t%s\n", "Headers: ")
 			for hKey, hVal := range verboseInfo.Request.Headers {
-				fmt.Fprintf(w, "> %s:\t%-5s \n", hKey, hVal)
+				fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 			}
 
 			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Request Body: ")))
+			fmt.Fprintf(w, "\t%s\n\t\t", "Body: ")
 			printBody(w, contentType, verboseInfo.Request.Body)
+			fmt.Fprintf(w, "\n")
 
 			if verboseInfo.Error != "" {
 				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 			} else {
-				fmt.Fprintln(w, "\n***********  RESPONSE  ***********")
-				fmt.Fprintf(w, "< StatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Response Headers: ")))
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
+				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+				fmt.Fprintf(w, "\t%s\n", "Headers: ")
 				for hKey, hVal := range verboseInfo.Response.Headers {
-					fmt.Fprintf(w, "< %s:\t%-5s \n", hKey, hVal)
+					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 				}
 
 				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("Response Body: ")))
+				fmt.Fprintf(w, "\t%s\n\t\t", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
+				fmt.Fprintf(w, "\n")
+			}
+			if len(verboseInfo.Warnings) > 0 {
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Warnings")))
+				for _, wVal := range verboseInfo.Warnings {
+					fmt.Fprintf(w, "\t%s \n", fmt.Sprint(wVal))
+				}
 			}
 
 			fmt.Fprintln(w)
@@ -213,12 +221,12 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 func printBody(w io.Writer, contentType string, body interface{}) {
 	if strings.Contains(contentType, "application/json") {
-		valPretty, _ := json.MarshalIndent(body, "", "  ")
+		valPretty, _ := json.MarshalIndent(body, "\t\t", "\t")
 		fmt.Fprintf(w, "%s", valPretty)
 	} else {
 		// html unescaped text
 		// if xml came as decoded, we could pretty print it like json
-		fmt.Fprintf(w, "%s", body.(string))
+		fmt.Fprintf(w, "%+v", fmt.Sprintf("%s", body))
 	}
 }
 
