@@ -510,7 +510,7 @@ ddosify -config ddosify_config_dynamic.json
     ]
 }
 ```
-### Correlation on Config File
+## Correlation
 Ddosify enables you to capture variables from steps using **jsonPath**, **xPath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
 > **:warning: Points to keep in mind**
@@ -524,7 +524,7 @@ You can use **debug** parameter to validate your config.
 ddosify -config ddosify_config_correlation.json -debug
 ```
 
-##### Capture With JsonPath
+#### Capture With JsonPath
 ```json
 {
     "steps": [
@@ -541,7 +541,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-##### Capture With XPath	
+#### Capture With XPath	
 ```json
 {
     "steps": [
@@ -554,7 +554,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-##### Capture With Regular Expressions
+#### Capture With Regular Expressions
 ```json
 {
     "steps": [
@@ -567,7 +567,7 @@ ddosify -config ddosify_config_correlation.json -debug
     ]
 }
 ```
-##### Capture Header Value
+#### Capture Header Value
 ```json
 {
     "steps": [
@@ -580,7 +580,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-##### Scenario-Scoped Variables
+#### Scenario-Scoped Variables
 ```json
 {
    "env":{
@@ -594,7 +594,7 @@ ddosify -config ddosify_config_correlation.json -debug
 
 
 
-#### :hammer: Overall Config and Injection
+### :hammer: Overall Config and Injection
 ```json
 // ddosify_config_correlation.json
 {
@@ -645,7 +645,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 ```json
-// payload.json.json
+// payload.json
 {
     "boolField" : "{{_randomBoolean}}",
     "numField" : "{{NUM}}",
