@@ -251,7 +251,7 @@ func TestPrintBodyAsString(t *testing.T) {
 
 	printedBody := buffer.Bytes()
 
-	if string(printedBody) != body {
+	if !strings.Contains(string(printedBody), body) {
 		t.Errorf("Printed body does not match expected: %s, found: %v", body, string(printedBody))
 	}
 }
