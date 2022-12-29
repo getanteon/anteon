@@ -46,11 +46,10 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{
@@ -81,26 +80,24 @@ func TestCreateHammer(t *testing.T) {
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{
 				{
-					ID:       1,
-					Name:     "Example Name 1",
-					URL:      "https://app.servdown.com/accounts/login/?next=/",
-					Protocol: types.ProtocolHTTPS,
-					Method:   http.MethodGet,
-					Timeout:  3,
-					Sleep:    "1000",
-					Payload:  "payload str",
+					ID:      1,
+					Name:    "Example Name 1",
+					URL:     "https://app.servdown.com/accounts/login/?next=/",
+					Method:  http.MethodGet,
+					Timeout: 3,
+					Sleep:   "1000",
+					Payload: "payload str",
 					Custom: map[string]interface{}{
 						"keep-alive": true,
 					},
 				},
 				{
-					ID:       2,
-					Name:     "Example Name 2",
-					URL:      "http://test.com",
-					Protocol: types.ProtocolHTTP,
-					Method:   http.MethodPut,
-					Timeout:  2,
-					Sleep:    "300-500",
+					ID:      2,
+					Name:    "Example Name 2",
+					URL:     "http://test.com",
+					Method:  http.MethodPut,
+					Timeout: 2,
+					Sleep:   "300-500",
 					Headers: map[string]string{
 						"ContenType":    "application/xml",
 						"X-ddosify-key": "ajkndalnasd",
@@ -137,26 +134,24 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{
 				{
-					ID:       1,
-					Name:     "Example Name 1",
-					URL:      "https://app.servdown.com/accounts/login/?next=/",
-					Protocol: types.ProtocolHTTPS,
-					Method:   http.MethodGet,
-					Timeout:  3,
-					Sleep:    "1000",
-					Payload:  "payload str",
+					ID:      1,
+					Name:    "Example Name 1",
+					URL:     "https://app.servdown.com/accounts/login/?next=/",
+					Method:  http.MethodGet,
+					Timeout: 3,
+					Sleep:   "1000",
+					Payload: "payload str",
 					Custom: map[string]interface{}{
 						"keep-alive": true,
 					},
 				},
 				{
-					ID:       2,
-					Name:     "Example Name 2",
-					URL:      "http://test.com",
-					Protocol: types.ProtocolHTTP,
-					Method:   http.MethodPut,
-					Timeout:  2,
-					Sleep:    "300-500",
+					ID:      2,
+					Name:    "Example Name 2",
+					URL:     "http://test.com",
+					Method:  http.MethodPut,
+					Timeout: 2,
+					Sleep:   "300-500",
 					Headers: map[string]string{
 						"ContenType":    "application/xml",
 						"X-ddosify-key": "ajkndalnasd",
@@ -194,26 +189,26 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{
 				{
-					ID:       1,
-					Name:     "Example Name 1",
-					URL:      "https://app.servdown.com/accounts/login/?next=/",
-					Protocol: types.ProtocolHTTPS,
-					Method:   http.MethodGet,
-					Timeout:  3,
-					Sleep:    "1000",
-					Payload:  "payload str",
+					ID:   1,
+					Name: "Example Name 1",
+					URL:  "https://app.servdown.com/accounts/login/?next=/",
+					// Protocol: types.ProtocolHTTPS,
+					Method:  http.MethodGet,
+					Timeout: 3,
+					Sleep:   "1000",
+					Payload: "payload str",
 					Custom: map[string]interface{}{
 						"keep-alive": true,
 					},
 				},
 				{
-					ID:       2,
-					Name:     "Example Name 2",
-					URL:      "http://test.com",
-					Protocol: types.ProtocolHTTP,
-					Method:   http.MethodPut,
-					Timeout:  2,
-					Sleep:    "300-500",
+					ID:   2,
+					Name: "Example Name 2",
+					URL:  "http://test.com",
+					// Protocol: types.ProtocolHTTP,
+					Method:  http.MethodPut,
+					Timeout: 2,
+					Sleep:   "300-500",
 					Headers: map[string]string{
 						"ContenType":    "application/xml",
 						"X-ddosify-key": "ajkndalnasd",
@@ -250,11 +245,10 @@ func TestCreateHammerManualLoad(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{
@@ -285,11 +279,10 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{
@@ -383,30 +376,61 @@ func TestCreateHammerAuth(t *testing.T) {
 	}
 }
 
-func TestCreateHammerProtocol(t *testing.T) {
+func TestCreateHammerGlobalEnvs(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_protocol.json"), ConfigTypeJson)
-	expectedProtocols := []string{"HTTPS", "HTTP", types.DefaultProtocol, "HTTP"}
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_global_envs.json"), ConfigTypeJson)
+	expectedGlobalEnvs := map[string]interface{}{
+		"HTTPBIN": "https://httpbin.ddosify.com",
+		"LOCAL":   "http://localhost:8084/hello",
+	}
 
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
-		t.Errorf("TestCreateHammerProtocol error occurred: %v", err)
+		t.Errorf("TestCreateHammerGlobalEnvs error occurred: %v", err)
 	}
 
-	steps := h.Scenario.Steps
-	for i := 0; i < len(steps); i++ {
-		if steps[i].Protocol != expectedProtocols[i] {
-			t.Errorf("Step: %d, 1: Expected: %v, Found: %v", i, expectedProtocols[i], steps[0].Protocol)
-		}
+	globalEnvs := h.Scenario.Envs
 
-		url, err := url.Parse(steps[i].URL)
-		if err != nil {
-			t.Errorf("Step: %d, TestCreateHammerProtocol-SchemeCheck error occurred: %v", i, err)
-		}
+	if !reflect.DeepEqual(globalEnvs, expectedGlobalEnvs) {
+		t.Errorf("TestCreateHammerGlobalEnvs global envs got: %#v expected: %#v", globalEnvs, expectedGlobalEnvs)
+	}
+}
 
-		if strings.ToUpper(url.Scheme) != expectedProtocols[i] {
-			t.Errorf("Step: %d, 2: Expected: %v, Found: %v", i, expectedProtocols[i], url.Scheme)
-		}
+func TestCreateHammerCaptureEnvs(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_capture_environment.json"), ConfigTypeJson)
+	jsonPath := "num"
+	expectedEnvsToCapture0 := []types.EnvCaptureConf{{
+		Name:     "NUM",
+		From:     types.Body,
+		JsonPath: &jsonPath,
+	}}
+
+	regex := "[a-z]+_[0-9]+"
+	expectedEnvsToCapture1 := []types.EnvCaptureConf{{
+		Name: "REGEX_MATCH_ENV",
+		From: types.Body,
+		RegExp: &types.RegexCaptureConf{
+			Exp: &regex,
+			No:  1,
+		},
+	}}
+
+	h, err := jsonReader.CreateHammer()
+	if err != nil {
+		t.Errorf("TestCreateHammerCaptureEnvs error occurred: %v", err)
+	}
+
+	envsToCapture0 := h.Scenario.Steps[0].EnvsToCapture
+
+	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCapture0) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCapture0)
+	}
+
+	envsToCapture1 := h.Scenario.Steps[1].EnvsToCapture
+
+	if !reflect.DeepEqual(envsToCapture1, expectedEnvsToCapture1) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture1, expectedEnvsToCapture1)
 	}
 }
 
@@ -475,11 +499,10 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{
@@ -520,11 +543,10 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{
@@ -556,11 +578,10 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 		ReportDestination: types.DefaultOutputType,
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{{
-				ID:       1,
-				URL:      strings.ToLower(types.DefaultProtocol) + "://test.com",
-				Protocol: types.DefaultProtocol,
-				Method:   types.DefaultMethod,
-				Timeout:  types.DefaultTimeout,
+				ID:      1,
+				URL:     "test.com",
+				Method:  types.DefaultMethod,
+				Timeout: types.DefaultTimeout,
 			}},
 		},
 		Proxy: proxy.Proxy{

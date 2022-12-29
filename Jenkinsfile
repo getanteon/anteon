@@ -36,7 +36,7 @@ fi'''
     stage('Main Race Condition') {
       steps {
         lock('multi_branch_server') {
-          sh 'go run --race main.go -t https://servdown.com/ -d 1 -n 1500 -p https'
+          sh 'go run --race main.go -t https://servdown.com/ -d 1 -n 1500'
         }
       }
     }

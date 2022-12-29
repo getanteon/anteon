@@ -24,13 +24,16 @@ import (
 	"context"
 	"math/rand"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
+	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/core/types/regex"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
@@ -82,8 +85,17 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		return nil, &types.RequestError{Type: types.ErrorUnkown, Reason: e.Error()}
 	}
 
+	// start envs separately for each iteration
+	envs := make(map[string]interface{}, len(s.scenario.Envs))
+	for k, v := range s.scenario.Envs {
+		envs[k] = v
+	}
+	// inject dynamic variables beforehand for each iteration
+	injectDynamicVars(envs)
+
 	for _, sr := range requesters {
-		res := sr.requester.Send()
+		res := sr.requester.Send(envs)
+
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
 			if res.Err.Type == types.ErrorIntented {
@@ -97,8 +109,16 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		if sr.sleeper != nil && len(s.scenario.Steps) > 1 {
 			sr.sleeper.sleep()
 		}
+
+		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 	}
 	return
+}
+
+func enrichEnvFromPrevStep(m1 map[string]interface{}, m2 map[string]interface{}) {
+	for k, v := range m2 {
+		m1[k] = v
+	}
 }
 
 func (s *ScenarioService) Done() {
@@ -146,6 +166,22 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 		}
 	}
 	return err
+}
+
+func injectDynamicVars(envs map[string]interface{}) {
+	dynamicRgx := regexp.MustCompile(regex.DynamicVariableRegex)
+	vi := &injection.EnvironmentInjector{}
+	vi.Init()
+	for k, v := range envs {
+		vStr := v.(string)
+		if dynamicRgx.MatchString(vStr) {
+			injected, err := vi.InjectDynamic(vStr)
+			if err != nil {
+				continue
+			}
+			envs[k] = injected
+		}
+	}
 }
 
 type scenarioItemRequester struct {

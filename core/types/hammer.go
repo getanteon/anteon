@@ -40,7 +40,6 @@ const (
 	DefaultLoadType   = LoadTypeLinear
 	DefaultDuration   = 10
 	DefaultTimeout    = 5
-	DefaultProtocol   = ProtocolHTTPS
 	DefaultMethod     = http.MethodGet
 	DefaultOutputType = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 )

@@ -70,4 +70,13 @@ type ScenarioStepResult struct {
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}
+
+	// Usable envs in this step
+	UsableEnvs map[string]interface{}
+
+	// Captured envs in this step
+	ExtractedEnvs map[string]interface{}
+
+	// Failed captures and their reasons
+	FailedCaptures map[string]string
 }

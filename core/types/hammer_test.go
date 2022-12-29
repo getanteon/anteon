@@ -33,10 +33,9 @@ func newDummyHammer() Hammer {
 		Scenario: Scenario{
 			Steps: []ScenarioStep{
 				{
-					ID:       1,
-					Protocol: "HTTP",
-					Method:   "GET",
-					URL:      "http://127.0.0.1",
+					ID:     1,
+					Method: "GET",
+					URL:    "http://127.0.0.1",
 				},
 			},
 		},
@@ -67,19 +66,18 @@ func TestHammerInValidAttackType(t *testing.T) {
 
 func TestHammerValidAuth(t *testing.T) {
 	for _, v := range supportedAuthentications {
-		for _, a := range v {
-			h := newDummyHammer()
-			h.Scenario.Steps[0].Auth = Auth{
-				Type:     a,
-				Username: "test",
-				Password: "123",
-			}
+		h := newDummyHammer()
+		h.Scenario.Steps[0].Auth = Auth{
+			Type:     v,
+			Username: "test",
+			Password: "123",
+		}
 
-			if err := h.Validate(); err != nil {
-				t.Errorf("TestHammerValidAuth errored: %v", err)
-			}
+		if err := h.Validate(); err != nil {
+			t.Errorf("TestHammerValidAuth errored: %v", err)
 		}
 	}
+
 }
 
 func TestHammerInValidAuth(t *testing.T) {
@@ -97,51 +95,46 @@ func TestHammerInValidAuth(t *testing.T) {
 
 func TestHammerValidScenario(t *testing.T) {
 	// Single Scenario
-	for _, p := range SupportedProtocols {
-		for _, m := range supportedProtocolMethods[p] {
-			h := newDummyHammer()
-			h.Scenario = Scenario{
-				Steps: []ScenarioStep{
-					{
-						ID:       1,
-						Protocol: p,
-						Method:   m,
-						URL:      "https://127.0.0.1",
-					},
+	for _, m := range supportedProtocolMethods {
+		h := newDummyHammer()
+		h.Scenario = Scenario{
+			Steps: []ScenarioStep{
+				{
+					ID:     1,
+					Method: m,
+					URL:    "https://127.0.0.1",
 				},
-			}
+			},
+		}
 
-			if err := h.Validate(); err != nil {
-				t.Errorf("TestHammerValidScenario single scenario errored: %v", err)
-			}
+		if err := h.Validate(); err != nil {
+			t.Errorf("TestHammerValidScenario single scenario errored: %v", err)
 		}
 	}
 
 	// Multiple Scenario
-	for _, p := range SupportedProtocols {
-		for _, m := range supportedProtocolMethods[p] {
-			h := newDummyHammer()
-			h.Scenario = Scenario{
-				Steps: []ScenarioStep{
-					{
-						ID:       1,
-						Protocol: p,
-						Method:   m,
-						URL:      "https://127.0.0.1",
-					}, {
-						ID:       2,
-						URL:      "https://127.0.0.1",
-						Protocol: p,
-						Method:   m,
-					},
-				},
-			}
 
-			if err := h.Validate(); err != nil {
-				t.Errorf("TestHammerValidScenario multi scenario errored: %v", err)
-			}
+	for _, m := range supportedProtocolMethods {
+		h := newDummyHammer()
+		h.Scenario = Scenario{
+			Steps: []ScenarioStep{
+				{
+					ID:     1,
+					Method: m,
+					URL:    "https://127.0.0.1",
+				}, {
+					ID:     2,
+					URL:    "https://127.0.0.1",
+					Method: m,
+				},
+			},
+		}
+
+		if err := h.Validate(); err != nil {
+			t.Errorf("TestHammerValidScenario multi scenario errored: %v", err)
 		}
 	}
+
 }
 
 func TestHammerEmptyScenario(t *testing.T) {
@@ -152,42 +145,6 @@ func TestHammerEmptyScenario(t *testing.T) {
 		t.Errorf("TestHammerEmptyScenario errored")
 	}
 }
-func TestHammerInvalidScenarioProtocol(t *testing.T) {
-	// Single Scenario
-	h := newDummyHammer()
-	h.Scenario = Scenario{
-		Steps: []ScenarioStep{
-			{
-				ID:       1,
-				Protocol: "HTTPP",
-				Method:   supportedProtocolMethods["HTTP"][1],
-			},
-		},
-	}
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInvalidScenario errored")
-	}
-
-	// Multi Scenario
-	h = newDummyHammer()
-	h.Scenario = Scenario{
-		Steps: []ScenarioStep{
-			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
-			},
-			{
-				ID:       1,
-				Protocol: "HTTPP",
-				Method:   supportedProtocolMethods["HTTP"][1],
-			},
-		},
-	}
-	if err := h.Validate(); err == nil {
-		t.Errorf("TestHammerInvalidScenario errored")
-	}
-}
 
 func TestHammerInvalidScenarioMethod(t *testing.T) {
 	// Single Scenario
@@ -195,9 +152,8 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	h.Scenario = Scenario{
 		Steps: []ScenarioStep{
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   "GETT",
+				ID:     1,
+				Method: "GETT",
 			},
 		},
 	}
@@ -210,14 +166,12 @@ func TestHammerInvalidScenarioMethod(t *testing.T) {
 	h.Scenario = Scenario{
 		Steps: []ScenarioStep{
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				ID:     1,
+				Method: supportedProtocolMethods[1],
 			},
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   "GETT",
+				ID:     1,
+				Method: "GETT",
 			},
 		},
 	}
@@ -232,8 +186,7 @@ func TestHammerEmptyScenarioStepID(t *testing.T) {
 	h.Scenario = Scenario{
 		Steps: []ScenarioStep{
 			{
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				Method: supportedProtocolMethods[1],
 			},
 		},
 	}
@@ -246,13 +199,11 @@ func TestHammerEmptyScenarioStepID(t *testing.T) {
 	h.Scenario = Scenario{
 		Steps: []ScenarioStep{
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				ID:     1,
+				Method: supportedProtocolMethods[1],
 			},
 			{
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				Method: supportedProtocolMethods[1],
 			},
 		},
 	}
@@ -267,19 +218,16 @@ func TestHammerDuplicateScenarioStepID(t *testing.T) {
 	h.Scenario = Scenario{
 		Steps: []ScenarioStep{
 			{
-				ID:       1,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				ID:     1,
+				Method: supportedProtocolMethods[1],
 			},
 			{
-				ID:       2,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				ID:     2,
+				Method: supportedProtocolMethods[1],
 			},
 			{
-				ID:       2,
-				Protocol: SupportedProtocols[0],
-				Method:   supportedProtocolMethods["HTTP"][1],
+				ID:     2,
+				Method: supportedProtocolMethods[1],
 			},
 		},
 	}
@@ -326,11 +274,10 @@ func TestHammerStepSleep(t *testing.T) {
 			h.Scenario = Scenario{
 				Steps: []ScenarioStep{
 					{
-						ID:       1,
-						URL:      "target.com",
-						Protocol: SupportedProtocols[0],
-						Method:   supportedProtocolMethods["HTTP"][1],
-						Sleep:    test.sleep,
+						ID:     1,
+						URL:    "target.com",
+						Method: supportedProtocolMethods[1],
+						Sleep:  test.sleep,
 					},
 				},
 			}

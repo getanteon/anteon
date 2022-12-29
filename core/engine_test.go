@@ -21,9 +21,11 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,6 +33,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +41,7 @@ import (
 	"time"
 
 	"github.com/ddosify/go-faker/faker"
+	"go.ddosify.com/ddosify/config"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/types"
@@ -55,10 +59,9 @@ func newDummyHammer() types.Hammer {
 		Scenario: types.Scenario{
 			Steps: []types.ScenarioStep{
 				{
-					ID:       1,
-					Protocol: "HTTP",
-					Method:   "GET",
-					URL:      "http://127.0.0.1",
+					ID:     1,
+					Method: "GET",
+					URL:    "http://127.0.0.1",
 				},
 			},
 		},
@@ -295,12 +298,11 @@ func TestRequestData(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTP",
-		Method:   "GET",
-		URL:      server.URL + "/get_test_data",
-		Headers:  map[string]string{"Test1": "Test1Value", "Test2": "Test2Value"},
-		Payload:  "Body content",
+		ID:      1,
+		Method:  "GET",
+		URL:     server.URL + "/get_test_data",
+		Headers: map[string]string{"Test1": "Test1Value", "Test2": "Test2Value"},
+		Payload: "Body content",
 	}
 
 	// Act
@@ -369,20 +371,18 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	h.Scenario = types.Scenario{
 		Steps: []types.ScenarioStep{
 			{
-				ID:       1,
-				Protocol: "HTTP",
-				Method:   "GET",
-				URL:      server.URL + "/api_get",
-				Headers:  map[string]string{"Test": "h1"},
-				Payload:  "Body 1",
+				ID:      1,
+				Method:  "GET",
+				URL:     server.URL + "/api_get",
+				Headers: map[string]string{"Test": "h1"},
+				Payload: "Body 1",
 			},
 			{
-				ID:       2,
-				Protocol: "HTTP",
-				Method:   "POST",
-				URL:      server.URL + "/api_post",
-				Headers:  map[string]string{"Test": "h2"},
-				Payload:  "Body 2",
+				ID:      2,
+				Method:  "POST",
+				URL:     server.URL + "/api_post",
+				Headers: map[string]string{"Test": "h2"},
+				Payload: "Body 2",
 			},
 		}}
 
@@ -565,10 +565,9 @@ func TestDynamicData(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTP",
-		Method:   "GET",
-		URL:      server.URL + "/get_test_data/{{_randomInt}}",
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "/get_test_data/{{_randomInt}}",
 		Headers: map[string]string{
 			"Test1":            "{{_randomInt}}",
 			"{{_randomInt}}":   "Test2Value",
@@ -658,6 +657,770 @@ func TestDynamicData(t *testing.T) {
 	}
 }
 
+func TestGlobalEnvs(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "HEADER_KEY"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"URL_PATH":   path,
+		"HEADER_VAL": "headerValToBeInjected",
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"HEADER_KEY": "{{HEADER_VAL}}",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestGlobalAndCapturedVars test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf("TestGlobalAndCapturedVars header val could not be set from envs, expected : %s, got: %s", expectedHeaderVal, gotHeaderVal)
+	}
+}
+
+func TestCapturedEnvsFromJsonBody(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	headerKey := "HEADER_KEY"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		body := struct {
+			Num      int    `json:"num"`
+			Name     string `json:"name"`
+			Champion bool   `json:"isChampion"`
+			Squad    struct {
+				Results map[string]string `json:"results"`
+				Players []string          `json:"players"`
+			} `json:"squad"`
+		}{
+			Num:      25,
+			Name:     "Argentina",
+			Champion: true,
+			Squad: struct {
+				Results map[string]string `json:"results"`
+				Players []string          "json:\"players\""
+			}{
+				Results: map[string]string{"SAR": "1-2",
+					"MEX": "2-1",
+					"POL": "2-0",
+					"AUS": "2-0",
+					"HOL": "4-2",
+					"CRO": "2-0",
+					"FRA": "CHAMPIONS",
+				},
+				Players: []string{"messi", "alvarez", "dimaria", "enzo"},
+			},
+		}
+
+		w.Header().Set("Argentina", "Messi")
+
+		byteBody, _ := json.Marshal(body)
+		w.Write(byteBody)
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/json-body"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+		"HEADER_VAL":         "headerValToBeInjected",
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	jsonPath := "isChampion"
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:      1,
+		Method:  "GET",
+		URL:     server.URL + "{{FIRST_REQ_URL_PATH}}",
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "CHAMPION", From: "body", JsonPath: &jsonPath},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			"HEADER_KEY": "{{HEADER_VAL}}",
+		},
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+		Payload: "{\n    \"ARGENTINA\" : \"{{CHAMPION}}\"\n}", // json escaped string, use payload_file instead
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCapturedEnvsFromJsonBody test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := h.Scenario.Envs["HEADER_VAL"].(string)
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf("TestCapturedEnvsFromJsonBody header val could not be set from envs, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
+	}
+
+	expectedReqPayloadOnSecondReq := true
+	if secondReqBody["ARGENTINA"].(bool) != expectedReqPayloadOnSecondReq {
+		t.Errorf("TestCapturedEnvsFromJsonBody second req body could not be set from envs, expected : %t, got: %s",
+			expectedReqPayloadOnSecondReq, secondReqBody)
+	}
+
+}
+
+func TestContinueTestOnCaptureError(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	notExistHeaderKey := "NO_HEADER_KEY"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "INJECTED_HEADER"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Header().Set("Argentina", "Messi")
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "HEADER_VAL", From: "header", Key: &notExistHeaderKey},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			"INJECTED_HEADER": "{{HEADER_VAL}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestContinueTestOnCaptureError test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := ""
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) { // default value ""
+		t.Errorf("TestContinueTestOnCaptureError header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
+	t.Parallel()
+	firstRequestCalled := false
+	secondRequestCalled := false
+	secondReqBody := make(map[string]interface{}, 0)
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		body := struct {
+			Num      int    `json:"num"`
+			Name     string `json:"name"`
+			Champion bool   `json:"isChampion"`
+			Squad    struct {
+				Results map[string]string `json:"results"`
+				Players []string          `json:"players"`
+			} `json:"squad"`
+		}{
+			Num:      25,
+			Name:     "Argentina",
+			Champion: true,
+			Squad: struct {
+				Results map[string]string `json:"results"`
+				Players []string          "json:\"players\""
+			}{
+				Results: map[string]string{"SAR": "1-2",
+					"MEX": "2-1",
+					"POL": "2-0",
+					"AUS": "2-0",
+					"HOL": "4-2",
+					"CRO": "2-0",
+					"FRA": "CHAMPIONS",
+				},
+				Players: []string{"messi", "alvarez", "dimaria", "enzo"},
+			},
+		}
+
+		w.Header().Set("Argentina", "Messi")
+		w.Header().Set("Content-Type", "application/json")
+
+		byteBody, _ := json.Marshal(body)
+		w.Write(byteBody)
+	}
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// read config, create hammer
+	configPath := "../config/config_testdata/config_inject_json.json"
+	f, err := os.Open(configPath)
+	if err != nil {
+		t.Errorf("could not open test config %v", err)
+	}
+
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("could not read test config %v", err)
+	}
+	c, err := config.NewConfigReader(byteValue, config.ConfigTypeJson)
+	if err != nil {
+		t.Errorf("could not create json config reader %v", err)
+	}
+	h, err := c.CreateHammer()
+	if err != nil {
+		t.Errorf("could not create hammer, %v", err)
+	}
+
+	// set test servers paths
+	h.Scenario.Steps[0].URL = server.URL + pathFirst
+	h.Scenario.Steps[1].URL = server.URL + pathSecond
+
+	// run engine
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
+	}
+
+	e.Start()
+
+	// assert
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload test server has not been called, url path injection failed")
+	}
+
+	if _, ok := secondReqBody["boolField"].(bool); !ok {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload bool field could not be injected to json payload")
+	}
+	if _, ok := secondReqBody["numField"].(float64); !ok {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload num field could not be injected to json payload")
+	}
+	if _, ok := secondReqBody["strField"].(string); !ok {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload string field could not be injected to json payload")
+	}
+
+	for _, v := range secondReqBody["numArrayField"].([]interface{}) {
+		if _, ok := v.(float64); !ok {
+			t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload num array field could not be injected to json payload")
+		}
+	}
+
+	for _, v := range secondReqBody["strArrayField"].([]interface{}) {
+		if _, ok := v.(string); !ok {
+			t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload str array field could not be injected to json payload")
+		}
+	}
+
+	obj, _ := secondReqBody["obj"].(map[string]interface{})
+	if _, ok := obj["objectField"].(map[string]interface{}); !ok {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload object field could not be injected to json payload")
+	}
+	if _, ok := obj["arrayField"].([]interface{}); !ok {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload array field could not be injected to json payload")
+	}
+
+}
+
+func TestEnvInjectToXmlPayload(t *testing.T) {
+	t.Parallel()
+	requestCalled := false
+	readReqBody := make([]byte, 0)
+	injectedEnv := "hello"
+	expectedReqBody := []byte(
+		fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" ?>
+						<rss version="2.0">
+						<channel>
+						<item>
+							<title>%s</title>
+						</item>
+						</channel>
+						</rss>`, injectedEnv))
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		readReqBody, _ = io.ReadAll(r.Body)
+	}
+
+	pathFirst := "/header-capture"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// read config, create hammer
+	configPath := "../config/config_testdata/config_inject_xml.json"
+	f, err := os.Open(configPath)
+	if err != nil {
+		t.Errorf("could not open test config %v", err)
+	}
+
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Errorf("could not read test config %v", err)
+	}
+	c, err := config.NewConfigReader(byteValue, config.ConfigTypeJson)
+	if err != nil {
+		t.Errorf("could not create json config reader %v", err)
+	}
+	h, err := c.CreateHammer()
+	if err != nil {
+		t.Errorf("could not create hammer, %v", err)
+	}
+
+	// set test servers paths
+	h.Scenario.Steps[0].URL = server.URL + pathFirst
+
+	// run engine
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestInjectXmlPayload error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestInjectXmlPayload error occurred %v", err)
+	}
+
+	e.Start()
+
+	// assert
+	if !requestCalled {
+		t.Errorf("TestInjectXmlPayload test server has not been called, url path injection failed")
+	}
+
+	if bytes.Equal(readReqBody, expectedReqBody) {
+
+	}
+
+}
+
+func TestCaptureHeaderWithRegex(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	headerKey := "Argentina"
+	var gotHeaderVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "BallondorWinner"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Header().Set(headerKey, "messi_10alvarez9")
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotHeaderVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	regex := "[a-z]+_[0-9]+"
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "header", Key: &headerKey, RegExp: &types.RegexCaptureConf{Exp: &regex, No: 0}},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			secondReqInjectedHeaderKey: "{{GOAT}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureHeaderWithRegex test server has not been called, url path injection failed")
+	}
+
+	expectedHeaderVal := "messi_10"
+	if !strings.EqualFold(gotHeaderVal, expectedHeaderVal) {
+		t.Errorf(
+			"TestCaptureHeaderWithRegex header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureStringPayloadWithRegex(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+	var secondReqBody []byte
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		w.Write([]byte("messi_10alvarez9"))
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		secondReqBody, _ = io.ReadAll(r.Body)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	regex := "[a-z]+_[0-9]+"
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "body", RegExp: &types.RegexCaptureConf{Exp: &regex, No: 0}},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:      2,
+		Method:  "GET",
+		URL:     server.URL + pathSecond,
+		Payload: "{{GOAT}}",
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureHeaderWithRegex test server has not been called, url path injection failed")
+	}
+
+	expectedBodyVal := []byte("messi_10")
+	if !bytes.Equal(secondReqBody, expectedBodyVal) {
+		t.Errorf(
+			"TestCaptureHeaderWithRegex header val could not be set from envs, must be default value, expected : %s, got: %s",
+			expectedBodyVal, secondReqBody)
+	}
+
+}
+
+func TestBothDynamicVarAndEnvVar(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "country"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"URL_PATH":           path,
+		"COUNTRY_HEADER_KEY": headerKey,
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"{{COUNTRY_HEADER_KEY}}": "{{_randomCountry}}",
+		},
+		Payload: "{{_randomJobArea}}",
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "testuser",
+			Password: "{{_randomBankAccountBic}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestBothDynamicVarAndEnvVar test server has not been called, url path injection failed")
+	}
+
+	if strings.EqualFold(gotHeaderVal, "") {
+		t.Errorf("TestBothDynamicVarAndEnvVar dynamic var could not be set, expected a country, got: %s", "")
+	}
+}
+
+func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "composite"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"A":             "B",
+		"URL_PATH":      path,
+		"COMPOSITE_KEY": headerKey,
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"{{COMPOSITE_KEY}}": "{{_randomBoolean}}-{{A}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection test server has not been called, url path injection failed")
+	}
+
+	re := regexp.MustCompile("(true|false|)-B")
+	if !re.MatchString(gotHeaderVal) {
+		t.Errorf("TestDynamicVarAndEnvVarInSameSection gotHeaderVal did not match expected regex, got: %s", gotHeaderVal)
+	}
+}
+
 // The test creates a web server with Certificate auth,
 // then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {
@@ -684,10 +1447,9 @@ func TestTLSMutualAuth(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
+		ID:     1,
+		Method: "GET",
+		URL:    "",
 	}
 
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
@@ -753,10 +1515,9 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	// Prepare
 	h := newDummyHammer()
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:       1,
-		Protocol: "HTTPS",
-		Method:   "GET",
-		URL:      "",
+		ID:     1,
+		Method: "GET",
+		URL:    "",
 	}
 
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())
@@ -832,7 +1593,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 
 	// Prepare
 	h := newDummyHammer()
-	h.Scenario.Steps[0] = types.ScenarioStep{ID: 1, Protocol: "HTTPS", Method: "GET", URL: ""}
+	h.Scenario.Steps[0] = types.ScenarioStep{ID: 1, Method: "GET", URL: ""}
 
 	// here we use server certs first
 	certVal, poolVal, err := types.ParseTLS(certFile.Name(), keyFile.Name())

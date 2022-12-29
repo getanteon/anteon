@@ -50,11 +50,6 @@ var (
 	duration  = flag.Int("d", types.DefaultDuration, "Test duration in seconds")
 	loadType  = flag.String("l", types.DefaultLoadType, "Type of the load test [linear, incremental, waved]")
 
-	// TODO:V1 - Remove protocol flag at v1.
-	// Adjusting the protocol from both the target flag and this flag increases the complexity of the system&usage.
-	// We don't need a protocol flag. Users can easily pass the protocol along with the target.
-	protocol = flag.String("p", types.DefaultProtocol, "Protocol [HTTP, HTTPS]")
-
 	method = flag.String("m", types.DefaultMethod,
 		"Request Method Type. For Http(s):[GET, POST, PUT, DELETE, UPDATE, PATCH]")
 	payload = flag.String("b", "", "Payload of the network packet (body)")
@@ -233,8 +228,7 @@ func createScenario() (s types.Scenario, err error) {
 		}
 	}
 
-	// TODO:V1 - Remove protocol flag at v1
-	*target, *protocol, err = types.AdjustUrlProtocol(*target, *protocol)
+	err = types.IsTargetValid(*target)
 	if err != nil {
 		return
 	}
@@ -244,16 +238,14 @@ func createScenario() (s types.Scenario, err error) {
 		return
 	}
 
-	*protocol = strings.ToUpper(*protocol)
 	step := types.ScenarioStep{
-		ID:       1,
-		Protocol: *protocol,
-		Method:   strings.ToUpper(*method),
-		Auth:     a,
-		Headers:  h,
-		Payload:  *payload,
-		URL:      *target,
-		Timeout:  *timeout,
+		ID:      1,
+		Method:  strings.ToUpper(*method),
+		Auth:    a,
+		Headers: h,
+		Payload: *payload,
+		URL:     *target,
+		Timeout: *timeout,
 	}
 
 	// TODO : if whether certPath or certKeyPath doesn't exist and another one exists, we should return an error to user.
