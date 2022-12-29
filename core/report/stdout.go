@@ -177,6 +177,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprint(out, b.String())
 				break
 			}
+			fmt.Fprintf(w, "\n")
 			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Request")))
 			fmt.Fprintf(w, "\tTarget: \t%s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "\tMethod: \t%s \n", verboseInfo.Request.Method)
@@ -187,7 +188,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			}
 
 			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
-			fmt.Fprintf(w, "\t%s\n\t\t", "Body: ")
+			fmt.Fprintf(w, "\t%s", "Body: ")
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
 
@@ -199,7 +200,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 					}
 				}
 				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
-			} else { // response and warning
+			} else { // response
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -208,7 +209,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				}
 
 				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
-				fmt.Fprintf(w, "\t%s\n\t\t", "Body: ")
+				fmt.Fprintf(w, "\t%s", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
 
@@ -227,13 +228,16 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 }
 
 func printBody(w io.Writer, contentType string, body interface{}) {
+	if body == nil {
+		return
+	}
 	if strings.Contains(contentType, "application/json") {
 		valPretty, _ := json.MarshalIndent(body, "\t\t", "\t")
-		fmt.Fprintf(w, "%s", valPretty)
+		fmt.Fprintf(w, "\n\t\t%s\n", valPretty)
 	} else {
 		// html unescaped text
 		// if xml came as decoded, we could pretty print it like json
-		fmt.Fprintf(w, "%+v", fmt.Sprintf("%s", body))
+		fmt.Fprintf(w, "%+v\n", fmt.Sprintf("%s", body))
 	}
 }
 
