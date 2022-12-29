@@ -1,5 +1,6 @@
 <h1 align="center">
-    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo.svg" alt="Ddosify logo" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
     Ddosify - High-performance load testing tool
 </h1>
 
