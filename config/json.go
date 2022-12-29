@@ -62,11 +62,22 @@ type multipartFormData struct {
 	Src   string `json:"src"`
 }
 
+type RegexCaptureConf struct {
+	Exp *string `json:"exp"`
+	No  int     `json:"matchNo"`
+}
+type capturePath struct {
+	JsonPath  *string           `json:"jsonPath"`
+	XPath     *string           `json:"xPath"`
+	RegExp    *RegexCaptureConf `json:"regExp"`
+	From      string            `json:"from"`      // body,header
+	HeaderKey *string           `json:"headerKey"` // header key
+}
+
 type step struct {
 	Id               uint16                 `json:"id"`
 	Name             string                 `json:"name"`
 	Url              string                 `json:"url"`
-	Protocol         string                 `json:"protocol"`
 	Auth             auth                   `json:"auth"`
 	Method           string                 `json:"method"`
 	Headers          map[string]string      `json:"headers"`
@@ -78,14 +89,14 @@ type step struct {
 	Others           map[string]interface{} `json:"others"`
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
+	CaptureEnv       map[string]capturePath `json:"captureEnv"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
 	type stepAlias step
 	defaultFields := &stepAlias{
-		Protocol: types.DefaultProtocol,
-		Method:   types.DefaultMethod,
-		Timeout:  types.DefaultTimeout,
+		Method:  types.DefaultMethod,
+		Timeout: types.DefaultTimeout,
 	}
 
 	err := json.Unmarshal(data, defaultFields)
@@ -98,15 +109,16 @@ func (s *step) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount     *int         `json:"request_count"`
-	IterCount    *int         `json:"iteration_count"`
-	LoadType     string       `json:"load_type"`
-	Duration     int          `json:"duration"`
-	TimeRunCount timeRunCount `json:"manual_load"`
-	Steps        []step       `json:"steps"`
-	Output       string       `json:"output"`
-	Proxy        string       `json:"proxy"`
-	Debug        bool         `json:"debug"`
+	ReqCount     *int                   `json:"request_count"`
+	IterCount    *int                   `json:"iteration_count"`
+	LoadType     string                 `json:"load_type"`
+	Duration     int                    `json:"duration"`
+	TimeRunCount timeRunCount           `json:"manual_load"`
+	Steps        []step                 `json:"steps"`
+	Output       string                 `json:"output"`
+	Proxy        string                 `json:"proxy"`
+	Envs         map[string]interface{} `json:"env"`
+	Debug        bool                   `json:"debug"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -141,7 +153,9 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	// Scenario
-	s := types.Scenario{}
+	s := types.Scenario{
+		Envs: j.Envs,
+	}
 	var si types.ScenarioStep
 	for _, step := range j.Steps {
 		si, err = stepToScenarioStep(step)
@@ -227,27 +241,43 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		s.Auth.Type = types.AuthHttpBasic
 	}
 
-	// TODO:V1 - Remove protocol flag at v1
-	// Protocol & URL
-	s.Url, s.Protocol, err = types.AdjustUrlProtocol(s.Url, s.Protocol)
+	err = types.IsTargetValid(s.Url)
 	if err != nil {
 		return types.ScenarioStep{}, err
 	}
 
-	s.Protocol = strings.ToUpper(s.Protocol)
+	var capturedEnvs []types.EnvCaptureConf
+	for name, path := range s.CaptureEnv {
+		capConf := types.EnvCaptureConf{
+			JsonPath: path.JsonPath,
+			Xpath:    path.XPath,
+			Name:     name,
+			From:     types.SourceType(path.From),
+			Key:      path.HeaderKey,
+		}
+
+		if path.RegExp != nil {
+			capConf.RegExp = &types.RegexCaptureConf{
+				Exp: path.RegExp.Exp,
+				No:  path.RegExp.No,
+			}
+		}
+
+		capturedEnvs = append(capturedEnvs, capConf)
+	}
 
 	item := types.ScenarioStep{
-		ID:       s.Id,
-		Name:     s.Name,
-		URL:      s.Url,
-		Protocol: s.Protocol,
-		Auth:     types.Auth(s.Auth),
-		Method:   strings.ToUpper(s.Method),
-		Headers:  s.Headers,
-		Payload:  payload,
-		Timeout:  s.Timeout,
-		Sleep:    strings.ReplaceAll(s.Sleep, " ", ""),
-		Custom:   s.Others,
+		ID:            s.Id,
+		Name:          s.Name,
+		URL:           s.Url,
+		Auth:          types.Auth(s.Auth),
+		Method:        strings.ToUpper(s.Method),
+		Headers:       s.Headers,
+		Payload:       payload,
+		Timeout:       s.Timeout,
+		Sleep:         strings.ReplaceAll(s.Sleep, " ", ""),
+		Custom:        s.Others,
+		EnvsToCapture: capturedEnvs,
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {

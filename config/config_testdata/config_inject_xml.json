@@ -1,0 +1,19 @@
+{
+    "iteration_count": 100,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "{{LOCAL}}",
+            "method": "GET",
+            "payload_file" :"../config/config_testdata/xml_payload.xml"
+        }
+    ],
+    "env":{
+        "LOCAL" : "http://localhost:8084",
+        "HELLO" : "hello"
+    },
+    "debug" : true
+}

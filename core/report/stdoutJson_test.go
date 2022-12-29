@@ -295,7 +295,7 @@ func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
 
 }
 
-func TestVerboseHttpInfoMarshallingErrorCase(t *testing.T) {
+func TestVerboseHttpInfoMarshallingErrorCaseEmptyReq(t *testing.T) {
 	errorStr := "there is error"
 	vError := verboseHttpRequestInfo{
 		StepId:   0,
@@ -306,6 +306,45 @@ func TestVerboseHttpInfoMarshallingErrorCase(t *testing.T) {
 			Headers map[string]string "json:\"headers\""
 			Body    interface{}       "json:\"body\""
 		}{},
+		Error: errorStr,
+	}
+
+	bytesWithErrorAndNoResponse, _ := vError.MarshalJSON()
+
+	var aliasStruct map[string]interface{}
+	json.Unmarshal(bytesWithErrorAndNoResponse, &aliasStruct)
+
+	val, errExists := aliasStruct["error"]
+	_, respExists := aliasStruct["response"]
+	_, requestExists := aliasStruct["request"]
+
+	if !errExists {
+		t.Errorf("Verbose Http Info should have error key")
+	} else if val != errorStr {
+		t.Errorf("Verbose Http Info should have error value as : %s, found: %s", errorStr, val)
+	} else if respExists {
+		t.Errorf("Verbose Http Info should not have response in case of error")
+	} else if requestExists {
+		t.Errorf("Verbose Http Info should not have request in case of empty req and error")
+	}
+}
+
+func TestVerboseHttpInfoMarshallingErrorCase(t *testing.T) {
+	errorStr := "there is error"
+	vError := verboseHttpRequestInfo{
+		StepId:   0,
+		StepName: "",
+		Request: struct {
+			Url     string            "json:\"url\""
+			Method  string            "json:\"method\""
+			Headers map[string]string "json:\"headers\""
+			Body    interface{}       "json:\"body\""
+		}{
+			Url:     "",
+			Method:  "GET",
+			Headers: map[string]string{},
+			Body:    "some body",
+		},
 		Error: errorStr,
 	}
 

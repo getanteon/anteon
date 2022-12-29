@@ -1,0 +1,14 @@
+{
+    "boolField" : "{{IS_CHAMPION}}",
+    "numField" : "{{NUM}}",
+    "strField" : "{{NAME}}",
+    "numArrayField" : ["{{NUM}}",34],
+    "strArrayField" : ["{{NAME}}","hello"],
+    "mixedArrayField" : ["{{NUM}}",34,"{{NAME}}","{{SQUAD}}"],
+    "{{NAME}}" : "xxxx",
+    "obj" :{
+        "numField" : "{{NUM}}",
+        "objectField" : "{{SQUAD}}",
+        "arrayField" : "{{PLAYERS}}"
+    }
+}

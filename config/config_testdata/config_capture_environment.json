@@ -1,0 +1,30 @@
+{
+    "iteration_count": 100,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "http://localhost:8080/hello",
+            "method": "GET",
+            "captureEnv": {
+                "NUM" :{ "from":"body","jsonPath":"num"}
+            }             
+        },
+        {
+            "id": 2,
+            "name": "Example Name 2 Json Body",
+            "url": "http://localhost:8080/",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json",
+                "num": "{{NUM}}"
+            },
+            "captureEnv": {
+                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+            }   
+        }
+    ],
+    "debug" : true
+}

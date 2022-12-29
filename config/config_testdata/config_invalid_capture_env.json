@@ -1,0 +1,30 @@
+{
+    "iteration_count": 100,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "{{LOCAL}}",
+            "method": "GET",
+            "captureEnv": {
+                "NUM" :{ "from":"body","jsonPath":"num"}
+            }             
+        },
+        {
+            "id": 2,
+            "name": "Example Name 2 Json Body",
+            "url": "{{HTTPBIN}}",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json",
+                "num": "{{NUM}}"
+            },
+            "captureEnv": {
+                "REGEX_MATCH_ENV" :{"from":"header","regExp":{"exp" : "", "matchNo": 1}}
+            }   
+        }
+    ],
+    "debug" : true
+}

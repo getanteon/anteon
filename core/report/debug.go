@@ -9,21 +9,27 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
+type verboseRequest struct {
+	Url     string            `json:"url"`
+	Method  string            `json:"method"`
+	Headers map[string]string `json:"headers"`
+	Body    interface{}       `json:"body"`
+}
+
+type verboseResponse struct {
+	StatusCode int               `json:"statusCode"`
+	Headers    map[string]string `json:"headers"`
+	Body       interface{}       `json:"body"`
+}
+
 type verboseHttpRequestInfo struct {
-	StepId   uint16 `json:"stepId"`
-	StepName string `json:"stepName"`
-	Request  struct {
-		Url     string            `json:"url"`
-		Method  string            `json:"method"`
-		Headers map[string]string `json:"headers"`
-		Body    interface{}       `json:"body"`
-	} `json:"request"`
-	Response struct {
-		StatusCode int               `json:"statusCode"`
-		Headers    map[string]string `json:"headers"`
-		Body       interface{}       `json:"body"`
-	} `json:"response"`
-	Error string `json:"error"`
+	StepId         uint16                 `json:"stepId"`
+	StepName       string                 `json:"stepName"`
+	Request        verboseRequest         `json:"request"`
+	Response       verboseResponse        `json:"response"`
+	Envs           map[string]interface{} `json:"envs"`
+	FailedCaptures map[string]string      `json:"failedCaptures"`
+	Error          string                 `json:"error"`
 }
 
 func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) verboseHttpRequestInfo {
@@ -31,6 +37,13 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 
 	verboseInfo.StepId = sr.StepID
 	verboseInfo.StepName = sr.StepName
+
+	if sr.Err.Type == types.ErrorInvalidRequest {
+		// could not prepare request at all
+		verboseInfo.Error = sr.Err.Error()
+		return verboseInfo
+	}
+
 	requestHeaders, requestBody, _ := decode(sr.DebugInfo["requestHeaders"].(http.Header),
 		sr.DebugInfo["requestBody"].([]byte))
 	verboseInfo.Request = struct {
@@ -61,7 +74,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			Body:       responseBody,
 		}
 	}
-
+	verboseInfo.Envs = sr.UsableEnvs
+	verboseInfo.FailedCaptures = sr.FailedCaptures
 	return verboseInfo
 }
 
@@ -81,7 +95,7 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	} else if strings.Contains(contentType, "application/json") {
 		err := json.Unmarshal(byteBody, &reqBody)
 		if err != nil {
-			return hs, reqBody, err
+			reqBody = string(byteBody)
 		}
 	} else { // for remaining content-types return plain string
 		// xml.Unmarshal() needs xml tags to decode encoded xml, we have no knowledge about the xml structure
@@ -89,4 +103,11 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	}
 
 	return hs, reqBody, nil
+}
+
+func isVerboseInfoRequestEmpty(req verboseRequest) bool {
+	if req.Url == "" && req.Method == "" && req.Headers == nil && req.Body == nil {
+		return true
+	}
+	return false
 }

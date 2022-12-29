@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -44,39 +45,50 @@ const (
 
 	// Max sleep in ms (90s)
 	maxSleep = 90000
+
+	// Should match environment variables
+	EnvironmentVariableRegexStr = `\{{[^_]\w+\}}`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
 var SupportedProtocols = [...]string{ProtocolHTTP, ProtocolHTTPS}
-var supportedProtocolMethods = map[string][]string{
-	ProtocolHTTP: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
-		http.MethodPatch, http.MethodHead, http.MethodOptions,
-	},
-	ProtocolHTTPS: {
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
-		http.MethodPatch, http.MethodHead, http.MethodOptions,
-	},
+var supportedProtocolMethods = []string{
+	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+	http.MethodPatch, http.MethodHead, http.MethodOptions,
 }
-var supportedAuthentications = map[string][]string{
-	ProtocolHTTP: {
-		AuthHttpBasic,
-	},
-	ProtocolHTTPS: {
-		AuthHttpBasic,
-	},
+var supportedAuthentications = []string{
+	AuthHttpBasic,
+}
+
+var envVarRegexp *regexp.Regexp
+
+func init() {
+	envVarRegexp = regexp.MustCompile(EnvironmentVariableRegexStr)
 }
 
 // Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
 type Scenario struct {
 	Steps []ScenarioStep
+	Envs  map[string]interface{}
 }
 
 func (s *Scenario) validate() error {
 	stepIds := make(map[uint16]struct{}, len(s.Steps))
+	definedEnvs := map[string]struct{}{}
+
+	// add global envs
+	for key := range s.Envs {
+		definedEnvs[key] = struct{}{} // exist
+	}
+
 	for _, st := range s.Steps {
-		if err := st.validate(); err != nil {
+		if err := st.validate(definedEnvs); err != nil {
 			return err
+		}
+
+		// enrich Envs map with captured envs from each step
+		for _, ce := range st.EnvsToCapture {
+			definedEnvs[ce.Name] = struct{}{}
 		}
 
 		if _, ok := stepIds[st.ID]; ok {
@@ -87,6 +99,49 @@ func (s *Scenario) validate() error {
 	return nil
 }
 
+func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) error {
+	var err error
+	matchInEnvs := func(matches []string) error {
+		for _, v := range matches {
+			if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // {{....}}
+				return EnvironmentNotDefinedError{
+					msg: fmt.Sprintf("%s is not defined to use by global and captured environments", v),
+				}
+			}
+		}
+		return nil
+	}
+
+	f := func(source string) error {
+		matches := envVarRegexp.FindAllString(source, -1)
+		return matchInEnvs(matches)
+	}
+
+	// check env usage in url
+	err = f(st.URL)
+	if err != nil {
+		return err
+	}
+
+	// check env usage in header
+	for k, v := range st.Headers {
+		err = f(k)
+		if err != nil {
+			return err
+		}
+
+		err = f(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// check env usage in payload
+	err = f(st.Payload)
+	return err
+
+}
+
 // ScenarioStep represents one step of a Scenario.
 // This struct should be able to include all necessary data in a network packet for SupportedProtocols.
 type ScenarioStep struct {
@@ -95,9 +150,6 @@ type ScenarioStep struct {
 
 	// Name of the Item.
 	Name string
-
-	// Protocol of the requests.
-	Protocol string
 
 	// Request Method
 	Method string
@@ -128,6 +180,30 @@ type ScenarioStep struct {
 
 	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests
 	Custom map[string]interface{}
+
+	// Envs to capture from response of this step
+	EnvsToCapture []EnvCaptureConf
+}
+
+type SourceType string
+
+const (
+	Header SourceType = "header"
+	Body   SourceType = "body"
+)
+
+type RegexCaptureConf struct {
+	Exp *string `json:"exp"`
+	No  int     `json:"matchNo"`
+}
+
+type EnvCaptureConf struct {
+	JsonPath *string           `json:"jsonPath"`
+	Xpath    *string           `json:"xpath"`
+	RegExp   *RegexCaptureConf `json:"regExp"`
+	Name     string            `json:"as"`
+	From     SourceType        `json:"from"`
+	Key      *string           `json:"headerKey"` // headerKey
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.
@@ -137,20 +213,17 @@ type Auth struct {
 	Password string
 }
 
-func (si *ScenarioStep) validate() error {
-	if !util.StringInSlice(si.Protocol, SupportedProtocols[:]) {
-		return fmt.Errorf("unsupported Protocol: %s", si.Protocol)
-	}
-	if !util.StringInSlice(si.Method, supportedProtocolMethods[si.Protocol][:]) {
+func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
+	if !util.StringInSlice(si.Method, supportedProtocolMethods) {
 		return fmt.Errorf("unsupported Request Method: %s", si.Method)
 	}
-	if si.Auth != (Auth{}) && !util.StringInSlice(si.Auth.Type, supportedAuthentications[si.Protocol][:]) {
-		return fmt.Errorf("unsupported Authentication Method (%s) For Protocol (%s) ", si.Auth.Type, si.Protocol)
+	if si.Auth != (Auth{}) && !util.StringInSlice(si.Auth.Type, supportedAuthentications) {
+		return fmt.Errorf("unsupported Authentication Method (%s) ", si.Auth.Type)
 	}
 	if si.ID == 0 {
 		return fmt.Errorf("step ID should be greater than zero")
 	}
-	if !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
+	if !envVarRegexp.MatchString(si.URL) && !validator.IsURL(strings.ReplaceAll(si.URL, " ", "_")) {
 		return fmt.Errorf("target is not valid: %s", si.URL)
 	}
 	if si.Sleep != "" {
@@ -173,6 +246,48 @@ func (si *ScenarioStep) validate() error {
 			}
 		}
 	}
+
+	for _, conf := range si.EnvsToCapture {
+		err := validateCaptureConf(conf)
+		if err != nil {
+			return wrapAsScenarioValidationError(err)
+		}
+	}
+
+	// check if referred envs in current step has already been defined or not
+	if err := checkEnvsValidInStep(si, definedEnvs); err != nil {
+		return wrapAsScenarioValidationError(err)
+	}
+
+	return nil
+}
+
+func wrapAsScenarioValidationError(err error) ScenarioValidationError {
+	return ScenarioValidationError{
+		msg:        fmt.Sprintf("ScenarioValidationError %v", err),
+		wrappedErr: err,
+	}
+}
+
+func validateCaptureConf(conf EnvCaptureConf) error {
+	if !(conf.From == Header || conf.From == Body) {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("invalid \"from\" type in capture env : %s", conf.From),
+		}
+	}
+
+	if conf.From == Header && conf.Key == nil {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("%s, header key must be specified", conf.Name),
+		}
+	}
+
+	if conf.From == Body && conf.JsonPath == nil && conf.RegExp == nil && conf.Xpath == nil {
+		return CaptureConfigError{
+			msg: fmt.Sprintf("%s, one of jsonPath, regExp, xPath key must be specified when extracting from body", conf.Name),
+		}
+	}
+
 	return nil
 }
 
@@ -198,27 +313,9 @@ func ParseTLS(certFile, keyFile string) (tls.Certificate, *x509.CertPool, error)
 	return cert, pool, nil
 }
 
-// AdjustUrlProtocol adjusts the proper url-proto pair for the given ones.
-// If url includes protocol then the new protocol will be the protocol in the url
-// If url does not include protocol, then the new url will include the given protocol
-// If url is not valid, then error will be returned
-func AdjustUrlProtocol(url string, proto string) (string, string, error) {
-	var err error
-	if !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
-		err = fmt.Errorf("target is not valid: %s", url)
-	} else {
-		tempURL := strings.ToUpper(url)
-		if strings.HasPrefix(tempURL, ProtocolHTTPS+"://") {
-			proto = ProtocolHTTPS
-		} else if strings.HasPrefix(tempURL, ProtocolHTTP+"://") {
-			proto = ProtocolHTTP
-		} else {
-			if !strings.HasPrefix(tempURL, ProtocolHTTP) &&
-				!strings.HasPrefix(tempURL, ProtocolHTTPS) {
-				url = strings.ToLower(proto) + "://" + url
-			}
-		}
+func IsTargetValid(url string) error {
+	if !envVarRegexp.MatchString(url) && !validator.IsURL(strings.ReplaceAll(url, " ", "_")) {
+		return fmt.Errorf("target is not valid: %s", url)
 	}
-
-	return url, proto, err
+	return nil
 }
