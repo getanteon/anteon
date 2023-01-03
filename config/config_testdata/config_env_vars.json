@@ -7,7 +7,6 @@
             "id": 1,
             "name": "Example Name 1",
             "url": "{{TARGET_URL}}/accounts/login/?next=/",
-            "protocol": "https",
             "method": "GET",
             "payload": "payload str",
             "timeout": 3,
@@ -24,7 +23,6 @@
             "id": 2,
             "name": "Example Name 2",
             "url": "http://test.com/{{ENV_VAR1}}",
-            "protocol": "https",
             "method": "PUT",
             "headers": {
                 "ContenType": "application/xml",
