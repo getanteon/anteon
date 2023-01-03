@@ -6,7 +6,6 @@
         {
             "id": 1,
             "url": "https://app.servdown.com/accounts/login/?next=/",
-            "protocol": "http",
             "auth": {
                 "type": "basic",
                 "username": "kursat",
@@ -26,7 +25,6 @@
         {
             "id": 2,
             "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
-            "protocol": "https",
             "method": "GET",
             "headers": {
                 "ContenType": "application/xml",

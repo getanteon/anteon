@@ -16,7 +16,6 @@
         {
             "id": 1,
             "url": "https://test_site1.com/endpoint_1",
-            "protocol": "https",
             "method": "POST",
             "headers": {
                 "Content-Type": "application/xml",

@@ -159,7 +159,6 @@ ddosify [FLAG]
 | `-t`   | Target website URL. Example: https://ddosify.com         | `string` | - | Yes        |
 | `-n`   | Total iteration count                                      | `int`    | `100`   | No         |
 | `-d`   | Test duration in seconds.                                | `int`    | `10`    | No         |
-`HTTPS`    | No         |
 | `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS* | `string`    | `GET`    | No  |
 | `-b`   | The payload of the network packet. AKA body for the HTTP.  | `string`    | -    | No         |
 | `-a`   | Basic authentication. Usage: `-a username:password`        | `string`    | -    | No         |

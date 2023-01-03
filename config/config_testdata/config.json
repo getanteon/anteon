@@ -7,7 +7,6 @@
             "id": 1,
             "name": "Example Name 1",
             "url": "https://app.servdown.com/accounts/login/?next=/",
-            "protocol": "https",
             "method": "GET",
             "payload": "payload str",
             "timeout": 3,
@@ -20,7 +19,6 @@
             "id": 2,
             "name": "Example Name 2",
             "url": "http://test.com",
-            "protocol": "https",
             "method": "PUT",
             "headers": {
                 "ContenType": "application/xml",
