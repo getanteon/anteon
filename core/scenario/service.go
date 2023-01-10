@@ -173,7 +173,10 @@ func injectDynamicVars(envs map[string]interface{}) {
 	vi := &injection.EnvironmentInjector{}
 	vi.Init()
 	for k, v := range envs {
-		vStr := v.(string)
+		vStr, isStr := v.(string)
+		if !isStr {
+			continue
+		}
 		if dynamicRgx.MatchString(vStr) {
 			injected, err := vi.InjectDynamic(vStr)
 			if err != nil {
