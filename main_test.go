@@ -31,13 +31,19 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	gopsProc "github.com/shirou/gopsutil/v3/process"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
+	"golang.org/x/exp/constraints"
 )
+
+var tempRun func(h types.Hammer)
 
 func TestMain(m *testing.M) {
 	// Mock run function to prevent engine starting
+	tempRun = run
 	run = func(h types.Hammer) {}
 	os.Exit(m.Run())
 }
@@ -639,4 +645,135 @@ OLDW6kKz5pI4T8lQJhdqjCU=
 -----END PRIVATE KEY-----`
 
 	return cert, certKey
+}
+
+var table = []struct {
+	input string
+	// in percents
+	maxCpuThreshold float64
+	avgCpuThreshold float64
+	maxMemThreshold float32
+	avgMemThreshold float32
+}{
+	{
+		input:           "config/config_testdata/benchmark/config_json.json",
+		maxCpuThreshold: 10,
+		avgCpuThreshold: 10,
+		maxMemThreshold: 5,
+		avgMemThreshold: 5,
+	},
+	{
+		input:           "config/config_testdata/benchmark/config_correlation_load_1.json",
+		maxCpuThreshold: 10,
+		avgCpuThreshold: 10,
+		maxMemThreshold: 1,
+		avgMemThreshold: 1,
+	},
+	{
+		input:           "config/config_testdata/benchmark/config_correlation_load_2.json",
+		maxCpuThreshold: 50,
+		avgCpuThreshold: 40,
+		maxMemThreshold: 2,
+		avgMemThreshold: 1,
+	},
+	{
+		input:           "config/config_testdata/benchmark/config_correlation_load_3.json",
+		maxCpuThreshold: 120,
+		avgCpuThreshold: 100,
+		maxMemThreshold: 5,
+		avgMemThreshold: 5,
+	},
+	{
+		input:           "config/config_testdata/benchmark/config_correlation_load_4.json",
+		maxCpuThreshold: 150,
+		avgCpuThreshold: 120,
+		maxMemThreshold: 15,
+		avgMemThreshold: 10,
+	},
+	{
+		input:           "config/config_testdata/benchmark/config_correlation_load_5.json",
+		maxCpuThreshold: 180,
+		avgCpuThreshold: 150,
+		maxMemThreshold: 15,
+		avgMemThreshold: 10,
+	},
+}
+
+func BenchmarkEngines(b *testing.B) {
+	for _, v := range table {
+		b.Run(fmt.Sprintf("config_%s", v.input), func(b *testing.B) {
+			var cpuPercents []float64
+			var memPercents []float32
+
+			for i := 0; i < b.N; i++ {
+				*configPath = v.input
+				run = tempRun
+				doneChan := make(chan struct{}, 1)
+				go func() {
+					ticker := time.NewTicker(time.Duration(100 * time.Millisecond))
+					pid := os.Getpid()
+					proc, _ := gopsProc.NewProcess(int32(pid))
+					for {
+						select {
+						case <-ticker.C:
+							cpuPercent, _ := proc.CPUPercent()
+							cpuPercents = append(cpuPercents, cpuPercent)
+
+							memPerc, _ := proc.MemoryPercent()
+							memPercents = append(memPercents, memPerc)
+						case <-doneChan:
+							return
+						}
+					}
+				}()
+				start()
+				doneChan <- struct{}{}
+			}
+
+			avgCpu := sum(cpuPercents) / float64(len(cpuPercents))
+			maxCpu := max(cpuPercents)
+
+			avgMem := sum(memPercents) / float32(len(memPercents))
+			maxMem := max(memPercents)
+
+			if avgCpu > v.avgCpuThreshold {
+				b.Errorf("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold)
+			}
+			if maxCpu > v.maxCpuThreshold {
+				b.Errorf("Max cpu %f, higher than maxCpuThreshold %f", maxCpu, v.maxCpuThreshold)
+			}
+			if avgMem > v.avgMemThreshold {
+				b.Errorf("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold)
+			}
+			if maxMem > v.maxMemThreshold {
+				b.Errorf("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold)
+			}
+		})
+	}
+}
+
+func max[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
+	m := s[0]
+	for _, v := range s {
+		if m < v {
+			m = v
+		}
+	}
+	return m
+}
+
+func sum[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
+	var m T
+	for _, v := range s {
+		m += v
+	}
+	return m
 }
