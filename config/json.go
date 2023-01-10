@@ -108,6 +108,17 @@ func (s *step) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type CsvConf struct {
+	Path          string            `json:"path"`
+	Src           string            `json:"src"`
+	Delimiter     string            `json:"delimiter"`
+	SkipFirstLine bool              `json:"skipFirstLine"`
+	Vars          map[string]string `json:"vars"` // "0":"name", "1":"city","2":"team"
+	SkipEmptyLine bool              `json:"skipEmptyLine"`
+	AllowQuota    bool              `json:"allowQuota"`
+	Order         string            `json:"order"`
+}
+
 type JsonReader struct {
 	ReqCount     *int                   `json:"request_count"`
 	IterCount    *int                   `json:"iteration_count"`
@@ -118,6 +129,7 @@ type JsonReader struct {
 	Output       string                 `json:"output"`
 	Proxy        string                 `json:"proxy"`
 	Envs         map[string]interface{} `json:"env"`
+	Data         map[string]CsvConf     `json:"data"`
 	Debug        bool                   `json:"debug"`
 }
 
@@ -152,6 +164,17 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 }
 
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
+	// Read Data
+	data := make(map[string][]map[string]interface{}, len(j.Data))
+	for k, conf := range j.Data {
+		var rows []map[string]interface{}
+		rows, err = readCsv(conf)
+		if err != nil {
+			return
+		}
+		data[k] = rows
+	}
+
 	// Scenario
 	s := types.Scenario{
 		Envs: j.Envs,
