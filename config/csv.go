@@ -28,10 +28,12 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 			data = data[1:]
 		}
 
-		rt := make([]map[string]interface{}, len(data))
+		rt := make([]map[string]interface{}, 0) // unclear how many empty line exist
 
-		// TODOcorr: empty line check full ""
 		for _, row := range data {
+			if conf.SkipEmptyLine && emptyLine(row) {
+				continue
+			}
 			x := map[string]interface{}{}
 			for index, tag := range conf.Vars { // "0":"name", "1":"city","2":"team"
 				i, err := strconv.Atoi(index)
@@ -50,5 +52,13 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 	}
 
 	return nil, fmt.Errorf("csv read error")
+}
 
+func emptyLine(row []string) bool {
+	for _, field := range row {
+		if field != "" {
+			return false
+		}
+	}
+	return true
 }

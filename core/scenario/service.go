@@ -48,6 +48,9 @@ type ScenarioService struct {
 
 	clientMutex sync.Mutex
 	debug       bool
+	ei          *injection.EnvironmentInjector
+	indexMu     sync.Mutex
+	iterIndex   int
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -55,13 +58,25 @@ func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
 }
 
+func (s *ScenarioService) incrementIterIndex() {
+	s.indexMu.Lock()
+	defer s.indexMu.Unlock()
+	s.iterIndex++
+}
+
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
-func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, proxies []*url.URL, debug bool) (err error) {
+func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
+	proxies []*url.URL, debug bool) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
 	s.debug = debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
+
+	ei := &injection.EnvironmentInjector{}
+	ei.Init()
+	s.ei = ei
+
 	for _, p := range proxies {
 		err = s.createRequesters(p)
 		if err != nil {
@@ -79,6 +94,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	response = &types.ScenarioResult{StepResults: []*types.ScenarioStepResult{}}
 	response.StartTime = startTime
 	response.ProxyAddr = proxy
+	rand.Seed(time.Now().UnixNano())
 
 	requesters, e := s.getOrCreateRequesters(proxy)
 	if e != nil {
@@ -94,6 +110,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	injectDynamicVars(envs)
 
 	for _, sr := range requesters {
+		s.enrichEnvFromData(envs)
+		s.incrementIterIndex()
 		res := sr.requester.Send(envs)
 
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
@@ -118,6 +136,28 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 func enrichEnvFromPrevStep(m1 map[string]interface{}, m2 map[string]interface{}) {
 	for k, v := range m2 {
 		m1[k] = v
+	}
+}
+
+func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
+	var row map[string]interface{}
+	sb := strings.Builder{}
+	for key, csvData := range s.scenario.Data {
+		if csvData.Random {
+			row = csvData.Rows[rand.Intn(len(csvData.Rows))]
+		} else {
+			row = csvData.Rows[s.iterIndex%len(csvData.Rows)]
+		}
+
+		for tag, v := range row {
+			sb.WriteString("data.")
+			sb.WriteString(key)
+			sb.WriteString(".")
+			sb.WriteString(tag)
+			// data.info.name
+			envs[sb.String()] = v
+			sb.Reset()
+		}
 	}
 }
 
@@ -160,7 +200,7 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			},
 		)
 
-		err = r.Init(s.ctx, si, proxy, s.debug)
+		err = r.Init(s.ctx, si, proxy, s.debug, s.ei)
 		if err != nil {
 			return
 		}

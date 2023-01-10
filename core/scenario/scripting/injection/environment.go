@@ -60,7 +60,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		var err error
 
 		truncated = truncateTag(string(s), regex.EnvironmentVariableRegex)
-		env, err = getEnv(envs, truncated)
+		env, err = ei.getEnv(envs, truncated)
 
 		if err == nil {
 			switch env.(type) {
@@ -90,7 +90,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		var err error
 
 		truncated = truncateTag(string(s), regex.JsonEnvironmentVarRegex)
-		env, err = getEnv(envs, truncated)
+		env, err = ei.getEnv(envs, truncated)
 
 		if err == nil {
 			mEnv, err := json.Marshal(env)
@@ -194,7 +194,7 @@ func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {
 
 }
 
-func getEnv(envs map[string]interface{}, key string) (interface{}, error) {
+func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (interface{}, error) {
 	var err error
 	var val interface{}
 
