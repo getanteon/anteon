@@ -17,14 +17,14 @@ pipeline {
       }
     }
   }
-  post {
-    unstable {
-      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
-    }
+  // post {
+  //   unstable {
+  //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+  //   }
 
-    failure {
-      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
-    }
+  //   failure {
+  //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+  //   }
 
-  }
+  // }
 }
