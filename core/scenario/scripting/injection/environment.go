@@ -100,7 +100,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		}
 
 		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps: %v", truncated, err))
 		return s
 	}
 
@@ -109,7 +109,10 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 	if json.Valid(bText) {
 		if ei.jr.Match(bText) {
 			replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
-			return string(replacedBytes), nil
+			if len(errors) == 0 {
+				return string(replacedBytes), nil
+			}
+			return "", unifyErrors(errors)
 		}
 	}
 
@@ -198,14 +201,18 @@ func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (
 	var err error
 	var val interface{}
 
-	if strings.HasPrefix(key, "rand(") && strings.HasSuffix(key, ")") { // get random val from []interface{}
+	pickRand := strings.HasPrefix(key, "rand(") && strings.HasSuffix(key, ")")
+	if pickRand {
 		key = key[5 : len(key)-1]
-		var exists bool
-		val, exists = envs[key]
-		if !exists {
-			err = fmt.Errorf("env not found")
-		}
+	}
 
+	var exists bool
+	val, exists = envs[key]
+	if !exists {
+		err = fmt.Errorf("env not found")
+	}
+
+	if pickRand {
 		switch v := val.(type) {
 		case []interface{}:
 			val = v[rand.Intn(len(v))]
@@ -219,13 +226,6 @@ func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (
 			val = v[rand.Intn(len(v))]
 		default:
 			err = fmt.Errorf("can not perform rand() operation on non-array value")
-		}
-
-	} else {
-		var exists bool
-		val, exists = envs[key]
-		if !exists {
-			err = fmt.Errorf("env not found")
 		}
 	}
 
