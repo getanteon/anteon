@@ -1,6 +1,7 @@
 pipeline {
   agent {
     dockerfile {
+      label 'performance-test'
       filename '.devcontainer/Dockerfile.dev'
     }
   }
