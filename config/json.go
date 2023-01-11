@@ -137,6 +137,7 @@ func (c *CsvConf) UnmarshalJSON(data []byte) error {
 	c.SkipFirstLine = false
 	c.AllowQuota = false
 	c.Delimiter = ","
+	c.Order = "random"
 
 	type tempCsv CsvConf
 	return json.Unmarshal(data, (*tempCsv)(c))
@@ -200,6 +201,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 		var csvData types.CsvData
 		csvData.Rows = rows
+
 		if conf.Order == "random" {
 			csvData.Random = true
 		}

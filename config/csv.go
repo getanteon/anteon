@@ -8,7 +8,19 @@ import (
 	"strconv"
 )
 
+func validateConf(conf CsvConf) error {
+	if conf.Order == "random" || conf.Order == "sequential" {
+		return nil
+	}
+	return fmt.Errorf("unsupported order %s, should be random|sequential", conf.Order)
+}
+
 func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
+	err := validateConf(conf)
+	if err != nil {
+		return nil, err
+	}
+
 	if conf.Src == "local" {
 		f, err := os.Open(conf.Path)
 		if err != nil {
