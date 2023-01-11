@@ -732,9 +732,13 @@ func BenchmarkEngines(b *testing.B) {
 
 			avgCpu := sum(cpuPercents) / float64(len(cpuPercents))
 			maxCpu := max(cpuPercents)
+			fmt.Printf("Avg cpu: %f", avgCpu)
+			fmt.Printf("Max cpu: %f", maxCpu)
 
 			avgMem := sum(memPercents) / float32(len(memPercents))
 			maxMem := max(memPercents)
+			fmt.Printf("Avg mem: %f", avgMem)
+			fmt.Printf("Max mem: %f", maxMem)
 
 			if avgCpu > v.avgCpuThreshold {
 				b.Errorf("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold)
