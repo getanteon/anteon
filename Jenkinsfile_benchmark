@@ -1,0 +1,29 @@
+pipeline {
+  agent {
+    dockerfile {
+      filename '.devcontainer/Dockerfile.dev'
+    }
+  }
+
+  options { 
+    disableConcurrentBuilds() 
+  }
+
+  stages {
+    stage('Performance Test') {
+      steps {
+        sh 'go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+      }
+    }
+  }
+  post {
+    unstable {
+      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+    }
+
+    failure {
+      slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
+    }
+
+  }
+}
