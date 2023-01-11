@@ -13,7 +13,7 @@ pipeline {
   stages {
     stage('Performance Test') {
       steps {
-        sh 'go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+        sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
       }
     }
   }
