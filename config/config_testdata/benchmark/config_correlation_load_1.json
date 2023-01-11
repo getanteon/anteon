@@ -5,7 +5,7 @@
     "steps": [
             {
               "id": 1,
-              "url": "https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL",
+              "url": "{{HTTPBIN}}/json",
               "name": "JSON",
               "method": "GET",
               "others": {
@@ -25,13 +25,13 @@
                 "BOOL": {"from":"body","jsonPath":"quoteResponse.result.0.cryptoTradeable"},
                 "FLOAT" : {"from":"body","jsonPath":"quoteResponse.result.0.epsForward"},
                 "ALL_RESULT" :{"from":"body","jsonPath":"quoteResponse.result.0"},
-                "YAHOO_REQ_ID" :{"from":"header", "headerKey":"X-Yahoo-Request-Id"},
+                "CONTENT_LENGTH" :{"from":"header", "headerKey":"Content-Length"},
                 "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}  }             
             }         
             },
             {
               "id": 2,
-              "url": "http://restapi.adequateshop.com/api/Traveler?page=6",
+              "url": "{{HTTPBIN}}/xml",
               "name": "XML",
               "method": "GET",
               "others": {
@@ -43,7 +43,7 @@
               "headers": {
                 "num": "{{NUM}}",
                 "currency": "{{STR}}",
-                "yahoo" : "{{YAHOO_REQ_ID}}"
+                "yahoo" : "{{CONTENT_LENGTH}}"
               },
               "payload": "",
               "timeout": 10

@@ -7,7 +7,7 @@
     "mixedArrayField" : ["{{NUM}}",34,"{{FLOAT}}"],
     "{{STR}}" : "xxxx",
     "obj" :{
-        "numField" : "{{YAHOO_REQ_ID}}",
+        "numField" : "{{CONTENT_LENGTH}}",
         "objectField" : "{{ALL_RESULT}}"
     }
 }
