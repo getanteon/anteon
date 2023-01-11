@@ -108,15 +108,27 @@ func (s *step) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type Tag struct {
+	Tag  string `json:"tag"`
+	Type string `json:"type"`
+}
+
+func (t *Tag) UnmarshalJSON(data []byte) error {
+	// default values
+	t.Type = "string"
+	type tempTag Tag
+	return json.Unmarshal(data, (*tempTag)(t))
+}
+
 type CsvConf struct {
-	Path          string            `json:"path"`
-	Src           string            `json:"src"`
-	Delimiter     string            `json:"delimiter"`
-	SkipFirstLine bool              `json:"skipFirstLine"`
-	Vars          map[string]string `json:"vars"` // "0":"name", "1":"city","2":"team"
-	SkipEmptyLine bool              `json:"skipEmptyLine"`
-	AllowQuota    bool              `json:"allowQuota"`
-	Order         string            `json:"order"`
+	Path          string         `json:"path"`
+	Src           string         `json:"src"`
+	Delimiter     string         `json:"delimiter"`
+	SkipFirstLine bool           `json:"skipFirstLine"`
+	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
+	SkipEmptyLine bool           `json:"skipEmptyLine"`
+	AllowQuota    bool           `json:"allowQuota"`
+	Order         string         `json:"order"`
 }
 
 func (c *CsvConf) UnmarshalJSON(data []byte) error {

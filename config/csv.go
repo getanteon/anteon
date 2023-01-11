@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -19,6 +20,8 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 		csvReader := csv.NewReader(f)
 		csvReader.Comma = []rune(conf.Delimiter)[0]
 		csvReader.TrimLeadingSpace = true
+		csvReader.LazyQuotes = conf.AllowQuota
+
 		data, err := csvReader.ReadAll()
 		if err != nil {
 			return nil, err
@@ -40,7 +43,33 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
-				x[tag] = row[i]
+				// convert
+				var val interface{}
+				switch tag.Type {
+				case "json":
+					json.Unmarshal([]byte(row[i]), &val)
+				case "int":
+					var err error
+					val, err = strconv.Atoi(row[i])
+					if err != nil {
+						return nil, err
+					}
+				case "float":
+					var err error
+					val, err = strconv.ParseFloat(row[i], 64)
+					if err != nil {
+						return nil, err
+					}
+				case "bool":
+					var err error
+					val, err = strconv.ParseBool(row[i])
+					if err != nil {
+						return nil, err
+					}
+				default:
+					val = row[i]
+				}
+				x[tag.Tag] = val
 			}
 			rt = append(rt, x)
 		}

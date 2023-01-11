@@ -108,10 +108,11 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	}
 	// inject dynamic variables beforehand for each iteration
 	injectDynamicVars(envs)
+	// pass a row from data for each iteration
+	s.enrichEnvFromData(envs)
+	s.incrementIterIndex()
 
 	for _, sr := range requesters {
-		s.enrichEnvFromData(envs)
-		s.incrementIterIndex()
 		res := sr.requester.Send(envs)
 
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
