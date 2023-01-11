@@ -119,6 +119,17 @@ type CsvConf struct {
 	Order         string            `json:"order"`
 }
 
+func (c *CsvConf) UnmarshalJSON(data []byte) error {
+	// default values
+	c.SkipEmptyLine = true
+	c.SkipFirstLine = false
+	c.AllowQuota = false
+	c.Delimiter = ","
+
+	type tempCsv CsvConf
+	return json.Unmarshal(data, (*tempCsv)(c))
+}
+
 type JsonReader struct {
 	ReqCount     *int                   `json:"request_count"`
 	IterCount    *int                   `json:"iteration_count"`
