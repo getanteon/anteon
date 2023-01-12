@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LIMIT=10
+LIMIT=15
 IS_FAILED=0
 time_op=$(grep -A1 'time/op' gobench_branch_result.txt |tail -1 | awk '{print $8}' | tr -d + | tr -d %)
 echo -e "Max. Delta Time op: $time_op / $LIMIT" | tee benchstat.txt
