@@ -606,7 +606,8 @@ ddosify -config ddosify_config_correlation.json -debug
         "TARGET_URL" : "http://localhost:8084/hello",
         "USER_KEY" : "ABC",
         "COMPANY_NAME" : "Ddosify",
-        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+        "RANDOM_COUNTRY" : "{{_randomCountry}}",
+        "NUMBERS" : [22,33,10,52] 
     },
 }
 ```
@@ -614,6 +615,7 @@ ddosify -config ddosify_config_correlation.json -debug
 
 
 ### :hammer: Overall Config and Injection
+On array-like captured variables or environment vars, the **rand( )** function can be utilized.
 ```json
 // ddosify_config_correlation.json
 {
@@ -626,7 +628,8 @@ ddosify -config ddosify_config_correlation.json -debug
             "url": "{{TARGET_URL}}",
             "method": "POST",
             "headers": {
-                "User-Key": "{{USER_KEY}}"
+                "User-Key": "{{USER_KEY}}",
+                "Rand-Selected-Num" : "{{rand(NUMBERS)}}"
             },
             "payload" : "{{COMPANY_NAME}}",
             "captureEnv": {
@@ -659,7 +662,8 @@ ddosify -config ddosify_config_correlation.json -debug
         "TARGET_URL" : "http://localhost:8084/hello",
         "USER_KEY" : "ABC",
         "COMPANY_NAME" : "Ddosify",
-        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+        "RANDOM_COUNTRY" : "{{_randomCountry}}",
+        "NUMBERS" : [22,33,10,52] 
     },
 }
 ```
