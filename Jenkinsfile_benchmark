@@ -13,7 +13,9 @@ pipeline {
   stages {
     stage('Performance Test') {
       steps {
-        sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+        lock('multi_branch_server_benchmark') {
+          sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+        }
       }
     }
   }
@@ -25,6 +27,5 @@ pipeline {
   //   failure {
   //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
   //   }
-
   // }
 }
