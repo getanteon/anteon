@@ -15,3 +15,5 @@ source /usr/share/doc/fzf/examples/completion.zsh
 alias ll='ls -alF'
 alias hammer-clean='go clean -testcache'
 alias hammer-test-n-cover='gotest -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -func coverage.out'
+
+export PATH="$PATH:/go/bin"

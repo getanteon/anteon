@@ -24,6 +24,7 @@ RUN go install -v github.com/rogpeppe/godef@v1.1.2
 RUN go install -v github.com/rakyll/gotest@v0.0.6
 RUN go install -v github.com/ramya-rao-a/go-outline@1.0.0
 RUN go install -v github.com/go-delve/delve/cmd/dlv@v1.8.1
+RUN go install -v golang.org/x/perf/cmd/benchstat@latest
 RUN go mod download
 
 CMD [ "zsh" ]

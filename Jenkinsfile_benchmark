@@ -30,6 +30,8 @@ pipeline {
         lock('multi_branch_server_benchmark') {
           sh 'git fetch origin develop:develop ||  git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1 | tee gobench_develop.txt'
           sh "git checkout ${BRANCH_NAME}"
+          sh "benchstat -alpha 1.01 --sort delta gobench_develop.txt gobench_branch.txt"
+          sh "benchstat -alpha 1.01 --sort delta --html gobench_develop.txt gobench_branch.txt > 00_gobench_result.html && echo $(realpath 00_gobench_result.html)"
         }
       }
     }
@@ -38,6 +40,7 @@ pipeline {
     always {
       archiveArtifacts artifacts: '*.out', fingerprint: true
       archiveArtifacts artifacts: 'gobench_*.txt', fingerprint: true
+      archiveArtifacts artifacts: '00_gobench_result.html', fingerprint: true
     }
   //   unstable {
   //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
