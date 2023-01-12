@@ -50,7 +50,7 @@ pipeline {
     always {
       archiveArtifacts artifacts: '*.out', fingerprint: true
       archiveArtifacts artifacts: 'gobench_*.txt', fingerprint: true
-      archiveArtifacts artifacts: '**.html', fingerprint: true
+      archiveArtifacts artifacts: '00_gobench_result.html', fingerprint: true, allowEmptyArchive: true
     }
   //   unstable {
   //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
