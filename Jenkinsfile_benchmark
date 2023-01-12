@@ -35,9 +35,8 @@ pipeline {
           sh "./scripts/testing/benchstat.sh"
           withCredentials([usernamePassword(credentialsId: 'ddosifyadmin_comment_github_access', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
             sh """
-              print_data=\$(cat benchstat.txt)
               curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                              -X POST -d '{"body": \${print_data}}' \
+                              -X POST -d '{"body": \$(cat benchstat.txt)}' \
                               "https://api.github.com/repos/ddosify/ddosify/issues/${env.CHANGE_ID}/comments"
             """
           }
