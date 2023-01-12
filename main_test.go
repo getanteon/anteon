@@ -33,7 +33,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fatih/color"
 	gopsProc "github.com/shirou/gopsutil/v3/process"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
@@ -701,10 +700,8 @@ var table = []struct {
 }
 
 func BenchmarkEngines(b *testing.B) {
-	var yellow = color.New(color.FgHiYellow).SprintFunc()
-	var red = color.New(color.FgHiRed).SprintFunc()
 	for _, v := range table {
-		b.Run(yellow(fmt.Sprintf("config_%s", v.input)), func(b *testing.B) {
+		b.Run(fmt.Sprintf("config_%s", v.input), func(b *testing.B) {
 			var cpuPercents []float64
 			var memPercents []float32
 
@@ -735,25 +732,25 @@ func BenchmarkEngines(b *testing.B) {
 
 			avgCpu := sum(cpuPercents) / float64(len(cpuPercents))
 			maxCpu := max(cpuPercents)
-			yellow(fmt.Printf("Avg cpu: %f\n", avgCpu))
-			yellow(fmt.Printf("Max cpu: %f\n", maxCpu))
+			fmt.Printf("Avg cpu: %f / %f \n", avgCpu, v.avgCpuThreshold)
+			fmt.Printf("Max cpu: %f / %f \n", maxCpu, v.maxCpuThreshold)
 
 			avgMem := sum(memPercents) / float32(len(memPercents))
 			maxMem := max(memPercents)
-			yellow(fmt.Printf("Avg mem: %f\n", avgMem))
-			yellow(fmt.Printf("Max mem: %f\n\n", maxMem))
+			fmt.Printf("Avg mem: %f / %f \n", avgMem, v.avgMemThreshold)
+			fmt.Printf("Max mem: %f / %f \n\n", maxMem, v.maxMemThreshold)
 
 			if avgCpu > v.avgCpuThreshold {
-				b.Errorf(red("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold))
+				b.Errorf("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold)
 			}
 			if maxCpu > v.maxCpuThreshold {
-				b.Errorf(red("Max cpu %f, higher than maxCpuThreshold %f", maxCpu, v.maxCpuThreshold))
+				b.Errorf("Max cpu %f, higher than maxCpuThreshold %f", maxCpu, v.maxCpuThreshold)
 			}
 			if avgMem > v.avgMemThreshold {
-				b.Errorf(red("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold))
+				b.Errorf("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold)
 			}
 			if maxMem > v.maxMemThreshold {
-				b.Errorf(red("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold))
+				b.Errorf("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold)
 			}
 		})
 	}
