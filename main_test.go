@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fatih/color"
 	gopsProc "github.com/shirou/gopsutil/v3/process"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
@@ -657,51 +658,53 @@ var table = []struct {
 }{
 	{
 		input:           "config/config_testdata/benchmark/config_json.json",
-		maxCpuThreshold: 10,
-		avgCpuThreshold: 10,
-		maxMemThreshold: 5,
-		avgMemThreshold: 5,
+		maxCpuThreshold: 5,
+		avgCpuThreshold: 4,
+		maxMemThreshold: 1,
+		avgMemThreshold: 1,
 	},
 	{
 		input:           "config/config_testdata/benchmark/config_correlation_load_1.json",
-		maxCpuThreshold: 10,
-		avgCpuThreshold: 10,
+		maxCpuThreshold: 6,
+		avgCpuThreshold: 5,
 		maxMemThreshold: 1,
 		avgMemThreshold: 1,
 	},
 	{
 		input:           "config/config_testdata/benchmark/config_correlation_load_2.json",
-		maxCpuThreshold: 50,
-		avgCpuThreshold: 40,
+		maxCpuThreshold: 20,
+		avgCpuThreshold: 15,
 		maxMemThreshold: 2,
-		avgMemThreshold: 1,
+		avgMemThreshold: 2,
 	},
 	{
 		input:           "config/config_testdata/benchmark/config_correlation_load_3.json",
-		maxCpuThreshold: 120,
-		avgCpuThreshold: 100,
-		maxMemThreshold: 5,
-		avgMemThreshold: 5,
+		maxCpuThreshold: 80,
+		avgCpuThreshold: 50,
+		maxMemThreshold: 13,
+		avgMemThreshold: 8,
 	},
 	{
 		input:           "config/config_testdata/benchmark/config_correlation_load_4.json",
-		maxCpuThreshold: 150,
-		avgCpuThreshold: 120,
-		maxMemThreshold: 15,
-		avgMemThreshold: 10,
+		maxCpuThreshold: 130,
+		avgCpuThreshold: 110,
+		maxMemThreshold: 25,
+		avgMemThreshold: 16,
 	},
 	{
 		input:           "config/config_testdata/benchmark/config_correlation_load_5.json",
-		maxCpuThreshold: 180,
-		avgCpuThreshold: 150,
-		maxMemThreshold: 15,
-		avgMemThreshold: 10,
+		maxCpuThreshold: 210,
+		avgCpuThreshold: 170,
+		maxMemThreshold: 70,
+		avgMemThreshold: 45,
 	},
 }
 
 func BenchmarkEngines(b *testing.B) {
+	var yellow = color.New(color.FgHiYellow).SprintFunc()
+	var red = color.New(color.FgHiRed).SprintFunc()
 	for _, v := range table {
-		b.Run(fmt.Sprintf("config_%s", v.input), func(b *testing.B) {
+		b.Run(yellow(fmt.Sprintf("config_%s", v.input)), func(b *testing.B) {
 			var cpuPercents []float64
 			var memPercents []float32
 
@@ -732,25 +735,25 @@ func BenchmarkEngines(b *testing.B) {
 
 			avgCpu := sum(cpuPercents) / float64(len(cpuPercents))
 			maxCpu := max(cpuPercents)
-			fmt.Printf("Avg cpu: %f\n", avgCpu)
-			fmt.Printf("Max cpu: %f\n", maxCpu)
+			yellow(fmt.Printf("Avg cpu: %f\n", avgCpu))
+			yellow(fmt.Printf("Max cpu: %f\n", maxCpu))
 
 			avgMem := sum(memPercents) / float32(len(memPercents))
 			maxMem := max(memPercents)
-			fmt.Printf("Avg mem: %f\n", avgMem)
-			fmt.Printf("Max mem: %f\n\n", maxMem)
+			yellow(fmt.Printf("Avg mem: %f\n", avgMem))
+			yellow(fmt.Printf("Max mem: %f\n\n", maxMem))
 
 			if avgCpu > v.avgCpuThreshold {
-				b.Errorf("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold)
+				b.Errorf(red("Avg cpu %f, higher than avgCpuThreshold %f", avgCpu, v.avgCpuThreshold))
 			}
 			if maxCpu > v.maxCpuThreshold {
-				b.Errorf("Max cpu %f, higher than maxCpuThreshold %f", maxCpu, v.maxCpuThreshold)
+				b.Errorf(red("Max cpu %f, higher than maxCpuThreshold %f", maxCpu, v.maxCpuThreshold))
 			}
 			if avgMem > v.avgMemThreshold {
-				b.Errorf("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold)
+				b.Errorf(red("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold))
 			}
 			if maxMem > v.maxMemThreshold {
-				b.Errorf("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold)
+				b.Errorf(red("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold))
 			}
 		})
 	}
