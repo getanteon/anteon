@@ -14,7 +14,7 @@ pipeline {
     stage('Performance Test') {
       steps {
         lock('multi_branch_server_benchmark') {
-          sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+          sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1 | tee gobench_branch.txt'
         }
       }
     }
@@ -28,7 +28,7 @@ pipeline {
       }
       steps {
         lock('multi_branch_server_benchmark') {
-          sh 'git fetch origin develop:develop && git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+          sh 'git fetch origin develop:develop && git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1 | tee gobench_develop.txt'
           sh "git checkout ${BRANCH_NAME}"
         }
       }
@@ -37,6 +37,7 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: '*.out', fingerprint: true
+      archiveArtifacts artifacts: 'gobench_*.txt', fingerprint: true
     }
   //   unstable {
   //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
