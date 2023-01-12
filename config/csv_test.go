@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,7 +11,6 @@ func TestValidateCsvConf(t *testing.T) {
 	t.Parallel()
 	conf := CsvConf{
 		Path:          "",
-		Src:           "",
 		Delimiter:     "",
 		SkipFirstLine: false,
 		Vars:          map[string]Tag{},
@@ -25,21 +25,12 @@ func TestValidateCsvConf(t *testing.T) {
 	if err == nil {
 		t.Errorf("TestValidateCsvConf should be errored")
 	}
-
-	conf.Order = "random"
-	conf.Src = "invalidSrc"
-	err = validateConf(conf)
-
-	if err == nil {
-		t.Errorf("TestValidateCsvConf should be errored")
-	}
 }
 
 func TestReadCsv(t *testing.T) {
 	t.Parallel()
 	conf := CsvConf{
 		Path:          "config_testdata/test.csv",
-		Src:           "local",
 		Delimiter:     ";",
 		SkipFirstLine: true,
 		Vars: map[string]Tag{
@@ -100,5 +91,42 @@ func TestReadCsv(t *testing.T) {
 	expectedPayload2 := []interface{}{5.0, 6.0, 7.0} // underlying type float64
 	if !reflect.DeepEqual(secondPayload, expectedPayload2) {
 		t.Errorf("TestReadCsv found: %#v , expected: %#v", secondPayload, expectedPayload2)
+	}
+}
+
+var table = []struct {
+	conf    CsvConf
+	latency float64
+}{
+	{
+		conf: CsvConf{
+			Path:          "config_testdata/test.csv",
+			Delimiter:     ";",
+			SkipFirstLine: true,
+			Vars: map[string]Tag{
+				"0": {Tag: "name", Type: "string"},
+				"3": {Tag: "payload", Type: "json"},
+				"4": {Tag: "age", Type: "int"},
+				"5": {Tag: "percent", Type: "float"},
+				"6": {Tag: "boolField", Type: "bool"},
+			},
+			SkipEmptyLine: true,
+			AllowQuota:    true,
+			Order:         "sequential",
+		},
+	},
+}
+
+func TestBenchmarkCsvRead(t *testing.T) {
+	for _, v := range table {
+
+		res := testing.Benchmark(func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				readCsv(v.conf)
+			}
+		})
+
+		fmt.Printf("ns:%d", res.T.Nanoseconds())
+		fmt.Printf("N:%d", res.N)
 	}
 }

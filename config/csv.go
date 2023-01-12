@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -13,9 +14,6 @@ import (
 func validateConf(conf CsvConf) error {
 	if !(conf.Order == "random" || conf.Order == "sequential") {
 		return fmt.Errorf("unsupported order %s, should be random|sequential", conf.Order)
-	}
-	if !(conf.Src == "local" || conf.Src == "remote") {
-		return fmt.Errorf("unsupported src %s, should be local|remote", conf.Order)
 	}
 	return nil
 }
@@ -28,15 +26,14 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 
 	var reader io.Reader
 
-	if conf.Src == "local" {
+	if _, err = os.Stat(conf.Path); err == nil { // local file path
 		f, err := os.Open(conf.Path)
 		if err != nil {
 			return nil, err
 		}
 		reader = f
 		defer f.Close()
-
-	} else if conf.Src == "remote" {
+	} else if _, err = url.ParseRequestURI(conf.Path); err == nil { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
 			return nil, err
@@ -47,6 +44,8 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 		}
 		reader = resp.Body
 		defer resp.Body.Close()
+	} else {
+		return nil, fmt.Errorf("given path is neither local path nor url")
 	}
 
 	// read csv values using csv.Reader
@@ -71,11 +70,16 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 			continue
 		}
 		x := map[string]interface{}{}
-		for index, tag := range conf.Vars { // "0":"name", "1":"city","2":"team"
+		for index, tag := range conf.Vars {
 			i, err := strconv.Atoi(index)
 			if err != nil {
 				return nil, err
 			}
+
+			if i >= len(row) {
+				return nil, fmt.Errorf("index number out of range, check your vars or delimiter")
+			}
+
 			// convert
 			var val interface{}
 			switch tag.Type {

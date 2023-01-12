@@ -122,7 +122,6 @@ func (t *Tag) UnmarshalJSON(data []byte) error {
 
 type CsvConf struct {
 	Path          string         `json:"path"`
-	Src           string         `json:"src"`
 	Delimiter     string         `json:"delimiter"`
 	SkipFirstLine bool           `json:"skipFirstLine"`
 	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
