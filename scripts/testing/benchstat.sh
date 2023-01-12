@@ -9,13 +9,13 @@ if (( $(echo "$time_op > $LIMIT" | bc -l) )); then
 fi
 
 alloc_op=$(grep -A1 'alloc/op' gobench_branch_result.txt |tail -1 | awk '{print $8}' | tr -d + | tr -d %)
-echo -e "Max. Delta Alloc op: $alloc_op / $LIMIT" | tee benchstat.txt
+echo -e "Max. Delta Alloc op: $alloc_op / $LIMIT" | tee --append benchstat.txt
 if (( $(echo "$alloc_op > $LIMIT" | bc -l) )); then
     IS_FAILED=1
 fi
 
 allocs_op=$(grep -A1 'allocs/op' gobench_branch_result.txt |tail -1 | awk '{print $8}' | tr -d + | tr -d %)
-echo -e "Max. Delta Allocs op: $allocs_op / $LIMIT" | tee benchstat.txt
+echo -e "Max. Delta Allocs op: $allocs_op / $LIMIT" | tee --append benchstat.txt
 if (( $(echo "$allocs_op > $LIMIT" | bc -l) )); then
     IS_FAILED=1
 fi
