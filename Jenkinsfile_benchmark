@@ -36,9 +36,9 @@ pipeline {
           withCredentials([usernamePassword(credentialsId: 'ddosifyadmin_comment_github_access', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
             sh """#!/bin/bash
               export github_comment=`jq -Rs '.' benchstat.txt`
-              echo ${github_comment}
+              echo ${env.github_comment}
               curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                              -X POST -d "{\"body\": ${github_comment}}" \
+                              -X POST -d "{\"body\": ${env.github_comment}}" \
                               "https://api.github.com/repos/ddosify/ddosify/issues/${env.CHANGE_ID}/comments"
             """
           }
