@@ -37,7 +37,7 @@ pipeline {
             sh """
               print_data=\$(cat benchstat.txt)
               curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                              -X POST -d '{"body": ${print_data}}' \
+                              -X POST -d '{"body": $print_data}' \
                               "https://api.github.com/repos/ddosify/ddosify/issues/${env.CHANGE_ID}/comments"
             """
           }
