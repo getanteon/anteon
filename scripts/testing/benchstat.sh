@@ -20,6 +20,11 @@ if (( $(echo "$allocs_op > $LIMIT" | bc -l) )); then
     IS_FAILED=1
 fi
 
+github_comment=`jq -Rs '.' benchstat.txt`
+curl -s -H "Authorization: token $1" \
+                -X POST -d "{\"body\": $github_comment" \
+                "https://api.github.com/repos/ddosify/ddosify/issues/$2/comments"
+
 if [ $IS_FAILED -eq 1 ]; then
     exit 1
 fi

@@ -32,15 +32,9 @@ pipeline {
           sh "git checkout ${BRANCH_NAME}"
           sh "benchstat -alpha 1.01 --sort delta gobench_develop.txt gobench_branch.txt | tee gobench_branch_result.txt"
           sh "benchstat -alpha 1.01 --sort delta --html gobench_develop.txt gobench_branch.txt > 00_gobench_result.html && echo ${BUILD_URL}artifact/00_gobench_result.html"
-          sh "./scripts/testing/benchstat.sh"
+          
           withCredentials([usernamePassword(credentialsId: 'ddosifyadmin_comment_github_access', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
-            sh """#!/bin/bash
-              export github_comment=`jq -Rs '.' benchstat.txt`
-              echo ${env.github_comment}
-              curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                              -X POST -d "{\"body\": ${env.github_comment}}" \
-                              "https://api.github.com/repos/ddosify/ddosify/issues/${env.CHANGE_ID}/comments"
-            """
+            sh "./scripts/testing/benchstat.sh ${GITHUB_TOKEN} ${env.CHANGE_ID}"
           }
         }
       }
