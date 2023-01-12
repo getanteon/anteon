@@ -37,7 +37,7 @@ pipeline {
             sh """#!/bin/bash
               github_comment=`jq -Rs '.' benchstat.txt`
               curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                              -X POST -d '{"body": \$github_comment}' \
+                              -X POST -d "{\"body\": $github_comment}" \
                               "https://api.github.com/repos/ddosify/ddosify/issues/${env.CHANGE_ID}/comments"
             """
           }
