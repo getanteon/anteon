@@ -14,15 +14,29 @@ pipeline {
     stage('Performance Test') {
       steps {
         lock('multi_branch_server_benchmark') {
-          sh 'GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1'
+          sh "GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out -run=^$ -bench ^BenchmarkEngines$ -count 1"
+        }
+      }
+    }
+    stage('Performance Test Develop') {
+      when {
+        // Run on only PR
+        allOf {
+          expression { env.CHANGE_ID != null }
+          expression { env.CHANGE_TARGET != null }
+        }
+      }
+      steps {
+        lock('multi_branch_server_benchmark') {
+          sh "git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1 && git checkout ${BRANCH_NAME}"
         }
       }
     }
   }
   post {
     always {
-            archiveArtifacts artifacts: '*.out', fingerprint: true
-        }
+      archiveArtifacts artifacts: '*.out', fingerprint: true
+    }
   //   unstable {
   //     slackSend(channel: '#jenkins', color: 'danger', message: "${currentBuild.currentResult}: ${currentBuild.fullDisplayName} - ${BUILD_URL}")
   //   }
