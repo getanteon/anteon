@@ -28,7 +28,7 @@ pipeline {
       }
       steps {
         lock('multi_branch_server_benchmark') {
-          sh 'git fetch origin develop:develop && git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1 | tee gobench_develop.txt'
+          sh 'git fetch origin develop:develop ||  git checkout develop && git pull && GOCACHE=/tmp/ go test -benchmem -cpuprofile=cpu_develop.out -memprofile=mem_develop.out -trace=trace_develop.out -run=^$ -bench ^BenchmarkEngines$ -count 1 | tee gobench_develop.txt'
           sh "git checkout ${BRANCH_NAME}"
         }
       }
