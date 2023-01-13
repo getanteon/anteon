@@ -28,6 +28,7 @@ type verboseHttpRequestInfo struct {
 	Request        verboseRequest         `json:"request"`
 	Response       verboseResponse        `json:"response"`
 	Envs           map[string]interface{} `json:"envs"`
+	TestData       map[string]interface{} `json:"ffff"`
 	FailedCaptures map[string]string      `json:"failedCaptures"`
 	Error          string                 `json:"error"`
 }
@@ -74,7 +75,19 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			Body:       responseBody,
 		}
 	}
-	verboseInfo.Envs = sr.UsableEnvs
+
+	envs := make(map[string]interface{})
+	testData := make(map[string]interface{})
+	for key, val := range sr.UsableEnvs {
+		if strings.HasPrefix(key, "data.") {
+			testData[key] = val
+		} else {
+			envs[key] = val
+		}
+	}
+
+	verboseInfo.Envs = envs
+	verboseInfo.TestData = testData
 	verboseInfo.FailedCaptures = sr.FailedCaptures
 	return verboseInfo
 }
