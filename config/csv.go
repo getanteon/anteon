@@ -84,24 +84,27 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 			var val interface{}
 			switch tag.Type {
 			case "json":
-				json.Unmarshal([]byte(row[i]), &val)
+				err := json.Unmarshal([]byte(row[i]), &val)
+				if err != nil {
+					return nil, fmt.Errorf("can not convert %s to json,%v", row[i], err)
+				}
 			case "int":
 				var err error
 				val, err = strconv.Atoi(row[i])
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("can not convert %s to int,%v", row[i], err)
 				}
 			case "float":
 				var err error
 				val, err = strconv.ParseFloat(row[i], 64)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("can not convert %s to float,%v", row[i], err)
 				}
 			case "bool":
 				var err error
 				val, err = strconv.ParseBool(row[i])
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("can not convert %s to bool,%v", row[i], err)
 				}
 			default:
 				val = row[i]

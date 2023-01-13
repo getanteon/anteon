@@ -273,7 +273,8 @@ There is an example config file at [config_examples/config.json](/config_example
     }
     ``` 
 - `data` *optional*
-    Config for loading test data from a csv file. 
+    Config for loading test data from a csv file.
+    [Csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
     ```json
     "data":{
         "info": {
@@ -287,12 +288,22 @@ There is an example config file at [config_examples/config.json](/config_example
                     "4":{"tag":"age", "type":"int"}
                     },
             "allowQuota" : true,
-            "order": "random|sequential",
+            "order": "sequential",
             "skipFirstLine" : true,
             "skipEmptyLine" : true
         }
     }
-    ``` 
+    ```
+    | Field | Description                  | Type     | Default | Required?  |
+    | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+    | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
+    | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
+    | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
+    | `allowQuota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
+    | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
+    | `skipFirstLine`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
+    | `skipEmptyLine`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+   
 - `steps` *mandatory*
 
     This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
@@ -687,6 +698,8 @@ On array-like captured variables or environment vars, the **rand( )** function c
 
 ## Test Data Set
 Ddosify enables you to load test data from **csv** files. Later, in your scenario, you can inject variables that you tagged.
+
+We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
 
 ```json
 // config_data_csv.json
