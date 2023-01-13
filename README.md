@@ -662,6 +662,9 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
+## Tutorials / Blog Posts
+
+* [Testing the Performance of User Authentication Flow](https://ddosify.com/blog/testing-the-performance-of-user-authentication-flow#introduction)
 
 ## Common Issues
 
