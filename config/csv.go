@@ -26,14 +26,7 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 
 	var reader io.Reader
 
-	if _, err = os.Stat(conf.Path); err == nil { // local file path
-		f, err := os.Open(conf.Path)
-		if err != nil {
-			return nil, err
-		}
-		reader = f
-		defer f.Close()
-	} else if _, err = url.ParseRequestURI(conf.Path); err == nil { // url
+	if _, err = url.ParseRequestURI(conf.Path); err == nil { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
 			return nil, err
@@ -42,10 +35,21 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+			return nil, fmt.Errorf("request to remote url failed: %d", resp.StatusCode)
+		}
 		reader = resp.Body
 		defer resp.Body.Close()
+	} else if _, err = os.Stat(conf.Path); err == nil { // local file path
+		f, err := os.Open(conf.Path)
+		if err != nil {
+			return nil, err
+		}
+		reader = f
+		defer f.Close()
 	} else {
-		return nil, fmt.Errorf("given path is neither local path nor url")
+		return nil, err
 	}
 
 	// read csv values using csv.Reader
