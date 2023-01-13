@@ -149,7 +149,7 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 7. ### Test Data
 
     	ddosify -config ddosify_data_csv.json
-   Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [test-data-example](##Test-Data).
+   Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [test-data-example](##test-data-set).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
