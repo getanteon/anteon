@@ -17,7 +17,7 @@ builds:
     goarm:
       - 6
     ldflags:
-      - -s -w -X main.GitVersion={{ .Version }} -X main.GitCommit={{ .ShortCommit }}  -X main.BuildDate={{ .CommitDate }}
+      - -s -w -X main.GitVersion={{ .Tag }} -X main.GitCommit={{ .ShortCommit }}  -X main.BuildDate={{ .CommitDate }}
     ignore:
       - goos: darwin
         goarch: 386
@@ -50,7 +50,7 @@ universal_binaries:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: "{{ incpatch .Tag }}-next"
 changelog:
   sort: asc
   use: github
@@ -92,7 +92,7 @@ dockers:
   - "--label=org.opencontainers.image.created={{.Date}}"
   - "--label=org.opencontainers.image.name={{.ProjectName}}"
   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.version={{.Tag}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
   extra_files:
@@ -106,7 +106,7 @@ dockers:
   - "--label=org.opencontainers.image.created={{.Date}}"
   - "--label=org.opencontainers.image.name={{.ProjectName}}"
   - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.version={{.Tag}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/arm64"
   extra_files:
