@@ -659,41 +659,40 @@ var table = []struct {
 }{
 	{
 		input:            "config/config_testdata/benchmark/config_json.json",
-		cpuTimeThreshold: 5,
+		cpuTimeThreshold: 0.05,
 		maxMemThreshold:  1,
 		avgMemThreshold:  1,
 	},
 	{
 		input:            "config/config_testdata/benchmark/config_correlation_load_1.json",
-		cpuTimeThreshold: 6,
+		cpuTimeThreshold: 0.350,
 		maxMemThreshold:  1,
 		avgMemThreshold:  1,
 	},
 	{
 		input:            "config/config_testdata/benchmark/config_correlation_load_2.json",
-		cpuTimeThreshold: 20,
-
-		maxMemThreshold: 2,
-		avgMemThreshold: 2,
+		cpuTimeThreshold: 2.5,
+		maxMemThreshold:  2,
+		avgMemThreshold:  2,
 	},
 	{
 		input:            "config/config_testdata/benchmark/config_correlation_load_3.json",
-		cpuTimeThreshold: 80,
+		cpuTimeThreshold: 15.5,
 		maxMemThreshold:  13,
 		avgMemThreshold:  8,
 	},
-	// {
-	// 	input:            "config/config_testdata/benchmark/config_correlation_load_4.json",
-	// 	cpuTimeThreshold: 130,
-	// 	maxMemThreshold:  25,
-	// 	avgMemThreshold:  16,
-	// },
-	// {
-	// 	input:            "config/config_testdata/benchmark/config_correlation_load_5.json",
-	// 	cpuTimeThreshold: 210,
-	// 	maxMemThreshold:  70,
-	// 	avgMemThreshold:  45,
-	// },
+	{
+		input:            "config/config_testdata/benchmark/config_correlation_load_4.json",
+		cpuTimeThreshold: 25,
+		maxMemThreshold:  25,
+		avgMemThreshold:  16,
+	},
+	{
+		input:            "config/config_testdata/benchmark/config_correlation_load_5.json",
+		cpuTimeThreshold: 50,
+		maxMemThreshold:  70,
+		avgMemThreshold:  45,
+	},
 }
 
 func BenchmarkEngines(t *testing.B) {
