@@ -46,6 +46,11 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 			return jBoolSlice, err
 		}
 
+		jObjectSlice := []map[string]interface{}{}
+		err = json.Unmarshal(bRaw, &jObjectSlice)
+		if err == nil {
+			return jObjectSlice, err
+		}
 	}
 
 	if result.IsBool() {

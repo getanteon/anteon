@@ -3,9 +3,11 @@ package injection
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/types/regex"
 )
@@ -22,6 +24,7 @@ func (ei *EnvironmentInjector) Init() {
 	ei.jr = regexp.MustCompile(regex.JsonEnvironmentVarRegex)
 	ei.dr = regexp.MustCompile(regex.DynamicVariableRegex)
 	ei.jdr = regexp.MustCompile(regex.JsonDynamicVariableRegex)
+	rand.Seed(time.Now().UnixNano())
 }
 
 func (ei *EnvironmentInjector) getFakeData(key string) (interface{}, error) {
@@ -57,11 +60,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		var err error
 
 		truncated = truncateTag(string(s), regex.EnvironmentVariableRegex)
-
-		env, ok := envs[truncated]
-		if !ok {
-			err = fmt.Errorf("env not found")
-		}
+		env, err = ei.getEnv(envs, truncated)
 
 		if err == nil {
 			switch env.(type) {
@@ -91,11 +90,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		var err error
 
 		truncated = truncateTag(string(s), regex.JsonEnvironmentVarRegex)
-
-		env, ok := envs[truncated]
-		if !ok {
-			err = fmt.Errorf("env not found")
-		}
+		env, err = ei.getEnv(envs, truncated)
 
 		if err == nil {
 			mEnv, err := json.Marshal(env)
@@ -105,7 +100,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 		}
 
 		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps: %v", truncated, err))
 		return s
 	}
 
@@ -114,7 +109,10 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 	if json.Valid(bText) {
 		if ei.jr.Match(bText) {
 			replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
-			return string(replacedBytes), nil
+			if len(errors) == 0 {
+				return string(replacedBytes), nil
+			}
+			return "", unifyErrors(errors)
 		}
 	}
 
@@ -197,6 +195,41 @@ func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {
 
 	return replaced, unifyErrors(errors)
 
+}
+
+func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (interface{}, error) {
+	var err error
+	var val interface{}
+
+	pickRand := strings.HasPrefix(key, "rand(") && strings.HasSuffix(key, ")")
+	if pickRand {
+		key = key[5 : len(key)-1]
+	}
+
+	var exists bool
+	val, exists = envs[key]
+	if !exists {
+		err = fmt.Errorf("env not found")
+	}
+
+	if pickRand {
+		switch v := val.(type) {
+		case []interface{}:
+			val = v[rand.Intn(len(v))]
+		case []string:
+			val = v[rand.Intn(len(v))]
+		case []bool:
+			val = v[rand.Intn(len(v))]
+		case []int:
+			val = v[rand.Intn(len(v))]
+		case []float64:
+			val = v[rand.Intn(len(v))]
+		default:
+			err = fmt.Errorf("can not perform rand() operation on non-array value")
+		}
+	}
+
+	return val, err
 }
 
 func unifyErrors(errors []error) error {

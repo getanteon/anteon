@@ -1,0 +1,7 @@
+{
+    "name" : "{{data.info.name}}",
+    "team" : "{{data.info.team}}",
+    "city" : "{{data.info.city}}",
+    "payload" : "{{rand(data.info.payload)}}",
+    "age" : "{{data.info.age}}"
+}

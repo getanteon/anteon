@@ -1,0 +1,47 @@
+{
+    "iteration_count": 4,
+    "load_type": "waved",
+    "duration": 1,
+    "steps": [
+            {
+              "id": 2,
+              "url": "{{LOCAL}}/body",
+              "name": "JSON",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "keep-alive": true,
+                "disable-redirect": true,
+                "disable-compression": false
+              },
+              "payload_file": "../config/config_testdata/data_json_payload.json",
+              "timeout": 10
+            }
+    ],
+    "output": "stdout",
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084",
+        "RANDOM_NAMES" : ["kenan","fatih","kursat","semih","sertac"] ,
+        "RANDOM_INT" : [52,99,60,33],
+        "RANDOM_BOOL" : [true,true,true,false] 
+    },
+    "data":{
+      "info": {
+          "path" : "../config/config_testdata/test.csv",
+          "src" : "local",
+          "delimiter": ";",
+          "vars": {
+                  "0":{"tag":"name"},
+                  "1":{"tag":"city"},
+                  "2":{"tag":"team"},
+                  "3":{"tag":"payload", "type":"json"},
+                  "4":{"tag":"age", "type":"int"}
+                },
+          "allowQuota" : true,
+          "order": "random",
+          "skipFirstLine" : true
+      }
+    },
+    "debug" : false
+}

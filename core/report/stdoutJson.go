@@ -164,6 +164,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 			StepId         uint16                 `json:"stepId"`
 			StepName       string                 `json:"stepName"`
 			Envs           map[string]interface{} `json:"envs"`
+			TestData       map[string]interface{} `json:"testData"`
 			FailedCaptures map[string]string      `json:"failedCaptures"`
 			Error          string                 `json:"error"`
 		}
@@ -174,6 +175,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 			StepName:       v.StepName,
 			FailedCaptures: v.FailedCaptures,
 			Envs:           v.Envs,
+			TestData:       v.TestData,
 		}
 		return json.Marshal(a)
 	}
@@ -183,6 +185,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 			StepId         uint16                 `json:"stepId"`
 			StepName       string                 `json:"stepName"`
 			Envs           map[string]interface{} `json:"envs"`
+			TestData       map[string]interface{} `json:"testData"`
 			FailedCaptures map[string]string      `json:"failedCaptures"`
 			Request        struct {
 				Url     string            `json:"url"`
@@ -200,6 +203,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 			StepName:       v.StepName,
 			FailedCaptures: v.FailedCaptures,
 			Envs:           v.Envs,
+			TestData:       v.TestData,
 		}
 		return json.Marshal(a)
 	}
@@ -208,6 +212,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 		StepId         uint16                 `json:"stepId"`
 		StepName       string                 `json:"stepName"`
 		Envs           map[string]interface{} `json:"envs"`
+		TestData       map[string]interface{} `json:"testData"`
 		FailedCaptures map[string]string      `json:"failedCaptures"`
 		Request        struct {
 			Url     string            `json:"url"`
@@ -229,6 +234,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 		Response:       v.Response,
 		FailedCaptures: v.FailedCaptures,
 		Envs:           v.Envs,
+		TestData:       v.TestData,
 	}
 	return json.Marshal(a)
 

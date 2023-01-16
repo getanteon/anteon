@@ -108,3 +108,163 @@ func ExampleEnvironmentInjector() {
 		fmt.Println(randInt)
 	}
 }
+
+func TestRandomInjectionStringSlice(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	vals := []string{
+		"Kenan", "Kursat", "Fatih",
+	}
+
+	envs := map[string]interface{}{
+		"vals": vals,
+	}
+
+	val, err := replacer.getEnv(envs, "rand(vals)")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	for _, n := range vals {
+		if reflect.DeepEqual(val, n) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rand method did not return one of the expecteds")
+	}
+}
+
+func TestRandomInjectionBoolSlice(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	vals := []bool{
+		true, false, true,
+	}
+
+	envs := map[string]interface{}{
+		"vals": vals,
+	}
+
+	val, err := replacer.getEnv(envs, "rand(vals)")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	for _, n := range vals {
+		if reflect.DeepEqual(val, n) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rand method did not return one of the expecteds")
+	}
+
+}
+
+func TestRandomInjectionIntSlice(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	vals := []int{
+		3, 55, 42,
+	}
+
+	envs := map[string]interface{}{
+		"vals": vals,
+	}
+
+	val, err := replacer.getEnv(envs, "rand(vals)")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	for _, n := range vals {
+		if reflect.DeepEqual(val, n) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rand method did not return one of the expecteds")
+	}
+
+}
+
+func TestRandomInjectionFloat64Slice(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	vals := []float64{
+		3.3, 55.23, 42.1,
+	}
+
+	envs := map[string]interface{}{
+		"vals": vals,
+	}
+
+	val, err := replacer.getEnv(envs, "rand(vals)")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	for _, n := range vals {
+		if reflect.DeepEqual(val, n) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rand method did not return one of the expecteds")
+	}
+
+}
+
+func TestRandomInjectionInterfaceSlice(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	vals := []interface{}{
+		map[string]int{"s": 33},
+		[]string{"v", "c"},
+	}
+
+	envs := map[string]interface{}{
+		"vals": vals,
+	}
+
+	val, err := replacer.getEnv(envs, "rand(vals)")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	for _, n := range vals {
+		if reflect.DeepEqual(val, n) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rand method did not return one of the expecteds")
+	}
+
+}

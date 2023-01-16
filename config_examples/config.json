@@ -10,6 +10,31 @@
         {"duration": 6, "count": 10},
         {"duration": 7, "count": 20}
     ],
+    "envs" : {
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084",
+        "NAMES" : ["kenan","fatih","kursat","semih","sertac"] ,
+        "NUMBERS" : [52,99,60,33],
+        "BOOLS" : [true,true,true,false],
+        "randomIntPerIteration": "{{_randomInt}}"
+    },
+    "data":{
+        "info": {
+            "path" : "config/config_testdata/test.csv",
+            "delimiter": ";",
+            "vars": {
+                    "0":{"tag":"name"},
+                    "1":{"tag":"city"},
+                    "2":{"tag":"team"},
+                    "3":{"tag":"payload", "type":"json"},
+                    "4":{"tag":"age", "type":"int"}
+                  },
+            "allowQuota" : true,
+            "order": "random",
+            "skipFirstLine" : true,
+            "skipEmptyLine" : true
+        }
+    },
     "proxy": "http://proxy_host.com:proxy_port",
     "output": "stdout",
     "steps": [
@@ -33,15 +58,23 @@
                 "disableCompression": false,
                 "h2": true,
                 "disable-redirect": true
+            },
+            "captureEnv": {
+                "NUM" :{ "from":"body","jsonPath":"num"}
             }
         },
         {
             "id": 2,
-            "url": "https://test_site1.com/endpoint_2",
+            "url": "{{LOCAL}}",
             "method": "GET",
             "payload_file": "config_examples/payload.txt",
             "timeout": 2,
-            "sleep": "1000"
+            "sleep": "1000",
+            "headers":{
+                "num": "{{NUM}}",
+                "randNum": "{{rand(NUMBERS)}}",
+                "randInt" : "{{randomIntPerIteration}}"
+            }
         },
         {
             "id": 3,

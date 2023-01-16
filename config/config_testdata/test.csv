@@ -1,0 +1,7 @@
+Username;City;Team;Payload;Age;Percent;BoolField;;;
+Kenan;Tokat;Galatasaray;{"data":{"profile":{"name":"Kenan"}}};25;22.3;true;;;
+Fatih;Bolu;Galatasaray;[5,6,7];29;44.3;false;;;
+Kursat;Samsun;Besiktas;{"a":"b"};28;12.54;True;;;
+Semih;Duzce;Besiktas;{"a":"b"};27;663.67;False;;;
+;;;;;;;;;
+;;;;;;;;;
