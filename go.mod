@@ -10,20 +10,25 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-colorable v0.1.12
+	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/tidwall/gjson v1.14.4
+	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	golang.org/x/net v0.3.0
 )
 
 require (
 	github.com/antchfx/xpath v1.2.1 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/jaswdr/faker v1.10.2 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/yuin/goldmark v1.4.13 // indirect
-	golang.org/x/mod v0.7.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
-	golang.org/x/tools v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 )

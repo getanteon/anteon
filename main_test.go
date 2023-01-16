@@ -36,8 +36,11 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
+var tempRun func(h types.Hammer)
+
 func TestMain(m *testing.M) {
 	// Mock run function to prevent engine starting
+	tempRun = run
 	run = func(h types.Hammer) {}
 	os.Exit(m.Run())
 }

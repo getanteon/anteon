@@ -1,0 +1,75 @@
+{
+    "iteration_count": 1000,
+    "load_type": "waved",
+    "duration": 10,
+    "steps": [
+            {
+              "id": 1,
+              "url": "{{HTTPBIN}}/json",
+              "name": "JSON",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "keep-alive": true,
+                "disable-redirect": true,
+                "disable-compression": false
+              },
+              "headers": {
+                
+              },
+              "payload": "",
+              "timeout": 3,
+              "captureEnv": {
+                "NUM" :{ "from":"body","jsonPath":"quoteResponse.result.0.askSize"},
+                "STR" :{ "from":"body","jsonPath":"quoteResponse.result.0.currency"},
+                "BOOL": {"from":"body","jsonPath":"quoteResponse.result.0.cryptoTradeable"},
+                "FLOAT" : {"from":"body","jsonPath":"quoteResponse.result.0.epsForward"},
+                "ALL_RESULT" :{"from":"body","jsonPath":"quoteResponse.result.0"},
+                "CONTENT_LENGTH" :{"from":"header", "headerKey":"Content-Length"},
+                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}  }             
+            }         
+            },
+            {
+              "id": 2,
+              "url": "{{HTTPBIN}}/xml",
+              "name": "XML",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "keep-alive": true,
+                "disable-redirect": true,
+                "disable-compression": false
+              },
+              "headers": {
+                "num": "{{NUM}}",
+                "currency": "{{STR}}",
+                "yahoo" : "{{CONTENT_LENGTH}}"
+              },
+              "payload": "",
+              "timeout": 10
+            },
+            {
+              "id": 3,
+              "url": "https://servdown.com",
+              "name": "HTML",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "keep-alive": true,
+                "disable-redirect": true,
+                "disable-compression": false
+              },
+              "headers": {
+                "num": "{{NUM}}"
+              },
+              "payload_file": "config/config_testdata/benchmark/json_payload.json",
+              "timeout": 10
+            }
+    ],
+    "output": "stdout",
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084"
+    },
+    "debug" : false
+}

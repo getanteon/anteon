@@ -48,6 +48,8 @@ type ScenarioService struct {
 
 	clientMutex sync.Mutex
 	debug       bool
+
+	injector *injection.EnvironmentInjector
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -68,6 +70,9 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario, pro
 			return
 		}
 	}
+	vi := &injection.EnvironmentInjector{}
+	vi.Init()
+	s.injector = vi
 	return
 }
 
@@ -91,7 +96,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		envs[k] = v
 	}
 	// inject dynamic variables beforehand for each iteration
-	injectDynamicVars(envs)
+	injectDynamicVars(s.injector, envs)
 
 	for _, sr := range requesters {
 		res := sr.requester.Send(envs)
@@ -168,10 +173,8 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 	return err
 }
 
-func injectDynamicVars(envs map[string]interface{}) {
+func injectDynamicVars(vi *injection.EnvironmentInjector, envs map[string]interface{}) {
 	dynamicRgx := regexp.MustCompile(regex.DynamicVariableRegex)
-	vi := &injection.EnvironmentInjector{}
-	vi.Init()
 	for k, v := range envs {
 		vStr := v.(string)
 		if dynamicRgx.MatchString(vStr) {

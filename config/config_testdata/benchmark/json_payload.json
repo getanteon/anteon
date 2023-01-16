@@ -1,0 +1,13 @@
+{
+    "boolField" : "{{BOOL}}",
+    "numField" : "{{NUM}}",
+    "strField" : "{{STR}}",
+    "numArrayField" : ["{{NUM}}",34],
+    "strArrayField" : ["{{STR}}","hello"],
+    "mixedArrayField" : ["{{NUM}}",34,"{{FLOAT}}"],
+    "{{STR}}" : "xxxx",
+    "obj" :{
+        "numField" : "{{CONTENT_LENGTH}}",
+        "objectField" : "{{ALL_RESULT}}"
+    }
+}
