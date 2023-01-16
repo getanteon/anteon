@@ -701,6 +701,7 @@ Ddosify enables you to load test data from **csv** files. Later, in your scenari
 
 We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
 
+
 ```json
 // config_data_csv.json
 "data":{
@@ -720,7 +721,9 @@ We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/conf
       }
     }
 ```
+
 You can refer to tagged variables in your request like below.
+
 ```json
 // payload.json
 {
@@ -731,6 +734,12 @@ You can refer to tagged variables in your request like below.
     "age" : "{{data.csv_test.age}}"
 }
 ```
+
+## Tutorials / Blog Posts
+
+* [Testing the Performance of User Authentication Flow](https://ddosify.com/blog/testing-the-performance-of-user-authentication-flow#introduction)
+
+
 ## Common Issues
 
 ### macOS Security Issue
