@@ -87,6 +87,10 @@ func main() {
 		printVersionAndExit()
 	}
 
+	start()
+}
+
+func start() {
 	h, err := createHammer()
 
 	if err != nil {

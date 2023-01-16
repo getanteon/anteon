@@ -664,7 +664,9 @@ func TestInjectDynamicVars(t *testing.T) {
 
 	beforeLen := len(envs)
 
-	injectDynamicVars(envs)
+	vi := &injection.EnvironmentInjector{}
+	vi.Init()
+	injectDynamicVars(vi, envs)
 
 	afterLen := len(envs)
 

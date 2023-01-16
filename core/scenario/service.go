@@ -83,6 +83,9 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 			return
 		}
 	}
+	vi := &injection.EnvironmentInjector{}
+	vi.Init()
+	s.ei = vi
 	return
 }
 
@@ -107,7 +110,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		envs[k] = v
 	}
 	// inject dynamic variables beforehand for each iteration
-	injectDynamicVars(envs)
+	injectDynamicVars(s.ei, envs)
 	// pass a row from data for each iteration
 	s.enrichEnvFromData(envs)
 	s.incrementIterIndex()
@@ -209,10 +212,8 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 	return err
 }
 
-func injectDynamicVars(envs map[string]interface{}) {
+func injectDynamicVars(vi *injection.EnvironmentInjector, envs map[string]interface{}) {
 	dynamicRgx := regexp.MustCompile(regex.DynamicVariableRegex)
-	vi := &injection.EnvironmentInjector{}
-	vi.Init()
 	for k, v := range envs {
 		vStr, isStr := v.(string)
 		if !isStr {
