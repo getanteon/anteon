@@ -145,6 +145,11 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
     	ddosify -config ddosify_config_correlation.json
    Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation).
+
+7. ### Test Data
+
+    	ddosify -config ddosify_data_csv.json
+   Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [test-data-example](#test-data-set).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
@@ -262,18 +267,43 @@ There is an example config file at [config_examples/config.json](/config_example
 - `env` *optional*
     Scenario-scoped global variables. Note that dynamic variables changes every iteration. 
     ```json
-    "steps": [
-        {
-            "id": 1,
-            "url": "http://target.com/endpoint1",
-            "env": {
-                    "COMPANY_NAME" :"Ddosify",
-                    "randomCountry" : "{{_randomCountry}}"
-            }
-        },
-    ]
+    "env": {
+            "COMPANY_NAME" :"Ddosify",
+            "randomCountry" : "{{_randomCountry}}"
+    }
     ``` 
-
+- `data` *optional*
+    Config for loading test data from a csv file.
+    [Csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
+    ```json
+    "data":{
+        "info": {
+            "path" : "config/config_testdata/test.csv",
+            "delimiter": ";",
+            "vars": {
+                    "0":{"tag":"name"},
+                    "1":{"tag":"city"},
+                    "2":{"tag":"team"},
+                    "3":{"tag":"payload", "type":"json"},
+                    "4":{"tag":"age", "type":"int"}
+                    },
+            "allowQuota" : true,
+            "order": "sequential",
+            "skipFirstLine" : true,
+            "skipEmptyLine" : true
+        }
+    }
+    ```
+    | Field | Description                  | Type     | Default | Required?  |
+    | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+    | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
+    | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
+    | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
+    | `allowQuota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
+    | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
+    | `skipFirstLine`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
+    | `skipEmptyLine`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+   
 - `steps` *mandatory*
 
     This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
@@ -587,7 +617,8 @@ ddosify -config ddosify_config_correlation.json -debug
         "TARGET_URL" : "http://localhost:8084/hello",
         "USER_KEY" : "ABC",
         "COMPANY_NAME" : "Ddosify",
-        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+        "RANDOM_COUNTRY" : "{{_randomCountry}}",
+        "NUMBERS" : [22,33,10,52] 
     },
 }
 ```
@@ -595,6 +626,7 @@ ddosify -config ddosify_config_correlation.json -debug
 
 
 ### :hammer: Overall Config and Injection
+On array-like captured variables or environment vars, the **rand( )** function can be utilized.
 ```json
 // ddosify_config_correlation.json
 {
@@ -607,7 +639,8 @@ ddosify -config ddosify_config_correlation.json -debug
             "url": "{{TARGET_URL}}",
             "method": "POST",
             "headers": {
-                "User-Key": "{{USER_KEY}}"
+                "User-Key": "{{USER_KEY}}",
+                "Rand-Selected-Num" : "{{rand(NUMBERS)}}"
             },
             "payload" : "{{COMPANY_NAME}}",
             "captureEnv": {
@@ -640,7 +673,8 @@ ddosify -config ddosify_config_correlation.json -debug
         "TARGET_URL" : "http://localhost:8084/hello",
         "USER_KEY" : "ABC",
         "COMPANY_NAME" : "Ddosify",
-        "RANDOM_COUNTRY" : "{{_randomCountry}}" 
+        "RANDOM_COUNTRY" : "{{_randomCountry}}",
+        "NUMBERS" : [22,33,10,52] 
     },
 }
 ```
@@ -662,9 +696,49 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
+## Test Data Set
+Ddosify enables you to load test data from **csv** files. Later, in your scenario, you can inject variables that you tagged.
+
+We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
+
+
+```json
+// config_data_csv.json
+"data":{
+      "csv_test": {
+          "path" : "config/config_testdata/test.csv",
+          "delimiter": ";",
+          "vars": {
+                  "0":{"tag":"name"},
+                  "1":{"tag":"city"},
+                  "2":{"tag":"team"},
+                  "3":{"tag":"payload", "type":"json"},
+                  "4":{"tag":"age", "type":"int"}
+                },
+          "allowQuota" : true,
+          "order": "random",
+          "skipFirstLine" : true
+      }
+    }
+```
+
+You can refer to tagged variables in your request like below.
+
+```json
+// payload.json
+{
+    "name" : "{{data.csv_test.name}}",
+    "team" : "{{data.csv_test.team}}",
+    "city" : "{{data.csv_test.city}}",
+    "payload" : "{{data.csv_test.payload}}",
+    "age" : "{{data.csv_test.age}}"
+}
+```
+
 ## Tutorials / Blog Posts
 
 * [Testing the Performance of User Authentication Flow](https://ddosify.com/blog/testing-the-performance-of-user-authentication-flow#introduction)
+
 
 ## Common Issues
 

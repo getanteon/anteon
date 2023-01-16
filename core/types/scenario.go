@@ -70,6 +70,7 @@ func init() {
 type Scenario struct {
 	Steps []ScenarioStep
 	Envs  map[string]interface{}
+	Data  map[string]CsvData
 }
 
 func (s *Scenario) validate() error {
@@ -204,6 +205,11 @@ type EnvCaptureConf struct {
 	Name     string            `json:"as"`
 	From     SourceType        `json:"from"`
 	Key      *string           `json:"headerKey"` // headerKey
+}
+
+type CsvData struct {
+	Rows   []map[string]interface{}
+	Random bool
 }
 
 // Auth struct should be able to include all necessary authentication realated data for supportedAuthentications.

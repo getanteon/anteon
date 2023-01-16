@@ -108,6 +108,40 @@ func (s *step) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type Tag struct {
+	Tag  string `json:"tag"`
+	Type string `json:"type"`
+}
+
+func (t *Tag) UnmarshalJSON(data []byte) error {
+	// default values
+	t.Type = "string"
+	type tempTag Tag
+	return json.Unmarshal(data, (*tempTag)(t))
+}
+
+type CsvConf struct {
+	Path          string         `json:"path"`
+	Delimiter     string         `json:"delimiter"`
+	SkipFirstLine bool           `json:"skipFirstLine"`
+	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
+	SkipEmptyLine bool           `json:"skipEmptyLine"`
+	AllowQuota    bool           `json:"allowQuota"`
+	Order         string         `json:"order"`
+}
+
+func (c *CsvConf) UnmarshalJSON(data []byte) error {
+	// default values
+	c.SkipEmptyLine = true
+	c.SkipFirstLine = false
+	c.AllowQuota = false
+	c.Delimiter = ","
+	c.Order = "random"
+
+	type tempCsv CsvConf
+	return json.Unmarshal(data, (*tempCsv)(c))
+}
+
 type JsonReader struct {
 	ReqCount     *int                   `json:"request_count"`
 	IterCount    *int                   `json:"iteration_count"`
@@ -118,6 +152,7 @@ type JsonReader struct {
 	Output       string                 `json:"output"`
 	Proxy        string                 `json:"proxy"`
 	Envs         map[string]interface{} `json:"env"`
+	Data         map[string]CsvConf     `json:"data"`
 	Debug        bool                   `json:"debug"`
 }
 
@@ -152,9 +187,30 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 }
 
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
+	// Read Data
+	var readData map[string]types.CsvData
+	if len(j.Data) > 0 {
+		readData = make(map[string]types.CsvData, len(j.Data))
+	}
+	for k, conf := range j.Data {
+		var rows []map[string]interface{}
+		rows, err = readCsv(conf)
+		if err != nil {
+			return
+		}
+		var csvData types.CsvData
+		csvData.Rows = rows
+
+		if conf.Order == "random" {
+			csvData.Random = true
+		}
+		readData[k] = csvData
+	}
+
 	// Scenario
 	s := types.Scenario{
 		Envs: j.Envs,
+		Data: readData,
 	}
 	var si types.ScenarioStep
 	for _, step := range j.Steps {

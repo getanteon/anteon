@@ -24,13 +24,14 @@ import (
 	"context"
 	"net/url"
 
+	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 )
 
 // Requester is the interface that abstracts different protocols' request sending implementations.
 // Protocol field in the types.ScenarioStep determines which requester implementation to use.
 type Requester interface {
-	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool) error
+	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool, ei *injection.EnvironmentInjector) error
 	Send(envs map[string]interface{}) *types.ScenarioStepResult
 	Done()
 }

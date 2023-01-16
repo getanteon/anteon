@@ -45,7 +45,7 @@ func TestInit(t *testing.T) {
 	ctx := context.TODO()
 
 	h := &HttpRequester{}
-	h.Init(ctx, s, p, false)
+	h.Init(ctx, s, p, false, nil)
 
 	if !reflect.DeepEqual(h.packet, s) {
 		t.Errorf("Expected %v, Found %v", s, h.packet)
@@ -155,7 +155,7 @@ func TestInitClient(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			h.Init(test.ctx, test.scenarioItem, test.proxy, false)
+			h.Init(test.ctx, test.scenarioItem, test.proxy, false, nil)
 
 			transport := h.client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig
@@ -309,7 +309,7 @@ func TestInitRequest(t *testing.T) {
 	for _, test := range tests {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
-			err := h.Init(ctx, test.scenarioItem, p, false)
+			err := h.Init(ctx, test.scenarioItem, p, false, nil)
 
 			if test.shouldErr {
 				if err == nil {
@@ -378,7 +378,7 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 			h := &HttpRequester{}
 			debug := true
 			var proxy *url.URL
-			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
+			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
 			res := h.Send(envs)
 
@@ -443,7 +443,7 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			h := &HttpRequester{}
 			debug := true
 			var proxy *url.URL
-			_ = h.Init(ctx, test.scenarioStep, proxy, debug)
+			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
 			res := h.Send(envs)
 

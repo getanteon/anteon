@@ -1421,6 +1421,85 @@ func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
 	}
 }
 
+func TestLoadRandomInfoFromData(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	kenan := "Kenan"
+	fatih := "Fatih"
+	expectedKenanAge := "25"
+	expectedFatihAge := "29"
+
+	ageMap := map[string]string{kenan: "", fatih: ""}
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		kenanAge := r.Header.Get(kenan)
+		fatihAge := r.Header.Get(fatih)
+		if kenanAge != "" {
+			ageMap[kenan] = kenanAge
+		}
+
+		if fatihAge != "" {
+			ageMap[fatih] = fatihAge
+		}
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	var csvData types.CsvData
+	csvData.Random = false
+	csvData.Rows = []map[string]interface{}{{
+		"name": kenan,
+		"age":  expectedKenanAge,
+	}, {
+		"name": fatih,
+		"age":  expectedFatihAge,
+	}}
+	h.Scenario.Data = map[string]types.CsvData{"info": csvData}
+	h.Scenario.Envs = map[string]interface{}{
+		"A":        "B",
+		"URL_PATH": path,
+	}
+	h.IterationCount = 2
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{
+			"{{data.info.name}}": "{{data.info.age}}",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestLoadRandomInfoFromData test server has not been called, url path injection failed")
+	}
+
+	if ageMap[kenan] != expectedKenanAge || ageMap[fatih] != expectedFatihAge {
+		t.Errorf("TestLoadRandomInfoFromData did not match")
+	}
+}
+
 // The test creates a web server with Certificate auth,
 // then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {

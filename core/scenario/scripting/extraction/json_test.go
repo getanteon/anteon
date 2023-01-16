@@ -238,6 +238,29 @@ func TestJsonExtract_JsonBoolArray(t *testing.T) {
 	}
 }
 
+func TestJsonExtract_ObjectArray(t *testing.T) {
+	expected := []map[string]interface{}{
+		{"x": "cc"},
+	}
+	payload := map[string]interface{}{
+		"age": expected,
+	}
+
+	byteSlice, _ := json.Marshal(payload)
+	je := jsonExtractor{}
+	val, _ := je.extractFromByteSlice(byteSlice, "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonBoolArray failed, expected %#v, found %#v", expected, val)
+	}
+
+	val, _ = je.extractFromString(string(byteSlice), "age")
+
+	if !reflect.DeepEqual(val, expected) {
+		t.Errorf("TestJsonExtract_JsonBoolArray failed, expected %#v, found %#v", expected, val)
+	}
+}
+
 func TestJsonExtract_JsonPathNotFound(t *testing.T) {
 	payload := map[string]interface{}{
 		"age": "24",
