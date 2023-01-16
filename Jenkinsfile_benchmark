@@ -24,7 +24,7 @@ pipeline {
         allOf {
           expression { env.CHANGE_ID != null }
           expression { env.CHANGE_TARGET != null }
-          expression { env.BRANCH_NAME != "develop" }
+          expression { env.BRANCH_NAME != 'develop' }
         }
       }
       steps {
