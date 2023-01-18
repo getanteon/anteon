@@ -31,6 +31,7 @@ import (
 	"runtime/pprof"
 	"runtime/trace"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -92,9 +93,9 @@ var table = []struct {
 	},
 }
 
-var cpuprofile = flag.Bool("cpuprof", false, "write cpu profiles")
-var memprofile = flag.Bool("memprof", false, "write memory profiles")
-var keepTrace = flag.Bool("tracef", false, "write execution traces")
+var cpuprofile = flag.String("cpuprof", "", "write cpu profiles")
+var memprofile = flag.String("memprof", "", "write memory profiles")
+var keepTrace = flag.String("tracef", "", "write execution traces")
 
 func BenchmarkEngines(t *testing.B) {
 	index := os.Getenv("index")
@@ -121,10 +122,10 @@ func BenchmarkEngines(t *testing.B) {
 	} else {
 		i, _ := strconv.Atoi(index)
 		conf := table[i]
-
+		outSuffix := ".out"
 		// child proc
-		if *cpuprofile {
-			f, err := os.Create(fmt.Sprintf("cpuprof_%s.out", conf.name))
+		if *cpuprofile != "" {
+			f, err := os.Create(fmt.Sprintf("%s_cpuprof_%s.out", strings.TrimSuffix(*cpuprofile, outSuffix), conf.name))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -132,8 +133,9 @@ func BenchmarkEngines(t *testing.B) {
 			defer pprof.StopCPUProfile()
 		}
 
-		if *memprofile { // get memory profile at execution finish
-			memProfFile, err := os.Create(fmt.Sprintf("memprof_%s.out", conf.name))
+		if *memprofile != "" { // get memory profile at execution finish
+			memProfFile, err := os.Create(fmt.Sprintf("%s_memprof_%s.out", strings.TrimSuffix(*memprofile, outSuffix),
+				conf.name))
 			if err != nil {
 				log.Fatal("could not create memory profile: ", err)
 			}
@@ -146,8 +148,8 @@ func BenchmarkEngines(t *testing.B) {
 			}()
 		}
 
-		if *keepTrace {
-			f, err := os.Create(fmt.Sprintf("trace_%s.out", conf.name))
+		if *keepTrace != "" {
+			f, err := os.Create(fmt.Sprintf("%s_trace_%s.out", strings.TrimSuffix(*keepTrace, outSuffix), conf.name))
 			if err != nil {
 				log.Fatalf("failed to create trace output file: %v", err)
 			}
