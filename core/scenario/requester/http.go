@@ -59,7 +59,8 @@ type HttpRequester struct {
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
-func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool, ei *injection.EnvironmentInjector) (err error) {
+func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool,
+	ei *injection.EnvironmentInjector) (err error) {
 	h.ctx = ctx
 	h.packet = s
 	h.proxyAddr = proxyAddr
