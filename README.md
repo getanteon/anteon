@@ -289,10 +289,10 @@ There is an example config file at [config_examples/config.json](/config_example
                     "3":{"tag":"payload", "type":"json"},
                     "4":{"tag":"age", "type":"int"}
                     },
-            "allowQuota" : true,
+            "allow_quota" : true,
             "order": "sequential",
-            "skipFirstLine" : true,
-            "skipEmptyLine" : true
+            "skip_first_line" : true,
+            "skip_empty_line" : true
         }
     }
     ```
@@ -301,10 +301,10 @@ There is an example config file at [config_examples/config.json](/config_example
     | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
     | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
     | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
-    | `allowQuota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
+    | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
     | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
-    | `skipFirstLine`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
-    | `skipEmptyLine`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+    | `skip_first_line`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
+    | `skip_empty_line`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
    
 - `steps` *mandatory*
 
@@ -717,9 +717,9 @@ We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/conf
                   "3":{"tag":"payload", "type":"json"},
                   "4":{"tag":"age", "type":"int"}
                 },
-          "allowQuota" : true,
+          "allow_quota" : true,
           "order": "random",
-          "skipFirstLine" : true
+          "skip_first_line" : true
       }
     }
 ```

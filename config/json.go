@@ -123,10 +123,10 @@ func (t *Tag) UnmarshalJSON(data []byte) error {
 type CsvConf struct {
 	Path          string         `json:"path"`
 	Delimiter     string         `json:"delimiter"`
-	SkipFirstLine bool           `json:"skipFirstLine"`
+	SkipFirstLine bool           `json:"skip_first_line"`
 	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
-	SkipEmptyLine bool           `json:"skipEmptyLine"`
-	AllowQuota    bool           `json:"allowQuota"`
+	SkipEmptyLine bool           `json:"skip_empty_line"`
+	AllowQuota    bool           `json:"allow_quota"`
 	Order         string         `json:"order"`
 }
 
