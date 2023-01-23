@@ -67,7 +67,7 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath  *string           `json:"jsonPath"`
+	JsonPath  *string           `json:"json_path"`
 	XPath     *string           `json:"xPath"`
 	RegExp    *RegexCaptureConf `json:"regExp"`
 	From      string            `json:"from"`      // body,header

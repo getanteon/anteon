@@ -20,11 +20,11 @@
               "payload": "",
               "timeout": 10,
               "captureEnv": {
-                "NUM" :{ "from":"body","jsonPath":"quoteResponse.result.0.askSize"},
-                "STR" :{ "from":"body","jsonPath":"quoteResponse.result.0.currency"},
-                "BOOL": {"from":"body","jsonPath":"quoteResponse.result.0.cryptoTradeable"},
-                "FLOAT" : {"from":"body","jsonPath":"quoteResponse.result.0.epsForward"},
-                "ALL_RESULT" :{"from":"body","jsonPath":"quoteResponse.result.0"},
+                "NUM" :{ "from":"body","json_path":"quoteResponse.result.0.askSize"},
+                "STR" :{ "from":"body","json_path":"quoteResponse.result.0.currency"},
+                "BOOL": {"from":"body","json_path":"quoteResponse.result.0.cryptoTradeable"},
+                "FLOAT" : {"from":"body","json_path":"quoteResponse.result.0.epsForward"},
+                "ALL_RESULT" :{"from":"body","json_path":"quoteResponse.result.0"},
                 "CONTENT_LENGTH" :{"from":"header", "headerKey":"Content-Length"},
                 "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}  }             
             }         

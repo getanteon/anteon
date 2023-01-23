@@ -9,7 +9,7 @@
             "url": "http://localhost:8080/hello",
             "method": "GET",
             "captureEnv": {
-                "NUM" :{ "from":"body","jsonPath":"num"}
+                "NUM" :{ "from":"body","json_path":"num"}
             }             
         },
         {
