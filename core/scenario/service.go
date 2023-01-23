@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
@@ -49,19 +50,12 @@ type ScenarioService struct {
 	clientMutex sync.Mutex
 	debug       bool
 	ei          *injection.EnvironmentInjector
-	indexMu     sync.Mutex
-	iterIndex   int
+	iterIndex   int64
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
 func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
-}
-
-func (s *ScenarioService) incrementIterIndex() {
-	s.indexMu.Lock()
-	defer s.indexMu.Unlock()
-	s.iterIndex++
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
@@ -113,7 +107,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	injectDynamicVars(s.ei, envs)
 	// pass a row from data for each iteration
 	s.enrichEnvFromData(envs)
-	s.incrementIterIndex()
+	atomic.AddInt64(&s.iterIndex, 1)
 
 	for _, sr := range requesters {
 		res := sr.requester.Send(envs)
@@ -147,10 +141,11 @@ func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
 	var row map[string]interface{}
 	sb := strings.Builder{}
 	for key, csvData := range s.scenario.Data {
+		lenRows := len(csvData.Rows)
 		if csvData.Random {
-			row = csvData.Rows[rand.Intn(len(csvData.Rows))]
+			row = csvData.Rows[rand.Intn(lenRows)]
 		} else {
-			row = csvData.Rows[s.iterIndex%len(csvData.Rows)]
+			row = csvData.Rows[s.iterIndex%int64(lenRows)]
 		}
 
 		for tag, v := range row {

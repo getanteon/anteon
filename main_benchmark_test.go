@@ -24,9 +24,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"os"
+	"runtime/pprof"
+	"runtime/trace"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -37,49 +42,60 @@ import (
 )
 
 var table = []struct {
-	input string
-	// in percents
+	name             string
+	path             string
 	cpuTimeThreshold float64
-	maxMemThreshold  float32
-	avgMemThreshold  float32
+	// in percents
+	maxMemThreshold float32
+	avgMemThreshold float32
 }{
 	{
-		input:            "config/config_testdata/benchmark/config_json.json",
+		name:             "config_json",
+		path:             "config/config_testdata/benchmark/config_json.json",
 		cpuTimeThreshold: 0.05,
 		maxMemThreshold:  1,
 		avgMemThreshold:  1,
 	},
 	{
-		input:            "config/config_testdata/benchmark/config_correlation_load_1.json",
+		name:             "config_correlation_load_1",
+		path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
 		cpuTimeThreshold: 0.350,
 		maxMemThreshold:  1,
 		avgMemThreshold:  1,
 	},
 	{
-		input:            "config/config_testdata/benchmark/config_correlation_load_2.json",
+		name:             "config_correlation_load_2",
+		path:             "config/config_testdata/benchmark/config_correlation_load_2.json",
 		cpuTimeThreshold: 2.5,
 		maxMemThreshold:  2,
 		avgMemThreshold:  2,
 	},
 	{
-		input:            "config/config_testdata/benchmark/config_correlation_load_3.json",
+		name:             "config_correlation_load_3",
+		path:             "config/config_testdata/benchmark/config_correlation_load_3.json",
 		cpuTimeThreshold: 15.5,
 		maxMemThreshold:  13,
 		avgMemThreshold:  8,
 	},
 	{
-		input:            "config/config_testdata/benchmark/config_correlation_load_4.json",
+		name:             "config_correlation_load_4",
+		path:             "config/config_testdata/benchmark/config_correlation_load_4.json",
 		cpuTimeThreshold: 25,
 		maxMemThreshold:  25,
 		avgMemThreshold:  16,
 	},
 	{
-		input:            "config/config_testdata/benchmark/config_correlation_load_5.json",
+		name:             "config_correlation_load_5",
+		path:             "config/config_testdata/benchmark/config_correlation_load_5.json",
 		cpuTimeThreshold: 70,
 		maxMemThreshold:  70,
 		avgMemThreshold:  45,
 	},
 }
+
+var cpuprofile = flag.String("cpuprof", "", "write cpu profiles")
+var memprofile = flag.String("memprof", "", "write memory profiles")
+var keepTrace = flag.String("tracef", "", "write execution traces")
 
 func BenchmarkEngines(t *testing.B) {
 	index := os.Getenv("index")
@@ -104,14 +120,56 @@ func BenchmarkEngines(t *testing.B) {
 			}
 		}
 	} else {
-		// child proc
 		i, _ := strconv.Atoi(index)
-		v := table[i]
-		t.Run(fmt.Sprintf("config_%s", v.input), func(t *testing.B) {
+		conf := table[i]
+		outSuffix := ".out"
+		// child proc
+		if *cpuprofile != "" {
+			f, err := os.Create(fmt.Sprintf("%s_cpuprof_%s.out", strings.TrimSuffix(*cpuprofile, outSuffix), conf.name))
+			if err != nil {
+				log.Fatal(err)
+			}
+			pprof.StartCPUProfile(f)
+			defer pprof.StopCPUProfile()
+		}
+
+		if *memprofile != "" { // get memory profile at execution finish
+			memProfFile, err := os.Create(fmt.Sprintf("%s_memprof_%s.out", strings.TrimSuffix(*memprofile, outSuffix),
+				conf.name))
+			if err != nil {
+				log.Fatal("could not create memory profile: ", err)
+			}
+			defer memProfFile.Close() // error handling omitted for example
+			defer func() {
+				pprof.Lookup("allocs").WriteTo(memProfFile, 0)
+				// if you want to check live heap objects:
+				// runtime.GC() // get up-to-date statistics
+				// pprof.Lookup("heap").WriteTo(memProfFile, 0)
+			}()
+		}
+
+		if *keepTrace != "" {
+			f, err := os.Create(fmt.Sprintf("%s_trace_%s.out", strings.TrimSuffix(*keepTrace, outSuffix), conf.name))
+			if err != nil {
+				log.Fatalf("failed to create trace output file: %v", err)
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					log.Fatalf("failed to close trace file: %v", err)
+				}
+			}()
+
+			if err := trace.Start(f); err != nil {
+				log.Fatalf("failed to start trace: %v", err)
+			}
+			defer trace.Stop()
+		}
+
+		t.Run(fmt.Sprintf("config_%s", conf.path), func(t *testing.B) {
 			var memPercents []float32
 			var cpuStats []*cpu.TimesStat
 
-			*configPath = v.input
+			*configPath = conf.path
 			run = tempRun
 			doneChan := make(chan struct{}, 1)
 			go func() {
@@ -123,7 +181,6 @@ func BenchmarkEngines(t *testing.B) {
 					case <-ticker.C:
 						cpuStat, _ := proc.Times()
 						cpuStats = append(cpuStats, cpuStat)
-						proc.CPUPercent()
 
 						memPerc, _ := proc.MemoryPercent()
 						memPercents = append(memPercents, memPerc)
@@ -137,24 +194,25 @@ func BenchmarkEngines(t *testing.B) {
 
 			lastCpuStat := cpuStats[len(cpuStats)-1]
 			cpuTime := lastCpuStat.User + lastCpuStat.System
-			fmt.Printf("cpuTime: %f / %f \n", cpuTime, v.cpuTimeThreshold)
+			fmt.Printf("cpuTime: %f / %f \n", cpuTime, conf.cpuTimeThreshold)
 
 			avgMem := sum(memPercents) / float32(len(memPercents))
 			maxMem := max(memPercents)
-			fmt.Printf("Avg mem: %f / %f \n", avgMem, v.avgMemThreshold)
-			fmt.Printf("Max mem: %f / %f \n\n", maxMem, v.maxMemThreshold)
+			fmt.Printf("Avg mem: %f / %f \n", avgMem, conf.avgMemThreshold)
+			fmt.Printf("Max mem: %f / %f \n\n", maxMem, conf.maxMemThreshold)
 
-			if cpuTime > v.cpuTimeThreshold {
-				t.Errorf("Cpu time %f, higher than cpuTimeThreshold %f", cpuTime, v.cpuTimeThreshold)
+			if cpuTime > conf.cpuTimeThreshold {
+				t.Errorf("Cpu time %f, higher than cpuTimeThreshold %f", cpuTime, conf.cpuTimeThreshold)
 			}
-			if avgMem > v.avgMemThreshold {
-				t.Errorf("Avg mem %f, higher than avgMemThreshold %f", avgMem, v.avgMemThreshold)
+			if avgMem > conf.avgMemThreshold {
+				t.Errorf("Avg mem %f, higher than avgMemThreshold %f", avgMem, conf.avgMemThreshold)
 			}
-			if maxMem > v.maxMemThreshold {
-				t.Errorf("Max mem %f, higher than maxMemThreshold %f", maxMem, v.maxMemThreshold)
+			if maxMem > conf.maxMemThreshold {
+				t.Errorf("Max mem %f, higher than maxMemThreshold %f", maxMem, conf.maxMemThreshold)
 			}
 
 		})
+
 	}
 }
 
