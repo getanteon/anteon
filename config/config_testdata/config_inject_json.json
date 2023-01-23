@@ -8,7 +8,7 @@
             "name": "Example Name 1",
             "url": "{{LOCAL}}",
             "method": "GET",
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{ "from":"body","json_path":"num"},
                 "NAME" :{ "from":"body","json_path":"name"},
                 "IS_CHAMPION": {"from":"body","json_path":"isChampion"},
@@ -29,7 +29,7 @@
                 "num": "{{NUM}}"
             },
             "payload_file" : "../config/config_testdata/json_payload.json",
-            "captureEnv": {
+            "capture_env": {
                 "REGEX_MATCH_ENV" :{"from":"body","json_path":"num"}
             }   
         }

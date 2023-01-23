@@ -59,7 +59,7 @@
                 "h2": true,
                 "disable-redirect": true
             },
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{ "from":"body","json_path":"num"}
             }
         },

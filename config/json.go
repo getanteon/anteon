@@ -89,7 +89,7 @@ type step struct {
 	Others           map[string]interface{} `json:"others"`
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
-	CaptureEnv       map[string]capturePath `json:"captureEnv"`
+	CaptureEnv       map[string]capturePath `json:"capture_env"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {

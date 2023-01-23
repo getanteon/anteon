@@ -8,7 +8,7 @@
             "name": "Example Name 1",
             "url": "{{LOCAL}}",
             "method": "GET",
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{ "from":"body","json_path":"num"}
             }             
         },
@@ -21,7 +21,7 @@
                 "Content-Type": "application/json",
                 "num": "{{NUM}}"
             },
-            "captureEnv": {
+            "capture_env": {
                 "REGEX_MATCH_ENV" :{"from":"header","regExp":{"exp" : "", "matchNo": 1}}
             }   
         }

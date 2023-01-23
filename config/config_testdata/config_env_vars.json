@@ -14,7 +14,7 @@
             "others": {
                 "keep-alive": true
             },
-            "captureEnv": {
+            "capture_env": {
                 "ENV_VAR1" :{"json_path":""},
                 "ENV_VAR2" :{"xPath":""}
             }

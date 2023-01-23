@@ -8,7 +8,7 @@
             "name": "Example Name 1",
             "url": "http://localhost:8080/hello",
             "method": "GET",
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{ "from":"body","json_path":"num"}
             }             
         },
@@ -21,7 +21,7 @@
                 "Content-Type": "application/json",
                 "num": "{{NUM}}"
             },
-            "captureEnv": {
+            "capture_env": {
                 "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
             }   
         }

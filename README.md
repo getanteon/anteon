@@ -405,7 +405,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         This is the equivalent of the `-T` flag. 
 
-    - `captureEnv` *optional*
+    - `capture_env` *optional*
 
         Config for extraction of variables to use them in next steps. 
         **Example:** Capture *NUM* variable from steps response body;
@@ -414,7 +414,7 @@ There is an example config file at [config_examples/config.json](/config_example
             {
                 "id": 1,
                 "url": "http://target.com/endpoint1",
-                "captureEnv": {
+                "capture_env": {
                      "NUM" :{"from":"body","jsonPath":"num"},
                 }
             },
@@ -561,7 +561,7 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{"from":"body","jsonPath":"num"},
                 "NAME" :{"from":"body","jsonPath":"name"},
                 "SQUAD" :{"from":"body","jsonPath":"squad"},
@@ -578,7 +578,7 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
+            "capture_env": {
                 "TITLE" :{"from":"body","xPath":"//item/title"},             
             }         
         }
@@ -591,7 +591,7 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
+            "capture_env": {
                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}} ,
                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
             }         
@@ -604,7 +604,7 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
+            "capture_env": {
                 "TOKEN" :{"from":"header", "headerKey":"Authorization"},
             }         
         }
@@ -645,7 +645,7 @@ On array-like captured variables or environment vars, the **rand( )** function c
                 "Rand-Selected-Num" : "{{rand(NUMBERS)}}"
             },
             "payload" : "{{COMPANY_NAME}}",
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{"from":"body","jsonPath":"num"},
                 "NAME" :{"from":"body","jsonPath":"name"},
                 "SQUAD" :{"from":"body","jsonPath":"squad"},
@@ -665,7 +665,7 @@ On array-like captured variables or environment vars, the **rand( )** function c
                 "Content-Type" : "{{CONTENT_TYPE}}"
             },
             "payload_file" : "payload.json",
-            "captureEnv": {
+            "capture_env": {
                 "TITLE" :{"from":"body","xPath":"//item/title"},
                 "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
             }
