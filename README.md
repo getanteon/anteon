@@ -32,6 +32,8 @@
 
 📌 **Correlation** -  Extract variables from earlier phases and pass them on to the following ones.
 
+📌 **Test Data** -  Import test data from CSV and use it in the scenario.
+
 
 ## Installation
 
