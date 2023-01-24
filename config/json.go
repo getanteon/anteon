@@ -68,10 +68,10 @@ type RegexCaptureConf struct {
 }
 type capturePath struct {
 	JsonPath  *string           `json:"json_path"`
-	XPath     *string           `json:"xPath"`
-	RegExp    *RegexCaptureConf `json:"regExp"`
-	From      string            `json:"from"`      // body,header
-	HeaderKey *string           `json:"headerKey"` // header key
+	XPath     *string           `json:"xpath"`
+	RegExp    *RegexCaptureConf `json:"regexp"`
+	From      string            `json:"from"`       // body,header
+	HeaderKey *string           `json:"header_key"` // header key
 }
 
 type step struct {

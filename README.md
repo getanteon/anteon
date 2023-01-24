@@ -543,10 +543,10 @@ ddosify -config ddosify_config_dynamic.json
 }
 ```
 ## Correlation
-Ddosify enables you to capture variables from steps using **jsonPath**, **xPath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
+Ddosify enables you to capture variables from steps using **jsonPath**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
 > **:warning: Points to keep in mind**
-> - You must specify **'headerKey'** when capturing from header.
+> - You must specify **'header_key'** when capturing from header.
 > - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
 > - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
 
@@ -579,7 +579,7 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-                "TITLE" :{"from":"body","xPath":"//item/title"},             
+                "TITLE" :{"from":"body","xpath":"//item/title"},             
             }         
         }
     ]
@@ -592,8 +592,8 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-               "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}} ,
-               "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
+               "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
+               "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
             }         
         }
     ]
@@ -605,7 +605,7 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
+                "TOKEN" :{"from":"header", "header_key":"Authorization"},
             }         
         }
     ]
@@ -651,8 +651,8 @@ On array-like captured variables or environment vars, the **rand( )** function c
                 "SQUAD" :{"from":"body","jsonPath":"squad"},
                 "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
                 "MESSI" : {"from":"body","jsonPath":"squad.players.0"},
-                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
-                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}}             
+                "TOKEN" :{"from":"header", "header_key":"Authorization"},
+                "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}}             
             }         
         },
         {
@@ -666,8 +666,8 @@ On array-like captured variables or environment vars, the **rand( )** function c
             },
             "payload_file" : "payload.json",
             "capture_env": {
-                "TITLE" :{"from":"body","xPath":"//item/title"},
-                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+                "TITLE" :{"from":"body","xpath":"//item/title"},
+                "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
             }
         }
     ],

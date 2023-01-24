@@ -22,7 +22,7 @@
                 "num": "{{NUM}}"
             },
             "capture_env": {
-                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+                "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
             }   
         }
     ],

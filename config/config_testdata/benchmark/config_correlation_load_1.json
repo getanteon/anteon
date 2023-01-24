@@ -25,8 +25,8 @@
                 "BOOL": {"from":"body","json_path":"quoteResponse.result.0.cryptoTradeable"},
                 "FLOAT" : {"from":"body","json_path":"quoteResponse.result.0.epsForward"},
                 "ALL_RESULT" :{"from":"body","json_path":"quoteResponse.result.0"},
-                "CONTENT_LENGTH" :{"from":"header", "headerKey":"Content-Length"},
-                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}  }             
+                "CONTENT_LENGTH" :{"from":"header", "header_key":"Content-Length"},
+                "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}  }             
             }         
             },
             {
