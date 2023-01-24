@@ -204,7 +204,7 @@ type EnvCaptureConf struct {
 	RegExp   *RegexCaptureConf `json:"regexp"`
 	Name     string            `json:"as"`
 	From     SourceType        `json:"from"`
-	Key      *string           `json:"header_key"` // header_key
+	Key      *string           `json:"header_key"`
 }
 
 type CsvData struct {
