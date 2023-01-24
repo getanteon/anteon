@@ -58,6 +58,7 @@ func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
 	}
 	s.listenAndAggregate(input)
 	s.report()
+	s.doneChan <- struct{}{}
 }
 
 func (s *stdoutJson) report() {
@@ -87,7 +88,6 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	for r := range input {
 		aggregate(s.result, r)
 	}
-	s.doneChan <- struct{}{}
 }
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
