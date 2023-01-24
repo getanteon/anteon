@@ -14,9 +14,9 @@
             "others": {
                 "keep-alive": true
             },
-            "captureEnv": {
-                "ENV_VAR1" :{"jsonPath":""},
-                "ENV_VAR2" :{"xPath":""}
+            "capture_env": {
+                "ENV_VAR1" :{"json_path":""},
+                "ENV_VAR2" :{"xpath":""}
             }
         },
         {
