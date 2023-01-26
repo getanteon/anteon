@@ -1,6 +1,10 @@
 package evaluator
 
-import "fmt"
+import (
+	"fmt"
+
+	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
+)
 
 var less_than = func(variable int64, limit int64) bool {
 	fmt.Println("less_than called")
@@ -31,9 +35,15 @@ var in = func(a interface{}, b []interface{}) bool {
 	return false
 }
 
+var jsonExtract = func(source string, jsonPath string) interface{} {
+	val, _ := extraction.ExtractFromJson(source, jsonPath) // TODO handle error
+	return val
+}
+
 var assertionFuncMap = map[string]struct{}{
 	"not":       {},
 	"less_than": {},
 	"equals":    {},
 	"in":        {},
+	"json_path": {},
 }

@@ -44,7 +44,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 		}
 	case types.Body:
 		if ce.JsonPath != nil {
-			val, err = extractFromJson(source, *ce.JsonPath)
+			val, err = ExtractFromJson(source, *ce.JsonPath)
 		} else if ce.RegExp != nil {
 			val, err = extractWithRegex(source, *ce.RegExp)
 		} else if ce.Xpath != nil {
@@ -75,7 +75,7 @@ func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val
 	}
 }
 
-func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
+func ExtractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 	je := jsonExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body

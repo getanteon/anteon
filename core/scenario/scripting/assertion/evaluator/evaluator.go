@@ -71,6 +71,8 @@ func Eval(node ast.Node, env map[string]interface{}) (interface{}, error) {
 				return equals(args[0], args[1]), nil
 			case "in":
 				return in(args[0], args[1].([]interface{})), nil
+			case "json_path":
+				return jsonExtract(env["body"].(string), args[0].(string)), nil
 			}
 
 		} else {
