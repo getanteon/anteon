@@ -17,7 +17,6 @@ const (
 	STRING = "STRING" // Content-Type
 
 	// Operators
-	ASSIGN   = "="
 	PLUS     = "+"
 	MINUS    = "-"
 	BANG     = "!"
