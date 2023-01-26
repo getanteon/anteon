@@ -8,15 +8,15 @@
             "name": "Example Name 1",
             "url": "{{LOCAL}}",
             "method": "GET",
-            "captureEnv": {
-                "NUM" :{ "from":"body","jsonPath":"num"},
-                "NAME" :{ "from":"body","jsonPath":"name"},
-                "IS_CHAMPION": {"from":"body","jsonPath":"isChampion"},
-                "MESSI" : {"from":"body","jsonPath":"squad.players.0"},
-                "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
-                "SQUAD" :{"from":"body","jsonPath":"squad"},
-                "ARGENTINA" :{"from":"header", "headerKey":"Argentina"},
-                "m10" :{"from":"header", "headerKey":"Argentina" ,"regExp":{"exp":"[a-z]+_[0-9]+","matchNo":1}  }             
+            "capture_env": {
+                "NUM" :{ "from":"body","json_path":"num"},
+                "NAME" :{ "from":"body","json_path":"name"},
+                "IS_CHAMPION": {"from":"body","json_path":"isChampion"},
+                "MESSI" : {"from":"body","json_path":"squad.players.0"},
+                "PLAYERS" :{"from":"body","json_path":"squad.players"},
+                "SQUAD" :{"from":"body","json_path":"squad"},
+                "ARGENTINA" :{"from":"header", "header_key":"Argentina"},
+                "m10" :{"from":"header", "header_key":"Argentina" ,"regexp":{"exp":"[a-z]+_[0-9]+","matchNo":1}  }             
             }         
         },
         {
@@ -29,8 +29,8 @@
                 "num": "{{NUM}}"
             },
             "payload_file" : "../config/config_testdata/json_payload.json",
-            "captureEnv": {
-                "REGEX_MATCH_ENV" :{"from":"body","jsonPath":"num"}
+            "capture_env": {
+                "REGEX_MATCH_ENV" :{"from":"body","json_path":"num"}
             }   
         }
     ],

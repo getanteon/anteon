@@ -32,6 +32,8 @@
 
 📌 **Correlation** -  Extract variables from earlier phases and pass them on to the following ones.
 
+📌 **Test Data** -  Import test data from CSV and use it in the scenario.
+
 
 ## Installation
 
@@ -287,10 +289,10 @@ There is an example config file at [config_examples/config.json](/config_example
                     "3":{"tag":"payload", "type":"json"},
                     "4":{"tag":"age", "type":"int"}
                     },
-            "allowQuota" : true,
+            "allow_quota" : true,
             "order": "sequential",
-            "skipFirstLine" : true,
-            "skipEmptyLine" : true
+            "skip_first_line" : true,
+            "skip_empty_line" : true
         }
     }
     ```
@@ -299,10 +301,10 @@ There is an example config file at [config_examples/config.json](/config_example
     | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
     | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
     | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
-    | `allowQuota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
+    | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
     | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
-    | `skipFirstLine`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
-    | `skipEmptyLine`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+    | `skip_first_line`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
+    | `skip_empty_line`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
    
 - `steps` *mandatory*
 
@@ -403,7 +405,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
         This is the equivalent of the `-T` flag. 
 
-    - `captureEnv` *optional*
+    - `capture_env` *optional*
 
         Config for extraction of variables to use them in next steps. 
         **Example:** Capture *NUM* variable from steps response body;
@@ -412,7 +414,7 @@ There is an example config file at [config_examples/config.json](/config_example
             {
                 "id": 1,
                 "url": "http://target.com/endpoint1",
-                "captureEnv": {
+                "capture_env": {
                      "NUM" :{"from":"body","jsonPath":"num"},
                 }
             },
@@ -541,10 +543,10 @@ ddosify -config ddosify_config_dynamic.json
 }
 ```
 ## Correlation
-Ddosify enables you to capture variables from steps using **jsonPath**, **xPath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
+Ddosify enables you to capture variables from steps using **jsonPath**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
 > **:warning: Points to keep in mind**
-> - You must specify **'headerKey'** when capturing from header.
+> - You must specify **'header_key'** when capturing from header.
 > - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
 > - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
 
@@ -559,7 +561,7 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{"from":"body","jsonPath":"num"},
                 "NAME" :{"from":"body","jsonPath":"name"},
                 "SQUAD" :{"from":"body","jsonPath":"squad"},
@@ -576,8 +578,8 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
-                "TITLE" :{"from":"body","xPath":"//item/title"},             
+            "capture_env": {
+                "TITLE" :{"from":"body","xpath":"//item/title"},             
             }         
         }
     ]
@@ -589,9 +591,9 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
-               "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}} ,
-               "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
+            "capture_env": {
+               "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
+               "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
             }         
         }
     ]
@@ -602,8 +604,8 @@ ddosify -config ddosify_config_correlation.json -debug
 {
     "steps": [
         {
-            "captureEnv": {
-                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
+            "capture_env": {
+                "TOKEN" :{"from":"header", "header_key":"Authorization"},
             }         
         }
     ]
@@ -643,14 +645,14 @@ On array-like captured variables or environment vars, the **rand( )** function c
                 "Rand-Selected-Num" : "{{rand(NUMBERS)}}"
             },
             "payload" : "{{COMPANY_NAME}}",
-            "captureEnv": {
+            "capture_env": {
                 "NUM" :{"from":"body","jsonPath":"num"},
                 "NAME" :{"from":"body","jsonPath":"name"},
                 "SQUAD" :{"from":"body","jsonPath":"squad"},
                 "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
                 "MESSI" : {"from":"body","jsonPath":"squad.players.0"},
-                "TOKEN" :{"from":"header", "headerKey":"Authorization"},
-                "CONTENT_TYPE" :{"from":"header", "headerKey":"Content-Type" ,"regExp":{"exp":"application\/(\\w)+","matchNo":0}}             
+                "TOKEN" :{"from":"header", "header_key":"Authorization"},
+                "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}}             
             }         
         },
         {
@@ -663,9 +665,9 @@ On array-like captured variables or environment vars, the **rand( )** function c
                 "Content-Type" : "{{CONTENT_TYPE}}"
             },
             "payload_file" : "payload.json",
-            "captureEnv": {
-                "TITLE" :{"from":"body","xPath":"//item/title"},
-                "REGEX_MATCH_ENV" :{"from":"body","regExp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+            "capture_env": {
+                "TITLE" :{"from":"body","xpath":"//item/title"},
+                "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
             }
         }
     ],
@@ -715,9 +717,9 @@ We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/conf
                   "3":{"tag":"payload", "type":"json"},
                   "4":{"tag":"age", "type":"int"}
                 },
-          "allowQuota" : true,
+          "allow_quota" : true,
           "order": "random",
-          "skipFirstLine" : true
+          "skip_first_line" : true
       }
     }
 ```

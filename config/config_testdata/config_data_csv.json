@@ -38,9 +38,9 @@
                   "3":{"tag":"payload", "type":"json"},
                   "4":{"tag":"age", "type":"int"}
                 },
-          "allowQuota" : true,
+          "allow_quota" : true,
           "order": "random",
-          "skipFirstLine" : true
+          "skip_first_line" : true
       }
     },
     "debug" : false

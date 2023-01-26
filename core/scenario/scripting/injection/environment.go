@@ -107,11 +107,10 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 	// json injection
 	bText := []byte(text)
 	if json.Valid(bText) {
-		if ei.jr.Match(bText) {
-			replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
-			if len(errors) == 0 {
-				return string(replacedBytes), nil
-			}
+		replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
+		if len(errors) == 0 {
+			text = string(replacedBytes)
+		} else {
 			return "", unifyErrors(errors)
 		}
 	}

@@ -399,11 +399,11 @@ func TestCreateHammerGlobalEnvs(t *testing.T) {
 func TestCreateHammerCaptureEnvs(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_capture_environment.json"), ConfigTypeJson)
-	jsonPath := "num"
+	json_path := "num"
 	expectedEnvsToCapture0 := []types.EnvCaptureConf{{
 		Name:     "NUM",
 		From:     types.Body,
-		JsonPath: &jsonPath,
+		JsonPath: &json_path,
 	}}
 
 	regex := "[a-z]+_[0-9]+"

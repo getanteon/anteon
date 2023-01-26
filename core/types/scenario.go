@@ -199,12 +199,12 @@ type RegexCaptureConf struct {
 }
 
 type EnvCaptureConf struct {
-	JsonPath *string           `json:"jsonPath"`
+	JsonPath *string           `json:"json_path"`
 	Xpath    *string           `json:"xpath"`
-	RegExp   *RegexCaptureConf `json:"regExp"`
+	RegExp   *RegexCaptureConf `json:"regexp"`
 	Name     string            `json:"as"`
 	From     SourceType        `json:"from"`
-	Key      *string           `json:"headerKey"` // headerKey
+	Key      *string           `json:"header_key"`
 }
 
 type CsvData struct {
@@ -290,7 +290,7 @@ func validateCaptureConf(conf EnvCaptureConf) error {
 
 	if conf.From == Body && conf.JsonPath == nil && conf.RegExp == nil && conf.Xpath == nil {
 		return CaptureConfigError{
-			msg: fmt.Sprintf("%s, one of jsonPath, regExp, xPath key must be specified when extracting from body", conf.Name),
+			msg: fmt.Sprintf("%s, one of json_path, regexp, xpath key must be specified when extracting from body", conf.Name),
 		}
 	}
 

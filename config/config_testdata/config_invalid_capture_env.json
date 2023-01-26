@@ -8,8 +8,8 @@
             "name": "Example Name 1",
             "url": "{{LOCAL}}",
             "method": "GET",
-            "captureEnv": {
-                "NUM" :{ "from":"body","jsonPath":"num"}
+            "capture_env": {
+                "NUM" :{ "from":"body","json_path":"num"}
             }             
         },
         {
@@ -21,8 +21,8 @@
                 "Content-Type": "application/json",
                 "num": "{{NUM}}"
             },
-            "captureEnv": {
-                "REGEX_MATCH_ENV" :{"from":"header","regExp":{"exp" : "", "matchNo": 1}}
+            "capture_env": {
+                "REGEX_MATCH_ENV" :{"from":"header","regexp":{"exp" : "", "matchNo": 1}}
             }   
         }
     ],

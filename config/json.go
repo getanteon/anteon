@@ -67,11 +67,11 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath  *string           `json:"jsonPath"`
-	XPath     *string           `json:"xPath"`
-	RegExp    *RegexCaptureConf `json:"regExp"`
-	From      string            `json:"from"`      // body,header
-	HeaderKey *string           `json:"headerKey"` // header key
+	JsonPath  *string           `json:"json_path"`
+	XPath     *string           `json:"xpath"`
+	RegExp    *RegexCaptureConf `json:"regexp"`
+	From      string            `json:"from"`       // body,header
+	HeaderKey *string           `json:"header_key"` // header key
 }
 
 type step struct {
@@ -89,7 +89,7 @@ type step struct {
 	Others           map[string]interface{} `json:"others"`
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
-	CaptureEnv       map[string]capturePath `json:"captureEnv"`
+	CaptureEnv       map[string]capturePath `json:"capture_env"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -123,10 +123,10 @@ func (t *Tag) UnmarshalJSON(data []byte) error {
 type CsvConf struct {
 	Path          string         `json:"path"`
 	Delimiter     string         `json:"delimiter"`
-	SkipFirstLine bool           `json:"skipFirstLine"`
+	SkipFirstLine bool           `json:"skip_first_line"`
 	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
-	SkipEmptyLine bool           `json:"skipEmptyLine"`
-	AllowQuota    bool           `json:"allowQuota"`
+	SkipEmptyLine bool           `json:"skip_empty_line"`
+	AllowQuota    bool           `json:"allow_quota"`
 	Order         string         `json:"order"`
 }
 

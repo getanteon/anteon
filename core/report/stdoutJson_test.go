@@ -45,7 +45,7 @@ func TestInitStdoutJson(t *testing.T) {
 	}
 }
 
-func TestStdoutJsonListenAndAggregate(t *testing.T) {
+func TestStdoutJsonAggregate(t *testing.T) {
 	responses := []*types.ScenarioResult{
 		{
 			StartTime: time.Now(),
@@ -136,25 +136,8 @@ func TestStdoutJsonListenAndAggregate(t *testing.T) {
 	debug := false
 	s.Init(debug)
 
-	responseChan := make(chan *types.ScenarioResult, len(responses))
-	go s.listenAndAggregate(responseChan)
-
-	go func() {
-		for _, r := range responses {
-			responseChan <- r
-		}
-		close(responseChan)
-	}()
-
-	doneChanSignaled := false
-	select {
-	case <-s.doneChan:
-		doneChanSignaled = true
-	case <-time.After(time.Duration(1) * time.Second):
-	}
-
-	if !doneChanSignaled {
-		t.Errorf("DoneChan is not signaled")
+	for _, r := range responses {
+		aggregate(s.result, r)
 	}
 
 	if !reflect.DeepEqual(*s.result, expectedResult) {

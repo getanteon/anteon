@@ -1,6 +1,8 @@
 package injection
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
@@ -265,6 +267,36 @@ func TestRandomInjectionInterfaceSlice(t *testing.T) {
 
 	if !found {
 		t.Errorf("rand method did not return one of the expecteds")
+	}
+
+}
+
+func TestConcatVariablesAndInjectAsTyped(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+	// injection to json payload
+	payload := `{"a":["--{{number_int}}--{{number_string}}--","23","{{number_int}}"]}`
+
+	envs := map[string]interface{}{
+		"number_int":    1,
+		"number_string": "2",
+	}
+
+	expectedPayload := `{"a":["--1--2--","23",1]}`
+
+	expected := &bytes.Buffer{}
+	if err := json.Compact(expected, []byte(expectedPayload)); err != nil {
+		panic(err)
+	}
+
+	got, err := replacer.InjectEnv(payload, envs)
+
+	if err != nil {
+		t.Errorf("injection failed %v", err)
+	}
+
+	if !reflect.DeepEqual(got, expected.String()) {
+		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), got)
 	}
 
 }
