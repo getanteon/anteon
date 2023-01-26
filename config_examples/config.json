@@ -10,7 +10,7 @@
         {"duration": 6, "count": 10},
         {"duration": 7, "count": 20}
     ],
-    "envs" : {
+    "env" : {
         "HTTPBIN" : "https://httpbin.ddosify.com",
         "LOCAL" : "http://localhost:8084",
         "NAMES" : ["kenan","fatih","kursat","semih","sertac"] ,
