@@ -43,6 +43,13 @@ var contains = func(source string, substr string) bool {
 	return false
 }
 
+var rangeF = func(x int64, low int64, hi int64) bool {
+	if x >= low && x < hi {
+		return true
+	}
+	return false
+}
+
 var assertionFuncMap = map[string]struct{}{
 	"not":       {},
 	"less_than": {},
@@ -51,4 +58,5 @@ var assertionFuncMap = map[string]struct{}{
 	"json_path": {},
 	"has":       {},
 	"contains":  {},
+	"range":     {},
 }

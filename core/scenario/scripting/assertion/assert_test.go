@@ -10,11 +10,13 @@ import (
 func TestAssert(t *testing.T) {
 	testHeader := http.Header{}
 	testHeader.Add("Content-Type", "application/json")
+	testHeader.Add("content-length", "222")
 
 	tests := []struct {
-		input    string
-		envs     *evaluator.AssertEnv
-		expected bool
+		input       string
+		envs        *evaluator.AssertEnv
+		expected    bool
+		shouldError bool
 	}{
 		{
 			input: "response_size < 300",
@@ -109,11 +111,37 @@ func TestAssert(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			input: `range(headers.content-length,100,300)`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
+			input: `range(headers.content-length,300,400)`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: false,
+		},
+		{
+			input: `range(headers.content-length,"300",400)`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected:    false,
+			shouldError: true, // range params should be integer
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
-			if tc.expected != Assert(tc.input, tc.envs) {
+			eval, err := Assert(tc.input, tc.envs)
+			if tc.shouldError && err == nil {
+				t.Errorf("should be errored")
+			}
+			if tc.expected != eval {
 				t.Errorf("assert expected %t", tc.expected)
 			}
 		})

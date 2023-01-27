@@ -59,32 +59,52 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 				return nil, err
 			}
 
-			// TODO: err check and propagation
-			switch funcName {
-			case "not":
-				boolArg, _ := strconv.ParseBool(fmt.Sprintf("%t", args[0])) // TODO err check
-				return not(boolArg), nil
-			case "less_than":
-				variable, _ := strconv.ParseInt(fmt.Sprintf("%d", args[0]), 10, 64) // TODO err check
-				limit, _ := strconv.ParseInt(fmt.Sprintf("%d", args[1]), 10, 64)    // TODO err check
-				return less_than(variable, limit), nil
-			case "equals":
-				return equals(args[0], args[1]), nil
-			case "in":
-				return in(args[0], args[1].([]interface{})), nil
-			case "json_path":
-				return jsonExtract(env.Body, args[0].(string)), nil
-			case "has":
-				if args[0] != nil {
-					return true, nil // if identifier evaluated, and exists
-				}
-				return false, nil
-			case "contains":
-				return contains(args[0].(string), args[1].(string)), nil
-			}
+			f := func() (result interface{}, err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						result = nil
+						err = fmt.Errorf("%v", r) // TODO: meaningful error
+					}
+				}()
 
-		} else {
-			return nil, fmt.Errorf("func %s not defined", funcName)
+				// TODO: err check and propagation
+				switch funcName {
+				case "not":
+					boolArg, _ := strconv.ParseBool(fmt.Sprintf("%t", args[0])) // TODO err check
+					return not(boolArg), nil
+				case "less_than":
+					variable, _ := strconv.ParseInt(fmt.Sprintf("%d", args[0]), 10, 64) // TODO err check
+					limit, _ := strconv.ParseInt(fmt.Sprintf("%d", args[1]), 10, 64)    // TODO err check
+					return less_than(variable, limit), nil
+				case "equals":
+					return equals(args[0], args[1]), nil
+				case "in":
+					return in(args[0], args[1].([]interface{})), nil
+				case "json_path":
+					return jsonExtract(env.Body, args[0].(string)), nil
+				case "has":
+					if args[0] != nil {
+						return true, nil // if identifier evaluated, and exists
+					}
+					return false, nil
+				case "contains":
+					return contains(args[0].(string), args[1].(string)), nil
+				case "range":
+					var x, low, high int64
+
+					x, ok = args[0].(int64)
+					if !ok {
+						x, _ = strconv.ParseInt(args[0].(string), 0, 64)
+					}
+
+					low = args[1].(int64)
+					high = args[2].(int64)
+
+					return rangeF(x, low, high), nil
+				}
+				return nil, fmt.Errorf("func %s not defined", funcName)
+			}
+			return f()
 		}
 	}
 	return nil, nil

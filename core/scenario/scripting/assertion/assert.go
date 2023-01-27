@@ -8,27 +8,24 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/parser"
 )
 
-func Assert(input string, env *evaluator.AssertEnv) bool {
+func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 	// TODO: optimize
 	l := lexer.New(input)
 	p := parser.New(l)
 
 	node := p.ParseExpressionStatement()
 	if len(p.Errors()) > 0 {
-		fmt.Println(p.Errors())
-		return false
+		return false, fmt.Errorf("%v", p.Errors())
 	}
 
 	obj, err := evaluator.Eval(node, env)
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return false, err
 	}
 
 	b, ok := obj.(bool)
 	if ok {
-		return b
+		return b, nil
 	}
-	fmt.Printf("evaluated value is not bool %s", obj)
-	return false
+	return false, fmt.Errorf("evaluated value is not bool %s", obj)
 }
