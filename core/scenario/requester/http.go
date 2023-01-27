@@ -37,6 +37,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
+	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
@@ -181,6 +183,8 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var bodyReadErr error
 	var extractedVars = make(map[string]interface{})
 	var failedCaptures = make(map[string]string, 0)
+	var assertionResult bool
+	var assertionErr error
 
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
@@ -245,6 +249,25 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		respHeaders = httpRes.Header
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
+
+		// TODO we need to show all failed assertions, propagate
+		var failedAssertionIndex int
+		assertionResult, failedAssertionIndex, assertionErr = h.applyAssertions(&evaluator.AssertEnv{
+			StatusCode:   int64(statusCode),
+			ResponseSize: contentLength, // TODO check
+			ResponseTime: 0,             // TODO
+			Body:         string(respBody),
+			Headers:      respHeaders,
+			Variables:    concatEnvs(envs, extractedVars),
+		})
+
+		if assertionErr != nil {
+			requestErr.Type = "Assertion Eval Error" // TODO
+			requestErr.Reason = fmt.Sprintf("Failed assertion : %s %v", h.packet.Assertions[failedAssertionIndex], assertionErr)
+		} else if !assertionResult {
+			requestErr.Type = "Assertion Failed" // TODO
+			requestErr.Reason = fmt.Sprintf("Failed assertion : %s", h.packet.Assertions[failedAssertionIndex])
+		}
 	}
 
 	var ddResTime time.Duration
@@ -296,6 +319,20 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	}
 
 	return
+}
+
+func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
+	total := make(map[string]interface{})
+
+	for k, v := range envs1 {
+		total[k] = v
+	}
+
+	for k, v := range envs2 {
+		total[k] = v
+	}
+
+	return total
 }
 
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
@@ -590,6 +627,23 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			m.Unlock()
 		},
 	}
+}
+
+func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, int, error) { // result, failedAssertionIndex, assertionError
+	assertions := h.packet.Assertions
+
+	for i, rule := range assertions {
+		boolVal, err := assertion.Assert(rule, assertEnv)
+
+		if err != nil {
+			return false, i, err
+		}
+		if !boolVal {
+			return false, i, nil
+		}
+	}
+
+	return true, 0, nil
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,

@@ -90,6 +90,7 @@ type step struct {
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
 	CaptureEnv       map[string]capturePath `json:"capture_env"`
+	Assertions       []string               `json:"assertion"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -334,6 +335,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		Sleep:         strings.ReplaceAll(s.Sleep, " ", ""),
 		Custom:        s.Others,
 		EnvsToCapture: capturedEnvs,
+		Assertions:    s.Assertions,
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {
