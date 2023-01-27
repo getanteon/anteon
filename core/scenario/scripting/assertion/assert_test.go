@@ -86,7 +86,8 @@ func TestAssert(t *testing.T) {
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
 			},
-			expected: false,
+			shouldError: true, // ident not found
+			expected:    false,
 		},
 		{
 			input: `contains(body,"xyz")`,
@@ -133,6 +134,16 @@ func TestAssert(t *testing.T) {
 			expected:    false,
 			shouldError: true, // range params should be integer
 		},
+		{
+			input:       `equals_on_file("abc","./test_files/a.txt")`,
+			expected:    true,
+			shouldError: false,
+		},
+		{
+			input:       `equals_on_file("abcx","./test_files/a.txt")`,
+			expected:    false,
+			shouldError: false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -140,6 +151,9 @@ func TestAssert(t *testing.T) {
 			eval, err := Assert(tc.input, tc.envs)
 			if tc.shouldError && err == nil {
 				t.Errorf("should be errored")
+			}
+			if !tc.shouldError && err != nil {
+				t.Errorf("did not expect error, got %v", err)
 			}
 			if tc.expected != eval {
 				t.Errorf("assert expected %t", tc.expected)

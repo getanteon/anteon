@@ -56,7 +56,7 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 		if _, ok := assertionFuncMap[funcName]; ok {
 			args, err := evalExpressions(node.Arguments, env)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 
 			f := func() (result interface{}, err error) {
@@ -70,22 +70,23 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 				// TODO: err check and propagation
 				switch funcName {
 				case NOT:
-					boolArg, _ := strconv.ParseBool(fmt.Sprintf("%t", args[0])) // TODO err check
-					return not(boolArg), nil
+					return not(args[0].(bool)), nil
 				case LESSTHAN:
 					variable, _ := strconv.ParseInt(fmt.Sprintf("%d", args[0]), 10, 64) // TODO err check
 					limit, _ := strconv.ParseInt(fmt.Sprintf("%d", args[1]), 10, 64)    // TODO err check
 					return less_than(variable, limit), nil
 				case EQUALS:
-					return equals(args[0], args[1]), nil
+					return equals(args[0], args[1])
+				case EQUALSONFILE:
+					return equalsOnFile(args[0].(string), args[1].(string))
 				case IN:
-					return in(args[0], args[1].([]interface{})), nil
+					return in(args[0], args[1].([]interface{}))
 				case JSONPATH:
-					return jsonExtract(env.Body, args[0].(string)), nil
+					return jsonExtract(env.Body, args[0].(string))
 				case XMLPATH:
-					return xmlExtract(env.Body, args[0].(string)), nil
+					return xmlExtract(env.Body, args[0].(string))
 				case REGEXP:
-					return regexExtract(env.Body, args[0].(string), args[1].(int64)), nil
+					return regexExtract(env.Body, args[0].(string), args[1].(int64))
 				case HAS:
 					if args[0] != nil {
 						return true, nil // if identifier evaluated, and exists
