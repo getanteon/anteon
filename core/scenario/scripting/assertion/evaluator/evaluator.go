@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
 )
 
-func Eval(node ast.Node, env map[string]interface{}) (interface{}, error) {
+func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 	switch node := node.(type) {
 
 	case *ast.ExpressionStatement:
@@ -72,7 +73,14 @@ func Eval(node ast.Node, env map[string]interface{}) (interface{}, error) {
 			case "in":
 				return in(args[0], args[1].([]interface{})), nil
 			case "json_path":
-				return jsonExtract(env["body"].(string), args[0].(string)), nil
+				return jsonExtract(env.Body, args[0].(string)), nil
+			case "has":
+				if args[0] != nil {
+					return true, nil // if identifier evaluated, and exists
+				}
+				return false, nil
+			case "contains":
+				return contains(args[0].(string), args[1].(string)), nil
 			}
 
 		} else {
@@ -175,20 +183,43 @@ func evalIntegerInfixExpression(
 
 func evalIdentifier(
 	node *ast.Identifier,
-	env map[string]interface{},
+	env *AssertEnv,
 ) (interface{}, error) {
-	env["variable"] = 20 // // TODO add keywords, native values, add response body, headers, responsesize
-	val, ok := env[node.Value]
-	if !ok {
-		return nil, fmt.Errorf("identifier not found: " + node.Value)
+	ident := node.Value
+	if strings.EqualFold(ident, "status_code") {
+		return env.StatusCode, nil
+	}
+	if strings.EqualFold(ident, "response_size") {
+		return env.ResponseSize, nil
+	}
+	if strings.EqualFold(ident, "response_time") {
+		return env.ResponseTime, nil
+	}
+	if strings.EqualFold(ident, "body") {
+		return env.Body, nil
+	}
+	if strings.HasPrefix(ident, "variables.") {
+		vr := strings.TrimPrefix(ident, "variables.")
+		if v, ok := env.Variables[vr]; ok {
+			return v, nil
+		}
+		return "", fmt.Errorf("variable not found %s", vr)
+	}
+	if strings.HasPrefix(ident, "headers.") {
+		vr := strings.TrimPrefix(ident, "headers.")
+		hv := env.Headers.Get(vr)
+		if hv != "" {
+			return hv, nil
+		}
+		return "", fmt.Errorf("header not found %s", vr)
 	}
 
-	return val, nil
+	return "", fmt.Errorf("identifier could not evaluated %s", ident)
 }
 
 func evalExpressions(
 	exps []ast.Expression,
-	env map[string]interface{},
+	env *AssertEnv,
 ) ([]interface{}, error) {
 	var result []interface{}
 

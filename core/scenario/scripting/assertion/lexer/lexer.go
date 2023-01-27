@@ -147,7 +147,7 @@ func (l *Lexer) readNumber() string {
 }
 
 func isLetter(ch byte) bool { // identifiers
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch == '.'
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch == '.' || ch == '-'
 }
 
 func isDigit(ch byte) bool {

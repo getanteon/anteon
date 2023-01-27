@@ -8,7 +8,7 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/parser"
 )
 
-func Assert(input string, env map[string]interface{}) bool {
+func Assert(input string, env *evaluator.AssertEnv) bool {
 	// TODO: optimize
 	l := lexer.New(input)
 	p := parser.New(l)
