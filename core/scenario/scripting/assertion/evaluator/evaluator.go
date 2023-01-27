@@ -128,25 +128,38 @@ func evalPrefixExpression(operator string, right interface{}) (interface{}, erro
 func evalInfixExpression(
 	operator string,
 	left, right interface{},
-) (interface{}, error) { // TODO: add panic recover
-	var leftType, rightType string
+) (interface{}, error) {
+	leftType := reflect.ValueOf(left).Kind()
+	rightType := reflect.ValueOf(right).Kind()
 
-	intLeft, ok := left.(int64)
-	if ok {
-		leftType = "int64"
+	// int - int
+	if leftType == reflect.Int64 && rightType == reflect.Int64 {
+		return evalIntegerInfixExpression(operator, left.(int64), right.(int64))
+	}
+	if leftType == reflect.Int64 && rightType == reflect.Int {
+		return evalIntegerInfixExpression(operator, left.(int64), int64(right.(int)))
+	}
+	if leftType == reflect.Int && rightType == reflect.Int64 {
+		return evalIntegerInfixExpression(operator, int64(left.(int)), right.(int64))
+	}
+	if leftType == reflect.Int && rightType == reflect.Int {
+		return evalIntegerInfixExpression(operator, int64(left.(int)), int64(left.(int)))
 	}
 
-	intRight, ok := right.(int64)
-	if ok {
-		rightType = "int64"
+	// int - float, convert int64 to float64, data loss for big int64 numbers
+	if leftType == reflect.Int64 && rightType == reflect.Float64 {
+		return evalFloatInfixExpression(operator, float64(left.(int64)), right.(float64))
+	}
+	if leftType == reflect.Float64 && rightType == reflect.Int64 {
+		return evalFloatInfixExpression(operator, left.(float64), float64(right.(float64)))
 	}
 
-	// TODO add float, maybe string +,-
-
-	if leftType == "int64" && rightType == "int64" {
-		return evalIntegerInfixExpression(operator, intLeft, intRight)
+	// float - float
+	if leftType == reflect.Float64 && rightType == reflect.Float64 {
+		return evalFloatInfixExpression(operator, left.(float64), right.(float64))
 	}
 
+	// other types
 	if operator == "==" {
 		return reflect.DeepEqual(left, right), nil
 	}
@@ -156,15 +169,20 @@ func evalInfixExpression(
 	}
 
 	if operator == "&&" {
-		return left.(bool) && right.(bool), nil
+		if leftType == reflect.Bool && rightType == reflect.Bool {
+			return left.(bool) && right.(bool), nil
+		}
+		return nil, fmt.Errorf("operator && unsupported for types: %s and %s", leftType, rightType)
 	}
 
 	if operator == "||" {
-		return left.(bool) || right.(bool), nil
+		if leftType == reflect.Bool && rightType == reflect.Bool {
+			return left.(bool) || right.(bool), nil
+		}
+		return nil, fmt.Errorf("operator || unsupported for types: %s and %s", leftType, rightType)
 	}
 
-	return nil, fmt.Errorf("unknown operator: evalInfixExpression %s ", operator)
-
+	return nil, fmt.Errorf("unknown operator: evalInfixExpression %s", operator)
 }
 
 func evalBangOperatorExpression(right interface{}) (bool, error) {
@@ -183,6 +201,33 @@ func evalMinusPrefixOperatorExpression(right interface{}) (int64, error) {
 	}
 
 	return -i, nil
+}
+
+func evalFloatInfixExpression(operator string,
+	left, right float64,
+) (interface{}, error) {
+
+	switch operator {
+	case "+":
+		return left + right, nil
+	case "-":
+		return left - right, nil
+	case "*":
+		return left * right, nil
+	case "/":
+		return left / right, nil
+	case "<":
+		return left < right, nil
+	case ">":
+		return left > right, nil
+	case "==":
+		return left == right, nil
+	case "!=":
+		return left != right, nil
+	default:
+		return 0, fmt.Errorf("unknown operator: for float infix expression %s",
+			operator)
+	}
 }
 
 func evalIntegerInfixExpression(

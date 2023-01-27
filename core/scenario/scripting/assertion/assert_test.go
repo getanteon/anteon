@@ -158,6 +158,39 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			input: "status_code > variables.envFloatVal", // int float comparison
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+				Variables: map[string]interface{}{
+					"envFloatVal": 12.43,
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "status_code && true", // int && bool, unsupported
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected:    false,
+			shouldError: true,
+		},
+		{
+			input: "status_code || true", // int || bool, unsupported
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected:    false,
+			shouldError: true,
+		},
+		{
+			input: "(status_code > 199) || false",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {
