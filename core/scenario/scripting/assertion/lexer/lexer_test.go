@@ -200,6 +200,46 @@ func TestNextToken(t *testing.T) {
 				{token.EOF, ""},
 			},
 		},
+		{
+			input: "not(true) && not(false)",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.IDENT, "not"},
+				{token.LPAREN, "("},
+				{token.TRUE, "true"},
+				{token.RPAREN, ")"},
+				{token.AND, "&&"},
+				{token.IDENT, "not"},
+				{token.LPAREN, "("},
+				{token.FALSE, "false"},
+				{token.RPAREN, ")"},
+				{token.EOF, ""},
+			},
+		},
+		{
+			input: "equals(status_code,200) || equals(status_code,201)",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.IDENT, "equals"},
+				{token.LPAREN, "("},
+				{token.IDENT, "status_code"},
+				{token.COMMA, ","},
+				{token.INT, "200"},
+				{token.RPAREN, ")"},
+				{token.OR, "||"},
+				{token.IDENT, "equals"},
+				{token.LPAREN, "("},
+				{token.IDENT, "status_code"},
+				{token.COMMA, ","},
+				{token.INT, "201"},
+				{token.RPAREN, ")"},
+				{token.EOF, ""},
+			},
+		},
 	}
 
 	for _, tt := range tests {

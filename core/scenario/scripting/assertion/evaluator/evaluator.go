@@ -67,13 +67,12 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 					}
 				}()
 
-				// TODO: err check and propagation
 				switch funcName {
 				case NOT:
 					return not(args[0].(bool)), nil
 				case LESSTHAN:
-					variable, _ := strconv.ParseInt(fmt.Sprintf("%d", args[0]), 10, 64) // TODO err check
-					limit, _ := strconv.ParseInt(fmt.Sprintf("%d", args[1]), 10, 64)    // TODO err check
+					variable := args[0].(int64)
+					limit := args[0].(int64)
 					return less_than(variable, limit), nil
 				case EQUALS:
 					return equals(args[0], args[1])
@@ -129,9 +128,7 @@ func evalPrefixExpression(operator string, right interface{}) (interface{}, erro
 func evalInfixExpression(
 	operator string,
 	left, right interface{},
-) (interface{}, error) {
-	// TODO: check type mismatch, add float
-
+) (interface{}, error) { // TODO: add panic recover
 	var leftType, rightType string
 
 	intLeft, ok := left.(int64)
@@ -144,6 +141,8 @@ func evalInfixExpression(
 		rightType = "int64"
 	}
 
+	// TODO add float, maybe string +,-
+
 	if leftType == "int64" && rightType == "int64" {
 		return evalIntegerInfixExpression(operator, intLeft, intRight)
 	}
@@ -154,6 +153,14 @@ func evalInfixExpression(
 
 	if operator == "!=" {
 		return !reflect.DeepEqual(left, right), nil
+	}
+
+	if operator == "&&" {
+		return left.(bool) && right.(bool), nil
+	}
+
+	if operator == "||" {
+		return left.(bool) || right.(bool), nil
 	}
 
 	return nil, fmt.Errorf("unknown operator: evalInfixExpression %s ", operator)

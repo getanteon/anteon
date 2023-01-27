@@ -144,6 +144,20 @@ func TestAssert(t *testing.T) {
 			expected:    false,
 			shouldError: false,
 		},
+		{
+			input: "(status_code == 200) || (status_code == 201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: true,
+		},
+		{
+			input: "(status_code == 200) && (status_code == 201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: false,
+		},
 	}
 
 	for _, tc := range tests {
