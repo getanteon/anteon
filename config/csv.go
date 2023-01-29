@@ -26,7 +26,8 @@ func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
 
 	var reader io.Reader
 
-	if _, err = url.ParseRequestURI(conf.Path); err == nil { // url
+	var pUrl *url.URL
+	if pUrl, err = url.ParseRequestURI(conf.Path); err == nil && pUrl.IsAbs() { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
 			return nil, err
