@@ -172,7 +172,8 @@ func TestStart(t *testing.T) {
 			"connDuration": 12.5,
 			"duration":     20,
 		},
-		ErrorDist: map[string]int{},
+		ServerErrorDist:    make(map[string]int),
+		AssertionErrorDist: map[string]*AssertInfo{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
@@ -183,7 +184,8 @@ func TestStart(t *testing.T) {
 			"connDuration": 40,
 			"duration":     60,
 		},
-		ErrorDist: map[string]int{types.ReasonConnTimeout: 1},
+		ServerErrorDist:    map[string]int{types.ReasonConnTimeout: 1},
+		AssertionErrorDist: map[string]*AssertInfo{},
 	}
 
 	expectedResult := Result{
@@ -222,7 +224,7 @@ func TestStart(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(*s.result, expectedResult) {
-		t.Errorf("2Expected %#v, Found %#v", expectedResult, *s.result)
+		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
 	}
 }
 

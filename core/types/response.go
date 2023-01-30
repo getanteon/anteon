@@ -79,4 +79,7 @@ type ScenarioStepResult struct {
 
 	// Failed captures and their reasons
 	FailedCaptures map[string]string
+
+	// Failed assertion rules and received values
+	FailedAssertions []FailedAssertion
 }

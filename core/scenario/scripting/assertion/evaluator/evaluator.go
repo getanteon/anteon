@@ -9,11 +9,11 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
 )
 
-func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
+func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (interface{}, error) {
 	switch node := node.(type) {
 
 	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
+		return Eval(node.Expression, env, receivedMap)
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -23,7 +23,7 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 	case *ast.StringLiteral:
 		return node.GetVal(), nil
 	case *ast.ArrayLiteral:
-		args, err := evalExpressions(node.Elems, env)
+		args, err := evalExpressions(node.Elems, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}
@@ -31,30 +31,30 @@ func Eval(node ast.Node, env *AssertEnv) (interface{}, error) {
 	case *ast.Boolean:
 		return node.GetVal(), nil
 	case *ast.PrefixExpression:
-		right, err := Eval(node.Right, env)
+		right, err := Eval(node.Right, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}
 		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
-		left, err := Eval(node.Left, env)
+		left, err := Eval(node.Left, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}
 
-		right, err := Eval(node.Right, env)
+		right, err := Eval(node.Right, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}
 
 		return evalInfixExpression(node.Operator, left, right)
 	case *ast.Identifier:
-		return evalIdentifier(node, env)
+		return evalIdentifier(node, env, receivedMap)
 
 	case *ast.CallExpression:
 		funcName := node.Function.(*ast.Identifier).Value
 		if _, ok := assertionFuncMap[funcName]; ok {
-			args, err := evalExpressions(node.Arguments, env)
+			args, err := evalExpressions(node.Arguments, env, receivedMap)
 			if err != nil {
 				return false, err
 			}
@@ -261,23 +261,29 @@ func evalIntegerInfixExpression(
 func evalIdentifier(
 	node *ast.Identifier,
 	env *AssertEnv,
+	receivedMap map[string]interface{},
 ) (interface{}, error) {
 	ident := node.Value
 	if strings.EqualFold(ident, "status_code") {
+		receivedMap[ident] = env.StatusCode
 		return env.StatusCode, nil
 	}
 	if strings.EqualFold(ident, "response_size") {
+		receivedMap[ident] = env.ResponseSize
 		return env.ResponseSize, nil
 	}
 	if strings.EqualFold(ident, "response_time") {
+		receivedMap[ident] = env.ResponseTime
 		return env.ResponseTime, nil
 	}
 	if strings.EqualFold(ident, "body") {
+		receivedMap[ident] = env.Body
 		return env.Body, nil
 	}
 	if strings.HasPrefix(ident, "variables.") {
 		vr := strings.TrimPrefix(ident, "variables.")
 		if v, ok := env.Variables[vr]; ok {
+			receivedMap[ident] = v
 			return v, nil
 		}
 		return "", fmt.Errorf("variable not found %s", vr)
@@ -286,6 +292,7 @@ func evalIdentifier(
 		vr := strings.TrimPrefix(ident, "headers.")
 		hv := env.Headers.Get(vr)
 		if hv != "" {
+			receivedMap[ident] = hv
 			return hv, nil
 		}
 		return "", fmt.Errorf("header not found %s", vr)
@@ -297,11 +304,12 @@ func evalIdentifier(
 func evalExpressions(
 	exps []ast.Expression,
 	env *AssertEnv,
+	receivedMap map[string]interface{},
 ) ([]interface{}, error) {
 	var result []interface{}
 
 	for _, e := range exps {
-		evaluated, err := Eval(e, env)
+		evaluated, err := Eval(e, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}

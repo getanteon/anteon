@@ -35,18 +35,43 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 
 		if _, ok := result.StepResults[sr.StepID]; !ok {
 			result.StepResults[sr.StepID] = &ScenarioStepResultSummary{
-				Name:           sr.StepName,
-				StatusCodeDist: make(map[int]int, 0),
-				ErrorDist:      make(map[string]int),
-				Durations:      map[string]float32{},
+				Name:               sr.StepName,
+				StatusCodeDist:     make(map[int]int, 0),
+				AssertionErrorDist: map[string]*AssertInfo{},
+				ServerErrorDist:    make(map[string]int),
+				Durations:          map[string]float32{},
 			}
 		}
 		stepResult := result.StepResults[sr.StepID]
 
-		if sr.Err.Type != "" {
+		if len(sr.FailedAssertions) > 0 { // assertion error
 			errOccured = true
 			stepResult.FailedCount++
-			stepResult.ErrorDist[sr.Err.Reason]++
+
+			for _, fa := range sr.FailedAssertions {
+				// TODO sampling on received field
+				if aed, ok := stepResult.AssertionErrorDist[fa.Rule]; !ok {
+					ae := &AssertInfo{
+						Count:    1,
+						Received: make(map[string][]interface{}),
+					}
+
+					for ident, value := range fa.Received {
+						ae.Received[ident] = []interface{}{value}
+					}
+
+					stepResult.AssertionErrorDist[fa.Rule] = ae
+				} else {
+					aed.Count++
+					for ident, value := range fa.Received {
+						aed.Received[ident] = append(aed.Received[ident], value)
+					}
+				}
+			}
+		} else if sr.Err.Type != "" { // server error
+			errOccured = true
+			stepResult.FailedCount++
+			stepResult.ServerErrorDist[sr.Err.Reason]++
 		} else {
 			stepResult.StatusCodeDist[sr.StatusCode]++
 			stepResult.SuccessCount++
@@ -97,12 +122,18 @@ func (r *Result) failedPercentage() int {
 }
 
 type ScenarioStepResultSummary struct {
-	Name           string             `json:"name"`
-	StatusCodeDist map[int]int        `json:"status_code_dist"`
-	ErrorDist      map[string]int     `json:"error_dist"`
-	Durations      map[string]float32 `json:"durations"`
-	SuccessCount   int64              `json:"success_count"`
-	FailedCount    int64              `json:"fail_count"`
+	Name               string                 `json:"name"`
+	StatusCodeDist     map[int]int            `json:"status_code_dist"`
+	AssertionErrorDist map[string]*AssertInfo `json:"assertion_error_dist"`
+	ServerErrorDist    map[string]int         `json:"server_error_dist"`
+	Durations          map[string]float32     `json:"durations"`
+	SuccessCount       int64                  `json:"success_count"`
+	FailedCount        int64                  `json:"fail_count"`
+}
+
+type AssertInfo struct {
+	Count    int
+	Received map[string][]interface{}
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {

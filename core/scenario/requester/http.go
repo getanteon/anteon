@@ -183,8 +183,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var bodyReadErr error
 	var extractedVars = make(map[string]interface{})
 	var failedCaptures = make(map[string]string, 0)
-	var assertionResult bool
-	var assertionErr error
+	var failedAssertions = make([]types.FailedAssertion, 0)
 
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
@@ -225,21 +224,18 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
 	if httpRes != nil {
-		if len(h.packet.EnvsToCapture) > 0 {
+		// read resp body conditionally
+		if h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0 {
 			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
-			bodyRead = true
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
-			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
+			bodyRead = true
 		}
 
 		if !bodyRead {
-			if h.debug {
-				respBody, bodyReadErr = io.ReadAll(httpRes.Body)
-			} else { // do not write into memory, just read
-				_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
-			}
+			// do not write into memory, just read
+			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
@@ -250,23 +246,22 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
 
-		// TODO we need to show all failed assertions, propagate
-		var failedAssertionIndex int
-		assertionResult, failedAssertionIndex, assertionErr = h.applyAssertions(&evaluator.AssertEnv{
-			StatusCode:   int64(statusCode),
-			ResponseSize: contentLength, // TODO check
-			ResponseTime: 0,             // TODO
-			Body:         string(respBody),
-			Headers:      respHeaders,
-			Variables:    concatEnvs(envs, extractedVars),
-		})
+		// capture
+		if len(h.packet.EnvsToCapture) > 0 {
+			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
+		}
 
-		if assertionErr != nil {
-			requestErr.Type = "Assertion Eval Error" // TODO
-			requestErr.Reason = fmt.Sprintf("Failed assertion : %s %v", h.packet.Assertions[failedAssertionIndex], assertionErr)
-		} else if !assertionResult {
-			requestErr.Type = "Assertion Failed" // TODO
-			requestErr.Reason = fmt.Sprintf("Failed assertion : %s", h.packet.Assertions[failedAssertionIndex])
+		// assert
+		if len(h.packet.Assertions) > 0 {
+			// TODO we need to show all failed assertions, propagate
+			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
+				StatusCode:   int64(httpRes.StatusCode),
+				ResponseSize: contentLength, // TODO check
+				ResponseTime: 0,             // TODO
+				Body:         string(respBody),
+				Headers:      httpRes.Header,
+				Variables:    concatEnvs(envs, extractedVars),
+			})
 		}
 	}
 
@@ -305,9 +300,10 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
-		ExtractedEnvs:  extractedVars,
-		UsableEnvs:     usableVars,
-		FailedCaptures: failedCaptures,
+		ExtractedEnvs:    extractedVars,
+		UsableEnvs:       usableVars,
+		FailedCaptures:   failedCaptures,
+		FailedAssertions: failedAssertions,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -629,21 +625,33 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 	}
 }
 
-func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, int, error) { // result, failedAssertionIndex, assertionError
+func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, []types.FailedAssertion) {
+	// result, failedAssertionIndex, assertionError
 	assertions := h.packet.Assertions
-
-	for i, rule := range assertions {
+	assertionsSuccess := true
+	failedAssertions := []types.FailedAssertion{}
+	for _, rule := range assertions {
 		boolVal, err := assertion.Assert(rule, assertEnv)
 
 		if err != nil {
-			return false, i, err
+			assertErr := err.(assertion.AssertionError)
+			failedAssertions = append(failedAssertions, types.FailedAssertion{
+				Rule:     assertErr.Rule(),
+				Received: assertErr.Received(),
+			})
+			assertionsSuccess = false
 		}
 		if !boolVal {
-			return false, i, nil
+			assertionsSuccess = false
 		}
 	}
 
-	return true, 0, nil
+	if assertionsSuccess {
+		return true, nil
+	}
+
+	return false, failedAssertions
+
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,

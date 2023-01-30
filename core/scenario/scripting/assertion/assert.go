@@ -8,6 +8,28 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/parser"
 )
 
+type AssertionError struct { // UnWrappable
+	failedAssertion string
+	received        map[string]interface{}
+	wrappedErr      error
+}
+
+func (ae AssertionError) Error() string {
+	return fmt.Sprintf("input : %s, received: %v", ae.failedAssertion, ae.received)
+}
+
+func (ae AssertionError) Rule() string {
+	return ae.failedAssertion
+}
+
+func (ae AssertionError) Received() map[string]interface{} {
+	return ae.received
+}
+
+func (ae AssertionError) Unwrap() error {
+	return ae.wrappedErr
+}
+
 func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 	// TODO: optimize
 	l := lexer.New(input)
@@ -18,14 +40,31 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 		return false, fmt.Errorf("%v", p.Errors())
 	}
 
-	obj, err := evaluator.Eval(node, env)
+	receivedMap := make(map[string]interface{})
+	obj, err := evaluator.Eval(node, env, receivedMap)
 	if err != nil {
-		return false, err
+		return false, AssertionError{
+			failedAssertion: input,
+			received:        receivedMap,
+			wrappedErr:      err,
+		}
 	}
 
 	b, ok := obj.(bool)
 	if ok {
+		if b == false {
+			return false, AssertionError{
+				failedAssertion: input,
+				received:        receivedMap,
+			}
+		}
 		return b, nil
 	}
-	return false, fmt.Errorf("evaluated value is not bool %s", obj)
+
+	return false, AssertionError{
+		failedAssertion: input,
+		received:        receivedMap,
+		wrappedErr:      fmt.Errorf("evaluated value is not bool %s", obj),
+	}
+
 }

@@ -108,7 +108,8 @@ func TestStdoutJsonAggregate(t *testing.T) {
 			"connDuration": 12.5,
 			"duration":     20,
 		},
-		ErrorDist: map[string]int{},
+		AssertionErrorDist: map[string]*AssertInfo{},
+		ServerErrorDist:    map[string]int{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
@@ -119,7 +120,8 @@ func TestStdoutJsonAggregate(t *testing.T) {
 			"connDuration": 40,
 			"duration":     60,
 		},
-		ErrorDist: map[string]int{types.ReasonConnTimeout: 1},
+		AssertionErrorDist: map[string]*AssertInfo{},
+		ServerErrorDist:    map[string]int{types.ReasonConnTimeout: 1},
 	}
 
 	expectedResult := Result{
@@ -156,7 +158,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 			"connDuration": 0.0003,
 			"duration":     0.1900,
 		},
-		ErrorDist: map[string]int{},
+		ServerErrorDist: map[string]int{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1, 200: 9},
@@ -167,7 +169,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 			"connDuration": 0.01356,
 			"duration":     0.493566,
 		},
-		ErrorDist: map[string]int{types.ReasonConnTimeout: 2},
+		ServerErrorDist: map[string]int{types.ReasonConnTimeout: 2},
 	}
 	result := Result{
 		SuccessCount: 9,
@@ -196,7 +198,8 @@ func TestStdoutJsonOutput(t *testing.T) {
 				"status_code_dist": {
 					"200": 11
 				},
-				"error_dist": {},
+				"assertion_error_dist" : null,
+				"server_error_dist": {},
 				"durations": {
 					"connection": 0,
 					"dns": 0.19,
@@ -213,7 +216,8 @@ func TestStdoutJsonOutput(t *testing.T) {
 					"200": 9,
 					"401": 1
 				},
-				"error_dist": {
+				"assertion_error_dist" : null,
+				"server_error_dist": {
 					"connection timeout": 2
 				},
 				"durations": {

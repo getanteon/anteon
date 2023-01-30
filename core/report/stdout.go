@@ -323,9 +323,22 @@ func (s *stdout) printDetails() {
 			}
 		}
 
-		if len(v.ErrorDist) > 0 {
-			fmt.Fprintln(w, "\nError Distribution (Count:Reason):")
-			for e, c := range v.ErrorDist {
+		if len(v.AssertionErrorDist) > 0 {
+			fmt.Fprintln(w, "\nAsseertion Error Distribution (Count:Reason):")
+			for e, c := range v.AssertionErrorDist {
+				fmt.Fprintf(w, "Condition : %s\n", e)
+				fmt.Fprintf(w, "\tFail Count : %d\n", c.Count)
+				fmt.Fprintf(w, "\tReceived : \n")
+
+				for ident, values := range c.Received {
+					fmt.Fprintf(w, "\t\t %s : %v\n", ident, values)
+				}
+			}
+		}
+
+		if len(v.ServerErrorDist) > 0 {
+			fmt.Fprintln(w, "\nServer Error Distribution (Count:Reason):")
+			for e, c := range v.ServerErrorDist {
 				fmt.Fprintf(w, "  %d\t :%s\n", c, e)
 			}
 		}
