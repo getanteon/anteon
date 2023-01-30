@@ -101,8 +101,20 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 						x, _ = strconv.ParseInt(args[0].(string), 0, 64)
 					}
 
-					low = args[1].(int64)
-					high = args[2].(int64)
+					low, ok = args[1].(int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "arguments of range should be integer",
+							wrappedErr: nil,
+						}
+					}
+					high, ok = args[2].(int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "arguments of range should be integer",
+							wrappedErr: nil,
+						}
+					}
 
 					return rangeF(x, low, high), nil
 				}
@@ -172,14 +184,20 @@ func evalInfixExpression(
 		if leftType == reflect.Bool && rightType == reflect.Bool {
 			return left.(bool) && right.(bool), nil
 		}
-		return nil, fmt.Errorf("operator && unsupported for types: %s and %s", leftType, rightType)
+		return nil, OperatorError{
+			msg:        fmt.Sprintf("operator && unsupported for types: %s and %s", leftType, rightType),
+			wrappedErr: nil,
+		}
 	}
 
 	if operator == "||" {
 		if leftType == reflect.Bool && rightType == reflect.Bool {
 			return left.(bool) || right.(bool), nil
 		}
-		return nil, fmt.Errorf("operator || unsupported for types: %s and %s", leftType, rightType)
+		return nil, OperatorError{
+			msg:        fmt.Sprintf("operator || unsupported for types: %s and %s", leftType, rightType),
+			wrappedErr: nil,
+		}
 	}
 
 	return nil, fmt.Errorf("unknown operator: evalInfixExpression %s", operator)
@@ -286,7 +304,10 @@ func evalIdentifier(
 			receivedMap[ident] = v
 			return v, nil
 		}
-		return "", fmt.Errorf("variable not found %s", vr)
+		return "", NotFoundError{
+			source:     fmt.Sprintf("variable not found %s", vr),
+			wrappedErr: nil,
+		}
 	}
 	if strings.HasPrefix(ident, "headers.") {
 		vr := strings.TrimPrefix(ident, "headers.")
@@ -295,10 +316,16 @@ func evalIdentifier(
 			receivedMap[ident] = hv
 			return hv, nil
 		}
-		return "", fmt.Errorf("header not found %s", vr)
+		return "", NotFoundError{ //
+			source:     fmt.Sprintf("header not found %s", vr),
+			wrappedErr: nil,
+		}
 	}
 
-	return "", fmt.Errorf("identifier could not evaluated %s", ident)
+	return "", NotFoundError{ //
+		source:     fmt.Sprintf("%s not defined", ident),
+		wrappedErr: nil,
+	}
 }
 
 func evalExpressions(
@@ -317,4 +344,43 @@ func evalExpressions(
 	}
 
 	return result, nil
+}
+
+type NotFoundError struct { // UnWrappable
+	source     string
+	wrappedErr error
+}
+
+func (nf NotFoundError) Error() string {
+	return fmt.Sprintf("input : %s", nf.source)
+}
+
+func (nf NotFoundError) Unwrap() error {
+	return nf.wrappedErr
+}
+
+type ArgumentError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (nf ArgumentError) Error() string {
+	return fmt.Sprintf("input : %s", nf.msg)
+}
+
+func (nf ArgumentError) Unwrap() error {
+	return nf.wrappedErr
+}
+
+type OperatorError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (nf OperatorError) Error() string {
+	return fmt.Sprintf("input : %s", nf.msg)
+}
+
+func (nf OperatorError) Unwrap() error {
+	return nf.wrappedErr
 }
