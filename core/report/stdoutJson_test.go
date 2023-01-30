@@ -139,7 +139,7 @@ func TestStdoutJsonAggregate(t *testing.T) {
 	s.Init(debug)
 
 	for _, r := range responses {
-		aggregate(s.result, r)
+		aggregate(s.result, r, make(map[uint16]map[string]int))
 	}
 
 	if !reflect.DeepEqual(*s.result, expectedResult) {

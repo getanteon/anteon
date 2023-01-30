@@ -27,7 +27,9 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func aggregate(result *Result, scr *types.ScenarioResult) {
+const samplingMax = 3 // per second
+
+func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int) {
 	var scenarioDuration float32
 	errOccured := false
 	for _, sr := range scr.StepResults {
@@ -49,8 +51,9 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 			stepResult.FailedCount++
 
 			for _, fa := range sr.FailedAssertions {
-				// TODO sampling on received field
 				if aed, ok := stepResult.AssertionErrorDist[fa.Rule]; !ok {
+					samplingCount[sr.StepID] = make(map[string]int)
+					samplingCount[sr.StepID][fa.Rule] = 1
 					ae := &AssertInfo{
 						Count:    1,
 						Received: make(map[string][]interface{}),
@@ -63,8 +66,11 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 					stepResult.AssertionErrorDist[fa.Rule] = ae
 				} else {
 					aed.Count++
-					for ident, value := range fa.Received {
-						aed.Received[ident] = append(aed.Received[ident], value)
+					samplingCount[sr.StepID][fa.Rule]++
+					if samplingCount[sr.StepID][fa.Rule] <= samplingMax {
+						for ident, value := range fa.Received {
+							aed.Received[ident] = append(aed.Received[ident], value)
+						}
 					}
 				}
 			}
@@ -131,11 +137,6 @@ type ScenarioStepResultSummary struct {
 	FailedCount        int64                  `json:"fail_count"`
 }
 
-type AssertInfo struct {
-	Count    int
-	Received map[string][]interface{}
-}
-
 func (s *ScenarioStepResultSummary) successPercentage() int {
 	if s.SuccessCount+s.FailedCount == 0 {
 		return 0
@@ -149,4 +150,27 @@ func (s *ScenarioStepResultSummary) failedPercentage() int {
 		return 0
 	}
 	return 100 - s.successPercentage()
+}
+
+type AssertInfo struct {
+	Count    int
+	Received map[string][]interface{}
+}
+
+func cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingMax {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+		case <-stopSampling:
+			return
+		}
+	}
 }

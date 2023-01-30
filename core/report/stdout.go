@@ -83,14 +83,19 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	}
 	go s.realTimePrintStart()
 
+	stopSampling := make(chan struct{})
+	samplingCount := make(map[uint16]map[string]int)
+	go cleanSamplingCount(samplingCount, stopSampling)
+
 	for r := range input {
 		s.mu.Lock()
-		aggregate(s.result, r)
+		aggregate(s.result, r, samplingCount)
 		s.mu.Unlock()
 	}
 
 	s.realTimePrintStop()
 	s.report()
+	stopSampling <- struct{}{}
 	s.doneChan <- struct{}{}
 }
 

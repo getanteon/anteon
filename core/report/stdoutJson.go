@@ -85,8 +85,11 @@ func (s *stdoutJson) DoneChan() <-chan struct{} {
 }
 
 func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
+	stopSampling := make(chan struct{})
+	samplingCount := make(map[uint16]map[string]int)
+	go cleanSamplingCount(samplingCount, stopSampling)
 	for r := range input {
-		aggregate(s.result, r)
+		aggregate(s.result, r, samplingCount)
 	}
 }
 
