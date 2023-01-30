@@ -23,7 +23,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -283,15 +282,7 @@ func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 				Duration:      0,
 				ContentLength: 0,
 				Err:           types.RequestError{},
-				DebugInfo: map[string]interface{}{
-					"requestBody":     []byte{},
-					"requestHeaders":  http.Header{},
-					"url":             "",
-					"method":          "",
-					"responseBody":    []byte{},
-					"responseHeaders": http.Header{},
-				},
-				Custom: map[string]interface{}{},
+				Custom:        map[string]interface{}{},
 			},
 		},
 	}

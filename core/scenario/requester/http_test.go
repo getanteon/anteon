@@ -382,23 +382,19 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 			envs := map[string]interface{}{}
 			res := h.Send(envs)
 
-			if len(res.DebugInfo) == 0 {
-				t.Errorf("debugInfo should have been populated on debug mode")
+			if test.expectedDebugInfo["method"] != res.Method {
+				t.Errorf("Method Expected %#v, Found: \n%#v", test.expectedDebugInfo["method"], res.Method)
 			}
-
-			if test.expectedDebugInfo["method"] != res.DebugInfo["method"] {
-				t.Errorf("Method Expected %#v, Found: \n%#v", test.expectedDebugInfo["method"], res.DebugInfo["method"])
+			if test.expectedDebugInfo["url"] != res.Url {
+				t.Errorf("Url Expected %#v, Found: \n%#v", test.expectedDebugInfo["url"], res.Url)
 			}
-			if test.expectedDebugInfo["url"] != res.DebugInfo["url"] {
-				t.Errorf("Url Expected %#v, Found: \n%#v", test.expectedDebugInfo["url"], res.DebugInfo["url"])
-			}
-			if !bytes.Equal(test.expectedDebugInfo["requestBody"].([]byte), res.DebugInfo["requestBody"].([]byte)) {
+			if !bytes.Equal(test.expectedDebugInfo["requestBody"].([]byte), res.ReqBody) {
 				t.Errorf("RequestBody Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestBody"],
-					res.DebugInfo["requestBody"])
+					res.ReqBody)
 			}
-			if !reflect.DeepEqual(test.expectedDebugInfo["requestHeaders"], res.DebugInfo["requestHeaders"]) {
+			if !reflect.DeepEqual(test.expectedDebugInfo["requestHeaders"], res.ReqHeaders) {
 				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestHeaders"],
-					res.DebugInfo["requestHeaders"])
+					res.ReqHeaders)
 			}
 
 		}

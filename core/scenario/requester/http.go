@@ -178,8 +178,6 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var copiedReqBody bytes.Buffer
 	var respBody []byte
 	var respHeaders http.Header
-	var debugInfo map[string]interface{}
-	var bodyRead bool
 	var bodyReadErr error
 	var extractedVars = make(map[string]interface{})
 	var failedCaptures = make(map[string]string, 0)
@@ -207,10 +205,8 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		return res
 	}
 
-	if h.debug {
-		io.Copy(&copiedReqBody, httpReq.Body)
-		httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
-	}
+	io.Copy(&copiedReqBody, httpReq.Body)
+	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
@@ -230,10 +226,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
-			bodyRead = true
-		}
-
-		if !bodyRead {
+		} else {
 			// do not write into memory, just read
 			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
 			if bodyReadErr != nil {
@@ -271,17 +264,6 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
-	if h.debug {
-		debugInfo = map[string]interface{}{
-			"url":             httpReq.URL.String(),
-			"method":          httpReq.Method,
-			"requestHeaders":  httpReq.Header,
-			"requestBody":     copiedReqBody.Bytes(),
-			"responseBody":    respBody,
-			"responseHeaders": respHeaders,
-		}
-	}
-
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -292,7 +274,14 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		Duration:      durations.totalDuration(),
 		ContentLength: contentLength,
 		Err:           requestErr,
-		DebugInfo:     debugInfo,
+
+		Url:         httpReq.URL.String(),
+		Method:      httpReq.Method,
+		ReqHeaders:  httpReq.Header,
+		ReqBody:     copiedReqBody.Bytes(),
+		RespHeaders: respHeaders,
+		RespBody:    respBody,
+
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),

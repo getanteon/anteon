@@ -217,7 +217,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 			}
 
-			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
+			contentType := sr.ReqHeaders.Get("content-type")
 			fmt.Fprintf(w, "\t%s", "Body: ")
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
@@ -238,7 +238,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 				}
 
-				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+				contentType := sr.RespHeaders.Get("content-type")
 				fmt.Fprintf(w, "\t%s", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
