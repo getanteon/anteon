@@ -29,6 +29,20 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "response_size < 300.5",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: 200,
+			},
+			expected: true,
+		},
+		{
+			input: "-response_size < 300.5",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: 200,
+			},
+			expected: true,
+		},
+		{
 			input: "in(status_code,[200,201])",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 500,
@@ -141,6 +155,14 @@ func TestAssert(t *testing.T) {
 			expectedError: "ArgumentError", // range params should be integer
 		},
 		{
+			input: `range(headers.content-length,300,"400")`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected:      false,
+			expectedError: "ArgumentError", // range params should be integer
+		},
+		{
 			input:    `equals_on_file("abc","./test_files/a.txt")`,
 			expected: true,
 		},
@@ -195,6 +217,21 @@ func TestAssert(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			input: "less_than(status_code,201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: true,
+		},
+		{
+			input: `range(header.content-length,300,400)`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected:      false,
+			expectedError: "NotFoundError", // should be headers....
+		},
 	}
 
 	for _, tc := range tests {
@@ -210,12 +247,12 @@ func TestAssert(t *testing.T) {
 				if tc.expectedError == "NotFoundError" {
 					var notFoundError evaluator.NotFoundError
 					if !errors.As(err, &notFoundError) {
-						t.Errorf("Should be evaluator.NotFoundError")
+						t.Errorf("Should be evaluator.NotFoundError, got %v", err)
 					}
 				} else if tc.expectedError == "ArgumentError" {
 					var argError evaluator.ArgumentError
 					if !errors.As(err, &argError) {
-						t.Errorf("Should be evaluator.ArgumentError")
+						t.Errorf("Should be evaluator.ArgumentError, got %v", err)
 					}
 				}
 

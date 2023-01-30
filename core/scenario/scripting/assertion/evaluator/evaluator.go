@@ -72,7 +72,7 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 					return not(args[0].(bool)), nil
 				case LESSTHAN:
 					variable := args[0].(int64)
-					limit := args[0].(int64)
+					limit := args[1].(int64)
 					return less_than(variable, limit), nil
 				case EQUALS:
 					return equals(args[0], args[1])
