@@ -92,6 +92,8 @@ func ExtractFromXml(source interface{}, xPath string) (interface{}, error) {
 	switch s := source.(type) {
 	case []byte: // from response body
 		return xe.extractFromByteSlice(s, xPath)
+	case string: // from response header
+		return xe.extractFromString(s, xPath)
 	default:
 		return "", fmt.Errorf("Unsupported type for extraction source")
 	}

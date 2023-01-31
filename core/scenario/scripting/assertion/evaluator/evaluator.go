@@ -85,7 +85,7 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case XMLPATH:
 					return xmlExtract(env.Body, args[0].(string))
 				case REGEXP:
-					return regexExtract(env.Body, args[0].(string), args[1].(int64))
+					return regexExtract(env.Body, args[1].(string), args[2].(int64))
 				case HAS:
 					if args[0] != nil {
 						return true, nil // if identifier evaluated, and exists

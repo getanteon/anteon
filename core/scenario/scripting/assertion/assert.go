@@ -15,7 +15,7 @@ type AssertionError struct { // UnWrappable
 }
 
 func (ae AssertionError) Error() string {
-	return fmt.Sprintf("input : %s, received: %v", ae.failedAssertion, ae.received)
+	return fmt.Sprintf("input : %s, received: %v, wrappedErr: %v", ae.failedAssertion, ae.received, ae.wrappedErr)
 }
 
 func (ae AssertionError) Rule() string {

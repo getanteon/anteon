@@ -130,6 +130,14 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 		},
+
+		{
+			input: `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`,
+			envs: &evaluator.AssertEnv{
+				Body: "messi_10alvarez_9",
+			},
+			expected: true,
+		},
 		{
 			input: `equals(variables.arr,["Kenan","Faruk","Cakir"])`,
 			envs: &evaluator.AssertEnv{
@@ -140,10 +148,61 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: `equals(variables.arr,["Kenan","Faruk","Cakir"])`,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"arr2": []interface{}{"Kenan", "Faruk", "Cakir"},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: `variables.arr != ["Kenan","Faruk","Cakir"]`,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"arr": []interface{}{"Cakir"},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: `variables.arr !=["Kenan","Faruk","Cakir"])`,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"arr": []interface{}{"Kenan", "Faruk", "Cakir"},
+				},
+			},
+			expected: false,
+		},
+		{
 			input: `equals(variables.xint,100)`, // int - int64 comparison
 			envs: &evaluator.AssertEnv{
 				Variables: map[string]interface{}{
 					"xint": 100,
+				},
+			},
+			expected: true,
+		},
+		{
+			input: `equals(100,variables.xint)`, // int - int64 comparison
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"xint": 100,
+				},
+			},
+			expected: true,
+		},
+		{
+			input:    `2*12/3+5-3 != 10`,
+			expected: false,
+		},
+		{
+			input: `equals(variables.xint,variables.yint)`, // int - int comparison
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"xint": 100,
+					"yint": 100,
 				},
 			},
 			expected: true,
@@ -283,6 +342,21 @@ func TestAssert(t *testing.T) {
 			expected:      false,
 			expectedError: "NotFoundError", // should be headers....
 		},
+		{
+			input: `equals(xml_path("//item/title"),"ABC")`,
+			envs: &evaluator.AssertEnv{
+				Body: `<?xml version="1.0" encoding="UTF-8" ?>
+	<rss version="2.0">
+	<channel>
+	  <item>
+		<title>ABC</title>
+	  </item>
+	</channel>
+	</rss>`,
+			},
+
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -292,6 +366,7 @@ func TestAssert(t *testing.T) {
 
 			if tc.expected != eval {
 				t.Errorf("assert expected %t", tc.expected)
+				t.Log(err)
 			}
 
 			if err != nil && tc.expectedError != "" {
