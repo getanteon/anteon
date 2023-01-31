@@ -246,7 +246,6 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 
 		// assert
 		if len(h.packet.Assertions) > 0 {
-			// TODO we need to show all failed assertions, propagate
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
 				StatusCode:   int64(httpRes.StatusCode),
 				ResponseSize: contentLength, // TODO check
@@ -342,7 +341,6 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	// url
 	hostURL := h.packet.URL
 	var errURL error
-	httpReq.URL, _ = url.Parse(hostURL)
 
 	if h.containsDynamicField["url"] {
 		hostURL, _ = h.ei.InjectDynamic(hostURL)
@@ -358,6 +356,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	if errURL != nil {
 		return nil, errURL
 	}
+	httpReq.Host = httpReq.URL.Host
 
 	// header
 	if h.containsDynamicField["header"] {
@@ -494,6 +493,9 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	// give a basic url for now here to avoid initiating request every time
 	// override later on prepareReq
 	tempValidUrl := "app.ddosify.com"
+	if strings.HasPrefix(h.packet.URL, "https://") {
+		tempValidUrl = "https://" + "app.ddosify.com"
+	}
 	h.request, err = http.NewRequest(h.packet.Method, tempValidUrl, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
 		return
