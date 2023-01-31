@@ -48,8 +48,8 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 
 		if len(sr.FailedAssertions) > 0 { // assertion error
 			errOccured = true
-			stepResult.FailedCount++
-
+			stepResult.AssertionFailCount++
+			stepResult.StatusCodeDist[sr.StatusCode]++
 			for _, fa := range sr.FailedAssertions {
 				if aed, ok := stepResult.AssertionErrorDist[fa.Rule]; !ok {
 					samplingCount[sr.StepID] = make(map[string]int)
@@ -74,20 +74,28 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 					}
 				}
 			}
+			totalDur := float32(stepResult.SuccessCount+stepResult.AssertionFailCount-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
+			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount+stepResult.AssertionFailCount)
+			for k, v := range sr.Custom {
+				if strings.Contains(k, "Duration") {
+					totalDur := float32(stepResult.SuccessCount+stepResult.AssertionFailCount-1)*stepResult.Durations[k] + float32(v.(time.Duration).Seconds())
+					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount+stepResult.AssertionFailCount))
+				}
+			}
 		} else if sr.Err.Type != "" { // server error
 			errOccured = true
 			stepResult.FailedCount++
 			stepResult.ServerErrorDist[sr.Err.Reason]++
-		} else {
+		} else { // success
 			stepResult.StatusCodeDist[sr.StatusCode]++
 			stepResult.SuccessCount++
 
-			totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
-			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount)
+			totalDur := float32(stepResult.SuccessCount+stepResult.AssertionFailCount-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
+			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount+stepResult.AssertionFailCount)
 			for k, v := range sr.Custom {
 				if strings.Contains(k, "Duration") {
 					totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations[k] + float32(v.(time.Duration).Seconds())
-					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount))
+					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount+stepResult.AssertionFailCount))
 				}
 			}
 		}
@@ -135,6 +143,7 @@ type ScenarioStepResultSummary struct {
 	Durations          map[string]float32     `json:"durations"`
 	SuccessCount       int64                  `json:"success_count"`
 	FailedCount        int64                  `json:"fail_count"`
+	AssertionFailCount int64                  `json:"assertion_fail_count"`
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {
