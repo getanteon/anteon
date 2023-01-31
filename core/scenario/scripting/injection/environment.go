@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"go.ddosify.com/ddosify/core/types/regex"
@@ -17,6 +18,7 @@ type EnvironmentInjector struct {
 	jr  *regexp.Regexp
 	dr  *regexp.Regexp
 	jdr *regexp.Regexp
+	mu  sync.Mutex
 }
 
 func (ei *EnvironmentInjector) Init() {
@@ -34,8 +36,13 @@ func (ei *EnvironmentInjector) getFakeData(key string) (interface{}, error) {
 		return nil, fmt.Errorf("%s is not a valid dynamic variable", key)
 	}
 
-	res := reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
-	return res, nil
+	preventRaceOnRandomFunc := func(fakeFunc interface{}) interface{} {
+		ei.mu.Lock()
+		defer ei.mu.Unlock()
+		return reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
+	}
+
+	return preventRaceOnRandomFunc(fakeFunc), nil
 }
 
 func truncateTag(tag string, rx string) string {
