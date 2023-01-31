@@ -37,6 +37,7 @@ fi'''
       steps {
         lock('multi_branch_server') {
           sh 'go run --race main.go -t https://servdown.com/ -d 1 -n 1500'
+          sh 'go test -race -run ^TestDynamicVariableRace$ go.ddosify.com/ddosify/core/scenario/scripting/injection'
         }
       }
     }
