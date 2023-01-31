@@ -145,6 +145,9 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
+	if p.peekToken.Type == token.ILLEGAL {
+		p.errors = append(p.errors, fmt.Sprintf("%s character is illegal", p.peekToken.Literal))
+	}
 	// right side suck in, already parsed piece becomes leftExp for infix op
 	for precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]

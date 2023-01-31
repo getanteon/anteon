@@ -163,7 +163,7 @@ func evalInfixExpression(
 		return evalFloatInfixExpression(operator, float64(left.(int64)), right.(float64))
 	}
 	if leftType == reflect.Float64 && rightType == reflect.Int64 {
-		return evalFloatInfixExpression(operator, left.(float64), float64(right.(float64)))
+		return evalFloatInfixExpression(operator, left.(float64), float64(right.(int64)))
 	}
 
 	// float - float

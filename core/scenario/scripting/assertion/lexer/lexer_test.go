@@ -180,6 +180,18 @@ func TestNextToken(t *testing.T) {
 			},
 		},
 		{
+			input: "60.1 $ 60.1",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.FLOAT, "60.1"},
+				{token.ILLEGAL, "$"},
+				{token.FLOAT, "60.1"},
+				{token.EOF, ""},
+			},
+		},
+		{
 			input: "%",
 			expected: []struct {
 				expectedType    token.TokenType

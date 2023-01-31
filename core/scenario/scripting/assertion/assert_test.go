@@ -74,6 +74,13 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "!(status_code == 200)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: false,
+		},
+		{
 			input: "not(status_code == 500)",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 200,
@@ -131,6 +138,50 @@ func TestAssert(t *testing.T) {
 				},
 			},
 			expected: true,
+		},
+		{
+			input: `equals(variables.xint,100)`, // int - int64 comparison
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"xint": 100,
+				},
+			},
+			expected: true,
+		},
+		{
+			input:    `equals(100.5 + 200.5, 301)`, // float64 +
+			envs:     &evaluator.AssertEnv{},
+			expected: true,
+		},
+		{
+			input:    `equals(100.5 - 200.5, -100)`, // float64 -
+			envs:     &evaluator.AssertEnv{},
+			expected: true,
+		},
+		{
+			input:    `equals(4.0 * 10.5, 42)`, // float64 *
+			envs:     &evaluator.AssertEnv{},
+			expected: true,
+		},
+		{
+			input:    `equals(60.0/5, 12)`, // float64 /
+			envs:     &evaluator.AssertEnv{},
+			expected: true,
+		},
+		{
+			input:    `60.1 == 60.1`, // float64 ==
+			envs:     &evaluator.AssertEnv{},
+			expected: true,
+		},
+		{
+			input:    `60.1 != 60.1`, // float64 !=
+			envs:     &evaluator.AssertEnv{},
+			expected: false,
+		},
+		{
+			input:    `60.1 £ 60.1`, // illegal character
+			envs:     &evaluator.AssertEnv{},
+			expected: false,
 		},
 		{
 			input: `range(headers.content-length,100,300)`,
@@ -253,6 +304,11 @@ func TestAssert(t *testing.T) {
 					var argError evaluator.ArgumentError
 					if !errors.As(err, &argError) {
 						t.Errorf("Should be evaluator.ArgumentError, got %v", err)
+					}
+				} else if tc.expectedError == "OperatorError" {
+					var opError evaluator.OperatorError
+					if !errors.As(err, &opError) {
+						t.Errorf("Should be evaluator.OperatorError, got %v", err)
 					}
 				}
 
