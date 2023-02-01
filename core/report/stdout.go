@@ -304,7 +304,7 @@ func (s *stdout) printDetails() {
 		}
 
 		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.SuccessCount, v.successPercentage())
-		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.FailedCount, v.failedPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.FailedCount+v.AssertionFailCount, v.failedPercentage())
 
 		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)
@@ -329,7 +329,7 @@ func (s *stdout) printDetails() {
 		}
 
 		if len(v.AssertionErrorDist) > 0 {
-			fmt.Fprintln(w, "\nAsseertion Error Distribution (Count:Reason):")
+			fmt.Fprintln(w, "\nAssertion Error Distribution:")
 			for e, c := range v.AssertionErrorDist {
 				fmt.Fprintf(w, "Condition : %s\n", e)
 				fmt.Fprintf(w, "\tFail Count : %d\n", c.Count)

@@ -147,15 +147,15 @@ type ScenarioStepResultSummary struct {
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {
-	if s.SuccessCount+s.FailedCount == 0 {
+	if s.SuccessCount+s.FailedCount+s.AssertionFailCount == 0 {
 		return 0
 	}
-	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.FailedCount)
+	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.FailedCount+s.AssertionFailCount)
 	return int(t * 100)
 }
 
 func (s *ScenarioStepResultSummary) failedPercentage() int {
-	if s.SuccessCount+s.FailedCount == 0 {
+	if s.SuccessCount+s.FailedCount+s.AssertionFailCount == 0 {
 		return 0
 	}
 	return 100 - s.successPercentage()
