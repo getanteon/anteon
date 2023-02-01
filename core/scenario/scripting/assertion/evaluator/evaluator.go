@@ -63,7 +63,7 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				defer func() {
 					if r := recover(); r != nil {
 						result = nil
-						err = fmt.Errorf("%v", r) // TODO: meaningful error
+						err = fmt.Errorf("probably error during type conversion , %v", r) // TODO: meaningful error
 					}
 				}()
 
@@ -118,7 +118,11 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 
 					return rangeF(x, low, high), nil
 				}
-				return nil, fmt.Errorf("func %s not defined", funcName)
+				return nil, NotFoundError{
+					source:     fmt.Sprintf("func %s not defined", funcName),
+					wrappedErr: nil,
+				}
+
 			}
 			return f()
 		}
@@ -133,7 +137,10 @@ func evalPrefixExpression(operator string, right interface{}) (interface{}, erro
 	case "-":
 		return evalMinusPrefixOperatorExpression(right)
 	default:
-		return nil, fmt.Errorf("unknown operator: %s%s", operator, right)
+		return nil, OperatorError{
+			msg:        fmt.Sprintf("unknown operator: %s%s", operator, right),
+			wrappedErr: nil,
+		}
 	}
 }
 
@@ -200,7 +207,10 @@ func evalInfixExpression(
 		}
 	}
 
-	return nil, fmt.Errorf("unknown operator: evalInfixExpression %s", operator)
+	return nil, OperatorError{
+		msg:        fmt.Sprintf("unknown operator: evalInfixExpression %s", operator),
+		wrappedErr: nil,
+	}
 }
 
 func evalBangOperatorExpression(right interface{}) (bool, error) {
@@ -209,13 +219,19 @@ func evalBangOperatorExpression(right interface{}) (bool, error) {
 		return !b, nil
 	}
 
-	return false, fmt.Errorf("exp is not bool %s", right)
+	return false, OperatorError{
+		msg:        fmt.Sprintf("identifier before ! operator must be bool, %s", right),
+		wrappedErr: nil,
+	}
 }
 
 func evalMinusPrefixOperatorExpression(right interface{}) (int64, error) {
 	i, ok := right.(int64)
 	if !ok {
-		return 0, fmt.Errorf("unknown operator: -%s", right)
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("- operator not applicable for %v", right),
+			wrappedErr: nil,
+		}
 	}
 
 	return -i, nil
@@ -243,8 +259,10 @@ func evalFloatInfixExpression(operator string,
 	case "!=":
 		return left != right, nil
 	default:
-		return 0, fmt.Errorf("unknown operator: for float infix expression %s",
-			operator)
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("unknown operator %s for floats", operator),
+			wrappedErr: nil,
+		}
 	}
 }
 
@@ -271,8 +289,10 @@ func evalIntegerInfixExpression(
 	case "!=":
 		return left != right, nil
 	default:
-		return 0, fmt.Errorf("unknown operator: for integer infix expression %s",
-			operator)
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("unknown operator %s for integers", operator),
+			wrappedErr: nil,
+		}
 	}
 }
 
@@ -352,7 +372,7 @@ type NotFoundError struct { // UnWrappable
 }
 
 func (nf NotFoundError) Error() string {
-	return fmt.Sprintf("input : %s", nf.source)
+	return fmt.Sprintf("%s", nf.source)
 }
 
 func (nf NotFoundError) Unwrap() error {
@@ -365,7 +385,7 @@ type ArgumentError struct { // UnWrappable
 }
 
 func (nf ArgumentError) Error() string {
-	return fmt.Sprintf("input : %s", nf.msg)
+	return fmt.Sprintf("%s", nf.msg)
 }
 
 func (nf ArgumentError) Unwrap() error {
@@ -378,7 +398,7 @@ type OperatorError struct { // UnWrappable
 }
 
 func (nf OperatorError) Error() string {
-	return fmt.Sprintf("input : %s", nf.msg)
+	return fmt.Sprintf("%s", nf.msg)
 }
 
 func (nf OperatorError) Unwrap() error {

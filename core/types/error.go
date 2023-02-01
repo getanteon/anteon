@@ -99,4 +99,5 @@ func (sc CaptureConfigError) Unwrap() error {
 type FailedAssertion struct {
 	Rule     string
 	Received map[string]interface{}
+	Reason   string
 }

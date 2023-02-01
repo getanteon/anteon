@@ -2,6 +2,7 @@ package assertion
 
 import (
 	"fmt"
+	"strings"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/lexer"
@@ -37,7 +38,11 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 
 	node := p.ParseExpressionStatement()
 	if len(p.Errors()) > 0 {
-		return false, fmt.Errorf("%v", p.Errors())
+		return false, AssertionError{
+			failedAssertion: input,
+			received:        map[string]interface{}{},
+			wrappedErr:      fmt.Errorf(strings.Join(p.Errors(), ",")),
+		}
 	}
 
 	receivedMap := make(map[string]interface{})
@@ -56,6 +61,7 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 			return false, AssertionError{
 				failedAssertion: input,
 				received:        receivedMap,
+				wrappedErr:      fmt.Errorf("expression evaluated to false"),
 			}
 		}
 		return b, nil
@@ -64,7 +70,7 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 	return false, AssertionError{
 		failedAssertion: input,
 		received:        receivedMap,
-		wrappedErr:      fmt.Errorf("evaluated value is not bool %s", obj),
+		wrappedErr:      fmt.Errorf("evaluated value is not bool : %v", obj),
 	}
 
 }

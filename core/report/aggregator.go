@@ -59,6 +59,7 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 					ae := &AssertInfo{
 						Count:    1,
 						Received: make(map[string][]interface{}),
+						Reason:   fa.Reason,
 					}
 
 					for ident, value := range fa.Received {
@@ -171,6 +172,7 @@ func (s *ScenarioStepResultSummary) failedPercentage() int {
 type AssertInfo struct {
 	Count    int
 	Received map[string][]interface{}
+	Reason   string
 }
 
 func cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}) {

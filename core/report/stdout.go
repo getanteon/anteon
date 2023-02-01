@@ -338,6 +338,8 @@ func (s *stdout) printDetails() {
 				for ident, values := range c.Received {
 					fmt.Fprintf(w, "\t\t %s : %v\n", ident, values)
 				}
+
+				fmt.Fprintf(w, "\tReason : %s \n", c.Reason)
 			}
 		}
 

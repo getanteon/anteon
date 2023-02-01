@@ -629,6 +629,7 @@ func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, [
 			failedAssertions = append(failedAssertions, types.FailedAssertion{
 				Rule:     assertErr.Rule(),
 				Received: assertErr.Received(),
+				Reason:   assertErr.Unwrap().Error(),
 			})
 			assertionsSuccess = false
 		}
