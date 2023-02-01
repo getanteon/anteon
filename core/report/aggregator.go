@@ -32,6 +32,7 @@ const samplingMax = 3 // per second
 func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int) {
 	var scenarioDuration float32
 	errOccured := false
+	assertionFail := false
 	for _, sr := range scr.StepResults {
 		scenarioDuration += float32(sr.Duration.Seconds())
 
@@ -48,6 +49,7 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 
 		if len(sr.FailedAssertions) > 0 { // assertion error
 			errOccured = true
+			assertionFail = true
 			stepResult.AssertionFailCount++
 			stepResult.StatusCodeDist[sr.StatusCode]++
 			for _, fa := range sr.FailedAssertions {
@@ -84,7 +86,7 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 			}
 		} else if sr.Err.Type != "" { // server error
 			errOccured = true
-			stepResult.FailedCount++
+			stepResult.ServerFailedCount++
 			stepResult.ServerErrorDist[sr.Err.Reason]++
 		} else { // success
 			stepResult.StatusCodeDist[sr.StatusCode]++
@@ -108,28 +110,33 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 		result.SuccessCount++
 		result.AvgDuration = totalDuration / float32(result.SuccessCount)
 	} else if errOccured {
-		result.FailedCount++
+		if assertionFail {
+			result.AssertionFailCount++
+		} else { // server error
+			result.ServerFailedCount++
+		}
 	}
 }
 
 // Total test result, all scenario iterations combined
 type Result struct {
-	SuccessCount int64                                 `json:"success_count"`
-	FailedCount  int64                                 `json:"fail_count"`
-	AvgDuration  float32                               `json:"avg_duration"`
-	StepResults  map[uint16]*ScenarioStepResultSummary `json:"steps"`
+	SuccessCount       int64                                 `json:"success_count"`
+	ServerFailedCount  int64                                 `json:"server_fail_count"`
+	AssertionFailCount int64                                 `json:"assertion_fail_count"`
+	AvgDuration        float32                               `json:"avg_duration"`
+	StepResults        map[uint16]*ScenarioStepResultSummary `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {
-	if r.SuccessCount+r.FailedCount == 0 {
+	if r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount == 0 {
 		return 0
 	}
-	t := float32(r.SuccessCount) / float32(r.SuccessCount+r.FailedCount)
+	t := float32(r.SuccessCount) / float32(r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount)
 	return int(t * 100)
 }
 
 func (r *Result) failedPercentage() int {
-	if r.SuccessCount+r.FailedCount == 0 {
+	if r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount == 0 {
 		return 0
 	}
 	return 100 - r.successPercentage()
@@ -142,20 +149,20 @@ type ScenarioStepResultSummary struct {
 	ServerErrorDist    map[string]int         `json:"server_error_dist"`
 	Durations          map[string]float32     `json:"durations"`
 	SuccessCount       int64                  `json:"success_count"`
-	FailedCount        int64                  `json:"fail_count"`
+	ServerFailedCount  int64                  `json:"server_fail_count"`
 	AssertionFailCount int64                  `json:"assertion_fail_count"`
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {
-	if s.SuccessCount+s.FailedCount+s.AssertionFailCount == 0 {
+	if s.SuccessCount+s.ServerFailedCount+s.AssertionFailCount == 0 {
 		return 0
 	}
-	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.FailedCount+s.AssertionFailCount)
+	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.ServerFailedCount+s.AssertionFailCount)
 	return int(t * 100)
 }
 
 func (s *ScenarioStepResultSummary) failedPercentage() int {
-	if s.SuccessCount+s.FailedCount+s.AssertionFailCount == 0 {
+	if s.SuccessCount+s.ServerFailedCount+s.AssertionFailCount == 0 {
 		return 0
 	}
 	return 100 - s.successPercentage()

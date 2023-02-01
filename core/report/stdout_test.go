@@ -41,10 +41,11 @@ func TestScenarioStepReport(t *testing.T) {
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-F:0", ScenarioStepResultSummary{FailedCount: 0, SuccessCount: 0}, 0, 0},
-		{"S:0-F:1", ScenarioStepResultSummary{FailedCount: 1, SuccessCount: 0}, 0, 100},
-		{"S:1-F:0", ScenarioStepResultSummary{FailedCount: 0, SuccessCount: 1}, 100, 0},
-		{"S:3-F:9", ScenarioStepResultSummary{FailedCount: 9, SuccessCount: 3}, 25, 75},
+		{"S:0-SF:0-AF:0", ScenarioStepResultSummary{ServerFailedCount: 0, SuccessCount: 0, AssertionFailCount: 0}, 0, 0},
+		{"S:0-SF:1-AF:0", ScenarioStepResultSummary{ServerFailedCount: 1, SuccessCount: 0, AssertionFailCount: 0}, 0, 100},
+		{"S:1-SF:0-AF:0", ScenarioStepResultSummary{ServerFailedCount: 0, SuccessCount: 1, AssertionFailCount: 0}, 100, 0},
+		{"S:3-SF:9-AF:6", ScenarioStepResultSummary{ServerFailedCount: 3, SuccessCount: 3, AssertionFailCount: 6}, 25, 75},
+		{"S:5-SF:2-AF:3", ScenarioStepResultSummary{ServerFailedCount: 2, SuccessCount: 5, AssertionFailCount: 3}, 50, 50},
 	}
 
 	for _, test := range tests {
@@ -71,10 +72,10 @@ func TestResult(t *testing.T) {
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-F:0", Result{FailedCount: 0, SuccessCount: 0}, 0, 0},
-		{"S:0-F:1", Result{FailedCount: 1, SuccessCount: 0}, 0, 100},
-		{"S:1-F:0", Result{FailedCount: 0, SuccessCount: 1}, 100, 0},
-		{"S:3-F:9", Result{FailedCount: 9, SuccessCount: 3}, 25, 75},
+		{"S:0-F:0", Result{ServerFailedCount: 0, SuccessCount: 0}, 0, 0},
+		{"S:0-F:1", Result{ServerFailedCount: 1, SuccessCount: 0}, 0, 100},
+		{"S:1-F:0", Result{ServerFailedCount: 0, SuccessCount: 1}, 100, 0},
+		{"S:3-F:9", Result{ServerFailedCount: 9, SuccessCount: 3}, 25, 75},
 	}
 
 	for _, test := range tests {
@@ -163,9 +164,9 @@ func TestStart(t *testing.T) {
 	}
 
 	itemReport1 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{200: 2},
-		SuccessCount:   2,
-		FailedCount:    0,
+		StatusCodeDist:    map[int]int{200: 2},
+		SuccessCount:      2,
+		ServerFailedCount: 0,
 		Durations: map[string]float32{
 			"dnsDuration":  7.5,
 			"connDuration": 12.5,
@@ -175,9 +176,9 @@ func TestStart(t *testing.T) {
 		AssertionErrorDist: map[string]*AssertInfo{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{401: 1},
-		SuccessCount:   1,
-		FailedCount:    1,
+		StatusCodeDist:    map[int]int{401: 1},
+		SuccessCount:      1,
+		ServerFailedCount: 1,
 		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
@@ -188,9 +189,10 @@ func TestStart(t *testing.T) {
 	}
 
 	expectedResult := Result{
-		SuccessCount: 1,
-		FailedCount:  1,
-		AvgDuration:  90,
+		SuccessCount:       1,
+		ServerFailedCount:  1,
+		AssertionFailCount: 0,
+		AvgDuration:        90,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,

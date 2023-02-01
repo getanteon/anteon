@@ -131,7 +131,7 @@ func (s *stdout) liveResultPrint() {
 		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
 			emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
 		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
-			emoji.CrossMark, s.result.FailedCount, s.result.failedPercentage(), "")),
+			emoji.CrossMark, s.result.ServerFailedCount+s.result.AssertionFailCount, s.result.failedPercentage(), "")),
 		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.AvgDuration)))
 }
 
@@ -304,7 +304,7 @@ func (s *stdout) printDetails() {
 		}
 
 		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.SuccessCount, v.successPercentage())
-		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.FailedCount+v.AssertionFailCount, v.failedPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.ServerFailedCount+v.AssertionFailCount, v.failedPercentage())
 
 		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)

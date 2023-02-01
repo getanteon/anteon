@@ -100,9 +100,9 @@ func TestStdoutJsonAggregate(t *testing.T) {
 	}
 
 	itemReport1 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{200: 2},
-		SuccessCount:   2,
-		FailedCount:    0,
+		StatusCodeDist:    map[int]int{200: 2},
+		SuccessCount:      2,
+		ServerFailedCount: 0,
 		Durations: map[string]float32{
 			"dnsDuration":  7.5,
 			"connDuration": 12.5,
@@ -112,9 +112,9 @@ func TestStdoutJsonAggregate(t *testing.T) {
 		ServerErrorDist:    map[string]int{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{401: 1},
-		SuccessCount:   1,
-		FailedCount:    1,
+		StatusCodeDist:    map[int]int{401: 1},
+		SuccessCount:      1,
+		ServerFailedCount: 1,
 		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
@@ -125,9 +125,9 @@ func TestStdoutJsonAggregate(t *testing.T) {
 	}
 
 	expectedResult := Result{
-		SuccessCount: 1,
-		FailedCount:  1,
-		AvgDuration:  90,
+		SuccessCount:      1,
+		ServerFailedCount: 1,
+		AvgDuration:       90,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
@@ -150,9 +150,9 @@ func TestStdoutJsonAggregate(t *testing.T) {
 func TestStdoutJsonOutput(t *testing.T) {
 	// Arrange
 	itemReport1 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{200: 11},
-		SuccessCount:   11,
-		FailedCount:    0,
+		StatusCodeDist:    map[int]int{200: 11},
+		SuccessCount:      11,
+		ServerFailedCount: 0,
 		Durations: map[string]float32{
 			"dnsDuration":  0.1897,
 			"connDuration": 0.0003,
@@ -161,9 +161,9 @@ func TestStdoutJsonOutput(t *testing.T) {
 		ServerErrorDist: map[string]int{},
 	}
 	itemReport2 := &ScenarioStepResultSummary{
-		StatusCodeDist: map[int]int{401: 1, 200: 9},
-		SuccessCount:   9,
-		FailedCount:    2,
+		StatusCodeDist:    map[int]int{401: 1, 200: 9},
+		SuccessCount:      9,
+		ServerFailedCount: 2,
 		Durations: map[string]float32{
 			"dnsDuration":  0.48000,
 			"connDuration": 0.01356,
@@ -172,9 +172,9 @@ func TestStdoutJsonOutput(t *testing.T) {
 		ServerErrorDist: map[string]int{types.ReasonConnTimeout: 2},
 	}
 	result := Result{
-		SuccessCount: 9,
-		FailedCount:  2,
-		AvgDuration:  0.25637,
+		SuccessCount:      9,
+		ServerFailedCount: 2,
+		AvgDuration:       0.25637,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
