@@ -77,7 +77,7 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case EQUALS:
 					return equals(args[0], args[1])
 				case EQUALSONFILE:
-					return equalsOnFile(args[0].(string), args[1].(string))
+					return equalsOnFile(args[0], args[1].(string))
 				case IN:
 					return in(args[0], args[1].([]interface{}))
 				case JSONPATH:

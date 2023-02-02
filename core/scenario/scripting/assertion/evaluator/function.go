@@ -1,7 +1,9 @@
 package evaluator
 
 import (
+	"encoding/json"
 	"os"
+	"reflect"
 	"strings"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -67,18 +69,25 @@ var regexExtract = func(source string, xPath string, matchNo int64) (interface{}
 	return val, err
 }
 
-var equalsOnFile = func(source string, filepath string) (bool, error) {
+var equalsOnFile = func(source interface{}, filepath string) (bool, error) {
 	fileBytes, err := os.ReadFile(filepath)
 	if err != nil {
 		return false, err
 	}
 
+	if strings.HasSuffix(filepath, ".json") {
+		var fs map[string]interface{}
+		json.Unmarshal(fileBytes, &fs)
+
+		if reflect.DeepEqual(source, fs) {
+			return true, nil
+		}
+		return false, nil
+	}
+
 	if source == string(fileBytes) {
 		return true, nil
 	}
-	// TODO: source can be json extract, int, slice ...
-	// json marshall and check ?
-
 	return false, nil
 }
 

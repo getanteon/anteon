@@ -281,6 +281,19 @@ func TestAssert(t *testing.T) {
 			expected: false,
 		},
 		{
+			input:    `equals_on_file(variables.xyz,"./test_files/jsonExtract.json")`,
+			expected: false,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"xyz": map[string]interface{}{
+						"ask":                  130.75,
+						"askSize":              10,
+						"averageAnalystRating": "2.0 - Buy",
+					},
+				},
+			},
+		},
+		{
 			input: "(status_code == 200) || (status_code == 201)",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 200,
