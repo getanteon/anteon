@@ -32,7 +32,6 @@ func (ae AssertionError) Unwrap() error {
 }
 
 func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
-	// TODO: optimize
 	l := lexer.New(input)
 	p := parser.New(l)
 
@@ -72,5 +71,4 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 		received:        receivedMap,
 		wrappedErr:      fmt.Errorf("evaluated value is not bool : %v", obj),
 	}
-
 }

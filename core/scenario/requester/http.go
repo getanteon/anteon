@@ -248,8 +248,8 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		if len(h.packet.Assertions) > 0 {
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
 				StatusCode:   int64(httpRes.StatusCode),
-				ResponseSize: contentLength, // TODO check
-				ResponseTime: 0,             // TODO
+				ResponseSize: contentLength,                            // size of the message body in bytes, not present if Transfer-Encoding: chunked.
+				ResponseTime: durations.totalDuration().Milliseconds(), // in ms, TODO check
 				Body:         string(respBody),
 				Headers:      httpRes.Header,
 				Variables:    concatEnvs(envs, extractedVars),
@@ -701,7 +701,7 @@ type duration struct {
 	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
 	serverProcessDur time.Duration
 
-	// Resposne read duration
+	// Response read duration
 	resDur time.Duration
 
 	mu sync.Mutex

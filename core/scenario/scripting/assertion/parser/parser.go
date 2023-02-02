@@ -20,7 +20,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X or !X
 	ARRAYDEFINE // []
-	CALL        // myFunction(X) // TODO important
+	CALL        // myFunction(X)
 )
 
 var precedences = map[token.TokenType]int{

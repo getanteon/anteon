@@ -22,7 +22,7 @@ func TestNextToken(t *testing.T) {
 			}{
 				{token.IDENT, "range"},
 				{token.LPAREN, "("},
-				{token.IDENT, "headers_content_length"}, // TODO
+				{token.IDENT, "headers_content_length"},
 				{token.COMMA, ","},
 				{token.INT, "100"},
 				{token.COMMA, ","},

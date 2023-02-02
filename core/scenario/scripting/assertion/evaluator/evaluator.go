@@ -63,7 +63,7 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				defer func() {
 					if r := recover(); r != nil {
 						result = nil
-						err = fmt.Errorf("probably error during type conversion , %v", r) // TODO: meaningful error
+						err = fmt.Errorf("probably error during type conversion , %v", r)
 					}
 				}()
 

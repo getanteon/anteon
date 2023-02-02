@@ -19,7 +19,7 @@ func New(input string) *Lexer {
 	return l
 }
 
-func (l *Lexer) NextToken() token.Token { // TODO: headers.content-type
+func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()
