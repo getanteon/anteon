@@ -40,11 +40,11 @@ func TestScenarioStepReport(t *testing.T) {
 		successPercentage int
 		failedPercentage  int
 	}{
-		{"S:0-SF:0-AF:0", ScenarioStepResultSummary{ServerFailedCount: 0, SuccessCount: 0, AssertionFailCount: 0}, 0, 0},
-		{"S:0-SF:1-AF:0", ScenarioStepResultSummary{ServerFailedCount: 1, SuccessCount: 0, AssertionFailCount: 0}, 0, 100},
-		{"S:1-SF:0-AF:0", ScenarioStepResultSummary{ServerFailedCount: 0, SuccessCount: 1, AssertionFailCount: 0}, 100, 0},
-		{"S:3-SF:9-AF:6", ScenarioStepResultSummary{ServerFailedCount: 3, SuccessCount: 3, AssertionFailCount: 6}, 25, 75},
-		{"S:5-SF:2-AF:3", ScenarioStepResultSummary{ServerFailedCount: 2, SuccessCount: 5, AssertionFailCount: 3}, 50, 50},
+		{"S:0-SF:0-AF:0", ScenarioStepResultSummary{SuccessCount: 0, Fail: FailVerbose{Count: 0, ServerErrorDist: ServerErrVerbose{Count: 0}, AssertionErrorDist: AssertionErrVerbose{Count: 0}}}, 0, 0},
+		{"S:0-SF:1-AF:0", ScenarioStepResultSummary{SuccessCount: 0, Fail: FailVerbose{Count: 1, ServerErrorDist: ServerErrVerbose{Count: 1}, AssertionErrorDist: AssertionErrVerbose{Count: 0}}}, 0, 100},
+		{"S:1-SF:0-AF:0", ScenarioStepResultSummary{SuccessCount: 1, Fail: FailVerbose{Count: 0, ServerErrorDist: ServerErrVerbose{Count: 0}, AssertionErrorDist: AssertionErrVerbose{Count: 0}}}, 100, 0},
+		{"S:3-SF:9-AF:6", ScenarioStepResultSummary{SuccessCount: 3, Fail: FailVerbose{Count: 9, ServerErrorDist: ServerErrVerbose{Count: 3}, AssertionErrorDist: AssertionErrVerbose{Count: 6}}}, 25, 75},
+		{"S:5-SF:2-AF:3", ScenarioStepResultSummary{SuccessCount: 5, Fail: FailVerbose{Count: 5, ServerErrorDist: ServerErrVerbose{Count: 2}, AssertionErrorDist: AssertionErrVerbose{Count: 3}}}, 50, 50},
 	}
 
 	for _, test := range tests {

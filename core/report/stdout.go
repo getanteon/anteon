@@ -304,7 +304,7 @@ func (s *stdout) printDetails() {
 		}
 
 		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.SuccessCount, v.successPercentage())
-		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.ServerFailedCount+v.AssertionFailCount, v.failedPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.Fail.Count, v.failedPercentage())
 
 		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)
@@ -328,9 +328,9 @@ func (s *stdout) printDetails() {
 			}
 		}
 
-		if len(v.AssertionErrorDist) > 0 {
+		if v.Fail.AssertionErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nAssertion Error Distribution:")
-			for e, c := range v.AssertionErrorDist {
+			for e, c := range v.Fail.AssertionErrorDist.Conditions {
 				fmt.Fprintf(w, "Condition : %s\n", e)
 				fmt.Fprintf(w, "\tFail Count : %d\n", c.Count)
 				fmt.Fprintf(w, "\tReceived : \n")
@@ -343,9 +343,9 @@ func (s *stdout) printDetails() {
 			}
 		}
 
-		if len(v.ServerErrorDist) > 0 {
+		if v.Fail.ServerErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nServer Error Distribution (Count:Reason):")
-			for e, c := range v.ServerErrorDist {
+			for e, c := range v.Fail.ServerErrorDist.Reasons {
 				fmt.Fprintf(w, "  %d\t :%s\n", c, e)
 			}
 		}

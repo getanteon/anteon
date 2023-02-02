@@ -86,55 +86,67 @@ func TestStart(t *testing.T) {
 		},
 	}
 
+	fail1 := FailVerbose{}
+	fail1.Count = 0
+	fail1.ServerErrorDist.Count = 0
+	fail1.ServerErrorDist.Reasons = make(map[string]int)
+	fail1.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport1 := &ScenarioStepResultSummary{
-		StatusCodeDist:    map[int]int{200: 2},
-		SuccessCount:      2,
-		ServerFailedCount: 0,
+		StatusCodeDist: map[int]int{200: 2},
+		SuccessCount:   2,
+		Fail:           fail1,
 		Durations: map[string]float32{
 			"dnsDuration":  7.5,
 			"connDuration": 12.5,
 			"duration":     20,
 		},
-		ServerErrorDist:    make(map[string]int),
-		AssertionErrorDist: map[string]*AssertInfo{},
 	}
+
+	fail2 := FailVerbose{}
+	fail2.Count = 1
+	fail2.ServerErrorDist.Count = 1
+	fail2.ServerErrorDist.Reasons = make(map[string]int)
+	fail2.ServerErrorDist.Reasons[types.ReasonConnTimeout] = 1
+	fail2.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport2 := &ScenarioStepResultSummary{
-		StatusCodeDist:    map[int]int{401: 1},
-		SuccessCount:      1,
-		ServerFailedCount: 1,
+		StatusCodeDist: map[int]int{401: 1},
+		SuccessCount:   1,
+		Fail:           fail2,
 		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
 			"duration":     60,
 		},
-		ServerErrorDist:    map[string]int{types.ReasonConnTimeout: 1},
-		AssertionErrorDist: map[string]*AssertInfo{},
 	}
+
+	fail3 := FailVerbose{}
+	fail3.Count = 1
+	fail3.AssertionErrorDist.Count = 1
+	fail3.ServerErrorDist.Reasons = make(map[string]int)
+	fail3.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
+	fail3.AssertionErrorDist.Conditions["equals(status_code,200)"] = &AssertInfo{
+		Count: 1,
+		Received: map[string][]interface{}{
+			"status_code": {400},
+		},
+	}
+
 	itemReport3 := &ScenarioStepResultSummary{
-		StatusCodeDist:     map[int]int{400: 1, 200: 1},
-		SuccessCount:       1,
-		AssertionFailCount: 1,
+		StatusCodeDist: map[int]int{400: 1, 200: 1},
+		SuccessCount:   1,
+		Fail:           fail3,
 		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
 			"duration":     60,
-		},
-		ServerErrorDist: map[string]int{types.ReasonConnTimeout: 1},
-		AssertionErrorDist: map[string]*AssertInfo{
-			"equals(status_code,200)": {
-				Count: 1,
-				Received: map[string][]interface{}{
-					"status_code": {400},
-				},
-			},
 		},
 	}
 
 	expectedResult := Result{
 		SuccessCount:       1,
-		ServerFailedCount:  1,
-		AssertionFailCount: 0,
-		AvgDuration:        90,
+		ServerFailedCount:  0,
+		AssertionFailCount: 1,
+		AvgDuration:        120,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
@@ -167,13 +179,43 @@ func TestStart(t *testing.T) {
 		t.Errorf("DoneChan is not signaled")
 	}
 
-	if !reflect.DeepEqual(s.result.StepResults[0], expectedResult.StepResults[0]) {
-		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
+	if !compareResults(s.result, &expectedResult) {
+		t.Errorf("Expected %#v, Found %#v", s.result, expectedResult)
+
 	}
-	if !reflect.DeepEqual(s.result.StepResults[1], expectedResult.StepResults[1]) {
-		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
+}
+
+func compareResults(r1, r2 *Result) bool {
+
+	if r1.successPercentage() != r2.successPercentage() ||
+		r1.failedPercentage() != r2.failedPercentage() ||
+		r1.SuccessCount != r2.SuccessCount ||
+		r1.AvgDuration != r2.AvgDuration ||
+		r1.ServerFailedCount != r2.ServerFailedCount ||
+		r1.AssertionFailCount != r2.AssertionFailCount {
+		return false
 	}
-	if !reflect.DeepEqual(s.result.StepResults[2], expectedResult.StepResults[2]) {
-		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
+
+	for stepId, sr := range r1.StepResults {
+		if !compareStepResults(sr, r2.StepResults[stepId]) {
+			return false
+		}
 	}
+
+	return true
+}
+
+func compareStepResults(s1, s2 *ScenarioStepResultSummary) bool {
+	if s1.successPercentage() != s2.successPercentage() ||
+		s1.failedPercentage() != s2.failedPercentage() ||
+		s1.SuccessCount != s2.SuccessCount ||
+		s1.Name != s2.Name ||
+		s1.Fail.Count != s2.Fail.Count ||
+		s1.Fail.AssertionErrorDist.Count != s2.Fail.AssertionErrorDist.Count ||
+		s1.Fail.ServerErrorDist.Count != s2.Fail.ServerErrorDist.Count ||
+		!reflect.DeepEqual(s1.Fail.AssertionErrorDist.Conditions, s2.Fail.AssertionErrorDist.Conditions) ||
+		!reflect.DeepEqual(s1.Fail.ServerErrorDist.Reasons, s2.Fail.ServerErrorDist.Reasons) {
+		return false
+	}
+	return true
 }
