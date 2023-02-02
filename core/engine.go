@@ -40,6 +40,9 @@ const (
 	// test result status
 	resultDone    = "done"
 	resultStopped = "stopped"
+
+	// default sampling rate
+	defaultSamplingRate = 3
 )
 
 type engine struct {
@@ -99,7 +102,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.reportService.Init(e.hammer.Debug); err != nil {
+	if err = e.reportService.Init(e.hammer.Debug, defaultSamplingRate); err != nil {
 		return
 	}
 

@@ -156,7 +156,7 @@ func TestStart(t *testing.T) {
 
 	s := &stdout{}
 	debug := false
-	s.Init(debug)
+	s.Init(debug, 0)
 
 	responseChan := make(chan *types.ScenarioResult, len(responses))
 	go s.Start(responseChan)

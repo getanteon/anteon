@@ -97,7 +97,7 @@ func TestResult(t *testing.T) {
 func TestInit(t *testing.T) {
 	s := &stdout{}
 	debug := false
-	s.Init(debug)
+	s.Init(debug, 0)
 
 	if s.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -140,7 +140,7 @@ func TestPrintBodyAsString(t *testing.T) {
 
 func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 	s := &stdout{}
-	s.Init(true)
+	s.Init(true, 0)
 	testDoneChan := make(chan struct{}, 1)
 
 	// listen to output

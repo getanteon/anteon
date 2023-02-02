@@ -36,17 +36,19 @@ func init() {
 }
 
 type stdoutJson struct {
-	doneChan chan struct{}
-	result   *Result
-	debug    bool
+	doneChan     chan struct{}
+	result       *Result
+	debug        bool
+	samplingRate int
 }
 
-func (s *stdoutJson) Init(debug bool) (err error) {
+func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
 	s.debug = debug
+	s.samplingRate = samplingRate
 	return
 }
 
@@ -87,9 +89,9 @@ func (s *stdoutJson) DoneChan() <-chan struct{} {
 func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go cleanSamplingCount(samplingCount, stopSampling)
+	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 	for r := range input {
-		aggregate(s.result, r, samplingCount)
+		aggregate(s.result, r, samplingCount, s.samplingRate)
 	}
 }
 

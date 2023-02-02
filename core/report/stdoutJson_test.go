@@ -33,7 +33,7 @@ import (
 func TestInitStdoutJson(t *testing.T) {
 	sj := &stdoutJson{}
 	debug := false
-	sj.Init(debug)
+	sj.Init(debug, 0)
 
 	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -143,10 +143,10 @@ func TestStdoutJsonAggregate(t *testing.T) {
 
 	s := &stdoutJson{}
 	debug := false
-	s.Init(debug)
+	s.Init(debug, 0)
 
 	for _, r := range responses {
-		aggregate(s.result, r, make(map[uint16]map[string]int))
+		aggregate(s.result, r, make(map[uint16]map[string]int), 3)
 	}
 
 	if !compareResults(s.result, &expectedResult) {
@@ -271,7 +271,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 
 func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
 	s := &stdoutJson{}
-	s.Init(true)
+	s.Init(true, 0)
 	testDoneChan := make(chan struct{}, 1)
 
 	realOut := out

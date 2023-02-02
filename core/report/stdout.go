@@ -47,11 +47,12 @@ func init() {
 }
 
 type stdout struct {
-	doneChan    chan struct{}
-	result      *Result
-	printTicker *time.Ticker
-	mu          sync.Mutex
-	debug       bool
+	doneChan     chan struct{}
+	result       *Result
+	printTicker  *time.Ticker
+	mu           sync.Mutex
+	debug        bool
+	samplingRate int
 }
 
 var white = color.New(color.FgHiWhite).SprintFunc()
@@ -61,12 +62,13 @@ var yellow = color.New(color.FgHiYellow).SprintFunc()
 var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
-func (s *stdout) Init(debug bool) (err error) {
+func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
 	s.debug = debug
+	s.samplingRate = samplingRate
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
 	if s.debug {
@@ -85,11 +87,11 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go cleanSamplingCount(samplingCount, stopSampling)
+	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 
 	for r := range input {
 		s.mu.Lock()
-		aggregate(s.result, r, samplingCount)
+		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
 	}
 

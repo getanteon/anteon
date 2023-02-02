@@ -27,9 +27,7 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-const samplingMax = 3 // per second
-
-func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int) {
+func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int, samplingRate int) {
 	var scenarioDuration float32
 	errOccured := false
 	assertionFail := false
@@ -75,7 +73,7 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 				} else {
 					aed.Count++
 					samplingCount[sr.StepID][fa.Rule]++
-					if samplingCount[sr.StepID][fa.Rule] <= samplingMax {
+					if samplingCount[sr.StepID][fa.Rule] <= samplingRate {
 						for ident, value := range fa.Received {
 							aed.Received[ident] = append(aed.Received[ident], value)
 						}
@@ -194,14 +192,14 @@ type AssertInfo struct {
 	Reason   string
 }
 
-func cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}) {
+func CleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 			for stepId, ruleMap := range samplingCount {
 				for rule, count := range ruleMap {
-					if count >= samplingMax {
+					if count >= samplingRate {
 						samplingCount[stepId][rule] = 0
 					}
 				}
