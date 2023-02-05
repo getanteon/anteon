@@ -415,7 +415,7 @@ There is an example config file at [config_examples/config.json](/config_example
                 "id": 1,
                 "url": "http://target.com/endpoint1",
                 "capture_env": {
-                     "NUM" :{"from":"body","jsonPath":"num"},
+                     "NUM" :{"from":"body","json_path":"num"},
                 }
             },
         ]
