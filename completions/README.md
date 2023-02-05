@@ -1,6 +1,6 @@
-# Shell Completion
+# Shell completions
 
-## ZHS
+## Zsh
 
 `completions/_ddosify` provides a basic auto-completions. You can apply one of the steps to get an auto-completion successfully.
 
