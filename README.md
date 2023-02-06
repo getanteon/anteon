@@ -415,7 +415,7 @@ There is an example config file at [config_examples/config.json](/config_example
                 "id": 1,
                 "url": "http://target.com/endpoint1",
                 "capture_env": {
-                     "NUM" :{"from":"body","jsonPath":"num"},
+                     "NUM" :{"from":"body","json_path":"num"},
                 }
             },
         ]
@@ -543,11 +543,11 @@ ddosify -config ddosify_config_dynamic.json
 }
 ```
 ## Correlation
-Ddosify enables you to capture variables from steps using **jsonPath**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
+Ddosify enables you to capture variables from steps using **json_path**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
 > **:warning: Points to keep in mind**
 > - You must specify **'header_key'** when capturing from header.
-> - For jsonPath syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
+> - For json_path syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
 > - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
 
 You can use **debug** parameter to validate your config.
@@ -556,17 +556,17 @@ You can use **debug** parameter to validate your config.
 ddosify -config ddosify_config_correlation.json -debug
 ```
 
-### Capture With JsonPath
+### Capture With json_path
 ```json
 {
     "steps": [
         {
             "capture_env": {
-                "NUM" :{"from":"body","jsonPath":"num"},
-                "NAME" :{"from":"body","jsonPath":"name"},
-                "SQUAD" :{"from":"body","jsonPath":"squad"},
-                "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
-                "MESSI" : {"from":"body","jsonPath":"squad.players.0"},             
+                "NUM" :{"from":"body","json_path":"num"},
+                "NAME" :{"from":"body","json_path":"name"},
+                "SQUAD" :{"from":"body","json_path":"squad"},
+                "PLAYERS" :{"from":"body","json_path":"squad.players"},
+                "MESSI" : {"from":"body","json_path":"squad.players.0"},             
             }         
         }
     ]
@@ -646,11 +646,11 @@ On array-like captured variables or environment vars, the **rand( )** function c
             },
             "payload" : "{{COMPANY_NAME}}",
             "capture_env": {
-                "NUM" :{"from":"body","jsonPath":"num"},
-                "NAME" :{"from":"body","jsonPath":"name"},
-                "SQUAD" :{"from":"body","jsonPath":"squad"},
-                "PLAYERS" :{"from":"body","jsonPath":"squad.players"},
-                "MESSI" : {"from":"body","jsonPath":"squad.players.0"},
+                "NUM" :{"from":"body","json_path":"num"},
+                "NAME" :{"from":"body","json_path":"name"},
+                "SQUAD" :{"from":"body","json_path":"squad"},
+                "PLAYERS" :{"from":"body","json_path":"squad.players"},
+                "MESSI" : {"from":"body","json_path":"squad.players.0"},
                 "TOKEN" :{"from":"header", "header_key":"Authorization"},
                 "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}}             
             }         

@@ -17,7 +17,7 @@ func (ri *regexExtractor) extractFromString(text string, matchNo int) (string, e
 	matches := ri.r.FindAllString(text, -1)
 
 	if matches == nil {
-		return "", fmt.Errorf("no match for this regex")
+		return "", fmt.Errorf("no match for the Regex: %s  Match no: %d", ri.r.String(), matchNo)
 	}
 
 	if len(matches) > matchNo {
@@ -30,7 +30,7 @@ func (ri *regexExtractor) extractFromByteSlice(text []byte, matchNo int) ([]byte
 	matches := ri.r.FindAll(text, -1)
 
 	if matches == nil {
-		return nil, fmt.Errorf("no match for this regex")
+		return nil, fmt.Errorf("no match for the Regex: %s  Match no: %d", ri.r.String(), matchNo)
 	}
 
 	if len(matches) > matchNo {

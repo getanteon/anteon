@@ -20,7 +20,7 @@ func (xe xmlExtractor) extractFromByteSlice(source []byte, xPath string) (interf
 	// returns the first matched element
 	foundNode, err := xmlquery.Query(rootNode, xPath)
 	if foundNode == nil || err != nil {
-		return nil, fmt.Errorf("no match for this xpath")
+		return nil, fmt.Errorf("no match for the xPath: %s", xPath)
 	}
 
 	return foundNode.InnerText(), nil
