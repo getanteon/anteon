@@ -35,7 +35,7 @@
 
 ✅ **[Assertion](#assertion)** -  Verify that the response matches your expectations.
 
-✅ **Protocol Agnostic** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
+✅ **Widely Used Protocols** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
 
 ## Installation
