@@ -483,6 +483,67 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
+
+### Assertion 
+
+#### Keywords
+
+| Keyword | Description                  | Usage | 
+| ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+| `status_code`   | Status code      | -
+| `body`   | Response body      | -
+| `response_size`   | Response size    | -      
+| `response_time`   | Response time     | -        
+| `headers`   | Response headers         | headers.header-key          
+| `variables`   | Global and captured variables                          | variables.VarName      
+
+#### Functions
+| Function | Parameters|   Description                  
+| ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+| `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit
+| `has`   | ( param `any` ) | checks if variable exists
+| `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal
+| `equals_on_file`   |    ( param `any`, filePath `string` )   | reads from given file path and checks if it equals to given parameter
+| `in`   | ( param `any`, arrayParam `array` ) | checks if expression is in given array
+| `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
+| `not`   | ( param `bool` ) | returns converse of given param
+| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high)
+| `json_path`   | ( jsonPath `string`) | extracts from response body using given json path
+| `xml_path`   | ( xPath `string` ) | extracts from response body using given xml path
+| `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression
+
+#### Operators
+| Operator | Description                  
+| ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+| `==`   | equals       
+| `!=`   | not equals      
+| `>`   | greater than                                
+| `<`   | less than    
+| `!`   | not
+| `&&`   | and
+| `||`   | or 
+
+
+### Assertion Examples
+
+| Expression | Description                  
+| ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+| `equals(status_code,200)`   | checks if status code equals to 200      
+| `status_code == 200`   | same as preceding one  
+| `not(status_code == 500)`   | checks if status code not equals to 500   
+| `status_code != 500`   | same as preceding one
+| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"
+| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" 
+| `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100
+| `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other 
+| `has(headers.Content-Type)`   | checks if content-type header exists in response headers
+| `contains(body,"xyz")`   | checks if body contains "xyz" in it
+| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300)  
+| `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     
+| `(status_code == 200) || (status_code == 201)`   | same as preceding one 
+| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10"
+
+
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
