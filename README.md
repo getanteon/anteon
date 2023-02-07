@@ -521,7 +521,7 @@ The full list of dynamic variables can be found in the [Ddosify Docs](https://do
 | `<`   | less than  |  
 | `!`   | not|
 | `&&`   | and|
-| `||`   | or |
+| `\|\|`   | or |
 
 
 ### Assertion Examples
@@ -540,7 +540,7 @@ The full list of dynamic variables can be found in the [Ddosify Docs](https://do
 | `contains(body,"xyz")`   | checks if body contains "xyz" in it|
 | `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
-| `(status_code == 200) || (status_code == 201)`   | same as preceding one |
+| `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
 | `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
 
 
