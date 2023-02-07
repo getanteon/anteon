@@ -22,17 +22,20 @@
 
 
 ## Features
-📌 **Protocol Agnostic** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
-📌 **Scenario-Based** - Create your flow in a JSON file. Without a line of code!
+✅ **[Scenario-Based](#config-file)** - Create your flow in a JSON file. Without a line of code!
 
-📌 **Different Load Types** - Test your system's limits across different load types.
+✅ **[Different Load Types](#load-types)** - Test your system's limits across different load types.
 
-📌 **Parameterization** - Use dynamic variables just like on Postman.
+✅ **[Parameterization](#parameterization-dynamic-variables)** - Use dynamic variables just like on Postman.
 
-📌 **Correlation** -  Extract variables from earlier phases and pass them on to the following ones.
+✅ **[Correlation](#correlation)** -  Extract variables from earlier phases and pass them on to the following ones.
 
-📌 **Test Data** -  Import test data from CSV and use it in the scenario.
+✅ **[Test Data](#test-data-set)** -  Import test data from CSV and use it in the scenario.
+
+✅ **[Assertion](#assertion)** -  Verify that the response matches your expectations.
+
+✅ **Protocol Agnostic** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
 
 ## Installation
@@ -484,66 +487,6 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
 
-### Assertion 
-
-#### Keywords
-
-| Keyword | Description                  | Usage | 
-| ------ | -------------------------------------------------------- | ------ |
-| `status_code`   | Status code      | - |
-| `body`   | Response body      | - |
-| `response_size`   | Response size    | -  |
-| `response_time`   | Response time     | -   |     
-| `headers`   | Response headers         | headers.header-key    |      
-| `variables`   | Global and captured variables                          | variables.VarName    |  
-
-#### Functions
-| Function | Parameters|   Description  |             
-| ------ | -------------------------------------------------------- | ------ |  
-| `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
-| `has`   | ( param `any` ) | checks if variable exists |
-| `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
-| `equals_on_file`   |    ( param `any`, filePath `string` )   | reads from given file path and checks if it equals to given parameter |
-| `in`   | ( param `any`, arrayParam `array` ) | checks if expression is in given array |
-| `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
-| `not`   | ( param `bool` ) | returns converse of given param |
-| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high) |
-| `json_path`   | ( jsonPath `string`) | extracts from response body using given json path |
-| `xml_path`   | ( xPath `string` ) | extracts from response body using given xml path |
-| `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression |
-
-#### Operators
-| Operator | Description  |                
-| ------- | ---------  |
-| `==`   | equals      | 
-| `!=`   | not equals |     
-| `>`   | greater than    |                            
-| `<`   | less than  |  
-| `!`   | not|
-| `&&`   | and|
-| `\|\|`   | or |
-
-
-### Assertion Examples
-
-| Expression | Description   |               
-| ------ | -------------------------------------------------------- |
-| `equals(status_code,200)`   | checks if status code equals to 200      |
-| `status_code == 200`   | same as preceding one  |
-| `not(status_code == 500)`   | checks if status code not equals to 500   |
-| `status_code != 500`   | same as preceding one|
-| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" |
-| `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
-| `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
-| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
-| `contains(body,"xyz")`   | checks if body contains "xyz" in it|
-| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
-| `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
-| `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
-| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
-
-
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
@@ -603,6 +546,71 @@ ddosify -config ddosify_config_dynamic.json
     ]
 }
 ```
+
+## Assertion
+
+Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers` and `variables`. You can use `assertion` parameter on config file to check if the response matches the given condition. If the condition is not met, Ddosify will fail the scenario.
+
+### Keywords
+
+| Keyword | Description                  | Usage | 
+| ------ | -------------------------------------------------------- | ------ |
+| `status_code`   | Status code      | - |
+| `body`   | Response body      | - |
+| `response_size`   | Response size    | -  |
+| `response_time`   | Response time     | -   |     
+| `headers`   | Response headers         | headers.header-key    |      
+| `variables`   | Global and captured variables                          | variables.VarName    |  
+
+### Functions
+
+| Function | Parameters|   Description  |             
+| ------ | -------------------------------------------------------- | ------ |  
+| `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
+| `has`   | ( param `any` ) | checks if variable exists |
+| `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
+| `equals_on_file`   |    ( param `any`, file_path `string` )   | reads from given file path and checks if it equals to given parameter |
+| `in`   | ( param `any`, array_param `array` ) | checks if expression is in given array |
+| `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
+| `not`   | ( param `bool` ) | returns converse of given param |
+| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high) |
+| `json_path`   | ( json_path `string`) | extracts from response body using given json path |
+| `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression |
+
+### Operators
+| Operator | Description  |                
+| ------- | ---------  |
+| `==`   | equals      | 
+| `!=`   | not equals |     
+| `>`   | greater than    |                            
+| `<`   | less than  |  
+| `!`   | not|
+| `&&`   | and|
+| `\|\|`   | or |
+
+
+### Assertion Examples
+
+| Expression | Description   |               
+| ------ | -------------------------------------------------------- |
+| `equals(status_code,200)`   | checks if status code equals to 200      |
+| `status_code == 200`   | same as preceding one  |
+| `not(status_code == 500)`   | checks if status code not equals to 500   |
+| `status_code != 500`   | same as preceding one|
+| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"|
+| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
+| `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
+| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
+| `contains(body,"xyz")`   | checks if body contains "xyz" in it|
+| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300] | 
+| `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
+| `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
+| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
+
+
+
 ## Correlation
 Ddosify enables you to capture variables from steps using **jsonPath**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
