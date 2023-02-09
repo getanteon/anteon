@@ -101,7 +101,10 @@ func (l *Lexer) NextToken() token.Token {
 		} else if isDigit(l.ch) {
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
-			if strings.Contains(tok.Literal, ".") { // TODO: more than 1 . should be illegal
+			if strings.Contains(tok.Literal, ".") {
+				if strings.Count(tok.Literal, ".") > 1 { // more than 1 . is illegal
+					tok.Type = token.ILLEGAL
+				}
 				tok.Type = token.FLOAT
 			} else {
 				tok.Type = token.INT

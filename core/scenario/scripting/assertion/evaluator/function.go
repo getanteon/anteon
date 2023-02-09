@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -51,17 +52,17 @@ var rangeF = func(x int64, low int64, hi int64) bool {
 	return false
 }
 
-var jsonExtract = func(source string, jsonPath string) (interface{}, error) {
+var jsonExtract = func(source interface{}, jsonPath string) (interface{}, error) {
 	val, err := extraction.ExtractFromJson(source, jsonPath)
 	return val, err
 }
 
-var xmlExtract = func(source string, xPath string) (interface{}, error) {
+var xmlExtract = func(source interface{}, xPath string) (interface{}, error) {
 	val, err := extraction.ExtractFromXml(source, xPath)
 	return val, err
 }
 
-var regexExtract = func(source string, xPath string, matchNo int64) (interface{}, error) {
+var regexExtract = func(source interface{}, xPath string, matchNo int64) (interface{}, error) {
 	val, err := extraction.ExtractWithRegex(source, types.RegexCaptureConf{
 		Exp: &xPath,
 		No:  int(matchNo),
@@ -76,18 +77,33 @@ var equalsOnFile = func(source interface{}, filepath string) (bool, error) {
 	}
 
 	if strings.HasSuffix(filepath, ".json") {
-		var fs map[string]interface{}
-		json.Unmarshal(fileBytes, &fs)
+		sourceType := reflect.ValueOf(source).Kind()
+		if sourceType == reflect.Map {
+			var fs map[string]interface{}
+			json.Unmarshal(fileBytes, &fs)
+			if reflect.DeepEqual(source, fs) { // json extracted source check
+				return true, nil
+			}
+		}
+		if sourceType == reflect.Slice || sourceType == reflect.Array {
+			var fs []interface{}
+			json.Unmarshal(fileBytes, &fs)
+			if reflect.DeepEqual(source, fs) { // json extracted source check
+				return true, nil
+			}
+		}
 
-		if reflect.DeepEqual(source, fs) {
+		if fmt.Sprint(source) == string(fileBytes) { // body - read file
 			return true, nil
 		}
+
 		return false, nil
 	}
 
-	if source == string(fileBytes) {
+	if fmt.Sprint(source) == string(fileBytes) {
 		return true, nil
 	}
+
 	return false, nil
 }
 
