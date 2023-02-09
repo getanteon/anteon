@@ -549,7 +549,15 @@ ddosify -config ddosify_config_dynamic.json
 
 ## Assertion
 
-Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers` and `variables`. You can use `assertion` parameter on config file to check if the response matches the given condition. If the condition is not met, Ddosify will fail the scenario.
+At default, Ddosify marks the step result as successful if it sends the request and receives the response without any network error happening. Status code or body type (or content) does not have any effect on success/failure criteria. But this may not be a good test result for your use case and you may want to create your success/fail logic. That's where you can use Assertions.
+
+Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers`, and `variables`. You can use the `assertion` parameter on the config file to check if the response matches the given condition per step. If the condition is not met, Ddosify will fail the step. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
+
+As shown in the related table the first 5 keywords store different data related to the response. The last keyword `variables` stores the current state of environment variables for the Step. You can use [Functions](#functions) or [Operators](#operators) to build conditional expressions based on these keywords.
+
+You can write multiple assertions for a step. If any assertion fails, the step is marked as Failed.
+
+If Ddosify can't receive the response for a request, that step is marked as Failed without processing the assertions. You will see a **Server Error** as a failure reason on the test result instead of an **Assertion Error**.
 
 ### Keywords
 
@@ -576,7 +584,7 @@ Ddosify supports assertion on `status code`, `response body`, `response size`, `
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
 | `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
-| `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression |
+| `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
 ### Operators
 | Operator | Description  |                
