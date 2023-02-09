@@ -22,17 +22,20 @@
 
 
 ## Features
-📌 **Protocol Agnostic** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
-📌 **Scenario-Based** - Create your flow in a JSON file. Without a line of code!
+✅ **[Scenario-Based](#config-file)** - Create your flow in a JSON file. Without a line of code!
 
-📌 **Different Load Types** - Test your system's limits across different load types.
+✅ **[Different Load Types](#load-types)** - Test your system's limits across different load types.
 
-📌 **Parameterization** - Use dynamic variables just like on Postman.
+✅ **[Parameterization](#parameterization-dynamic-variables)** - Use dynamic variables just like on Postman.
 
-📌 **Correlation** -  Extract variables from earlier phases and pass them on to the following ones.
+✅ **[Correlation](#correlation)** -  Extract variables from earlier phases and pass them on to the following ones.
 
-📌 **Test Data** -  Import test data from CSV and use it in the scenario.
+✅ **[Test Data](#test-data-set)** -  Import test data from CSV and use it in the scenario.
+
+✅ **[Assertion](#assertion)** -  Verify that the response matches your expectations.
+
+✅ **Widely Used Protocols** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
 
 ## Installation
@@ -221,12 +224,17 @@ Result:
 Config file lets you use all capabilities of Ddosify. 
 
 The features you can use by config file;
+
 - Scenario creation
+- Environment variables
+- Correlation
+- Assertions
 - Custom load type creation
 - Payload from a file
 - Multipart/form-data payload
 - Extra connection configuration, like *keep-alive* enable/disable logic
 - HTTP2 support
+
 
 Usage;
 
@@ -275,8 +283,8 @@ There is an example config file at [config_examples/config.json](/config_example
     }
     ``` 
 - `data` *optional*
-    Config for loading test data from a csv file.
-    [Csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
+    Config for loading test data from a CSV file.
+    [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
     ```json
     "data":{
         "info": {
@@ -298,13 +306,13 @@ There is an example config file at [config_examples/config.json](/config_example
     ```
     | Field | Description                  | Type     | Default | Required?  |
     | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
-    | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
-    | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
+    | `path`   | Local path or remote url for your CSV file         | `string` | - | Yes        |
+    | `delimiter`   | Delimiter for reading CSV                                      | `string`    | `,`   | No         |
     | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
     | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
-    | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
-    | `skip_first_line`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
-    | `skip_empty_line`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+    | `order`   | Order of reading records from CSV. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
+    | `skip_first_line`   | Skips first line while reading records from CSV.                                | `bool`    | `false`    | No         |
+    | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
    
 - `steps` *mandatory*
 
@@ -484,66 +492,6 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
 
-### Assertion 
-
-#### Keywords
-
-| Keyword | Description                  | Usage | 
-| ------ | -------------------------------------------------------- | ------ |
-| `status_code`   | Status code      | - |
-| `body`   | Response body      | - |
-| `response_size`   | Response size    | -  |
-| `response_time`   | Response time     | -   |     
-| `headers`   | Response headers         | headers.header-key    |      
-| `variables`   | Global and captured variables                          | variables.VarName    |  
-
-#### Functions
-| Function | Parameters|   Description  |             
-| ------ | -------------------------------------------------------- | ------ |  
-| `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
-| `has`   | ( param `any` ) | checks if variable exists |
-| `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
-| `equals_on_file`   |    ( param `any`, filePath `string` )   | reads from given file path and checks if it equals to given parameter |
-| `in`   | ( param `any`, arrayParam `array` ) | checks if expression is in given array |
-| `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
-| `not`   | ( param `bool` ) | returns converse of given param |
-| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high) |
-| `json_path`   | ( jsonPath `string`) | extracts from response body using given json path |
-| `xml_path`   | ( xPath `string` ) | extracts from response body using given xml path |
-| `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression |
-
-#### Operators
-| Operator | Description  |                
-| ------- | ---------  |
-| `==`   | equals      | 
-| `!=`   | not equals |     
-| `>`   | greater than    |                            
-| `<`   | less than  |  
-| `!`   | not|
-| `&&`   | and|
-| `\|\|`   | or |
-
-
-### Assertion Examples
-
-| Expression | Description   |               
-| ------ | -------------------------------------------------------- |
-| `equals(status_code,200)`   | checks if status code equals to 200      |
-| `status_code == 200`   | same as preceding one  |
-| `not(status_code == 500)`   | checks if status code not equals to 500   |
-| `status_code != 500`   | same as preceding one|
-| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" |
-| `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
-| `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
-| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
-| `contains(body,"xyz")`   | checks if body contains "xyz" in it|
-| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
-| `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
-| `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
-| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
-
-
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
@@ -603,6 +551,79 @@ ddosify -config ddosify_config_dynamic.json
     ]
 }
 ```
+
+## Assertion
+
+At default, Ddosify marks the step result as successful if it sends the request and receives the response without any network error happening. Status code or body type (or content) does not have any effect on success/failure criteria. But this may not be a good test result for your use case and you may want to create your success/fail logic. That's where you can use Assertions.
+
+Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers`, and `variables`. You can use the `assertion` parameter on the config file to check if the response matches the given condition per step. If the condition is not met, Ddosify will fail the step. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
+
+As shown in the related table the first 5 keywords store different data related to the response. The last keyword `variables` stores the current state of environment variables for the Step. You can use [Functions](#functions) or [Operators](#operators) to build conditional expressions based on these keywords.
+
+You can write multiple assertions for a step. If any assertion fails, the step is marked as Failed.
+
+If Ddosify can't receive the response for a request, that step is marked as Failed without processing the assertions. You will see a **Server Error** as a failure reason on the test result instead of an **Assertion Error**.
+
+### Keywords
+
+| Keyword | Description                  | Usage | 
+| ------ | -------------------------------------------------------- | ------ |
+| `status_code`   | Status code      | - |
+| `body`   | Response body      | - |
+| `response_size`   | Response size    | -  |
+| `response_time`   | Response time     | -   |     
+| `headers`   | Response headers         | headers.header-key    |      
+| `variables`   | Global and captured variables                          | variables.VarName    |  
+
+### Functions
+
+| Function | Parameters|   Description  |             
+| ------ | -------------------------------------------------------- | ------ |  
+| `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
+| `has`   | ( param `any` ) | checks if variable exists |
+| `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
+| `equals_on_file`   |    ( param `any`, file_path `string` )   | reads from given file path and checks if it equals to given parameter |
+| `in`   | ( param `any`, array_param `array` ) | checks if expression is in given array |
+| `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
+| `not`   | ( param `bool` ) | returns converse of given param |
+| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
+| `json_path`   | ( json_path `string`) | extracts from response body using given json path |
+| `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
+
+### Operators
+| Operator | Description  |                
+| ------- | ---------  |
+| `==`   | equals      | 
+| `!=`   | not equals |     
+| `>`   | greater than    |                            
+| `<`   | less than  |  
+| `!`   | not|
+| `&&`   | and|
+| `\|\|`   | or |
+
+
+### Assertion Examples
+
+| Expression | Description   |               
+| ------ | -------------------------------------------------------- |
+| `equals(status_code,200)`   | checks if status code equals to 200      |
+| `status_code == 200`   | same as preceding one  |
+| `not(status_code == 500)`   | checks if status code not equals to 500   |
+| `status_code != 500`   | same as preceding one|
+| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"|
+| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
+| `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
+| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
+| `contains(body,"xyz")`   | checks if body contains "xyz" in it|
+| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
+| `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
+| `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
+| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
+
+
+
 ## Correlation
 Ddosify enables you to capture variables from steps using **jsonPath**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
@@ -760,9 +781,9 @@ On array-like captured variables or environment vars, the **rand( )** function c
 ```
 
 ## Test Data Set
-Ddosify enables you to load test data from **csv** files. Later, in your scenario, you can inject variables that you tagged.
+Ddosify enables you to load test data from **CSV** files. Later, in your scenario, you can inject variables that you tagged.
 
-We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
+We are using this [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
 
 
 ```json
