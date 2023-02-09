@@ -217,7 +217,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 				},
 				"fail":{
 					"count":0,
-					"conditions":
+					"assertions":
 						{"count":0,"conditions":{}},
 					"server":
 						{"count":0,"reasons":{}}
@@ -239,7 +239,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 				},
 				"fail":{
 					"count":2,
-					"conditions":
+					"assertions":
 						{"count":0,"conditions":{}},
 					"server":
 						{"count":2,"reasons":{"connection timeout":2}}
