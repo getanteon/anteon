@@ -71,8 +71,17 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case NOT:
 					return not(args[0].(bool)), nil
 				case LESSTHAN:
-					variable := args[0].(int64)
-					limit := args[1].(int64)
+					variable, ok := args[0].(int64)
+					if !ok {
+						variable, _ = strconv.ParseInt(args[0].(string), 0, 64)
+					}
+					limit, ok := args[1].(int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "limit of less_than should be integer",
+							wrappedErr: nil,
+						}
+					}
 					return less_than(variable, limit), nil
 				case EQUALS:
 					return equals(args[0], args[1])
@@ -176,6 +185,16 @@ func evalInfixExpression(
 	// float - float
 	if leftType == reflect.Float64 && rightType == reflect.Float64 {
 		return evalFloatInfixExpression(operator, left.(float64), right.(float64))
+	}
+
+	// string - int
+	if leftType == reflect.String && rightType == reflect.Int64 {
+		leftInt, _ := strconv.ParseInt(left.(string), 0, 64)
+		return evalIntegerInfixExpression(operator, leftInt, right.(int64))
+	}
+	if leftType == reflect.Int64 && rightType == reflect.String {
+		rightInt, _ := strconv.ParseInt(right.(string), 0, 64)
+		return evalIntegerInfixExpression(operator, left.(int64), rightInt)
 	}
 
 	// other types
