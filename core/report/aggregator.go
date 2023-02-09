@@ -159,7 +159,7 @@ type ServerErrVerbose struct {
 
 type FailVerbose struct {
 	Count              int64               `json:"count"`
-	AssertionErrorDist AssertionErrVerbose `json:"conditions"`
+	AssertionErrorDist AssertionErrVerbose `json:"assertions"`
 	ServerErrorDist    ServerErrVerbose    `json:"server"`
 }
 
