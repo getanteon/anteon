@@ -61,7 +61,11 @@
             },
             "capture_env": {
                 "NUM" :{ "from":"body","json_path":"num"}
-            }
+            },
+            "assertion":[
+                "equals(status_code,200)",
+                "in(variables.num,[10,20])"
+            ]
         },
         {
             "id": 2,
@@ -74,7 +78,11 @@
                 "num": "{{NUM}}",
                 "randNum": "{{rand(NUMBERS)}}",
                 "randInt" : "{{randomIntPerIteration}}"
-            }
+            },
+            "assertion":[
+                "contains(body,\"xyz\")",
+                "range(headers.content-length,1000,10000)"
+            ]
         },
         {
             "id": 3,
