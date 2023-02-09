@@ -224,12 +224,17 @@ Result:
 Config file lets you use all capabilities of Ddosify. 
 
 The features you can use by config file;
+
 - Scenario creation
+- Environment variables
+- Correlation
+- Assertions
 - Custom load type creation
 - Payload from a file
 - Multipart/form-data payload
 - Extra connection configuration, like *keep-alive* enable/disable logic
 - HTTP2 support
+
 
 Usage;
 
@@ -278,8 +283,8 @@ There is an example config file at [config_examples/config.json](/config_example
     }
     ``` 
 - `data` *optional*
-    Config for loading test data from a csv file.
-    [Csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
+    Config for loading test data from a CSV file.
+    [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
     ```json
     "data":{
         "info": {
@@ -301,13 +306,13 @@ There is an example config file at [config_examples/config.json](/config_example
     ```
     | Field | Description                  | Type     | Default | Required?  |
     | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
-    | `path`   | Local path or remote url for your csv file         | `string` | - | Yes        |
-    | `delimiter`   | Delimiter for reading csv                                      | `string`    | `,`   | No         |
+    | `path`   | Local path or remote url for your CSV file         | `string` | - | Yes        |
+    | `delimiter`   | Delimiter for reading CSV                                      | `string`    | `,`   | No         |
     | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
     | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
-    | `order`   | Order of reading records from csv. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
-    | `skip_first_line`   | Skips first line while reading records from csv.                                | `bool`    | `false`    | No         |
-    | `skip_empty_line`   | Skips empty lines while reading records from csv.                                | `bool`    | `true`    | No         |
+    | `order`   | Order of reading records from CSV. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
+    | `skip_first_line`   | Skips first line while reading records from CSV.                                | `bool`    | `false`    | No         |
+    | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
    
 - `steps` *mandatory*
 
@@ -776,9 +781,9 @@ On array-like captured variables or environment vars, the **rand( )** function c
 ```
 
 ## Test Data Set
-Ddosify enables you to load test data from **csv** files. Later, in your scenario, you can inject variables that you tagged.
+Ddosify enables you to load test data from **CSV** files. Later, in your scenario, you can inject variables that you tagged.
 
-We are using this [csv data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
+We are using this [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
 
 
 ```json
