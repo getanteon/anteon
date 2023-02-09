@@ -340,15 +340,15 @@ func (s *stdout) printDetails() {
 		if v.Fail.AssertionErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nAssertion Error Distribution:")
 			for e, c := range v.Fail.AssertionErrorDist.Conditions {
-				fmt.Fprintf(w, "Condition : %s\n", e)
-				fmt.Fprintf(w, "\tFail Count : %d\n", c.Count)
-				fmt.Fprintf(w, "\tReceived : \n")
+				fmt.Fprintf(w, "\tCondition : %s\n", e)
+				fmt.Fprintf(w, "\t\tFail Count : %d\n", c.Count)
+				fmt.Fprintf(w, "\t\tReceived : \n")
 
 				for ident, values := range c.Received {
-					fmt.Fprintf(w, "\t\t %s : %v\n", ident, values)
+					fmt.Fprintf(w, "\t\t\t %s : %v\n", ident, values)
 				}
 
-				fmt.Fprintf(w, "\tReason : %s \n", c.Reason)
+				fmt.Fprintf(w, "\t\tReason : %s \n", c.Reason)
 			}
 		}
 
