@@ -155,6 +155,7 @@ type JsonReader struct {
 	Envs         map[string]interface{} `json:"env"`
 	Data         map[string]CsvConf     `json:"data"`
 	Debug        bool                   `json:"debug"`
+	SamplingRate *int                   `json:"sampling_rate"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -254,6 +255,12 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 			*j.IterCount += t.Count
 			j.Duration += t.Duration
 		}
+	}
+
+	if j.SamplingRate != nil {
+		h.SamplingRate = *j.SamplingRate
+	} else {
+		h.SamplingRate = types.DefaultSamplingCount
 	}
 
 	// Hammer
