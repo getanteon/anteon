@@ -27,36 +27,6 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 		if err == nil {
 			return jInterfaceSlice, err
 		}
-		// TODO: make sure we don't need below before deleting
-		// jStrSlice := []string{}
-		// err := json.Unmarshal(bRaw, &jStrSlice)
-		// if err == nil {
-		// 	return jStrSlice, err
-		// }
-
-		// jFloatSlice := []float64{}
-		// err = json.Unmarshal(bRaw, &jFloatSlice)
-		// if err == nil {
-		// 	return jFloatSlice, err
-		// }
-
-		// jIntSlice := []int{}
-		// err = json.Unmarshal(bRaw, &jIntSlice)
-		// if err == nil {
-		// 	return jIntSlice, err
-		// }
-
-		// jBoolSlice := []bool{}
-		// err = json.Unmarshal(bRaw, &jBoolSlice)
-		// if err == nil {
-		// 	return jBoolSlice, err
-		// }
-
-		// jObjectSlice := []map[string]interface{}{}
-		// err = json.Unmarshal(bRaw, &jObjectSlice)
-		// if err == nil {
-		// 	return jObjectSlice, err
-		// }
 	}
 
 	if result.IsBool() {
