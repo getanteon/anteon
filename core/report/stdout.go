@@ -224,15 +224,8 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
 
-			if verboseInfo.Error != "" { // failed captures and error
-				if len(verboseInfo.FailedCaptures) > 0 {
-					fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
-					for wKey, wVal := range verboseInfo.FailedCaptures {
-						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
-					}
-				}
-				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
-			} else { // response
+			if verboseInfo.Error == "" {
+				// response
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -244,13 +237,27 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\t%s", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
+			}
 
-				if len(verboseInfo.FailedCaptures) > 0 {
-					fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
-					for wKey, wVal := range verboseInfo.FailedCaptures {
-						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
-					}
+			if len(verboseInfo.FailedCaptures) > 0 {
+				fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
+				for wKey, wVal := range verboseInfo.FailedCaptures {
+					fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
 				}
+			}
+
+			if len(verboseInfo.FailedAssertions) > 0 {
+				fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Assertions")))
+				for _, failAssertion := range verboseInfo.FailedAssertions {
+					fmt.Fprintf(w, "\t\tRule: %s\n", failAssertion.Rule)
+					prettyReceived, _ := json.MarshalIndent(failAssertion.Received, "\t\t", "\t")
+					fmt.Fprintf(w, "\t\tReceived: %s\n", prettyReceived)
+					fmt.Fprintf(w, "\t\tReason: %s\n", failAssertion.Reason)
+				}
+			}
+
+			if verboseInfo.Error != "" { // server error
+				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 			}
 
 			fmt.Fprintln(w)
