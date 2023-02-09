@@ -367,6 +367,20 @@ func TestAssert(t *testing.T) {
 			expectedError: "NotFoundError", // should be headers....
 		},
 		{
+			input: `less_than(headers.content-length,500)`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
+			input: `in(headers.content-length,[222,445])`,
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
 			input: `equals(xml_path("//item/title"),"ABC")`,
 			envs: &evaluator.AssertEnv{
 				Body: `<?xml version="1.0" encoding="UTF-8" ?>
