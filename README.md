@@ -573,7 +573,7 @@ Ddosify supports assertion on `status code`, `response body`, `response size`, `
 | `in`   | ( param `any`, array_param `array` ) | checks if expression is in given array |
 | `contains`   | ( param1 `any`, param2 `any` ) | makes substring with param1 inside param2
 | `not`   | ( param `bool` ) | returns converse of given param |
-| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high) |
+| `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
 | `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
 | `regexp`   | ( regexp `string`, matchNo `int`  ) | extracts from response body using given regular expression |
@@ -604,7 +604,7 @@ Ddosify supports assertion on `status code`, `response body`, `response size`, `
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
 | `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
 | `contains(body,"xyz")`   | checks if body contains "xyz" in it|
-| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300] | 
+| `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
 | `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
 | `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
