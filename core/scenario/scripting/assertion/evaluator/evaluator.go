@@ -360,6 +360,13 @@ func evalExpressions(
 		if err != nil {
 			return nil, err
 		}
+		switch e.(type) {
+		case *ast.Identifier:
+			receivedMap[e.String()] = evaluated
+		case *ast.CallExpression:
+			receivedMap[e.String()] = evaluated
+		}
+
 		result = append(result, evaluated)
 	}
 

@@ -79,6 +79,9 @@ func TestAssert(t *testing.T) {
 				StatusCode: 200,
 			},
 			expected: false,
+			received: map[string]interface{}{
+				"status_code": int64(200),
+			},
 		},
 		{
 			input: "not(status_code == 500)",
@@ -90,9 +93,12 @@ func TestAssert(t *testing.T) {
 		{
 			input: `equals(json_path("employees.0.name"),"Kenan")`,
 			envs: &evaluator.AssertEnv{
-				Body: "{\n  \"employees\": [{\"name\":\"Kenan\"}, {\"name\":\"Kursat\"}]\n}",
+				Body: "{\n  \"employees\": [ {\"name\":\"Kursat\"}, {\"name\":\"Kenan\"}]\n}",
 			},
-			expected: true,
+			expected: false,
+			received: map[string]interface{}{
+				"json_path(employees.0.name)": "Kursat",
+			},
 		},
 		{
 			input: `equals(json_path("employees.1.name"),"Kursat")`,
@@ -129,8 +135,10 @@ func TestAssert(t *testing.T) {
 				Body: "",
 			},
 			expected: false,
+			received: map[string]interface{}{
+				"body": "",
+			},
 		},
-
 		{
 			input: `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`,
 			envs: &evaluator.AssertEnv{
@@ -167,13 +175,16 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
-			input: `variables.arr !=["Kenan","Faruk","Cakir"])`,
+			input: `variables.arr !=["Kenan","Faruk","Cakir"])`,
 			envs: &evaluator.AssertEnv{
 				Variables: map[string]interface{}{
 					"arr": []interface{}{"Kenan", "Faruk", "Cakir"},
 				},
 			},
 			expected: false,
+			received: map[string]interface{}{
+				"variables.arr": []interface{}{"Kenan", "Faruk", "Cakir"},
+			},
 		},
 		{
 			input: `equals(variables.xint,100)`, // int - int64 comparison
@@ -359,13 +370,13 @@ func TestAssert(t *testing.T) {
 			input: `equals(xml_path("//item/title"),"ABC")`,
 			envs: &evaluator.AssertEnv{
 				Body: `<?xml version="1.0" encoding="UTF-8" ?>
-	<rss version="2.0">
-	<channel>
-	  <item>
-		<title>ABC</title>
-	  </item>
-	</channel>
-	</rss>`,
+		<rss version="2.0">
+		<channel>
+		  <item>
+			<title>ABC</title>
+		  </item>
+		</channel>
+		</rss>`,
 			},
 
 			expected: true,
@@ -374,7 +385,6 @@ func TestAssert(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
-			// TODO add received checks
 			eval, err := Assert(tc.input, tc.envs)
 
 			if tc.expected != eval {
