@@ -257,10 +257,11 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	var samplingRate int
 	if j.SamplingRate != nil {
-		h.SamplingRate = *j.SamplingRate
+		samplingRate = *j.SamplingRate
 	} else {
-		h.SamplingRate = types.DefaultSamplingCount
+		samplingRate = types.DefaultSamplingCount
 	}
 
 	// Hammer
@@ -273,6 +274,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Proxy:             p,
 		ReportDestination: j.Output,
 		Debug:             j.Debug,
+		SamplingRate:      samplingRate,
 	}
 	return
 }
