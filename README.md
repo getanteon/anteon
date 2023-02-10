@@ -428,6 +428,22 @@ There is an example config file at [config_examples/config.json](/config_example
             },
         ]
         ``` 
+     - `assertion` *optional*
+
+        The response from this step will be subject to the assertion rules. If one of the provided rules fails, step is considered as failure. 
+        **Example:** Check *status code* and *content-length* header values;
+        ```json
+        "steps": [
+            {
+                "id": 1,
+                "url": "http://target.com/endpoint1",
+                "assertion": [
+                    "equals(status_code,200)",
+                    "in(headers.content-length,[2000,3000])"
+                ]
+            },
+        ]
+        ``` 
 
     - `sleep` *optional* <a name="#sleep"></a>
 
