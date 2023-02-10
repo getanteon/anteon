@@ -740,7 +740,7 @@ You can refer to tagged variables in your request like below.
 ## Tutorials / Blog Posts
 
 * [Testing the Performance of User Authentication Flow](https://ddosify.com/blog/testing-the-performance-of-user-authentication-flow#introduction)
-
+* [Load Testing a Fintech API with CSV Test Data Import](https://ddosify.com/blog/load-testing-a-fintech-exchange-api-with-csv-test-data-import)
 
 ## Common Issues
 
