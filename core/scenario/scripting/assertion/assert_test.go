@@ -292,16 +292,39 @@ func TestAssert(t *testing.T) {
 			expected: false,
 		},
 		{
-			input:    `equals_on_file(variables.xyz,"./test_files/jsonExtract.json")`,
-			expected: false,
+			input:    `equals_on_file(variables.xyz,"./test_files/jsonMap.json")`,
+			expected: true,
 			envs: &evaluator.AssertEnv{
 				Variables: map[string]interface{}{
 					"xyz": map[string]interface{}{
 						"ask":                  130.75,
-						"askSize":              10,
+						"askSize":              float64(10),
 						"averageAnalystRating": "2.0 - Buy",
 					},
 				},
+			},
+		},
+		{
+			input:    `equals_on_file(variables.xyz,"./test_files/jsonArray.json")`,
+			expected: true,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"xyz": []interface{}{"xyz", "abc"},
+				},
+			},
+		},
+		{
+			input:    `equals_on_file(body,"./test_files/currencies.json")`,
+			expected: true,
+			envs: &evaluator.AssertEnv{
+				Body: "[\n    \"AED\",\n    \"ARS\",\n    \"AUD\",\n    \"BGN\",\n    \"BHD\",\n    \"BRL\",\n    \"CAD\",\n    \"CHF\",\n    \"CNY\",\n    \"DKK\",\n    \"DZD\",\n    \"EUR\",\n    \"FKP\",\n    \"INR\",\n    \"JEP\",\n    \"JPY\",\n    \"KES\",\n    \"KWD\",\n    \"KZT\",\n    \"MXN\",\n    \"NZD\",\n    \"RUB\",\n    \"SEK\",\n    \"SGD\",\n    \"TRY\",\n    \"USD\"\n]",
+			},
+		},
+		{
+			input:    `equals_on_file(body,"./test_files/number.json")`,
+			expected: true,
+			envs: &evaluator.AssertEnv{
+				Body: "5",
 			},
 		},
 		{

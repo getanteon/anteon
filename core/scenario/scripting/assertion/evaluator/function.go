@@ -77,23 +77,30 @@ var equalsOnFile = func(source interface{}, filepath string) (bool, error) {
 	}
 
 	if strings.HasSuffix(filepath, ".json") {
-		sourceType := reflect.ValueOf(source).Kind()
-		if sourceType == reflect.Map {
-			var fs map[string]interface{}
-			json.Unmarshal(fileBytes, &fs)
-			if reflect.DeepEqual(source, fs) { // json extracted source check
-				return true, nil
+		sourceType := reflect.ValueOf(source).Kind() // json extracted types may be map or slice etc
+
+		if sourceType == reflect.String {
+			// in case of direct body comparison, source param will be string
+			var src interface{}
+			err := json.Unmarshal([]byte(source.(string)), &src)
+			if err != nil {
+				return false, err
 			}
-		}
-		if sourceType == reflect.Slice || sourceType == reflect.Array {
-			var fs []interface{}
-			json.Unmarshal(fileBytes, &fs)
-			if reflect.DeepEqual(source, fs) { // json extracted source check
+
+			var fileB interface{}
+			err = json.Unmarshal(fileBytes, &fileB)
+			if err != nil {
+				return false, err
+			}
+
+			if reflect.DeepEqual(src, fileB) {
 				return true, nil
 			}
 		}
 
-		if fmt.Sprint(source) == string(fileBytes) { // body - read file
+		var fs interface{}
+		json.Unmarshal(fileBytes, &fs)
+		if reflect.DeepEqual(source, fs) {
 			return true, nil
 		}
 
