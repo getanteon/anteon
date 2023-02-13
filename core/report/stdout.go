@@ -47,11 +47,12 @@ func init() {
 }
 
 type stdout struct {
-	doneChan    chan struct{}
-	result      *Result
-	printTicker *time.Ticker
-	mu          sync.Mutex
-	debug       bool
+	doneChan     chan struct{}
+	result       *Result
+	printTicker  *time.Ticker
+	mu           sync.Mutex
+	debug        bool
+	samplingRate int
 }
 
 var white = color.New(color.FgHiWhite).SprintFunc()
@@ -61,12 +62,13 @@ var yellow = color.New(color.FgHiYellow).SprintFunc()
 var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
-func (s *stdout) Init(debug bool) (err error) {
+func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	s.doneChan = make(chan struct{})
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
 	s.debug = debug
+	s.samplingRate = samplingRate
 
 	color.Cyan("%s  Initializing... \n", emoji.Gear)
 	if s.debug {
@@ -83,14 +85,19 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	}
 	go s.realTimePrintStart()
 
+	stopSampling := make(chan struct{})
+	samplingCount := make(map[uint16]map[string]int)
+	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
+
 	for r := range input {
 		s.mu.Lock()
-		aggregate(s.result, r)
+		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
 	}
 
 	s.realTimePrintStop()
 	s.report()
+	stopSampling <- struct{}{}
 	s.doneChan <- struct{}{}
 }
 
@@ -126,7 +133,7 @@ func (s *stdout) liveResultPrint() {
 		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
 			emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
 		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
-			emoji.CrossMark, s.result.FailedCount, s.result.failedPercentage(), "")),
+			emoji.CrossMark, s.result.ServerFailedCount+s.result.AssertionFailCount, s.result.failedPercentage(), "")),
 		blue(fmt.Sprintf("%s  Avg. Duration: %.5fs", emoji.Stopwatch, s.result.AvgDuration)))
 }
 
@@ -212,20 +219,13 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 			}
 
-			contentType := sr.DebugInfo["requestHeaders"].(http.Header).Get("content-type")
+			contentType := sr.ReqHeaders.Get("content-type")
 			fmt.Fprintf(w, "\t%s", "Body: ")
 			printBody(w, contentType, verboseInfo.Request.Body)
 			fmt.Fprintf(w, "\n")
 
-			if verboseInfo.Error != "" { // failed captures and error
-				if len(verboseInfo.FailedCaptures) > 0 {
-					fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
-					for wKey, wVal := range verboseInfo.FailedCaptures {
-						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
-					}
-				}
-				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
-			} else { // response
+			if verboseInfo.Error == "" {
+				// response
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -233,17 +233,31 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
 				}
 
-				contentType := sr.DebugInfo["responseHeaders"].(http.Header).Get("content-type")
+				contentType := sr.RespHeaders.Get("content-type")
 				fmt.Fprintf(w, "\t%s", "Body: ")
 				printBody(w, contentType, verboseInfo.Response.Body)
 				fmt.Fprintf(w, "\n")
+			}
 
-				if len(verboseInfo.FailedCaptures) > 0 {
-					fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
-					for wKey, wVal := range verboseInfo.FailedCaptures {
-						fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
-					}
+			if len(verboseInfo.FailedCaptures) > 0 {
+				fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
+				for wKey, wVal := range verboseInfo.FailedCaptures {
+					fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
 				}
+			}
+
+			if len(verboseInfo.FailedAssertions) > 0 {
+				fmt.Fprintf(w, "%s", yellow(fmt.Sprintf("- Failed Assertions")))
+				for _, failAssertion := range verboseInfo.FailedAssertions {
+					fmt.Fprintf(w, "\n\t\tRule: %s\n", failAssertion.Rule)
+					prettyReceived, _ := json.MarshalIndent(failAssertion.Received, "\t\t", "\t")
+					fmt.Fprintf(w, "\t\tReceived: %s\n", prettyReceived)
+					fmt.Fprintf(w, "\t\tReason: %s\n", failAssertion.Reason)
+				}
+			}
+
+			if verboseInfo.Error != "" { // server error
+				fmt.Fprintf(w, "\n%s Error: \t%-5s \n", emoji.SosButton, verboseInfo.Error)
 			}
 
 			fmt.Fprintln(w)
@@ -299,7 +313,7 @@ func (s *stdout) printDetails() {
 		}
 
 		fmt.Fprintf(w, "Success Count:\t%-5d (%d%%)\n", v.SuccessCount, v.successPercentage())
-		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.FailedCount, v.failedPercentage())
+		fmt.Fprintf(w, "Failed Count:\t%-5d (%d%%)\n", v.Fail.Count, v.failedPercentage())
 
 		fmt.Fprintln(w, "\nDurations (Avg):")
 		var durationList = make([]duration, 0)
@@ -323,9 +337,24 @@ func (s *stdout) printDetails() {
 			}
 		}
 
-		if len(v.ErrorDist) > 0 {
-			fmt.Fprintln(w, "\nError Distribution (Count:Reason):")
-			for e, c := range v.ErrorDist {
+		if v.Fail.AssertionErrorDist.Count > 0 {
+			fmt.Fprintln(w, "\nAssertion Error Distribution:")
+			for e, c := range v.Fail.AssertionErrorDist.Conditions {
+				fmt.Fprintf(w, "\tCondition : %s\n", e)
+				fmt.Fprintf(w, "\t\tFail Count : %d\n", c.Count)
+				fmt.Fprintf(w, "\t\tReceived : \n")
+
+				for ident, values := range c.Received {
+					fmt.Fprintf(w, "\t\t\t %s : %v\n", ident, values)
+				}
+
+				fmt.Fprintf(w, "\t\tReason : %s \n", c.Reason)
+			}
+		}
+
+		if v.Fail.ServerErrorDist.Count > 0 {
+			fmt.Fprintln(w, "\nServer Error Distribution (Count:Reason):")
+			for e, c := range v.Fail.ServerErrorDist.Reasons {
 				fmt.Fprintf(w, "  %d\t :%s\n", c, e)
 			}
 		}

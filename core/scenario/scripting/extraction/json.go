@@ -22,34 +22,10 @@ var unmarshalJsonCapture = func(result gjson.Result) (interface{}, error) {
 	}
 
 	if result.IsArray() {
-		jStrSlice := []string{}
-		err := json.Unmarshal(bRaw, &jStrSlice)
+		jInterfaceSlice := []interface{}{}
+		err := json.Unmarshal(bRaw, &jInterfaceSlice)
 		if err == nil {
-			return jStrSlice, err
-		}
-
-		jFloatSlice := []float64{}
-		err = json.Unmarshal(bRaw, &jFloatSlice)
-		if err == nil {
-			return jFloatSlice, err
-		}
-
-		jIntSlice := []int{}
-		err = json.Unmarshal(bRaw, &jIntSlice)
-		if err == nil {
-			return jIntSlice, err
-		}
-
-		jBoolSlice := []bool{}
-		err = json.Unmarshal(bRaw, &jBoolSlice)
-		if err == nil {
-			return jBoolSlice, err
-		}
-
-		jObjectSlice := []map[string]interface{}{}
-		err = json.Unmarshal(bRaw, &jObjectSlice)
-		if err == nil {
-			return jObjectSlice, err
+			return jInterfaceSlice, err
 		}
 	}
 
@@ -69,7 +45,7 @@ func (je jsonExtractor) extractFromString(source string, jsonPath string) (inter
 
 	// path not found
 	if result.Raw == "" && result.Type == gjson.Null {
-		return "", fmt.Errorf("no match for this jsonPath")
+		return "", fmt.Errorf("no match for the json path: %s", jsonPath)
 	}
 
 	switch result.Type {
@@ -99,7 +75,7 @@ func (je jsonExtractor) extractFromByteSlice(source []byte, jsonPath string) (in
 
 	// path not found
 	if result.Raw == "" && result.Type == gjson.Null {
-		return "", fmt.Errorf("no match for this jsonPath")
+		return "", fmt.Errorf("no match for the json path: %s", jsonPath)
 	}
 
 	switch result.Type {

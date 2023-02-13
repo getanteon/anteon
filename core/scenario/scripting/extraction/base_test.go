@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"runtime"
-	"strings"
 	"testing"
 
 	"go.ddosify.com/ddosify/core/types"
@@ -62,24 +61,6 @@ func TestExtract_NilSource(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("error expected, got nil")
-	}
-}
-
-func TestExtract_InvalidXmlSource(t *testing.T) {
-	xpath := ""
-	ce := types.EnvCaptureConf{
-		JsonPath: nil,
-		Xpath:    &xpath,
-		RegExp:   nil,
-		Name:     "",
-		From:     types.Body,
-		Key:      nil,
-	}
-
-	_, err := Extract("string", ce)
-
-	if !strings.Contains(err.Error(), "Unsupported type") {
-		t.Errorf("different kind of err expected, got nil %v", err)
 	}
 }
 

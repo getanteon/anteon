@@ -21,6 +21,7 @@
 package types
 
 import (
+	"net/http"
 	"net/url"
 	"time"
 
@@ -65,8 +66,23 @@ type ScenarioStepResult struct {
 	// Error occurred at request time.
 	Err RequestError
 
-	// Detailed Debug Info
-	DebugInfo map[string]interface{}
+	// Url
+	Url string
+
+	// Method
+	Method string
+
+	// Request Headers
+	ReqHeaders http.Header
+
+	// Request Body
+	ReqBody []byte
+
+	// Response Headers
+	RespHeaders http.Header
+
+	// Response Body
+	RespBody []byte
 
 	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}
@@ -79,4 +95,7 @@ type ScenarioStepResult struct {
 
 	// Failed captures and their reasons
 	FailedCaptures map[string]string
+
+	// Failed assertion rules and received values
+	FailedAssertions []FailedAssertion
 }

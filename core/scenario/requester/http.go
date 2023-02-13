@@ -37,6 +37,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
+	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
@@ -176,11 +178,10 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var copiedReqBody bytes.Buffer
 	var respBody []byte
 	var respHeaders http.Header
-	var debugInfo map[string]interface{}
-	var bodyRead bool
 	var bodyReadErr error
 	var extractedVars = make(map[string]interface{})
 	var failedCaptures = make(map[string]string, 0)
+	var failedAssertions = make([]types.FailedAssertion, 0)
 
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
@@ -204,10 +205,8 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		return res
 	}
 
-	if h.debug {
-		io.Copy(&copiedReqBody, httpReq.Body)
-		httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
-	}
+	io.Copy(&copiedReqBody, httpReq.Body)
+	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
 
 	// Action
 	httpRes, err := h.client.Do(httpReq)
@@ -221,21 +220,15 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
 	if httpRes != nil {
-		if len(h.packet.EnvsToCapture) > 0 {
+		// read resp body conditionally
+		if h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0 {
 			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
-			bodyRead = true
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
-			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
-		}
-
-		if !bodyRead {
-			if h.debug {
-				respBody, bodyReadErr = io.ReadAll(httpRes.Body)
-			} else { // do not write into memory, just read
-				_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
-			}
+		} else {
+			// do not write into memory, just read
+			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
@@ -245,23 +238,29 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		respHeaders = httpRes.Header
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
+
+		// capture
+		if len(h.packet.EnvsToCapture) > 0 {
+			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
+		}
+
+		// assert
+		if len(h.packet.Assertions) > 0 {
+			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
+				StatusCode:   int64(httpRes.StatusCode),
+				ResponseSize: int64(len(respBody)),
+				ResponseTime: durations.totalDuration().Milliseconds(), // in ms
+				Body:         string(respBody),
+				Headers:      httpRes.Header,
+				Variables:    concatEnvs(envs, extractedVars),
+			})
+		}
 	}
 
 	var ddResTime time.Duration
 	if httpRes != nil && httpRes.Header.Get("x-ddsfy-response-time") != "" {
 		resTime, _ := strconv.ParseFloat(httpRes.Header.Get("x-ddsfy-response-time"), 8)
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
-	}
-
-	if h.debug {
-		debugInfo = map[string]interface{}{
-			"url":             httpReq.URL.String(),
-			"method":          httpReq.Method,
-			"requestHeaders":  httpReq.Header,
-			"requestBody":     copiedReqBody.Bytes(),
-			"responseBody":    respBody,
-			"responseHeaders": respHeaders,
-		}
 	}
 
 	// Finalize
@@ -274,7 +273,14 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		Duration:      durations.totalDuration(),
 		ContentLength: contentLength,
 		Err:           requestErr,
-		DebugInfo:     debugInfo,
+
+		Url:         httpReq.URL.String(),
+		Method:      httpReq.Method,
+		ReqHeaders:  httpReq.Header,
+		ReqBody:     copiedReqBody.Bytes(),
+		RespHeaders: respHeaders,
+		RespBody:    respBody,
+
 		Custom: map[string]interface{}{
 			"dnsDuration":           durations.getDNSDur(),
 			"connDuration":          durations.getConnDur(),
@@ -282,9 +288,10 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 			"resDuration":           durations.getResDur(),
 			"serverProcessDuration": durations.getServerProcessDur(),
 		},
-		ExtractedEnvs:  extractedVars,
-		UsableEnvs:     usableVars,
-		FailedCaptures: failedCaptures,
+		ExtractedEnvs:    extractedVars,
+		UsableEnvs:       usableVars,
+		FailedCaptures:   failedCaptures,
+		FailedAssertions: failedAssertions,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -296,6 +303,20 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	}
 
 	return
+}
+
+func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
+	total := make(map[string]interface{})
+
+	for k, v := range envs1 {
+		total[k] = v
+	}
+
+	for k, v := range envs2 {
+		total[k] = v
+	}
+
+	return total
 }
 
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
@@ -320,7 +341,6 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	// url
 	hostURL := h.packet.URL
 	var errURL error
-	httpReq.URL, _ = url.Parse(hostURL)
 
 	if h.containsDynamicField["url"] {
 		hostURL, _ = h.ei.InjectDynamic(hostURL)
@@ -336,6 +356,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	if errURL != nil {
 		return nil, errURL
 	}
+	httpReq.Host = httpReq.URL.Host
 
 	// header
 	if h.containsDynamicField["header"] {
@@ -472,6 +493,9 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	// give a basic url for now here to avoid initiating request every time
 	// override later on prepareReq
 	tempValidUrl := "app.ddosify.com"
+	if strings.HasPrefix(h.packet.URL, "https://") {
+		tempValidUrl = "https://" + "app.ddosify.com"
+	}
 	h.request, err = http.NewRequest(h.packet.Method, tempValidUrl, bytes.NewBufferString(h.packet.Payload))
 	if err != nil {
 		return
@@ -592,6 +616,36 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 	}
 }
 
+func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, []types.FailedAssertion) {
+	// result, failedAssertionIndex, assertionError
+	assertions := h.packet.Assertions
+	assertionsSuccess := true
+	failedAssertions := []types.FailedAssertion{}
+	for _, rule := range assertions {
+		boolVal, err := assertion.Assert(rule, assertEnv)
+
+		if err != nil {
+			assertErr := err.(assertion.AssertionError)
+			failedAssertions = append(failedAssertions, types.FailedAssertion{
+				Rule:     assertErr.Rule(),
+				Received: assertErr.Received(),
+				Reason:   assertErr.Unwrap().Error(),
+			})
+			assertionsSuccess = false
+		}
+		if !boolVal {
+			assertionsSuccess = false
+		}
+	}
+
+	if assertionsSuccess {
+		return true, nil
+	}
+
+	return false, failedAssertions
+
+}
+
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
 	extractedVars map[string]interface{}) map[string]string {
 	var err error
@@ -647,7 +701,7 @@ type duration struct {
 	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
 	serverProcessDur time.Duration
 
-	// Resposne read duration
+	// Response read duration
 	resDur time.Duration
 
 	mu sync.Mutex

@@ -36,12 +36,13 @@ const (
 	LoadTypeWaved       = "waved"
 
 	// Default Values
-	DefaultIterCount  = 100
-	DefaultLoadType   = LoadTypeLinear
-	DefaultDuration   = 10
-	DefaultTimeout    = 5
-	DefaultMethod     = http.MethodGet
-	DefaultOutputType = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
+	DefaultIterCount     = 100
+	DefaultLoadType      = LoadTypeLinear
+	DefaultDuration      = 10
+	DefaultTimeout       = 5
+	DefaultMethod        = http.MethodGet
+	DefaultOutputType    = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
+	DefaultSamplingCount = 3
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
@@ -81,6 +82,9 @@ type Hammer struct {
 
 	// Debug mode on/off
 	Debug bool
+
+	// Sampling rate
+	SamplingRate int
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

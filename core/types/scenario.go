@@ -184,6 +184,9 @@ type ScenarioStep struct {
 
 	// Envs to capture from response of this step
 	EnvsToCapture []EnvCaptureConf
+
+	// assertion expressions
+	Assertions []string
 }
 
 type SourceType string

@@ -90,6 +90,7 @@ type step struct {
 	CertPath         string                 `json:"cert_path"`
 	CertKeyPath      string                 `json:"cert_key_path"`
 	CaptureEnv       map[string]capturePath `json:"capture_env"`
+	Assertions       []string               `json:"assertion"`
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -154,6 +155,7 @@ type JsonReader struct {
 	Envs         map[string]interface{} `json:"env"`
 	Data         map[string]CsvConf     `json:"data"`
 	Debug        bool                   `json:"debug"`
+	SamplingRate *int                   `json:"sampling_rate"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -255,6 +257,13 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	var samplingRate int
+	if j.SamplingRate != nil {
+		samplingRate = *j.SamplingRate
+	} else {
+		samplingRate = types.DefaultSamplingCount
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -265,6 +274,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Proxy:             p,
 		ReportDestination: j.Output,
 		Debug:             j.Debug,
+		SamplingRate:      samplingRate,
 	}
 	return
 }
@@ -334,6 +344,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		Sleep:         strings.ReplaceAll(s.Sleep, " ", ""),
 		Custom:        s.Others,
 		EnvsToCapture: capturedEnvs,
+		Assertions:    s.Assertions,
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {

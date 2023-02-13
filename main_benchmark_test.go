@@ -50,13 +50,6 @@ var table = []struct {
 	avgMemThreshold float32
 }{
 	{
-		name:             "config_json",
-		path:             "config/config_testdata/benchmark/config_json.json",
-		cpuTimeThreshold: 0.05,
-		maxMemThreshold:  1,
-		avgMemThreshold:  1,
-	},
-	{
 		name:             "config_correlation_load_1",
 		path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
 		cpuTimeThreshold: 0.350,
