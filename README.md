@@ -637,7 +637,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
 | `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
-| `regexp(body,\"[a-z]+_[0-9]+\",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
+| `regexp(body,\"[a-z]+_[0-9]+\",0) == \"messi_10\"`   | checks if matched result from regex is equal to "messi_10" |
 
 
 
