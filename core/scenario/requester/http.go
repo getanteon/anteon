@@ -248,8 +248,8 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		if len(h.packet.Assertions) > 0 {
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
 				StatusCode:   int64(httpRes.StatusCode),
-				ResponseSize: contentLength,                            // size of the message body in bytes, not present if Transfer-Encoding: chunked.
-				ResponseTime: durations.totalDuration().Milliseconds(), // in ms, TODO check
+				ResponseSize: int64(len(respBody)),
+				ResponseTime: durations.totalDuration().Milliseconds(), // in ms
 				Body:         string(respBody),
 				Headers:      httpRes.Header,
 				Variables:    concatEnvs(envs, extractedVars),

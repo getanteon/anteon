@@ -247,9 +247,9 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			}
 
 			if len(verboseInfo.FailedAssertions) > 0 {
-				fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Assertions")))
+				fmt.Fprintf(w, "%s", yellow(fmt.Sprintf("- Failed Assertions")))
 				for _, failAssertion := range verboseInfo.FailedAssertions {
-					fmt.Fprintf(w, "\t\tRule: %s\n", failAssertion.Rule)
+					fmt.Fprintf(w, "\n\t\tRule: %s\n", failAssertion.Rule)
 					prettyReceived, _ := json.MarshalIndent(failAssertion.Received, "\t\t", "\t")
 					fmt.Fprintf(w, "\t\tReceived: %s\n", prettyReceived)
 					fmt.Fprintf(w, "\t\tReason: %s\n", failAssertion.Reason)
