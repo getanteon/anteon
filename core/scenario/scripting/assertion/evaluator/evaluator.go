@@ -244,8 +244,18 @@ func evalBangOperatorExpression(right interface{}) (bool, error) {
 	}
 }
 
-func evalMinusPrefixOperatorExpression(right interface{}) (int64, error) {
+func evalMinusPrefixOperatorExpression(right interface{}) (interface{}, error) {
 	i, ok := right.(int64)
+	if ok {
+		return -i, nil
+	}
+
+	var j float64
+	j, ok = right.(float64)
+	if ok {
+		return -j, nil
+	}
+
 	if !ok {
 		return 0, OperatorError{
 			msg:        fmt.Sprintf("- operator not applicable for %v", right),

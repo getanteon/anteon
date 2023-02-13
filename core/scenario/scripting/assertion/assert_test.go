@@ -403,11 +403,19 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 		},
-
 		{
 			input: `in(headers.content-length,[222,445])`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
+			input: "equals(variables.x, -48.880005)",
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"x": float64(-48.880005),
+				},
 			},
 			expected: true,
 		},
