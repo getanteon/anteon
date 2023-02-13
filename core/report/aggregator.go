@@ -27,36 +27,82 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-func aggregate(result *Result, scr *types.ScenarioResult) {
+func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int, samplingRate int) {
 	var scenarioDuration float32
 	errOccured := false
+	assertionFail := false
 	for _, sr := range scr.StepResults {
 		scenarioDuration += float32(sr.Duration.Seconds())
+
+		fv := FailVerbose{}
+		fv.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
+		fv.ServerErrorDist.Reasons = make(map[string]int)
 
 		if _, ok := result.StepResults[sr.StepID]; !ok {
 			result.StepResults[sr.StepID] = &ScenarioStepResultSummary{
 				Name:           sr.StepName,
 				StatusCodeDist: make(map[int]int, 0),
-				ErrorDist:      make(map[string]int),
+				Fail:           fv,
 				Durations:      map[string]float32{},
+				SuccessCount:   0,
 			}
 		}
 		stepResult := result.StepResults[sr.StepID]
 
-		if sr.Err.Type != "" {
+		if len(sr.FailedAssertions) > 0 { // assertion error
 			errOccured = true
-			stepResult.FailedCount++
-			stepResult.ErrorDist[sr.Err.Reason]++
-		} else {
+			assertionFail = true
+			stepResult.Fail.Count++
+			stepResult.Fail.AssertionErrorDist.Count++
+			stepResult.StatusCodeDist[sr.StatusCode]++
+			for _, fa := range sr.FailedAssertions {
+				if aed, ok := stepResult.Fail.AssertionErrorDist.Conditions[fa.Rule]; !ok {
+					samplingCount[sr.StepID] = make(map[string]int)
+					samplingCount[sr.StepID][fa.Rule] = 1
+					ae := &AssertInfo{
+						Count:    1,
+						Received: make(map[string][]interface{}),
+						Reason:   fa.Reason,
+					}
+
+					for ident, value := range fa.Received {
+						ae.Received[ident] = []interface{}{value}
+					}
+
+					stepResult.Fail.AssertionErrorDist.Conditions[fa.Rule] = ae
+				} else {
+					aed.Count++
+					samplingCount[sr.StepID][fa.Rule]++
+					if samplingCount[sr.StepID][fa.Rule] <= samplingRate {
+						for ident, value := range fa.Received {
+							aed.Received[ident] = append(aed.Received[ident], value)
+						}
+					}
+				}
+			}
+			totalDur := float32(stepResult.SuccessCount+stepResult.Fail.Count-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
+			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount+stepResult.Fail.Count)
+			for k, v := range sr.Custom {
+				if strings.Contains(k, "Duration") {
+					totalDur := float32(stepResult.SuccessCount+stepResult.Fail.Count-1)*stepResult.Durations[k] + float32(v.(time.Duration).Seconds())
+					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount+stepResult.Fail.Count))
+				}
+			}
+		} else if sr.Err.Type != "" { // server error
+			errOccured = true
+			stepResult.Fail.Count++
+			stepResult.Fail.ServerErrorDist.Count++
+			stepResult.Fail.ServerErrorDist.Reasons[sr.Err.Reason]++
+		} else { // success
 			stepResult.StatusCodeDist[sr.StatusCode]++
 			stepResult.SuccessCount++
 
-			totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
-			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount)
+			totalDur := float32(stepResult.SuccessCount+stepResult.Fail.Count-1)*stepResult.Durations["duration"] + float32(sr.Duration.Seconds())
+			stepResult.Durations["duration"] = totalDur / float32(stepResult.SuccessCount+stepResult.Fail.Count)
 			for k, v := range sr.Custom {
 				if strings.Contains(k, "Duration") {
 					totalDur := float32(stepResult.SuccessCount-1)*stepResult.Durations[k] + float32(v.(time.Duration).Seconds())
-					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount))
+					stepResult.Durations[k] = float32(totalDur / float32(stepResult.SuccessCount+stepResult.Fail.Count))
 				}
 			}
 		}
@@ -69,53 +115,97 @@ func aggregate(result *Result, scr *types.ScenarioResult) {
 		result.SuccessCount++
 		result.AvgDuration = totalDuration / float32(result.SuccessCount)
 	} else if errOccured {
-		result.FailedCount++
+		if assertionFail { // if any step failed because of assertion, that iteration counts as assertion fail
+			result.AssertionFailCount++
+		} else { // server error
+			result.ServerFailedCount++
+		}
 	}
 }
 
 // Total test result, all scenario iterations combined
 type Result struct {
-	SuccessCount int64                                 `json:"success_count"`
-	FailedCount  int64                                 `json:"fail_count"`
-	AvgDuration  float32                               `json:"avg_duration"`
-	StepResults  map[uint16]*ScenarioStepResultSummary `json:"steps"`
+	SuccessCount       int64                                 `json:"success_count"`
+	ServerFailedCount  int64                                 `json:"server_fail_count"`
+	AssertionFailCount int64                                 `json:"assertion_fail_count"`
+	AvgDuration        float32                               `json:"avg_duration"`
+	StepResults        map[uint16]*ScenarioStepResultSummary `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {
-	if r.SuccessCount+r.FailedCount == 0 {
+	if r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount == 0 {
 		return 0
 	}
-	t := float32(r.SuccessCount) / float32(r.SuccessCount+r.FailedCount)
+	t := float32(r.SuccessCount) / float32(r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount)
 	return int(t * 100)
 }
 
 func (r *Result) failedPercentage() int {
-	if r.SuccessCount+r.FailedCount == 0 {
+	if r.SuccessCount+r.ServerFailedCount+r.AssertionFailCount == 0 {
 		return 0
 	}
 	return 100 - r.successPercentage()
 }
 
+type AssertionErrVerbose struct {
+	Count      int64                  `json:"count"`
+	Conditions map[string]*AssertInfo `json:"conditions"`
+}
+
+type ServerErrVerbose struct {
+	Count   int64          `json:"count"`
+	Reasons map[string]int `json:"reasons"`
+}
+
+type FailVerbose struct {
+	Count              int64               `json:"count"`
+	AssertionErrorDist AssertionErrVerbose `json:"assertions"`
+	ServerErrorDist    ServerErrVerbose    `json:"server"`
+}
+
 type ScenarioStepResultSummary struct {
 	Name           string             `json:"name"`
 	StatusCodeDist map[int]int        `json:"status_code_dist"`
-	ErrorDist      map[string]int     `json:"error_dist"`
+	Fail           FailVerbose        `json:"fail"`
 	Durations      map[string]float32 `json:"durations"`
 	SuccessCount   int64              `json:"success_count"`
-	FailedCount    int64              `json:"fail_count"`
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {
-	if s.SuccessCount+s.FailedCount == 0 {
+	if s.SuccessCount+s.Fail.Count == 0 {
 		return 0
 	}
-	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.FailedCount)
+	t := float32(s.SuccessCount) / float32(s.SuccessCount+s.Fail.Count)
 	return int(t * 100)
 }
 
 func (s *ScenarioStepResultSummary) failedPercentage() int {
-	if s.SuccessCount+s.FailedCount == 0 {
+	if s.SuccessCount+s.Fail.Count == 0 {
 		return 0
 	}
 	return 100 - s.successPercentage()
+}
+
+type AssertInfo struct {
+	Count    int
+	Received map[string][]interface{}
+	Reason   string
+}
+
+func CleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingRate {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+		case <-stopSampling:
+			return
+		}
+	}
 }

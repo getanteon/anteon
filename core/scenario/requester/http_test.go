@@ -25,8 +25,10 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -354,56 +356,36 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		Headers: map[string]string{"X": "y"},
 	}
 
-	expectedDebugInfo := map[string]interface{}{
-		"url":            "https://ddosify.com",
-		"method":         http.MethodGet,
-		"requestHeaders": http.Header{"X": {"y"}},
-		"requestBody":    []byte(payload),
-		// did not fill below
-		"responseBody":    []byte{},
-		"responseHeaders": map[string][]string{},
-	}
+	expectedUrl := "https://ddosify.com"
+	expectedMethod := http.MethodGet
+	expectedRequestHeaders := http.Header{"X": {"y"}}
+	expectedRequestBody := []byte(payload)
 
-	// Sub Tests
-	tests := []struct {
-		name              string
-		scenarioStep      types.ScenarioStep
-		expectedDebugInfo map[string]interface{}
-	}{
-		{"Basic", s, expectedDebugInfo},
-	}
+	tf := func(t *testing.T) {
+		h := &HttpRequester{}
+		debug := true
+		var proxy *url.URL
+		_ = h.Init(ctx, s, proxy, debug, nil)
+		envs := map[string]interface{}{}
+		res := h.Send(envs)
 
-	for _, test := range tests {
-		tf := func(t *testing.T) {
-			h := &HttpRequester{}
-			debug := true
-			var proxy *url.URL
-			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
-			envs := map[string]interface{}{}
-			res := h.Send(envs)
-
-			if len(res.DebugInfo) == 0 {
-				t.Errorf("debugInfo should have been populated on debug mode")
-			}
-
-			if test.expectedDebugInfo["method"] != res.DebugInfo["method"] {
-				t.Errorf("Method Expected %#v, Found: \n%#v", test.expectedDebugInfo["method"], res.DebugInfo["method"])
-			}
-			if test.expectedDebugInfo["url"] != res.DebugInfo["url"] {
-				t.Errorf("Url Expected %#v, Found: \n%#v", test.expectedDebugInfo["url"], res.DebugInfo["url"])
-			}
-			if !bytes.Equal(test.expectedDebugInfo["requestBody"].([]byte), res.DebugInfo["requestBody"].([]byte)) {
-				t.Errorf("RequestBody Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestBody"],
-					res.DebugInfo["requestBody"])
-			}
-			if !reflect.DeepEqual(test.expectedDebugInfo["requestHeaders"], res.DebugInfo["requestHeaders"]) {
-				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", test.expectedDebugInfo["requestHeaders"],
-					res.DebugInfo["requestHeaders"])
-			}
-
+		if expectedMethod != res.Method {
+			t.Errorf("Method Expected %#v, Found: \n%#v", expectedMethod, res.Method)
 		}
-		t.Run(test.name, tf)
+		if expectedUrl != res.Url {
+			t.Errorf("Url Expected %#v, Found: \n%#v", expectedUrl, res.Url)
+		}
+		if !bytes.Equal(expectedRequestBody, res.ReqBody) {
+			t.Errorf("RequestBody Expected %#v, Found: \n%#v", expectedRequestBody,
+				res.ReqBody)
+		}
+		if !reflect.DeepEqual(expectedRequestHeaders, res.ReqHeaders) {
+			t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", expectedRequestHeaders,
+				res.ReqHeaders)
+		}
+
 	}
+	t.Run("populate-debug-info", tf)
 }
 
 func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
@@ -452,5 +434,50 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			}
 		}
 		t.Run(test.name, tf)
+	}
+}
+
+func TestAssertions(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Argentina", "Messi")
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	rule1 := "equals(status_code,405)"
+	rule2 := `equals(headers.Argentina,"Ronaldo")`
+	pathFirst := "/json-body"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	s := types.ScenarioStep{
+		ID:         1,
+		Method:     "GET",
+		URL:        server.URL + pathFirst,
+		Assertions: []string{rule1, rule2},
+	}
+
+	ctx := context.TODO()
+	h := &HttpRequester{}
+	h.Init(ctx, s, nil, false, nil)
+
+	res := h.Send(map[string]interface{}{})
+
+	if !strings.EqualFold(res.FailedAssertions[0].Rule, rule1) {
+		t.Errorf("rule expected %s, got %s", rule1, res.FailedAssertions[0].Rule)
+	}
+	if reflect.DeepEqual(res.FailedAssertions[0].Received, 403) {
+		t.Errorf("received expected %d, got %v", 403, res.FailedAssertions[0].Received)
+	}
+	if !strings.EqualFold(res.FailedAssertions[1].Rule, rule2) {
+		t.Errorf("rule expected %s, got %s", rule1, res.FailedAssertions[1].Rule)
+	}
+	if reflect.DeepEqual(res.FailedAssertions[0].Received, "Ronaldo") {
+		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[1].Received)
 	}
 }

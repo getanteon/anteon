@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -34,7 +33,7 @@ import (
 func TestInitStdoutJson(t *testing.T) {
 	sj := &stdoutJson{}
 	debug := false
-	sj.Init(debug)
+	sj.Init(debug, 0)
 
 	if sj.doneChan == nil {
 		t.Errorf("DoneChan should be initialized")
@@ -99,33 +98,43 @@ func TestStdoutJsonAggregate(t *testing.T) {
 		},
 	}
 
+	fail1 := FailVerbose{}
+	fail1.Count = 0
+	fail1.ServerErrorDist.Count = 0
+	fail1.ServerErrorDist.Reasons = make(map[string]int)
+	fail1.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 2},
 		SuccessCount:   2,
-		FailedCount:    0,
+		Fail:           fail1,
 		Durations: map[string]float32{
 			"dnsDuration":  7.5,
 			"connDuration": 12.5,
 			"duration":     20,
 		},
-		ErrorDist: map[string]int{},
 	}
+
+	fail2 := FailVerbose{}
+	fail2.Count = 1
+	fail2.ServerErrorDist.Count = 1
+	fail2.ServerErrorDist.Reasons = make(map[string]int)
+	fail2.ServerErrorDist.Reasons[types.ReasonConnTimeout] = 1
+	fail2.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1},
 		SuccessCount:   1,
-		FailedCount:    1,
+		Fail:           fail2,
 		Durations: map[string]float32{
 			"dnsDuration":  20,
 			"connDuration": 40,
 			"duration":     60,
 		},
-		ErrorDist: map[string]int{types.ReasonConnTimeout: 1},
 	}
 
 	expectedResult := Result{
-		SuccessCount: 1,
-		FailedCount:  1,
-		AvgDuration:  90,
+		SuccessCount:      1,
+		ServerFailedCount: 1,
+		AvgDuration:       90,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
@@ -134,45 +143,54 @@ func TestStdoutJsonAggregate(t *testing.T) {
 
 	s := &stdoutJson{}
 	debug := false
-	s.Init(debug)
+	s.Init(debug, 0)
 
 	for _, r := range responses {
-		aggregate(s.result, r)
+		aggregate(s.result, r, make(map[uint16]map[string]int), 3)
 	}
 
-	if !reflect.DeepEqual(*s.result, expectedResult) {
+	if !compareResults(s.result, &expectedResult) {
 		t.Errorf("Expected %#v, Found %#v", expectedResult, *s.result)
 	}
 }
 
 func TestStdoutJsonOutput(t *testing.T) {
 	// Arrange
+	fail1 := FailVerbose{}
+	fail1.Count = 0
+	fail1.ServerErrorDist.Count = 0
+	fail1.ServerErrorDist.Reasons = make(map[string]int)
+	fail1.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport1 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{200: 11},
 		SuccessCount:   11,
-		FailedCount:    0,
+		Fail:           fail1,
 		Durations: map[string]float32{
 			"dnsDuration":  0.1897,
 			"connDuration": 0.0003,
 			"duration":     0.1900,
 		},
-		ErrorDist: map[string]int{},
 	}
+	fail2 := FailVerbose{}
+	fail2.Count = 2
+	fail2.ServerErrorDist.Count = 2
+	fail2.ServerErrorDist.Reasons = make(map[string]int)
+	fail2.ServerErrorDist.Reasons[types.ReasonConnTimeout] = 2
+	fail2.AssertionErrorDist.Conditions = make(map[string]*AssertInfo)
 	itemReport2 := &ScenarioStepResultSummary{
 		StatusCodeDist: map[int]int{401: 1, 200: 9},
 		SuccessCount:   9,
-		FailedCount:    2,
+		Fail:           fail2,
 		Durations: map[string]float32{
 			"dnsDuration":  0.48000,
 			"connDuration": 0.01356,
 			"duration":     0.493566,
 		},
-		ErrorDist: map[string]int{types.ReasonConnTimeout: 2},
 	}
 	result := Result{
-		SuccessCount: 9,
-		FailedCount:  2,
-		AvgDuration:  0.25637,
+		SuccessCount:      9,
+		ServerFailedCount: 2,
+		AvgDuration:       0.25637,
 		StepResults: map[uint16]*ScenarioStepResultSummary{
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
@@ -188,7 +206,8 @@ func TestStdoutJsonOutput(t *testing.T) {
 		"success_perc": 81,
 		"fail_perc": 19,
 		"success_count": 9,
-		"fail_count": 2,
+		"server_fail_count":2,
+		"assertion_fail_count":0,
 		"avg_duration": 0.256,
 		"steps": {
 			"1": {
@@ -196,14 +215,19 @@ func TestStdoutJsonOutput(t *testing.T) {
 				"status_code_dist": {
 					"200": 11
 				},
-				"error_dist": {},
+				"fail":{
+					"count":0,
+					"assertions":
+						{"count":0,"conditions":{}},
+					"server":
+						{"count":0,"reasons":{}}
+				},
 				"durations": {
 					"connection": 0,
 					"dns": 0.19,
 					"total": 0.19
 				},
 				"success_count": 11,
-				"fail_count": 0,
 				"success_perc": 100,
 				"fail_perc": 0
 			},
@@ -213,8 +237,12 @@ func TestStdoutJsonOutput(t *testing.T) {
 					"200": 9,
 					"401": 1
 				},
-				"error_dist": {
-					"connection timeout": 2
+				"fail":{
+					"count":2,
+					"assertions":
+						{"count":0,"conditions":{}},
+					"server":
+						{"count":2,"reasons":{"connection timeout":2}}
 				},
 				"durations": {
 					"connection": 0.014,
@@ -222,7 +250,6 @@ func TestStdoutJsonOutput(t *testing.T) {
 					"total": 0.494
 				},
 				"success_count": 9,
-				"fail_count": 2,
 				"success_perc": 81,
 				"fail_perc": 19
 			}
@@ -244,7 +271,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 
 func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
 	s := &stdoutJson{}
-	s.Init(true)
+	s.Init(true, 0)
 	testDoneChan := make(chan struct{}, 1)
 
 	realOut := out

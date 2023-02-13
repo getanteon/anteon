@@ -23,14 +23,15 @@ type verboseResponse struct {
 }
 
 type verboseHttpRequestInfo struct {
-	StepId         uint16                 `json:"stepId"`
-	StepName       string                 `json:"stepName"`
-	Request        verboseRequest         `json:"request"`
-	Response       verboseResponse        `json:"response"`
-	Envs           map[string]interface{} `json:"envs"`
-	TestData       map[string]interface{} `json:"ffff"`
-	FailedCaptures map[string]string      `json:"failedCaptures"`
-	Error          string                 `json:"error"`
+	StepId           uint16                  `json:"stepId"`
+	StepName         string                  `json:"stepName"`
+	Request          verboseRequest          `json:"request"`
+	Response         verboseResponse         `json:"response"`
+	Envs             map[string]interface{}  `json:"envs"`
+	TestData         map[string]interface{}  `json:"testData"`
+	FailedCaptures   map[string]string       `json:"failedCaptures"`
+	FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+	Error            string                  `json:"error"`
 }
 
 func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) verboseHttpRequestInfo {
@@ -45,16 +46,16 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 		return verboseInfo
 	}
 
-	requestHeaders, requestBody, _ := decode(sr.DebugInfo["requestHeaders"].(http.Header),
-		sr.DebugInfo["requestBody"].([]byte))
+	requestHeaders, requestBody, _ := decode(sr.ReqHeaders,
+		sr.ReqBody)
 	verboseInfo.Request = struct {
 		Url     string            "json:\"url\""
 		Method  string            "json:\"method\""
 		Headers map[string]string "json:\"headers\""
 		Body    interface{}       "json:\"body\""
 	}{
-		Url:     sr.DebugInfo["url"].(string),
-		Method:  sr.DebugInfo["method"].(string),
+		Url:     sr.Url,
+		Method:  sr.Method,
 		Headers: requestHeaders,
 		Body:    requestBody,
 	}
@@ -62,8 +63,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	if sr.Err.Type != "" {
 		verboseInfo.Error = sr.Err.Error()
 	} else {
-		responseHeaders, responseBody, _ := decode(sr.DebugInfo["responseHeaders"].(http.Header),
-			sr.DebugInfo["responseBody"].([]byte))
+		responseHeaders, responseBody, _ := decode(sr.RespHeaders,
+			sr.RespBody)
 		// TODO what to do with error
 		verboseInfo.Response = struct {
 			StatusCode int               "json:\"statusCode\""
@@ -89,6 +90,8 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	verboseInfo.Envs = envs
 	verboseInfo.TestData = testData
 	verboseInfo.FailedCaptures = sr.FailedCaptures
+	verboseInfo.FailedAssertions = sr.FailedAssertions
+
 	return verboseInfo
 }
 

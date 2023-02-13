@@ -37,18 +37,18 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 			if val == "" {
 				err = fmt.Errorf("http header %s not found", *ce.Key)
 			} else if ce.RegExp != nil { // run regex for found value
-				val, err = extractWithRegex(val, *ce.RegExp)
+				val, err = ExtractWithRegex(val, *ce.RegExp)
 			}
 		} else {
 			err = fmt.Errorf("http header key not specified")
 		}
 	case types.Body:
 		if ce.JsonPath != nil {
-			val, err = extractFromJson(source, *ce.JsonPath)
+			val, err = ExtractFromJson(source, *ce.JsonPath)
 		} else if ce.RegExp != nil {
-			val, err = extractWithRegex(source, *ce.RegExp)
+			val, err = ExtractWithRegex(source, *ce.RegExp)
 		} else if ce.Xpath != nil {
-			val, err = extractFromXml(source, *ce.Xpath)
+			val, err = ExtractFromXml(source, *ce.Xpath)
 		}
 	}
 
@@ -62,7 +62,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 
 }
 
-func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val interface{}, err error) {
+func ExtractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val interface{}, err error) {
 	re := regexExtractor{}
 	re.Init(*regexConf.Exp)
 	switch s := source.(type) {
@@ -75,7 +75,7 @@ func extractWithRegex(source interface{}, regexConf types.RegexCaptureConf) (val
 	}
 }
 
-func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
+func ExtractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 	je := jsonExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
@@ -87,11 +87,13 @@ func extractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 	}
 }
 
-func extractFromXml(source interface{}, xPath string) (interface{}, error) {
+func ExtractFromXml(source interface{}, xPath string) (interface{}, error) {
 	xe := xmlExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
 		return xe.extractFromByteSlice(s, xPath)
+	case string: // from response header
+		return xe.extractFromString(s, xPath)
 	default:
 		return "", fmt.Errorf("Unsupported type for extraction source")
 	}
