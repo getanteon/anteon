@@ -586,8 +586,8 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | ------ | -------------------------------------------------------- | ------ |
 | `status_code`   | Status code      | - |
 | `body`   | Response body      | - |
-| `response_size`   | Response size    | -  |
-| `response_time`   | Response time     | -   |     
+| `response_size`   | Response size in bytes    | -  |
+| `response_time`   | Response time in ms     | -   |     
 | `headers`   | Response headers         | headers.header-key    |      
 | `variables`   | Global and captured variables                          | variables.VarName    |  
 
@@ -627,16 +627,17 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `status_code == 200`   | same as preceding one  |
 | `not(status_code == 500)`   | checks if status code not equals to 500   |
 | `status_code != 500`   | same as preceding one|
-| `equals(json_path("employees.0.name"),"Name")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path("//item/title"),"ABC")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(json_path(\"employees.0.name\"),\"Name\")`   | checks if json extracted value is equal to "Name"|
+| `equals(xml_path(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
 | `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
+| `equals_on_file(body,\"file.json\")`   | reads from file.json and compares response body with read file |
 | `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
-| `contains(body,"xyz")`   | checks if body contains "xyz" in it|
+| `contains(body,\"xyz\")`   | checks if body contains "xyz" in it|
 | `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
 | `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
-| `regexp(body,"[a-z]+_[0-9]+",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
+| `regexp(body,\"[a-z]+_[0-9]+\",0) == "messi_10"`   | checks if matched result from regex is equal to "messi_10" |
 
 
 
