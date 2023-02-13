@@ -374,6 +374,14 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "has(headers.Content-Type2)",
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: false,
+		},
+
+		{
 			input: `in(headers.content-length,[222,445])`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,

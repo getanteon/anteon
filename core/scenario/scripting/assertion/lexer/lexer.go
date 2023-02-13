@@ -94,11 +94,7 @@ func (l *Lexer) NextToken() token.Token {
 			l.readChar()
 			return tok
 		}
-		if isLetter(l.ch) {
-			tok.Literal = l.readIdentifier()
-			tok.Type = token.LookupIdent(tok.Literal)
-			return tok
-		} else if isDigit(l.ch) {
+		if isDigit(l.ch) { // number
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
 			if strings.Contains(tok.Literal, ".") {
@@ -109,6 +105,10 @@ func (l *Lexer) NextToken() token.Token {
 			} else {
 				tok.Type = token.INT
 			}
+			return tok
+		} else if isLetter(l.ch) { // identifier
+			tok.Literal = l.readIdentifier()
+			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
 		} else {
 			tok = newToken(token.ILLEGAL, l.ch)
@@ -145,7 +145,7 @@ func (l *Lexer) peekChar() byte {
 
 func (l *Lexer) readIdentifier() string {
 	position := l.position
-	for isLetter(l.ch) {
+	for isChAllowedInIdent(l.ch) {
 		l.readChar()
 	}
 	return l.input[position:l.position]
@@ -167,8 +167,13 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
+func isChAllowedInIdent(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' ||
+		ch == '.' || ch == '-' || '0' <= ch && ch <= '9'
+}
+
 func isLetter(ch byte) bool { // identifiers
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch == '.' || ch == '-'
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
 }
 
 func isDigit(ch byte) bool {
