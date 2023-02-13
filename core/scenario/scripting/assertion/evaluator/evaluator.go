@@ -22,6 +22,8 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 		return node.GetVal(), nil
 	case *ast.StringLiteral:
 		return node.GetVal(), nil
+	case *ast.NullLiteral:
+		return node.GetVal(), nil
 	case *ast.ArrayLiteral:
 		args, err := evalExpressions(node.Elems, env, receivedMap)
 		if err != nil {

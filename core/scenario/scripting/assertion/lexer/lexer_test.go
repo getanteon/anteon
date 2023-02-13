@@ -252,6 +252,23 @@ func TestNextToken(t *testing.T) {
 				{token.EOF, ""},
 			},
 		},
+		{
+			input: "equals(json_path(),null)",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.IDENT, "equals"},
+				{token.LPAREN, "("},
+				{token.IDENT, "json_path"},
+				{token.LPAREN, "("},
+				{token.RPAREN, ")"},
+				{token.COMMA, ","},
+				{token.NULL, "null"},
+				{token.RPAREN, ")"},
+				{token.EOF, ""},
+			},
+		},
 	}
 
 	for _, tt := range tests {

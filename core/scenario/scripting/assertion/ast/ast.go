@@ -79,6 +79,16 @@ func (il *FloatLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *FloatLiteral) String() string       { return il.Token.Literal }
 func (il *FloatLiteral) GetVal() interface{}  { return il.Value }
 
+type NullLiteral struct {
+	Token token.Token
+	Value interface{}
+}
+
+func (il *NullLiteral) expressionNode()      {}
+func (il *NullLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *NullLiteral) String() string       { return il.Token.Literal }
+func (il *NullLiteral) GetVal() interface{}  { return il.Value }
+
 type StringLiteral struct {
 	Token token.Token
 	Value string
