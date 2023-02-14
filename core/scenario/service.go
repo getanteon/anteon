@@ -23,6 +23,7 @@ package scenario
 import (
 	"context"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -108,6 +109,14 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	// pass a row from data for each iteration
 	s.enrichEnvFromData(envs)
 	atomic.AddInt64(&s.iterIndex, 1)
+
+	client := &http.Client{}
+	for _, sr := range requesters {
+		if sr.requester.Type() == "HTTP" {
+			// use same client throughout iteration
+			sr.requester.(*requester.HttpRequester).SetClient(client)
+		}
+	}
 
 	for _, sr := range requesters {
 		res := sr.requester.Send(envs)

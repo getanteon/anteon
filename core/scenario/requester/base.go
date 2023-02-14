@@ -34,6 +34,7 @@ type Requester interface {
 	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool, ei *injection.EnvironmentInjector) error
 	Send(envs map[string]interface{}) *types.ScenarioStepResult
 	Done()
+	Type() string
 }
 
 // NewRequester is the factory method of the Requester.

@@ -63,6 +63,10 @@ func (m *MockRequester) Done() {
 	m.DoneCalled = true
 }
 
+func (m *MockRequester) Type() string {
+	return "mock"
+}
+
 type MockSleep struct {
 	SleepCalled    bool
 	SleepCallCount int

@@ -158,6 +158,7 @@ func TestInitClient(t *testing.T) {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
 			h.Init(test.ctx, test.scenarioItem, test.proxy, false, nil)
+			h.Send(map[string]interface{}{})
 
 			transport := h.client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig

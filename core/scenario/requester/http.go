@@ -73,23 +73,6 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
 	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
 
-	// TlsConfig
-	tlsConfig := h.initTLSConfig()
-
-	// Transport segment
-	tr := h.initTransport(tlsConfig)
-
-	// http client
-	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
-	if val, ok := h.packet.Custom["disable-redirect"]; ok {
-		val := val.(bool)
-		if val {
-			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			}
-		}
-	}
-
 	// Request instance
 	err = h.initRequestInstance()
 	if err != nil {
@@ -186,6 +169,28 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
 		usableVars[k] = v
+	}
+
+	if h.client == nil {
+		h.client = &http.Client{}
+	}
+
+	// Transport segment
+	if h.client.Transport == nil {
+		h.client.Transport = h.initTransport()
+	} else {
+		h.updateTransport()
+	}
+
+	// http client
+	h.client.Timeout = time.Duration(h.packet.Timeout) * time.Second
+	if val, ok := h.packet.Custom["disable-redirect"]; ok {
+		val := val.(bool)
+		if val {
+			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+		}
 	}
 
 	durations := &duration{}
@@ -448,9 +453,9 @@ func fetchErrType(err error) types.RequestError {
 	return requestErr
 }
 
-func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
+func (h *HttpRequester) initTransport() *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig:     tlsConfig,
+		TLSClientConfig:     h.initTLSConfig(),
 		Proxy:               http.ProxyURL(h.proxyAddr),
 		MaxIdleConnsPerHost: 60000,
 		MaxIdleConns:        0,
@@ -470,6 +475,26 @@ func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 		}
 	}
 	return tr
+}
+
+func (h *HttpRequester) updateTransport() {
+	tr := h.client.Transport.(*http.Transport)
+	tr.TLSClientConfig = h.initTLSConfig()
+	tr.Proxy = http.ProxyURL(h.proxyAddr)
+
+	tr.DisableKeepAlives = false
+	if val, ok := h.packet.Custom["keep-alive"]; ok {
+		tr.DisableKeepAlives = !val.(bool)
+	}
+	if val, ok := h.packet.Custom["disable-compression"]; ok {
+		tr.DisableCompression = val.(bool)
+	}
+	if val, ok := h.packet.Custom["h2"]; ok {
+		val := val.(bool)
+		if val {
+			http2.ConfigureTransport(tr)
+		}
+	}
 }
 
 func (h *HttpRequester) initTLSConfig() *tls.Config {
@@ -524,6 +549,14 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 		h.request.Close = !val.(bool)
 	}
 	return
+}
+
+func (h *HttpRequester) Type() string {
+	return "HTTP"
+}
+
+func (h *HttpRequester) SetClient(c *http.Client) {
+	h.client = c
 }
 
 func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
