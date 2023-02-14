@@ -94,6 +94,7 @@ func BenchmarkEngines(t *testing.B) {
 	index := os.Getenv("index")
 	if index == "" {
 		// parent
+		success := true
 		for i, _ := range table { // open a new process for each test config
 			// start a child
 			env := fmt.Sprintf("index=%d", i)
@@ -107,10 +108,17 @@ func BenchmarkEngines(t *testing.B) {
 				panic(err.Error())
 			}
 
-			proc.Wait()
+			pState, err := proc.Wait()
 			if err != nil {
 				panic(err.Error())
 			}
+
+			if !pState.Success() {
+				success = false
+			}
+		}
+		if !success {
+			t.Fail()
 		}
 	} else {
 		i, _ := strconv.Atoi(index)
@@ -158,7 +166,7 @@ func BenchmarkEngines(t *testing.B) {
 			defer trace.Stop()
 		}
 
-		t.Run(fmt.Sprintf("config_%s", conf.path), func(t *testing.B) {
+		success := t.Run(fmt.Sprintf("config_%s", conf.path), func(t *testing.B) {
 			var memPercents []float32
 			var cpuStats []*cpu.TimesStat
 
@@ -206,6 +214,10 @@ func BenchmarkEngines(t *testing.B) {
 
 		})
 
+		if success {
+			os.Exit(0)
+		}
+		os.Exit(1)
 	}
 }
 
