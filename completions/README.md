@@ -18,10 +18,8 @@
   # ~/.zshrc
 
   plugins=(
-    git
-    zsh-autosuggestions
-    ddosify
     ...
+    ddosify
   )
   ```
 
