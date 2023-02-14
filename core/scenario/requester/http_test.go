@@ -158,9 +158,10 @@ func TestInitClient(t *testing.T) {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
 			h.Init(test.ctx, test.scenarioItem, test.proxy, false, nil)
-			h.Send(map[string]interface{}{})
+			client := &http.Client{}
+			h.Send(client, map[string]interface{}{})
 
-			transport := h.client.Transport.(*http.Transport)
+			transport := client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig
 
 			// TLS Assert (Also check HTTP2 vs HTTP)
@@ -188,11 +189,11 @@ func TestInitClient(t *testing.T) {
 			}
 
 			// Client Assert
-			if test.client.Timeout != h.client.Timeout {
-				t.Errorf("Timeout Expected %v, Found %v", test.client.Timeout, h.client.Timeout)
+			if test.client.Timeout != client.Timeout {
+				t.Errorf("Timeout Expected %v, Found %v", test.client.Timeout, client.Timeout)
 			}
 
-			crFunc := h.client.CheckRedirect == nil
+			crFunc := client.CheckRedirect == nil
 			expectedCRFunc := test.client.CheckRedirect == nil
 			if expectedCRFunc != crFunc {
 				t.Errorf("CheckRedirect Expected %v, Found %v", expectedCRFunc, crFunc)
@@ -368,7 +369,7 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		var proxy *url.URL
 		_ = h.Init(ctx, s, proxy, debug, nil)
 		envs := map[string]interface{}{}
-		res := h.Send(envs)
+		res := h.Send(http.DefaultClient, envs)
 
 		if expectedMethod != res.Method {
 			t.Errorf("Method Expected %#v, Found: \n%#v", expectedMethod, res.Method)
@@ -428,7 +429,7 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			var proxy *url.URL
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
-			res := h.Send(envs)
+			res := h.Send(http.DefaultClient, envs)
 
 			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
 				t.Errorf("Extracted env should be set empty string on req failure")
@@ -467,7 +468,7 @@ func TestAssertions(t *testing.T) {
 	h := &HttpRequester{}
 	h.Init(ctx, s, nil, false, nil)
 
-	res := h.Send(map[string]interface{}{})
+	res := h.Send(http.DefaultClient, map[string]interface{}{})
 
 	if !strings.EqualFold(res.FailedAssertions[0].Rule, rule1) {
 		t.Errorf("rule expected %s, got %s", rule1, res.FailedAssertions[0].Rule)

@@ -50,7 +50,6 @@ type HttpRequester struct {
 	ctx                  context.Context
 	proxyAddr            *url.URL
 	packet               types.ScenarioStep
-	client               *http.Client
 	request              *http.Request
 	ei                   *injection.EnvironmentInjector
 	containsDynamicField map[string]bool
@@ -148,10 +147,12 @@ func (h *HttpRequester) Done() {
 	// let us reuse the connections when keep-alive enabled(default)
 	// When the Job is finished, we have to Close idle connections to prevent sockets to lock in at the TIME_WAIT state.
 	// Otherwise, the next job can't use these sockets because they are reserved for the current target host.
-	h.client.CloseIdleConnections()
+
+	// TODO
+	// h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioStepResult) {
+func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -171,23 +172,23 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		usableVars[k] = v
 	}
 
-	if h.client == nil {
-		h.client = &http.Client{}
+	if client == nil {
+		client = &http.Client{}
 	}
 
 	// Transport segment
-	if h.client.Transport == nil {
-		h.client.Transport = h.initTransport()
+	if client.Transport == nil {
+		client.Transport = h.initTransport()
 	} else {
-		h.updateTransport()
+		h.updateTransport(client.Transport.(*http.Transport))
 	}
 
 	// http client
-	h.client.Timeout = time.Duration(h.packet.Timeout) * time.Second
+	client.Timeout = time.Duration(h.packet.Timeout) * time.Second
 	if val, ok := h.packet.Custom["disable-redirect"]; ok {
 		val := val.(bool)
 		if val {
-			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			}
 		}
@@ -214,7 +215,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
 
 	// Action
-	httpRes, err := h.client.Do(httpReq)
+	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
@@ -477,8 +478,7 @@ func (h *HttpRequester) initTransport() *http.Transport {
 	return tr
 }
 
-func (h *HttpRequester) updateTransport() {
-	tr := h.client.Transport.(*http.Transport)
+func (h *HttpRequester) updateTransport(tr *http.Transport) {
 	tr.TLSClientConfig = h.initTLSConfig()
 	tr.Proxy = http.ProxyURL(h.proxyAddr)
 
@@ -553,10 +553,6 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 
 func (h *HttpRequester) Type() string {
 	return "HTTP"
-}
-
-func (h *HttpRequester) SetClient(c *http.Client) {
-	h.client = c
 }
 
 func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {

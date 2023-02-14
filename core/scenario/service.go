@@ -22,6 +22,7 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -112,14 +113,14 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 
 	client := &http.Client{}
 	for _, sr := range requesters {
-		if sr.requester.Type() == "HTTP" {
-			// use same client throughout iteration
-			sr.requester.(*requester.HttpRequester).SetClient(client)
+		var res *types.ScenarioStepResult
+		switch sr.requester.Type() {
+		case "HTTP":
+			httpRequester := sr.requester.(requester.HttpRequesterI)
+			res = httpRequester.Send(client, envs)
+		default:
+			res = &types.ScenarioStepResult{Err: types.RequestError{Type: fmt.Sprintf("type not defined: %s", sr.requester.Type())}}
 		}
-	}
-
-	for _, sr := range requesters {
-		res := sr.requester.Send(envs)
 
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
@@ -208,7 +209,14 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			},
 		)
 
-		err = r.Init(s.ctx, si, proxy, s.debug, s.ei)
+		switch r.Type() {
+		case "HTTP":
+			httpRequester := r.(requester.HttpRequesterI)
+			err = httpRequester.Init(s.ctx, si, proxy, s.debug, s.ei)
+		default:
+			err = fmt.Errorf("type not defined: %s", r.Type())
+		}
+
 		if err != nil {
 			return
 		}

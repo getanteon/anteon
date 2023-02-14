@@ -23,6 +23,7 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
@@ -33,7 +34,7 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-type MockRequester struct {
+type MockHttpRequester struct {
 	InitCalled bool
 	SendCalled bool
 	DoneCalled bool
@@ -46,7 +47,7 @@ type MockRequester struct {
 	ReturnSend *types.ScenarioStepResult
 }
 
-func (m *MockRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool, ei *injection.EnvironmentInjector) (err error) {
+func (m *MockHttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool, ei *injection.EnvironmentInjector) (err error) {
 	m.InitCalled = true
 	if m.FailInit {
 		return fmt.Errorf(m.FailInitMsg)
@@ -54,17 +55,17 @@ func (m *MockRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	return
 }
 
-func (m *MockRequester) Send(envs map[string]interface{}) (res *types.ScenarioStepResult) {
+func (m *MockHttpRequester) Send(client *http.Client, envs map[string]interface{}) (res *types.ScenarioStepResult) {
 	m.SendCalled = true
 	return m.ReturnSend
 }
 
-func (m *MockRequester) Done() {
+func (m *MockHttpRequester) Done() {
 	m.DoneCalled = true
 }
 
-func (m *MockRequester) Type() string {
-	return "mock"
+func (m *MockHttpRequester) Type() string {
+	return "HTTP"
 }
 
 type MockSleep struct {
@@ -230,11 +231,11 @@ func TestDo(t *testing.T) {
 		{
 			scenarioItemID: 1,
 			sleeper:        mockSleep,
-			requester:      &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}},
+			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}},
 		},
 		{
 			scenarioItemID: 2,
-			requester:      &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}},
+			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}},
 		},
 	}
 	service := ScenarioService{
@@ -292,19 +293,19 @@ func TestDoErrorOnSend(t *testing.T) {
 	requestersProxyError := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
-			requester:      &MockRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorProxy}}},
+			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorProxy}}},
 		},
 	}
 	requestersIntentedError := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
-			requester:      &MockRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorIntented}}},
+			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorIntented}}},
 		},
 	}
 	requestersConnError := []scenarioItemRequester{
 		{
 			scenarioItemID: 1,
-			requester:      &MockRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorConn}}},
+			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{Err: types.RequestError{Type: types.ErrorConn}}},
 		},
 	}
 
@@ -409,10 +410,10 @@ func TestDone(t *testing.T) {
 	p2, _ := url.Parse("http://proxy_server.com:8080")
 	ctx := context.TODO()
 
-	requester1 := &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
-	requester2 := &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
-	requester3 := &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
-	requester4 := &MockRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
+	requester1 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
+	requester2 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
+	requester3 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
+	requester4 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
 	service := ScenarioService{
 		clients: map[*url.URL][]scenarioItemRequester{
 			p1: {
