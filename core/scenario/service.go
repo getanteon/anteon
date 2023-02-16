@@ -92,7 +92,7 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi.Init()
 	s.ei = vi
 
-	initialClientCount := opts.MaxConcurrentIterCount * 3
+	initialClientCount := opts.MaxConcurrentIterCount * 10
 	if !opts.ConnectionReuse {
 		// TODO: timeout and buffer
 		initialClientCount = opts.IterationCount
