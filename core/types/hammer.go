@@ -85,6 +85,9 @@ type Hammer struct {
 
 	// Sampling rate
 	SamplingRate int
+
+	// Connection reuse
+	ConnectionReuse bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

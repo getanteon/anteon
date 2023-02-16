@@ -66,6 +66,7 @@ type ScenarioOpts struct {
 	Debug                  bool
 	IterationCount         int
 	MaxConcurrentIterCount int
+	ConnectionReuse        bool
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
@@ -91,8 +92,14 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi.Init()
 	s.ei = vi
 
-	// TODO: timeout and buffer
-	s.cPool, err = NewClientPool(opts.MaxConcurrentIterCount, opts.IterationCount, func() *http.Client { return &http.Client{} })
+	initialClientCount := opts.MaxConcurrentIterCount
+	if !opts.ConnectionReuse {
+		// TODO: timeout and buffer
+		initialClientCount = opts.IterationCount
+	}
+	maxClientCount := opts.IterationCount
+
+	s.cPool, err = NewClientPool(initialClientCount, maxClientCount, func() *http.Client { return &http.Client{} })
 
 	return
 }
