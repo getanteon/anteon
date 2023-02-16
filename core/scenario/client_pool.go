@@ -2,15 +2,15 @@ package scenario
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
-	"sync"
 )
 
 type clientPool struct {
 	// storage for our http.Clients
-	mu      sync.RWMutex
-	clients chan *http.Client
+	clients []chan *http.Client
 	factory Factory
+	N       int
 }
 
 // Factory is a function to create new connections.
@@ -27,37 +27,45 @@ func NewClientPool(initialCap, maxCap int, factory Factory) (*clientPool, error)
 		return nil, errors.New("invalid capacity settings")
 	}
 
+	N := 4
+
 	pool := &clientPool{
-		clients: make(chan *http.Client, maxCap),
+		clients: make([]chan *http.Client, N),
 		factory: factory,
+		N:       N,
+	}
+
+	for i := 0; i < N; i++ {
+		pool.clients[i] = make(chan *http.Client, maxCap/N)
 	}
 
 	// create initial clients, if something goes wrong,
 	// just close the pool error out.
 	for i := 0; i < initialCap; i++ {
 		client := pool.factory()
-		pool.clients <- client
+		pool.clients[i%N] <- client
 	}
 
 	return pool, nil
 }
 
-func (c *clientPool) getConnsAndFactory() (chan *http.Client, Factory) {
-	c.mu.RLock()
-	clients := c.clients
-	factory := c.factory
-	c.mu.RUnlock()
-	return clients, factory
-}
-
 func (c *clientPool) Get() *http.Client {
-	clients, factory := c.getConnsAndFactory()
-
 	var client *http.Client
+	// TODO N = 4
 	select {
-	case client = <-clients:
+	case client = <-c.clients[0]:
+	case client = <-c.clients[1]:
+	case client = <-c.clients[2]:
+	case client = <-c.clients[3]:
+	// case client = <-c.clients[4]:
+	// case client = <-c.clients[5]:
+	// case client = <-c.clients[6]:
+	// case client = <-c.clients[7]:
+	// case client = <-c.clients[8]:
+	// case client = <-c.clients[9]:
+
 	default:
-		client = factory()
+		client = c.factory()
 	}
 	return client
 }
@@ -66,9 +74,6 @@ func (c *clientPool) Put(client *http.Client) error {
 	if client == nil {
 		return errors.New("client is nil. rejecting")
 	}
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 
 	if c.clients == nil {
 		// pool is closed, close passed client
@@ -79,23 +84,46 @@ func (c *clientPool) Put(client *http.Client) error {
 	// put the resource back into the pool. If the pool is full, this will
 	// block and the default case will be executed.
 	select {
-	case c.clients <- client:
+	case c.clients[0] <- client:
 		return nil
+	case c.clients[1] <- client:
+		return nil
+	case c.clients[2] <- client:
+		return nil
+	case c.clients[3] <- client:
+		return nil
+	// case c.clients[4] <- client:
+	// 	return nil
+	// case c.clients[5] <- client:
+	// 	return nil
+	// case c.clients[6] <- client:
+	// 	return nil
+	// case c.clients[7] <- client:
+	// 	return nil
+	// case c.clients[8] <- client:
+	// 	return nil
+	// case c.clients[9] <- client:
+	// 	return nil
+
 	default:
-		// pool is full, close passed connection
+		// pool is full, close passed client
 		client.CloseIdleConnections()
 		return nil
 	}
 }
 
 func (c *clientPool) Len() int {
-	conns, _ := c.getConnsAndFactory()
-	return len(conns)
+	return len(c.clients)
 }
 
 func (c *clientPool) Done() {
-	close(c.clients)
-	for c := range c.clients {
-		c.CloseIdleConnections()
+	fmt.Println(c.Len())
+	for i := 0; i < c.N; i++ {
+		close(c.clients[i])
+	}
+	for _, cp := range c.clients {
+		for c := range cp {
+			c.CloseIdleConnections()
+		}
 	}
 }
