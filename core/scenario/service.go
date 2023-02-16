@@ -97,7 +97,7 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 		// TODO: timeout and buffer
 		initialClientCount = opts.IterationCount
 	}
-	maxClientCount := opts.IterationCount
+	maxClientCount := opts.IterationCount / 2
 
 	s.cPool, err = NewClientPool(initialClientCount, maxClientCount, func() *http.Client { return &http.Client{} })
 
