@@ -191,7 +191,11 @@ func TestInitService(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies, false)
+	err := service.Init(ctx, scenario, proxies, ScenarioOpts{
+		Debug:                  false,
+		IterationCount:         1,
+		MaxConcurrentIterCount: 1,
+	})
 
 	// Assert
 	if err != nil {
@@ -238,12 +242,14 @@ func TestDo(t *testing.T) {
 			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}},
 		},
 	}
+	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
 	service := ScenarioService{
 		clients: map[*url.URL][]scenarioItemRequester{
 			p1: requesters,
 		},
 		scenario: scenario,
 		ctx:      ctx,
+		cPool:    cPool,
 	}
 
 	expectedResponse := types.ScenarioResult{
@@ -322,12 +328,14 @@ func TestDoErrorOnSend(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
 			service := ScenarioService{
 				clients: map[*url.URL][]scenarioItemRequester{
 					p1: test.requesters,
 				},
 				scenario: scenario,
 				ctx:      ctx,
+				cPool:    cPool,
 			}
 
 			// Act
@@ -410,6 +418,8 @@ func TestDone(t *testing.T) {
 	p2, _ := url.Parse("http://proxy_server.com:8080")
 	ctx := context.TODO()
 
+	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
+
 	requester1 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
 	requester2 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
 	requester3 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
@@ -439,8 +449,8 @@ func TestDone(t *testing.T) {
 		},
 		scenario: scenario,
 		ctx:      ctx,
+		cPool:    cPool,
 	}
-
 	// Act
 	service.Done()
 
@@ -478,7 +488,11 @@ func TestGetOrCreateRequesters(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies, false)
+	service.Init(ctx, scenario, proxies, ScenarioOpts{
+		Debug:                  false,
+		IterationCount:         1,
+		MaxConcurrentIterCount: 1,
+	})
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 	expectedClients := map[*url.URL][]scenarioItemRequester{
@@ -523,7 +537,11 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies, false)
+	service.Init(ctx, scenario, proxies, ScenarioOpts{
+		Debug:                  false,
+		IterationCount:         1,
+		MaxConcurrentIterCount: 1,
+	})
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 

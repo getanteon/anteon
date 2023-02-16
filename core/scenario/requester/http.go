@@ -456,10 +456,9 @@ func fetchErrType(err error) types.RequestError {
 
 func (h *HttpRequester) initTransport() *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig:     h.initTLSConfig(),
-		Proxy:               http.ProxyURL(h.proxyAddr),
-		MaxIdleConnsPerHost: 60000,
-		MaxIdleConns:        0,
+		TLSClientConfig: h.initTLSConfig(),
+		Proxy:           http.ProxyURL(h.proxyAddr),
+		MaxConnsPerHost: 1, // to use the same connection per host throughout an iteration
 	}
 
 	tr.DisableKeepAlives = false

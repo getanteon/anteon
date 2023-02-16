@@ -91,11 +91,16 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 }
 
 func (e *engine) Init() (err error) {
+	e.initReqCountArr()
 	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
+		Debug:                  e.hammer.Debug,
+		IterationCount:         e.hammer.IterationCount,
+		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
+	}); err != nil {
 		return
 	}
 
@@ -103,7 +108,6 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	e.initReqCountArr()
 	return
 }
 
@@ -182,6 +186,16 @@ func (e *engine) stop() {
 	<-e.reportService.DoneChan()
 	e.proxyService.Done()
 	e.scenarioService.Done()
+}
+
+func (e *engine) getMaxConcurrentIterCount() int {
+	max := 0
+	for _, v := range e.reqCountArr {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }
 
 func (e *engine) initReqCountArr() {

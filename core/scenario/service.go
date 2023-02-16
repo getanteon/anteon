@@ -46,6 +46,8 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
+	cPool *clientPool
+
 	scenario types.Scenario
 	ctx      context.Context
 
@@ -60,13 +62,19 @@ func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
 }
 
+type ScenarioOpts struct {
+	Debug                  bool
+	IterationCount         int
+	MaxConcurrentIterCount int
+}
+
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
 func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
-	proxies []*url.URL, debug bool) (err error) {
+	proxies []*url.URL, opts ScenarioOpts) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
-	s.debug = debug
+	s.debug = opts.Debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 
 	ei := &injection.EnvironmentInjector{}
@@ -82,6 +90,10 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi := &injection.EnvironmentInjector{}
 	vi.Init()
 	s.ei = vi
+
+	// TODO: timeout and buffer
+	s.cPool, err = NewClientPool(opts.MaxConcurrentIterCount, opts.IterationCount, func() *http.Client { return &http.Client{} })
+
 	return
 }
 
@@ -111,7 +123,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	s.enrichEnvFromData(envs)
 	atomic.AddInt64(&s.iterIndex, 1)
 
-	client := &http.Client{}
+	client := s.cPool.Get()
 	for _, sr := range requesters {
 		var res *types.ScenarioStepResult
 		switch sr.requester.Type() {
@@ -138,6 +150,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 
 		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 	}
+	s.cPool.Put(client)
 	return
 }
 
@@ -176,6 +189,8 @@ func (s *ScenarioService) Done() {
 			r.requester.Done()
 		}
 	}
+
+	s.cPool.Done()
 }
 
 func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {
