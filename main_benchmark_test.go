@@ -214,10 +214,9 @@ func BenchmarkEngines(t *testing.B) {
 
 		})
 
-		if success {
-			os.Exit(0)
+		if !success {
+			os.Exit(1)
 		}
-		os.Exit(1)
 	}
 }
 
