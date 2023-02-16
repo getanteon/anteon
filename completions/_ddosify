@@ -1,0 +1,32 @@
+#compdef ddosify _ddosify
+
+typeset -A opt_args
+
+_ddosify() {
+    local curcontext="$curcontext" state line
+    local -a opts
+
+    opts+=(
+        "-t[Target URL.]"
+        "-P[Proxy address as protocol\://username\:password@host\:port. Supported proxies \[http(s), socks\].]"
+        "-T[Request timeout in seconds (default 5).]" 
+        "-a[Basic authentication, username\:password.]"
+        "-b[Payload of the network packet (body).]"
+        "-cert_key_path[A path to a certificate key file (usually called 'key.pem').]:filename:_files"
+        "-cert_path[A path to a certificate file (usually called 'cert.pem'.)]:filename:_files"
+        "-config[Json config file path. If a config file is provided, other flag values will be ignored.]:filename:_files"
+        "-d[Test duration in seconds (default 10).]"
+        "-debug[Iterates the scenario once and prints curl-like verbose result.]"
+        "-h[Request Headers. Ex\: -h 'Accept\: text/html' -h 'Content-Type\: application/xml'.]"
+        "-l[Type of the load test \['linear', 'incremental', 'waved'\] (default 'linear').]"
+        "-m[Request Method Type. For Http(s)\:\['GET', 'POST', 'PUT', 'DELETE', 'UPDATE', 'PATCH'\] (default 'GET').]"
+        "-n[Total iteration count (default 100).]"
+        "-o[Output destination (default 'stdout').]"
+        "-version[Prints version, git commit, built date (utc), go information and quit.]"
+    )
+
+    _arguments -s -w : $opts && return 0
+
+    return 1
+}
+
