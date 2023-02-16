@@ -55,7 +55,8 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -110,7 +111,8 @@ func TestCreateHammer(t *testing.T) {
 			Strategy: "single",
 			Addr:     addr,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -165,7 +167,8 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 			Strategy: "single",
 			Addr:     addr,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -223,7 +226,8 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 			Strategy: "single",
 			Addr:     addr,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -258,7 +262,8 @@ func TestCreateHammerManualLoad(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -293,7 +298,8 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -551,7 +557,8 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -596,7 +603,8 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -632,7 +640,8 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 		Proxy: proxy.Proxy{
 			Strategy: proxy.ProxyTypeSingle,
 		},
-		SamplingRate: types.DefaultSamplingCount,
+		SamplingRate:    types.DefaultSamplingCount,
+		ConnectionReuse: true,
 	}
 
 	h, err := jsonReader.CreateHammer()
