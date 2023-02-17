@@ -1,7 +1,7 @@
 {
     "iteration_count": 10000,
     "load_type": "waved",
-    "engine_mode": "repeated-user",
+    "engine_mode": "ddosify",
 
     "duration": 10,
     "steps": [
