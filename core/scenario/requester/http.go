@@ -75,7 +75,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// Transport segment
 	tr := h.initTransport()
-	tr.MaxConnsPerHost = 60000
+	tr.MaxIdleConnsPerHost = 60000
 	tr.MaxIdleConns = 0
 
 	// http client
