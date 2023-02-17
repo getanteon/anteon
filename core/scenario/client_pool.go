@@ -2,13 +2,12 @@ package scenario
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 )
 
 type clientPool struct {
 	// storage for our http.Clients
-	clients []chan *http.Client
+	clients chan *http.Client
 	factory Factory
 	N       int
 }
@@ -27,23 +26,16 @@ func NewClientPool(initialCap, maxCap int, factory Factory) (*clientPool, error)
 		return nil, errors.New("invalid capacity settings")
 	}
 
-	N := 4
-
 	pool := &clientPool{
-		clients: make([]chan *http.Client, N),
+		clients: make(chan *http.Client, maxCap),
 		factory: factory,
-		N:       N,
-	}
-
-	for i := 0; i < N; i++ {
-		pool.clients[i] = make(chan *http.Client, maxCap/N)
 	}
 
 	// create initial clients, if something goes wrong,
 	// just close the pool error out.
 	for i := 0; i < initialCap; i++ {
 		client := pool.factory()
-		pool.clients[i%N] <- client
+		pool.clients <- client
 	}
 
 	return pool, nil
@@ -51,19 +43,8 @@ func NewClientPool(initialCap, maxCap int, factory Factory) (*clientPool, error)
 
 func (c *clientPool) Get() *http.Client {
 	var client *http.Client
-	// TODO N = 4
 	select {
-	case client = <-c.clients[0]:
-	case client = <-c.clients[1]:
-	case client = <-c.clients[2]:
-	case client = <-c.clients[3]:
-	// case client = <-c.clients[4]:
-	// case client = <-c.clients[5]:
-	// case client = <-c.clients[6]:
-	// case client = <-c.clients[7]:
-	// case client = <-c.clients[8]:
-	// case client = <-c.clients[9]:
-
+	case client = <-c.clients:
 	default:
 		client = c.factory()
 	}
@@ -84,27 +65,8 @@ func (c *clientPool) Put(client *http.Client) error {
 	// put the resource back into the pool. If the pool is full, this will
 	// block and the default case will be executed.
 	select {
-	case c.clients[0] <- client:
+	case c.clients <- client:
 		return nil
-	case c.clients[1] <- client:
-		return nil
-	case c.clients[2] <- client:
-		return nil
-	case c.clients[3] <- client:
-		return nil
-	// case c.clients[4] <- client:
-	// 	return nil
-	// case c.clients[5] <- client:
-	// 	return nil
-	// case c.clients[6] <- client:
-	// 	return nil
-	// case c.clients[7] <- client:
-	// 	return nil
-	// case c.clients[8] <- client:
-	// 	return nil
-	// case c.clients[9] <- client:
-	// 	return nil
-
 	default:
 		// pool is full, close passed client
 		client.CloseIdleConnections()
@@ -117,13 +79,8 @@ func (c *clientPool) Len() int {
 }
 
 func (c *clientPool) Done() {
-	fmt.Println(c.Len())
-	for i := 0; i < c.N; i++ {
-		close(c.clients[i])
-	}
-	for _, cp := range c.clients {
-		for c := range cp {
-			c.CloseIdleConnections()
-		}
+	close(c.clients)
+	for c := range c.clients {
+		c.CloseIdleConnections()
 	}
 }
