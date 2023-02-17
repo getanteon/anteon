@@ -158,10 +158,8 @@ func TestInitClient(t *testing.T) {
 		tf := func(t *testing.T) {
 			h := &HttpRequester{}
 			h.Init(test.ctx, test.scenarioItem, test.proxy, false, nil)
-			client := &http.Client{}
-			h.Send(client, map[string]interface{}{})
 
-			transport := client.Transport.(*http.Transport)
+			transport := h.client.Transport.(*http.Transport)
 			tls := transport.TLSClientConfig
 
 			// TLS Assert (Also check HTTP2 vs HTTP)
@@ -189,11 +187,11 @@ func TestInitClient(t *testing.T) {
 			}
 
 			// Client Assert
-			if test.client.Timeout != client.Timeout {
-				t.Errorf("Timeout Expected %v, Found %v", test.client.Timeout, client.Timeout)
+			if test.client.Timeout != h.client.Timeout {
+				t.Errorf("Timeout Expected %v, Found %v", test.client.Timeout, h.client.Timeout)
 			}
 
-			crFunc := client.CheckRedirect == nil
+			crFunc := h.client.CheckRedirect == nil
 			expectedCRFunc := test.client.CheckRedirect == nil
 			if expectedCRFunc != crFunc {
 				t.Errorf("CheckRedirect Expected %v, Found %v", expectedCRFunc, crFunc)
