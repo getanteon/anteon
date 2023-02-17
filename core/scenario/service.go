@@ -46,7 +46,8 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
-	cPool *clientPool
+	cPool  *clientPool
+	client *http.Client
 
 	scenario types.Scenario
 	ctx      context.Context
@@ -92,14 +93,15 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi.Init()
 	s.ei = vi
 
-	initialClientCount := opts.MaxConcurrentIterCount * 10
-	if !opts.ConnectionReuse {
-		// TODO: timeout and buffer
-		initialClientCount = opts.IterationCount
-	}
-	maxClientCount := opts.IterationCount / 2
+	// initialClientCount := opts.MaxConcurrentIterCount
+	// if !opts.ConnectionReuse {
+	// 	// TODO: timeout and buffer
+	// 	initialClientCount = opts.IterationCount
+	// }
+	// maxClientCount := opts.IterationCount
+	// s.cPool, err = NewClientPool(initialClientCount, maxClientCount, func() *http.Client { return &http.Client{} })
 
-	s.cPool, err = NewClientPool(initialClientCount, maxClientCount, func() *http.Client { return &http.Client{} })
+	s.client = &http.Client{}
 
 	return
 }
@@ -130,13 +132,15 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	s.enrichEnvFromData(envs)
 	atomic.AddInt64(&s.iterIndex, 1)
 
-	client := s.cPool.Get()
+	// client := s.cPool.Get()
+
+	urlPortMap := make(map[string]string)
 	for _, sr := range requesters {
 		var res *types.ScenarioStepResult
 		switch sr.requester.Type() {
 		case "HTTP":
 			httpRequester := sr.requester.(requester.HttpRequesterI)
-			res = httpRequester.Send(client, envs)
+			res = httpRequester.Send(s.client, envs, urlPortMap) // TODO
 		default:
 			res = &types.ScenarioStepResult{Err: types.RequestError{Type: fmt.Sprintf("type not defined: %s", sr.requester.Type())}}
 		}
@@ -157,7 +161,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 
 		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 	}
-	s.cPool.Put(client)
+	// s.cPool.Put(client)
 	return
 }
 
@@ -197,7 +201,7 @@ func (s *ScenarioService) Done() {
 		}
 	}
 
-	s.cPool.Done()
+	// s.cPool.Done()
 }
 
 func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {

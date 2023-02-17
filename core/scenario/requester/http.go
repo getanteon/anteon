@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -37,6 +38,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	reuse "github.com/libp2p/go-reuseport"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -152,7 +154,7 @@ func (h *HttpRequester) Done() {
 	// h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (res *types.ScenarioStepResult) {
+func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}, hostPortMap map[string]string) (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -178,9 +180,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 
 	// Transport segment
 	if client.Transport == nil {
-		client.Transport = h.initTransport()
+		client.Transport = h.initTransport(hostPortMap)
 	} else {
-		h.updateTransport(client.Transport.(*http.Transport))
+		h.updateTransport(client.Transport.(*http.Transport), hostPortMap)
 	}
 
 	// http client
@@ -195,7 +197,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	durations := &duration{}
-	trace := newTrace(durations, h.proxyAddr)
+	trace := newTrace(durations, h.proxyAddr, h.packet.URL, hostPortMap)
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -454,11 +456,18 @@ func fetchErrType(err error) types.RequestError {
 	return requestErr
 }
 
-func (h *HttpRequester) initTransport() *http.Transport {
+func (h *HttpRequester) initTransport(hostPortMap map[string]string) *http.Transport {
 	tr := &http.Transport{
 		TLSClientConfig: h.initTLSConfig(),
 		Proxy:           http.ProxyURL(h.proxyAddr),
-		MaxConnsPerHost: 1, // to use the same connection per host throughout an iteration
+		// MaxConnsPerHost: 1, // to use the same connection per host throughout an iteration
+		Dial: func(network, addr string) (net.Conn, error) {
+			if localAddr, ok := hostPortMap[h.packet.URL]; ok {
+				return reuse.Dial(network, localAddr, addr)
+			} else {
+				return net.Dial(network, addr)
+			}
+		},
 	}
 
 	tr.DisableKeepAlives = false
@@ -477,9 +486,18 @@ func (h *HttpRequester) initTransport() *http.Transport {
 	return tr
 }
 
-func (h *HttpRequester) updateTransport(tr *http.Transport) {
+func (h *HttpRequester) updateTransport(tr *http.Transport, hostPortMap map[string]string) {
 	tr.TLSClientConfig = h.initTLSConfig()
 	tr.Proxy = http.ProxyURL(h.proxyAddr)
+
+	// TODO check
+	tr.Dial = func(network, addr string) (net.Conn, error) {
+		if localAddr, ok := hostPortMap[h.packet.URL]; ok {
+			return reuse.Dial(network, localAddr, addr)
+		} else {
+			return net.Dial(network, addr)
+		}
+	}
 
 	tr.DisableKeepAlives = false
 	if val, ok := h.packet.Custom["keep-alive"]; ok {
@@ -554,7 +572,7 @@ func (h *HttpRequester) Type() string {
 	return "HTTP"
 }
 
-func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
+func newTrace(duration *duration, proxyAddr *url.URL, reqUrl string, hostPortMap map[string]string) *httptrace.ClientTrace {
 	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
@@ -625,6 +643,7 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 				reqStart = time.Now()
 			}
 			m.Unlock()
+			hostPortMap[reqUrl] = connInfo.Conn.LocalAddr().String()
 		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
 			m.Lock()
