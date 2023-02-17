@@ -202,17 +202,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		}
 	}
 
-	// http client
-	client.Timeout = time.Duration(h.packet.Timeout) * time.Second
-	if val, ok := h.packet.Custom["disable-redirect"]; ok {
-		val := val.(bool)
-		if val {
-			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			}
-		}
-	}
-
 	durations := &duration{}
 	trace := newTrace(durations, h.proxyAddr)
 	httpReq, err := h.prepareReq(usableVars, trace)
