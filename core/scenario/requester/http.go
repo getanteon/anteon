@@ -76,6 +76,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	// Transport segment
 	tr := h.initTransport()
 	tr.MaxConnsPerHost = 60000
+	tr.MaxIdleConns = 0
 
 	// http client
 	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
