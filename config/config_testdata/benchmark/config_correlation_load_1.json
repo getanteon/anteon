@@ -1,5 +1,6 @@
 {
     "iteration_count": 100,
+    "engine_mode": "repeated-user",
     "load_type": "waved",
     "duration": 10,
     "steps": [
