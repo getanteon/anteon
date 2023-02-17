@@ -144,28 +144,28 @@ func (c *CsvConf) UnmarshalJSON(data []byte) error {
 }
 
 type JsonReader struct {
-	ReqCount        *int                   `json:"request_count"`
-	IterCount       *int                   `json:"iteration_count"`
-	LoadType        string                 `json:"load_type"`
-	Duration        int                    `json:"duration"`
-	TimeRunCount    timeRunCount           `json:"manual_load"`
-	Steps           []step                 `json:"steps"`
-	Output          string                 `json:"output"`
-	Proxy           string                 `json:"proxy"`
-	Envs            map[string]interface{} `json:"env"`
-	Data            map[string]CsvConf     `json:"data"`
-	Debug           bool                   `json:"debug"`
-	SamplingRate    *int                   `json:"sampling_rate"`
-	ConnectionReuse bool                   `json:"connection_reuse"`
+	ReqCount     *int                   `json:"request_count"`
+	IterCount    *int                   `json:"iteration_count"`
+	LoadType     string                 `json:"load_type"`
+	Duration     int                    `json:"duration"`
+	TimeRunCount timeRunCount           `json:"manual_load"`
+	Steps        []step                 `json:"steps"`
+	Output       string                 `json:"output"`
+	Proxy        string                 `json:"proxy"`
+	Envs         map[string]interface{} `json:"env"`
+	Data         map[string]CsvConf     `json:"data"`
+	Debug        bool                   `json:"debug"`
+	SamplingRate *int                   `json:"sampling_rate"`
+	EngineMode   string                 `json:"engine_mode"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
 	type jsonReaderAlias JsonReader
 	defaultFields := &jsonReaderAlias{
-		LoadType:        types.DefaultLoadType,
-		Duration:        types.DefaultDuration,
-		Output:          types.DefaultOutputType,
-		ConnectionReuse: true,
+		LoadType:   types.DefaultLoadType,
+		Duration:   types.DefaultDuration,
+		Output:     types.DefaultOutputType,
+		EngineMode: types.EngineModeDdosify,
 	}
 
 	err := json.Unmarshal(data, defaultFields)
@@ -277,7 +277,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		ReportDestination: j.Output,
 		Debug:             j.Debug,
 		SamplingRate:      samplingRate,
-		ConnectionReuse:   j.ConnectionReuse,
+		EngineMode:        j.EngineMode,
 	}
 	return
 }

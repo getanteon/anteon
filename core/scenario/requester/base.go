@@ -38,7 +38,7 @@ type Requester interface {
 
 type HttpRequesterI interface {
 	Init(ctx context.Context, ss types.ScenarioStep, url *url.URL, debug bool, ei *injection.EnvironmentInjector) error
-	Send(client *http.Client, envs map[string]interface{}) *types.ScenarioStepResult
+	Send(client *http.Client, envs map[string]interface{}) *types.ScenarioStepResult // should use its own client if client is nil
 }
 
 // NewRequester is the factory method of the Requester.

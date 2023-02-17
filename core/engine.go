@@ -100,7 +100,7 @@ func (e *engine) Init() (err error) {
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
-		ConnectionReuse:        e.hammer.ConnectionReuse,
+		EngineMode:             e.hammer.EngineMode,
 	}); err != nil {
 		return
 	}

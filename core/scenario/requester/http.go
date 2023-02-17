@@ -50,6 +50,7 @@ type HttpRequester struct {
 	ctx                  context.Context
 	proxyAddr            *url.URL
 	packet               types.ScenarioStep
+	client               *http.Client
 	request              *http.Request
 	ei                   *injection.EnvironmentInjector
 	containsDynamicField map[string]bool
@@ -71,6 +72,21 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.debug = debug
 	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
 	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
+
+	// Transport segment
+	tr := h.initTransport()
+	tr.MaxConnsPerHost = 60000
+
+	// http client
+	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
+	if val, ok := h.packet.Custom["disable-redirect"]; ok {
+		val := val.(bool)
+		if val {
+			h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+		}
+	}
 
 	// Request instance
 	err = h.initRequestInstance()
@@ -148,8 +164,7 @@ func (h *HttpRequester) Done() {
 	// When the Job is finished, we have to Close idle connections to prevent sockets to lock in at the TIME_WAIT state.
 	// Otherwise, the next job can't use these sockets because they are reserved for the current target host.
 
-	// TODO
-	// h.client.CloseIdleConnections()
+	h.client.CloseIdleConnections()
 }
 
 func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (res *types.ScenarioStepResult) {
@@ -173,14 +188,18 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	if client == nil {
-		client = &http.Client{}
-	}
-
-	// Transport segment
-	if client.Transport == nil {
-		client.Transport = h.initTransport()
+		// engine mode is 'ddosify'
+		// if passed client is nil , use requesters client that is dedicated to one step, thereby one transport
+		client = h.client
 	} else {
-		h.updateTransport(client.Transport.(*http.Transport))
+		// engine mode is 'distinct-user' or 'repeated-user'
+		// passed client is used for multiple steps throughout an iteration, update transport
+		if client.Transport == nil {
+			client.Transport = h.initTransport()
+			client.Transport.(*http.Transport).MaxConnsPerHost = 1 // use same connection per host throughout an iteration
+		} else {
+			h.updateTransport(client.Transport.(*http.Transport))
+		}
 	}
 
 	// http client
@@ -458,7 +477,6 @@ func (h *HttpRequester) initTransport() *http.Transport {
 	tr := &http.Transport{
 		TLSClientConfig: h.initTLSConfig(),
 		Proxy:           http.ProxyURL(h.proxyAddr),
-		MaxConnsPerHost: 1, // to use the same connection per host throughout an iteration
 	}
 
 	tr.DisableKeepAlives = false

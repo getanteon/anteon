@@ -9,7 +9,6 @@ type clientPool struct {
 	// storage for our http.Clients
 	clients chan *http.Client
 	factory Factory
-	N       int
 }
 
 // Factory is a function to create new connections.
