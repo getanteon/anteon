@@ -196,7 +196,7 @@ func (s *ScenarioService) Done() {
 		}
 	}
 
-	// s.cPool.Done()
+	s.cPool.Done()
 }
 
 func (s *ScenarioService) getOrCreateRequesters(proxy *url.URL) (requesters []scenarioItemRequester, err error) {
