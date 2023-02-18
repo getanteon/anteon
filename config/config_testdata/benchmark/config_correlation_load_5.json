@@ -18,7 +18,7 @@
                 
               },
               "payload": "",
-              "timeout": 3,
+              "timeout": 1,
               "capture_env": {
                 "NUM" :{ "from":"body","json_path":"quoteResponse.result.0.askSize"},
                 "STR" :{ "from":"body","json_path":"quoteResponse.result.0.currency"},
@@ -46,7 +46,7 @@
                 "yahoo" : "{{CONTENT_LENGTH}}"
               },
               "payload": "",
-              "timeout": 10
+              "timeout": 1
             },
             {
               "id": 3,
@@ -63,7 +63,7 @@
                 "num": "{{NUM}}"
               },
               "payload_file": "config/config_testdata/benchmark/json_payload.json",
-              "timeout": 10
+              "timeout": 1
             }
     ],
     "output": "stdout",
