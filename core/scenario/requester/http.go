@@ -477,6 +477,7 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 		InsecureSkipVerify:     true,
 		MinVersion:             tls.VersionTLS12,
 		SessionTicketsDisabled: false,
+		ClientSessionCache:     tls.NewLRUClientSessionCache(10000),
 	}
 
 	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {
