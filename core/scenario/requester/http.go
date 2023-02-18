@@ -474,12 +474,8 @@ func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 
 func (h *HttpRequester) initTLSConfig() *tls.Config {
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-		MinVersion:         tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_AES_128_GCM_SHA256,
-			tls.TLS_AES_256_GCM_SHA384,
-		},
+		InsecureSkipVerify:     true,
+		MinVersion:             tls.VersionTLS12,
 		SessionTicketsDisabled: false,
 	}
 
