@@ -478,7 +478,7 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 		MinVersion:             tls.VersionTLS12,
 		SessionTicketsDisabled: false,
 		ClientSessionCache:     tls.NewLRUClientSessionCache(10000),
-		CipherSuites:           []uint16{tls.TLS_AES_128_GCM_SHA256},
+		CurvePreferences:       []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 
 	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {
