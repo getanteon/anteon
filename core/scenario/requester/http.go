@@ -480,6 +480,7 @@ func (h *HttpRequester) initTLSConfig() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
+		SessionTicketsDisabled: false,
 	}
 
 	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {
