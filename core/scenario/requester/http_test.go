@@ -379,11 +379,14 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 			t.Errorf("RequestBody Expected %#v, Found: \n%#v", expectedRequestBody,
 				res.ReqBody)
 		}
-		if !reflect.DeepEqual(expectedRequestHeaders, res.ReqHeaders) {
-			t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", expectedRequestHeaders,
-				res.ReqHeaders)
-		}
 
+		// stepResult has default request headers added by go client
+		for expKey, expVal := range expectedRequestHeaders {
+			if !reflect.DeepEqual(expVal, res.ReqHeaders.Values(expKey)) {
+				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", expectedRequestHeaders,
+					res.ReqHeaders)
+			}
+		}
 	}
 	t.Run("populate-debug-info", tf)
 }

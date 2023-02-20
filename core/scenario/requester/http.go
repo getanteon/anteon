@@ -204,7 +204,8 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	durations := &duration{}
-	trace := newTrace(durations, h.proxyAddr)
+	headersAddedByClient := make(map[string][]string)
+	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -291,7 +292,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 
 		Url:         httpReq.URL.String(),
 		Method:      httpReq.Method,
-		ReqHeaders:  httpReq.Header,
+		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient),
 		ReqBody:     copiedReqBody.Bytes(),
 		RespHeaders: respHeaders,
 		RespBody:    respBody,
@@ -322,6 +323,20 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 
 func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
 	total := make(map[string]interface{})
+
+	for k, v := range envs1 {
+		total[k] = v
+	}
+
+	for k, v := range envs2 {
+		total[k] = v
+	}
+
+	return total
+}
+
+func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
+	total := make(map[string][]string)
 
 	for k, v := range envs1 {
 		total[k] = v
@@ -562,7 +577,7 @@ func (h *HttpRequester) Type() string {
 	return "HTTP"
 }
 
-func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
+func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string][]string) *httptrace.ClientTrace {
 	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
@@ -648,6 +663,9 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			duration.setServerProcessDur(time.Since(serverProcessStart))
 			duration.setResStartTime(time.Now())
 			m.Unlock()
+		},
+		WroteHeaderField: func(key string, value []string) {
+			headersByClient[key] = value
 		},
 	}
 }
