@@ -189,30 +189,9 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 }
 
 func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
-	// Read Data
-	var readData map[string]types.CsvData
-	if len(j.Data) > 0 {
-		readData = make(map[string]types.CsvData, len(j.Data))
-	}
-	for k, conf := range j.Data {
-		var rows []map[string]interface{}
-		rows, err = readCsv(conf)
-		if err != nil {
-			return
-		}
-		var csvData types.CsvData
-		csvData.Rows = rows
-
-		if conf.Order == "random" {
-			csvData.Random = true
-		}
-		readData[k] = csvData
-	}
-
 	// Scenario
 	s := types.Scenario{
 		Envs: j.Envs,
-		Data: readData,
 	}
 	var si types.ScenarioStep
 	for _, step := range j.Steps {
@@ -264,6 +243,26 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		samplingRate = types.DefaultSamplingCount
 	}
 
+	testDataConf := make(map[string]types.CsvConf)
+	for key, val := range j.Data {
+		vars := make(map[string]types.Tag)
+		for k, v := range val.Vars {
+			vars[k] = types.Tag{
+				Tag:  v.Tag,
+				Type: v.Type,
+			}
+		}
+		testDataConf[key] = types.CsvConf{
+			Path:          val.Path,
+			Delimiter:     val.Delimiter,
+			SkipFirstLine: val.SkipFirstLine,
+			Vars:          vars,
+			SkipEmptyLine: val.SkipEmptyLine,
+			AllowQuota:    val.AllowQuota,
+			Order:         val.Order,
+		}
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -275,6 +274,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		ReportDestination: j.Output,
 		Debug:             j.Debug,
 		SamplingRate:      samplingRate,
+		TestDataConf:      testDataConf,
 	}
 	return
 }

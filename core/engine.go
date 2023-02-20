@@ -95,7 +95,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug, e.hammer.TestDataConf); err != nil {
 		return
 	}
 

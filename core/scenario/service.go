@@ -33,6 +33,7 @@ import (
 
 	"go.ddosify.com/ddosify/core/scenario/requester"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
+	"go.ddosify.com/ddosify/core/scenario/testdata"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/types/regex"
 )
@@ -61,11 +62,17 @@ func NewScenarioService() *ScenarioService {
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
 func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
-	proxies []*url.URL, debug bool) (err error) {
+	proxies []*url.URL, debug bool, testDataConf map[string]types.CsvConf) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
 	s.debug = debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
+
+	readData, err := readTestData(testDataConf)
+	if err != nil {
+		return err
+	}
+	s.scenario.Data = readData
 
 	ei := &injection.EnvironmentInjector{}
 	ei.Init()
@@ -81,6 +88,31 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi.Init()
 	s.ei = vi
 	return
+}
+
+func readTestData(testDataConf map[string]types.CsvConf) (map[string]types.CsvData, error) {
+	// Read Data
+	var readData map[string]types.CsvData
+	if len(testDataConf) > 0 {
+		readData = make(map[string]types.CsvData, len(testDataConf))
+	}
+	for k, conf := range testDataConf {
+		var rows []map[string]interface{}
+		var err error
+		rows, err = testdata.ReadCsv(conf)
+		if err != nil {
+			return nil, err
+		}
+		var csvData types.CsvData
+		csvData.Rows = rows
+
+		if conf.Order == "random" {
+			csvData.Random = true
+		}
+		readData[k] = csvData
+	}
+
+	return readData, nil
 }
 
 // Do executes the scenario for the given proxy.

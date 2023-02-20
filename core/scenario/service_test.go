@@ -23,11 +23,14 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
+	"go.ddosify.com/ddosify/config"
 	"go.ddosify.com/ddosify/core/scenario/requester"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
@@ -186,7 +189,7 @@ func TestInitService(t *testing.T) {
 
 	// Act
 	service := ScenarioService{}
-	err := service.Init(ctx, scenario, proxies, false)
+	err := service.Init(ctx, scenario, proxies, false, nil)
 
 	// Assert
 	if err != nil {
@@ -473,7 +476,7 @@ func TestGetOrCreateRequesters(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies, false)
+	service.Init(ctx, scenario, proxies, false, nil)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 	expectedClients := map[*url.URL][]scenarioItemRequester{
@@ -518,7 +521,7 @@ func TestGetOrCreateRequestersNewProxy(t *testing.T) {
 	ctx := context.TODO()
 
 	service := ScenarioService{}
-	service.Init(ctx, scenario, proxies, false)
+	service.Init(ctx, scenario, proxies, false, nil)
 
 	expectedRequesters := []scenarioItemRequester{{scenarioItemID: 1, requester: &requester.HttpRequester{}}}
 
@@ -681,4 +684,52 @@ func TestInjectDynamicVars(t *testing.T) {
 	if val, ok := envs["notFoundDynamicKey"]; !ok || val != invalidDynamicKey {
 		t.Errorf("not found key should stay same")
 	}
+}
+
+func TestDataCsv(t *testing.T) {
+	t.Parallel()
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../../config/config_testdata/config_data_csv.json"), config.ConfigTypeJson)
+
+	expectedRandom := true
+
+	h, _ := jsonReader.CreateHammer()
+
+	ss := ScenarioService{}
+	err := ss.Init(context.TODO(), types.Scenario{}, nil, false, h.TestDataConf)
+
+	if err != nil {
+		t.Errorf("TestDataCsv error occurred: %v", err)
+	}
+
+	csvData := ss.scenario.Data["info"]
+
+	if !reflect.DeepEqual(csvData.Random, expectedRandom) {
+		t.Errorf("TestCreateHammerDataCsv got: %t expected: %t", csvData.Random, expectedRandom)
+	}
+
+	// expectedRow := map[string]interface{}{
+	// 	"name": "Kenan",
+	// 	"city": "Tokat",
+	// 	"team": "Galatasaray",
+	// 	"payload": map[string]interface{}{
+	// 		"data": map[string]interface{}{
+	// 			"profile": map[string]interface{}{
+	// 				"name": "Kenan",
+	// 			},
+	// 		},
+	// 	},
+	// 	"age": 25,
+	// }
+
+	// if !reflect.DeepEqual(expectedRow, csvData.Rows[0]) {
+	// 	t.Errorf("TestCreateHammerDataCsv got: %#v expected: %#v", csvData.Rows[0], expectedRow)
+	// }
+
 }
