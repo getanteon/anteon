@@ -1484,6 +1484,7 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
 	}
 
+	originalReadTestData := readTestData
 	readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types.CsvData, error) {
 		return map[string]types.CsvData{"info": csvData}, nil
 	}
@@ -1495,6 +1496,7 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 
 	e.Start()
 
+	readTestData = originalReadTestData
 	if !requestCalled {
 		t.Errorf("TestLoadRandomInfoFromData test server has not been called, url path injection failed")
 	}
@@ -1505,7 +1507,6 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 }
 
 func TestDataCsv(t *testing.T) {
-	t.Parallel()
 	readConfigFile := func(path string) []byte {
 		f, _ := os.Open(path)
 
