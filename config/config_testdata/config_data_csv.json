@@ -14,7 +14,7 @@
                 "disable-redirect": true,
                 "disable-compression": false
               },
-              "payload_file": "../../config/config_testdata/data_json_payload.json",
+              "payload_file": "../config/config_testdata/data_json_payload.json",
               "timeout": 10
             }
     ],
@@ -28,7 +28,7 @@
     },
     "data":{
       "info": {
-          "path" : "../../config/config_testdata/test.csv",
+          "path" : "../config/config_testdata/test.csv",
           "src" : "local",
           "delimiter": ";",
           "vars": {
