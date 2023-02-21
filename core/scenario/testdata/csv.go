@@ -1,4 +1,4 @@
-package config
+package testdata
 
 import (
 	"encoding/csv"
@@ -9,16 +9,18 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+
+	"go.ddosify.com/ddosify/core/types"
 )
 
-func validateConf(conf CsvConf) error {
+func validateConf(conf types.CsvConf) error {
 	if !(conf.Order == "random" || conf.Order == "sequential") {
 		return fmt.Errorf("unsupported order %s, should be random|sequential", conf.Order)
 	}
 	return nil
 }
 
-func readCsv(conf CsvConf) ([]map[string]interface{}, error) {
+func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	err := validateConf(conf)
 	if err != nil {
 		return nil, err

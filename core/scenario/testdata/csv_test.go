@@ -1,19 +1,21 @@
-package config
+package testdata
 
 import (
 	"fmt"
 	"reflect"
 	"strings"
 	"testing"
+
+	"go.ddosify.com/ddosify/core/types"
 )
 
 func TestValidateCsvConf(t *testing.T) {
 	t.Parallel()
-	conf := CsvConf{
+	conf := types.CsvConf{
 		Path:          "",
 		Delimiter:     "",
 		SkipFirstLine: false,
-		Vars:          map[string]Tag{},
+		Vars:          map[string]types.Tag{},
 		SkipEmptyLine: false,
 		AllowQuota:    false,
 		Order:         "",
@@ -29,11 +31,11 @@ func TestValidateCsvConf(t *testing.T) {
 
 func TestReadCsv(t *testing.T) {
 	t.Parallel()
-	conf := CsvConf{
-		Path:          "config_testdata/test.csv",
+	conf := types.CsvConf{
+		Path:          "../../../config/config_testdata/test.csv",
 		Delimiter:     ";",
 		SkipFirstLine: true,
-		Vars: map[string]Tag{
+		Vars: map[string]types.Tag{
 			"0": {Tag: "name", Type: "string"},
 			"3": {Tag: "payload", Type: "json"},
 			"4": {Tag: "age", Type: "int"},
@@ -45,7 +47,7 @@ func TestReadCsv(t *testing.T) {
 		Order:         "sequential",
 	}
 
-	rows, err := readCsv(conf)
+	rows, err := ReadCsv(conf)
 
 	if err != nil {
 		t.Errorf("TestReadCsv %v", err)
@@ -95,15 +97,15 @@ func TestReadCsv(t *testing.T) {
 }
 
 var table = []struct {
-	conf    CsvConf
+	conf    types.CsvConf
 	latency float64
 }{
 	{
-		conf: CsvConf{
+		conf: types.CsvConf{
 			Path:          "config_testdata/test.csv",
 			Delimiter:     ";",
 			SkipFirstLine: true,
-			Vars: map[string]Tag{
+			Vars: map[string]types.Tag{
 				"0": {Tag: "name", Type: "string"},
 				"3": {Tag: "payload", Type: "json"},
 				"4": {Tag: "age", Type: "int"},
@@ -122,7 +124,7 @@ func TestBenchmarkCsvRead(t *testing.T) {
 
 		res := testing.Benchmark(func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				readCsv(v.conf)
+				ReadCsv(v.conf)
 			}
 		})
 

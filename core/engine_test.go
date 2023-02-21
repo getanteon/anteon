@@ -1484,6 +1484,11 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
 	}
 
+	originalReadTestData := readTestData
+	readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types.CsvData, error) {
+		return map[string]types.CsvData{"info": csvData}, nil
+	}
+
 	err = e.Init()
 	if err != nil {
 		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
@@ -1491,6 +1496,7 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 
 	e.Start()
 
+	readTestData = originalReadTestData
 	if !requestCalled {
 		t.Errorf("TestLoadRandomInfoFromData test server has not been called, url path injection failed")
 	}
@@ -1498,6 +1504,52 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 	if ageMap[kenan] != expectedKenanAge || ageMap[fatih] != expectedFatihAge {
 		t.Errorf("TestLoadRandomInfoFromData did not match")
 	}
+}
+
+func TestDataCsv(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_data_csv.json"), config.ConfigTypeJson)
+
+	expectedRandom := true
+
+	h, _ := jsonReader.CreateHammer()
+
+	data, err := readTestData(h.TestDataConf)
+
+	if err != nil {
+		t.Errorf("TestDataCsv error occurred: %v", err)
+	}
+
+	csvData := data["info"]
+
+	if !reflect.DeepEqual(csvData.Random, expectedRandom) {
+		t.Errorf("TestCreateHammerDataCsv got: %t expected: %t", csvData.Random, expectedRandom)
+	}
+
+	expectedRow := map[string]interface{}{
+		"name": "Kenan",
+		"city": "Tokat",
+		"team": "Galatasaray",
+		"payload": map[string]interface{}{
+			"data": map[string]interface{}{
+				"profile": map[string]interface{}{
+					"name": "Kenan",
+				},
+			},
+		},
+		"age": 25,
+	}
+
+	if !reflect.DeepEqual(expectedRow, csvData.Rows[0]) {
+		t.Errorf("TestCreateHammerDataCsv got: %#v expected: %#v", csvData.Rows[0], expectedRow)
+	}
+
 }
 
 // The test creates a web server with Certificate auth,
