@@ -57,6 +57,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -113,6 +114,7 @@ func TestCreateHammer(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -169,6 +171,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -228,6 +231,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -264,6 +268,7 @@ func TestCreateHammerManualLoad(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -300,6 +305,7 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -446,43 +452,6 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 	}
 }
 
-func TestCreateHammerDataCsv(t *testing.T) {
-	t.Parallel()
-	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_data_csv.json"), ConfigTypeJson)
-
-	expectedRandom := true
-
-	h, err := jsonReader.CreateHammer()
-	if err != nil {
-		t.Errorf("TestCreateHammerDataCsv error occurred: %v", err)
-	}
-
-	csvData := h.Scenario.Data["info"]
-
-	if !reflect.DeepEqual(csvData.Random, expectedRandom) {
-		t.Errorf("TestCreateHammerDataCsv got: %t expected: %t", csvData.Random, expectedRandom)
-	}
-
-	expectedRow := map[string]interface{}{
-		"name": "Kenan",
-		"city": "Tokat",
-		"team": "Galatasaray",
-		"payload": map[string]interface{}{
-			"data": map[string]interface{}{
-				"profile": map[string]interface{}{
-					"name": "Kenan",
-				},
-			},
-		},
-		"age": 25,
-	}
-
-	if !reflect.DeepEqual(expectedRow, csvData.Rows[0]) {
-		t.Errorf("TestCreateHammerDataCsv got: %#v expected: %#v", csvData.Rows[0], expectedRow)
-	}
-
-}
-
 func TestCreateHammerInvalidTarget(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_invalid_target.json"), ConfigTypeJson)
@@ -559,6 +528,7 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -605,6 +575,7 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -642,6 +613,7 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		EngineMode:   types.EngineModeDdosify,
+		TestDataConf: make(map[string]types.CsvConf),
 	}
 
 	h, err := jsonReader.CreateHammer()
