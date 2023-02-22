@@ -1772,6 +1772,160 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	}
 }
 
+func TestEngineModeUserKeepAlive(t *testing.T) {
+	t.Parallel()
+	// For DistinctUser and RepeatedUser modes
+
+	// Test server
+	clientAddress1 := []string{}
+	clientAddress2 := []string{}
+	var m1 sync.Mutex
+	var m2 sync.Mutex
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m1.Lock()
+		defer m1.Unlock()
+
+		clientAddress1 = append(clientAddress1, r.RemoteAddr) // network address that sent the request
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m2.Lock()
+		defer m2.Unlock()
+
+		clientAddress2 = append(clientAddress2, r.RemoteAddr) // network address that sent the request
+	}
+
+	pathFirst := "/first"
+	pathSecond := "/second"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	host := httptest.NewServer(mux)
+	defer host.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.IterationCount = 2
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:      1,
+		Method:  "GET",
+		URL:     host.URL + pathFirst,
+		Headers: map[string]string{"ID": "1"},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:      2,
+		Method:  "GET",
+		URL:     host.URL + pathSecond,
+		Headers: map[string]string{"ID": "2"},
+	}
+
+	// Act
+	h.EngineMode = types.EngineModeDistinctUser
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive error occurred %v", err)
+	}
+
+	e.Start()
+
+	// same host
+
+	// check first iter
+	if clientAddress1[0] != clientAddress2[0] {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive, same hosts connection should be same throughout iteration")
+	}
+	// check second iter
+	if clientAddress1[1] != clientAddress2[1] {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive, same hosts connection should be same throughout iteration")
+	}
+
+}
+
+func TestEngineModeDdosifyKeepAlive(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	clientAddress1 := []string{}
+	clientAddress2 := []string{}
+	var m1 sync.Mutex
+	var m2 sync.Mutex
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m1.Lock()
+		defer m1.Unlock()
+
+		clientAddress1 = append(clientAddress1, r.RemoteAddr) // network address that sent the request
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m2.Lock()
+		defer m2.Unlock()
+
+		clientAddress2 = append(clientAddress2, r.RemoteAddr) // network address that sent the request
+	}
+
+	pathFirst := "/first"
+	pathSecond := "/second"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	host := httptest.NewServer(mux)
+	defer host.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.IterationCount = 2
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:      1,
+		Method:  "GET",
+		URL:     host.URL + pathFirst,
+		Headers: map[string]string{"ID": "1"},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:      2,
+		Method:  "GET",
+		URL:     host.URL + pathSecond,
+		Headers: map[string]string{"ID": "2"},
+	}
+
+	// Act
+	h.EngineMode = types.EngineModeDdosify
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestEngineModeDdosifyKeepAlive error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestEngineModeDdosifyKeepAlive error occurred %v", err)
+	}
+
+	e.Start()
+
+	// same host
+	// in ddosify mode every step has its own client, therefore connections should be different
+	// check first iter
+	if clientAddress1[0] == clientAddress2[0] {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive, ")
+	}
+	// check second iter
+	if clientAddress1[1] == clientAddress2[1] {
+		t.Errorf("TestEngineModeDistinctUserKeepAlive, ")
+	}
+
+}
 func createCertPairFiles(cert string, certKey string) (*os.File, *os.File, error) {
 	certFile, err := os.CreateTemp("", ".pem")
 	if err != nil {
