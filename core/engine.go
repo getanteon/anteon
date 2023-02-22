@@ -30,6 +30,7 @@ import (
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/scenario"
+	"go.ddosify.com/ddosify/core/scenario/testdata"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -94,6 +95,13 @@ func (e *engine) Init() (err error) {
 	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
 		return
 	}
+
+	// read test data
+	readData, err := readTestData(e.hammer.TestDataConf)
+	if err != nil {
+		return err
+	}
+	e.hammer.Scenario.Data = readData
 
 	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
 		return
@@ -336,4 +344,29 @@ func reverse(s interface{}) {
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
 		swap(i, j)
 	}
+}
+
+var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types.CsvData, error) {
+	// Read Data
+	var readData map[string]types.CsvData
+	if len(testDataConf) > 0 {
+		readData = make(map[string]types.CsvData, len(testDataConf))
+	}
+	for k, conf := range testDataConf {
+		var rows []map[string]interface{}
+		var err error
+		rows, err = testdata.ReadCsv(conf)
+		if err != nil {
+			return nil, err
+		}
+		var csvData types.CsvData
+		csvData.Rows = rows
+
+		if conf.Order == "random" {
+			csvData.Random = true
+		}
+		readData[k] = csvData
+	}
+
+	return readData, nil
 }

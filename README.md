@@ -604,7 +604,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `not`   | ( param `bool` ) | returns converse of given param |
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
-| `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `xpath`   | ( xpath `string` ) | extracts from response body using given xml path |
 | `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
 ### Operators
