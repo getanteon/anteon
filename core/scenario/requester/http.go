@@ -378,27 +378,34 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 
 	if h.containsEnvVar["header"] {
 		for k, v := range httpReq.Header {
-			// check vals
-			for i, vv := range v {
-				if h.envRgx.MatchString(vv) {
-					vvv, err := h.ei.InjectEnv(vv, envs)
-					if err != nil {
-						return nil, err
-					}
-					v[i] = vvv
-				}
-			}
-			httpReq.Header.Set(k, strings.Join(v, ","))
-
 			// check keys
+			kkk := k
 			if h.envRgx.MatchString(k) {
 				kk, err := h.ei.InjectEnv(k, envs)
 				if err != nil {
 					return nil, err
 				}
 				httpReq.Header.Del(k)
-				httpReq.Header.Set(kk, strings.Join(v, ","))
+				kkk = kk
 			}
+			// check vals
+			for _, vv := range v {
+				if h.envRgx.MatchString(vv) {
+					vvv, err := h.ei.InjectEnv(vv, envs)
+					if err != nil {
+						return nil, err
+					}
+					values := httpReq.Header.Values(kkk)
+					for i, toreplace := range values {
+						if toreplace == vv {
+							values[i] = vvv
+						}
+					}
+				} else {
+					httpReq.Header.Add(kkk, vv)
+				}
+			}
+
 		}
 	}
 
@@ -505,9 +512,11 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	header := make(http.Header)
 	for k, v := range h.packet.Headers {
 		if strings.EqualFold(k, "Host") {
-			h.request.Host = v
+			h.request.Host = v[0]
 		} else {
-			header.Set(k, v)
+			for _, h := range v {
+				header.Add(k, h)
+			}
 		}
 	}
 

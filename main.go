@@ -294,16 +294,20 @@ func exitWithMsg(msg string) {
 	os.Exit(1)
 }
 
-func parseHeaders(headersArr []string) (headersMap map[string]string, err error) {
+func parseHeaders(headersArr []string) (headersMap map[string][]string, err error) {
 	re := regexp.MustCompile(headerRegexp)
-	headersMap = make(map[string]string)
+	headersMap = make(map[string][]string)
 	for _, h := range headersArr {
 		matches := re.FindStringSubmatch(h)
 		if len(matches) < 1 {
 			err = fmt.Errorf("invalid header:  %v", h)
 			return
 		}
-		headersMap[matches[1]] = matches[2]
+		if _, found := headersMap[matches[1]]; found {
+			headersMap[matches[1]] = append(headersMap[matches[1]], matches[2])
+		} else {
+			headersMap[matches[1]] = []string{matches[2]}
+		}
 	}
 	return
 }

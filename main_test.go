@@ -217,7 +217,7 @@ func TestCreateScenario(t *testing.T) {
 				Method:  types.DefaultMethod,
 				URL:     url,
 				Timeout: types.DefaultTimeout,
-				Headers: map[string]string{},
+				Headers: map[string][]string{},
 			},
 		},
 	}
@@ -228,7 +228,7 @@ func TestCreateScenario(t *testing.T) {
 				Method:  types.DefaultMethod,
 				URL:     url,
 				Timeout: types.DefaultTimeout,
-				Headers: map[string]string{},
+				Headers: map[string][]string{},
 				Auth: types.Auth{
 					Type:     types.AuthHttpBasic,
 					Username: "testuser",
@@ -410,8 +410,8 @@ func TestCreateProxy(t *testing.T) {
 }
 
 func TestParseHeaders(t *testing.T) {
-	validSingleHeader := map[string]string{"header": "value"}
-	validMultiHeader := map[string]string{"header-1": "value-1", "header-2": "value-2"}
+	validSingleHeader := map[string][]string{"header": {"value"}}
+	validMultiHeader := map[string][]string{"header-1": {"value-1"}, "header-2": {"value-2"}}
 
 	invalidHeader := header{}
 	invalidHeader.Set("invalid|header?: value-1")
@@ -420,7 +420,7 @@ func TestParseHeaders(t *testing.T) {
 		name      string
 		args      header
 		shouldErr bool
-		expected  map[string]string
+		expected  map[string][]string
 	}{
 		{"ValidSingleHeder", []string{"header: value"}, false, validSingleHeader},
 		{"ValidMultiHeader", []string{"header-1: value-1", "header-2: value-2"}, false, validMultiHeader},

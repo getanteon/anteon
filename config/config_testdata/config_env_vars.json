@@ -25,8 +25,8 @@
             "url": "http://test.com/{{ENV_VAR1}}",
             "method": "PUT",
             "headers": {
-                "ContenType": "application/xml",
-                "X-ddosify-key": "ajkndalnasd"
+                "Content-Type": ["application/xml"],
+                "X-ddosify-key": ["ajkndalnasd"]
             },
             "timeout": 2,
             "sleep": " 300-500"

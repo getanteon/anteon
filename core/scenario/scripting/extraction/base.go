@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -33,7 +34,7 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 	case types.Header:
 		header := source.(http.Header)
 		if ce.Key != nil { // key specified
-			val = header.Get(*ce.Key)
+			val = strings.Join(header.Values(*ce.Key), ";")
 			if val == "" {
 				err = fmt.Errorf("http header %s not found", *ce.Key)
 			} else if ce.RegExp != nil { // run regex for found value

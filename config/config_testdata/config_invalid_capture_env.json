@@ -18,8 +18,8 @@
             "url": "{{HTTPBIN}}",
             "method": "POST",
             "headers": {
-                "Content-Type": "application/json",
-                "num": "{{NUM}}"
+                "Content-Type": ["application/json"],
+                "num": ["{{NUM}}"]
             },
             "capture_env": {
                 "REGEX_MATCH_ENV" :{"from":"header","regexp":{"exp" : "", "matchNo": 1}}

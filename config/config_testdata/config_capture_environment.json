@@ -18,12 +18,25 @@
             "url": "http://localhost:8080/",
             "method": "POST",
             "headers": {
-                "Content-Type": "application/json",
-                "num": "{{NUM}}"
+                "Content-Type": ["application/json"],
+                "num": ["{{NUM}}"]
             },
             "capture_env": {
-                "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
-            }   
+                "REGEX_MATCH_BODY" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}},
+                "REGEX_MATCH_HEADER" :{"from":"header","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}
+            }
+        },
+        {
+            "id": 3,
+            "name": "Example Cookie",
+            "url": "http://localhost:8080/",
+            "method": "GET",
+            "headers": {
+                "Cookie": ["{{REGEX_MATCH_BODY}}","{{REGEX_MATCH_HEADER}}"],
+            },
+            "capture_env": {
+                "SESSIONID" :{"from":"header","header_key":"Set-Cookie", "regexp":{"exp":"(sessionid=[\\w]+);","matchNo":0}}
+            }
         }
     ],
     "debug" : true

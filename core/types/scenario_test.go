@@ -17,8 +17,8 @@ func TestScenarioStepValid_EnvVariableInHeader(t *testing.T) {
 		Auth:     Auth{},
 		Cert:     tls.Certificate{},
 		CertPool: &x509.CertPool{},
-		Headers: map[string]string{
-			"{{ARGENTINA}}": "{{ARGENTINA}}",
+		Headers: map[string][]string{
+			"{{ARGENTINA}}": {"{{ARGENTINA}}"},
 		},
 		Payload:       "",
 		URL:           url,
@@ -49,7 +49,7 @@ func TestScenarioStepValid_EnvVariableInPayload(t *testing.T) {
 		Auth:          Auth{},
 		Cert:          tls.Certificate{},
 		CertPool:      &x509.CertPool{},
-		Headers:       map[string]string{},
+		Headers:       map[string][]string{},
 		Payload:       "{{ARGENTINA}}",
 		URL:           url,
 		Timeout:       0,
@@ -79,7 +79,7 @@ func TestScenarioStepValid_EnvVariableInURL(t *testing.T) {
 		Auth:          Auth{},
 		Cert:          tls.Certificate{},
 		CertPool:      &x509.CertPool{},
-		Headers:       map[string]string{},
+		Headers:       map[string][]string{},
 		Payload:       "",
 		URL:           url,
 		Timeout:       0,

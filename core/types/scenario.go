@@ -118,6 +118,16 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 		return matchInEnvs(matches)
 	}
 
+	g := func(source []string) error {
+		for _, k := range source {
+			err = f(k)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	// check env usage in url
 	err = f(st.URL)
 	if err != nil {
@@ -131,7 +141,7 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 			return err
 		}
 
-		err = f(v)
+		err = g(v)
 		if err != nil {
 			return err
 		}
@@ -165,7 +175,7 @@ type ScenarioStep struct {
 	CertPool *x509.CertPool
 
 	// Request Headers
-	Headers map[string]string
+	Headers map[string][]string
 
 	// Request payload
 	Payload string

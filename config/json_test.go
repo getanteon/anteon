@@ -99,9 +99,9 @@ func TestCreateHammer(t *testing.T) {
 					Method:  http.MethodPut,
 					Timeout: 2,
 					Sleep:   "300-500",
-					Headers: map[string]string{
-						"ContenType":    "application/xml",
-						"X-ddosify-key": "ajkndalnasd",
+					Headers: map[string][]string{
+						"ContentType":   {"application/xml"},
+						"X-ddosify-key": {"ajkndalnasd"},
 					},
 				},
 			},
@@ -154,9 +154,9 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 					Method:  http.MethodPut,
 					Timeout: 2,
 					Sleep:   "300-500",
-					Headers: map[string]string{
-						"ContenType":    "application/xml",
-						"X-ddosify-key": "ajkndalnasd",
+					Headers: map[string][]string{
+						"ContentType":   {"application/xml"},
+						"X-ddosify-key": {"ajkndalnasd"},
 					},
 				},
 			},
@@ -212,9 +212,9 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 					Method:  http.MethodPut,
 					Timeout: 2,
 					Sleep:   "300-500",
-					Headers: map[string]string{
-						"ContenType":    "application/xml",
-						"X-ddosify-key": "ajkndalnasd",
+					Headers: map[string][]string{
+						"ContentType":   {"application/xml"},
+						"X-ddosify-key": {"ajkndalnasd"},
 					},
 				},
 			},
@@ -346,7 +346,7 @@ func TestCreateHammerMultipartPayload(t *testing.T) {
 
 	rgx := "multipart/form-data; boundary=.*"
 	r, _ := regexp.Compile(rgx)
-	if !r.MatchString(val) {
+	if !r.MatchString(val[0]) {
 		t.Errorf("Expected: %v, Found: %v", rgx, val)
 	}
 
@@ -422,6 +422,17 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 		},
 	}}
 
+	regex2 := "(iss_sessionid=[\\w]+);"
+	cookieHeader := "Set-Cookie"
+	expectedEnvsToCapture2 := []types.EnvCaptureConf{{
+		Name: "REGEX_MATCH_ENV",
+		From: types.Header,
+		Key:  &cookieHeader,
+		RegExp: &types.RegexCaptureConf{
+			Exp: &regex2,
+			No:  0,
+		},
+	}}
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
 		t.Errorf("TestCreateHammerCaptureEnvs error occurred: %v", err)
@@ -437,6 +448,12 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 
 	if !reflect.DeepEqual(envsToCapture1, expectedEnvsToCapture1) {
 		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture1, expectedEnvsToCapture1)
+	}
+
+	envsToCapture2 := h.Scenario.Steps[2].EnvsToCapture
+
+	if !reflect.DeepEqual(envsToCapture2, expectedEnvsToCapture2) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture2, expectedEnvsToCapture2)
 	}
 }
 

@@ -80,7 +80,7 @@ type step struct {
 	Url              string                 `json:"url"`
 	Auth             auth                   `json:"auth"`
 	Method           string                 `json:"method"`
-	Headers          map[string]string      `json:"headers"`
+	Headers          map[string][]string    `json:"headers"`
 	Payload          string                 `json:"payload"`
 	PayloadFile      string                 `json:"payload_file"`
 	PayloadMultipart []multipartFormData    `json:"payload_multipart"`
@@ -284,7 +284,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	var err error
 	if len(s.PayloadMultipart) > 0 {
 		if s.Headers == nil {
-			s.Headers = make(map[string]string)
+			s.Headers = make(map[string][]string)
 		}
 
 		payload, s.Headers["Content-Type"], err = prepareMultipartPayload(s.PayloadMultipart)
@@ -360,9 +360,11 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	return item, nil
 }
 
-func prepareMultipartPayload(parts []multipartFormData) (body string, contentType string, err error) {
+func prepareMultipartPayload(parts []multipartFormData) (body string, contentType []string, err error) {
 	byteBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(byteBody)
+
+	emptyContentType := []string{""}
 
 	for _, part := range parts {
 		var err error
@@ -371,35 +373,35 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 			if strings.EqualFold(part.Src, "remote") {
 				response, err := http.Get(part.Value)
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 				defer response.Body.Close()
 
 				u, _ := url.Parse(part.Value)
 				formPart, err := writer.CreateFormFile(part.Name, path.Base(u.Path))
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 
 				_, err = io.Copy(formPart, response.Body)
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 			} else {
 				file, err := os.Open(part.Value)
 				defer file.Close()
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 
 				formPart, err := writer.CreateFormFile(part.Name, filepath.Base(file.Name()))
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 
 				_, err = io.Copy(formPart, file)
 				if err != nil {
-					return "", "", err
+					return "", emptyContentType, err
 				}
 			}
 
@@ -407,11 +409,11 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 			// If we have to specify Content-Type in Content-Disposition, we should use writer.CreatePart directly.
 			err = writer.WriteField(part.Name, part.Value)
 			if err != nil {
-				return "", "", err
+				return "", emptyContentType, err
 			}
 		}
 	}
 
 	writer.Close()
-	return byteBody.String(), writer.FormDataContentType(), err
+	return byteBody.String(), []string{writer.FormDataContentType()}, err
 }

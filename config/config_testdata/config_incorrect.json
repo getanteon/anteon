@@ -13,8 +13,8 @@
             },
             "method": "GET",
             "headers": {
-                "ContenType": "application/xml",
-                "User-Agent": "chrome5"
+                "Content-Type": ["application/xml"],
+                "User-Agent": ["chrome5"]
             },
             "payload": "body yt kanl adnlandlandaln",
             "timeout": 1,
@@ -27,8 +27,8 @@
             "url": "https://app.servdown.com/accounts/login/?next=/&112f12f12f12f",
             "method": "GET",
             "headers": {
-                "ContenType": "application/xml",
-                "X-ddosify-key": "ajkndalnasd"
+                "Content-Type": ["application/xml"],
+                "X-ddosify-key": ["ajkndalnasd"]
             },
             "payload_file": "config_examples/payload.txt",
             "timeout": 1,

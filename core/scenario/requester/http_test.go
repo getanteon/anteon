@@ -251,20 +251,32 @@ func TestInitRequest(t *testing.T) {
 			Username: "test",
 			Password: "123",
 		},
-		Headers: map[string]string{
-			"Header1":    "Value1",
-			"Header2":    "Value2",
-			"User-Agent": "Firefox",
-			"Host":       "test.com",
+		Headers: map[string][]string{
+			"Header1":    []string{"Value1"},
+			"Header2":    []string{"Value2"},
+			"User-Agent": []string{"Firefox"},
+			"Host":       []string{"test.com"},
+			"set-cookie": []string{"iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; HttpOnly",
+				"iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; Secure; HttpOnly",
+				"iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Domain=www.mega-bank.nl; Path=/; HttpOnly",
+				"iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Domain=www.mega-bank.nl; Path=/; Secure; HttpOnly"},
+			"Set-Cookie": []string{"TS014e0f1c=018a033c988d7329a2fb249c3f62e7e2b69a4fe64911c1b9d417455acffdcaea1dbd515bdf5ba18419c725ed17b849de327f83034d; Path=/; Secure; HTTPOnly",
+				"TS01825d59=018a033c988d7329a2fb249c3f62e7e2b69a4fe64911c1b9d417455acffdcaea1dbd515bdf5ba18419c725ed17b849de327f83034d; path=/; domain=www.mega-bank.nl; HTTPonly; Secure"},
 		},
 	}
 	expectedWithHeaders, _ := http.NewRequest(sWithHeaders.Method,
 		sWithHeaders.URL, bytes.NewBufferString(sWithHeaders.Payload))
 	expectedWithHeaders.Close = false
 	expectedWithHeaders.Header = make(http.Header)
-	expectedWithHeaders.Header.Set("Header1", "Value1")
-	expectedWithHeaders.Header.Set("Header2", "Value2")
-	expectedWithHeaders.Header.Set("User-Agent", "Firefox")
+	expectedWithHeaders.Header.Add("Header1", "Value1")
+	expectedWithHeaders.Header.Add("Header2", "Value2")
+	expectedWithHeaders.Header.Add("User-Agent", "Firefox")
+	expectedWithHeaders.Header.Add("set-cookie", "iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; HttpOnly")
+	expectedWithHeaders.Header.Add("set-cookie", "iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Path=/; Secure; HttpOnly")
+	expectedWithHeaders.Header.Add("set-cookie", "iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Domain=www.mega-bank.nl; Path=/; HttpOnly")
+	expectedWithHeaders.Header.Add("set-cookie", "iss_sessionid=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:10 GMT; Domain=www.mega-bank.nl; Path=/; Secure; HttpOnly")
+	expectedWithHeaders.Header.Add("Set-Cookie", "TS014e0f1c=018a033c988d7329a2fb249c3f62e7e2b69a4fe64911c1b9d417455acffdcaea1dbd515bdf5ba18419c725ed17b849de327f83034d; Path=/; Secure; HTTPOnly")
+	expectedWithHeaders.Header.Add("Set-Cookie", "TS01825d59=018a033c988d7329a2fb249c3f62e7e2b69a4fe64911c1b9d417455acffdcaea1dbd515bdf5ba18419c725ed17b849de327f83034d; path=/; domain=www.mega-bank.nl; HTTPonly; Secure")
 	expectedWithHeaders.Host = "test.com"
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 

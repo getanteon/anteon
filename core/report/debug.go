@@ -101,7 +101,7 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 
 	hs := make(map[string]string, 0)
 	for k, v := range headers {
-		values := strings.Join(v, ",")
+		values := strings.Join(v, ";")
 		hs[k] = values
 	}
 

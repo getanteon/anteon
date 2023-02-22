@@ -21,7 +21,7 @@
             "url": "http://test.com",
             "method": "PUT",
             "headers": {
-                "ContenType": "application/xml",
+                "Content-Type": "application/xml",
                 "X-ddosify-key": "ajkndalnasd"
             },
             "timeout": 2,
