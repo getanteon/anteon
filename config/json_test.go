@@ -422,7 +422,7 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 		},
 	}}
 
-	regex2 := "(iss_sessionid=[\\w]+);"
+	regex2 := "(sessionid=[\\w]+);"
 	cookieHeader := "Set-Cookie"
 	expectedEnvsToCapture2 := []types.EnvCaptureConf{{
 		Name: "REGEX_MATCH_ENV",
