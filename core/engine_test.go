@@ -1811,20 +1811,18 @@ func TestEngineModeUserKeepAlive(t *testing.T) {
 	h.IterationCount = 2
 	h.Scenario.Steps = make([]types.ScenarioStep, 2)
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:      1,
-		Method:  "GET",
-		URL:     host.URL + pathFirst,
-		Headers: map[string]string{"ID": "1"},
+		ID:     1,
+		Method: "GET",
+		URL:    host.URL + pathFirst,
 	}
 	h.Scenario.Steps[1] = types.ScenarioStep{
-		ID:      2,
-		Method:  "GET",
-		URL:     host.URL + pathSecond,
-		Headers: map[string]string{"ID": "2"},
+		ID:     2,
+		Method: "GET",
+		URL:    host.URL + pathSecond,
 	}
 
 	// Act
-	h.EngineMode = types.EngineModeDistinctUser
+	h.EngineMode = types.EngineModeRepeatedUser // could have been DistinctUser also
 	e, err := NewEngine(context.TODO(), h)
 	if err != nil {
 		t.Errorf("TestEngineModeDistinctUserKeepAlive error occurred %v", err)
@@ -1846,6 +1844,147 @@ func TestEngineModeUserKeepAlive(t *testing.T) {
 	// check second iter
 	if clientAddress1[1] != clientAddress2[1] {
 		t.Errorf("TestEngineModeDistinctUserKeepAlive, same hosts connection should be same throughout iteration")
+	}
+
+}
+
+func TestEngineModeUserKeepAliveDifferentHosts(t *testing.T) {
+	t.Parallel()
+	// For DistinctUser and RepeatedUser modes
+
+	// Test server
+	clientAddress := make(map[string]struct{})
+	var m sync.Mutex
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m.Lock()
+		defer m.Unlock()
+		clientAddress[r.RemoteAddr] = struct{}{} // network address that sent the request
+	}
+
+	pathFirst := "/first"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	host1 := httptest.NewServer(mux)
+	host2 := httptest.NewServer(mux)
+
+	defer host1.Close()
+	defer host2.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.IterationCount = 1
+	h.Scenario.Steps = make([]types.ScenarioStep, 4)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+	}
+	h.Scenario.Steps[2] = types.ScenarioStep{
+		ID:     3,
+		Method: "GET",
+		URL:    host2.URL + pathFirst,
+	}
+	h.Scenario.Steps[3] = types.ScenarioStep{
+		ID:     4,
+		Method: "GET",
+		URL:    host2.URL + pathFirst,
+	}
+
+	// Act
+	h.EngineMode = types.EngineModeDistinctUser // could have been RepeatedUser also
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
+	}
+
+	e.Start()
+
+	// one iteration, two hosts, two connections expected
+	if len(clientAddress) != 2 {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts, expected 2 connections, got : %d", len(clientAddress))
+	}
+}
+
+func TestEngineModeUserKeepAlive_StepsKeepAliveFalse(t *testing.T) {
+	t.Parallel()
+	// For DistinctUser and RepeatedUser modes
+	// Test server
+	clientAddress := make(map[string]struct{})
+	var m sync.Mutex
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		m.Lock()
+		defer m.Unlock()
+		clientAddress[r.RemoteAddr] = struct{}{} // network address that sent the request
+	}
+
+	pathFirst := "/first"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	host1 := httptest.NewServer(mux)
+
+	defer host1.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.IterationCount = 1
+	h.Scenario.Steps = make([]types.ScenarioStep, 4)
+	// connection opened by 1 will not be reused
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+		Custom: map[string]interface{}{"keep-alive": false},
+	}
+	// below will use the connection opened by 2
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+	}
+	h.Scenario.Steps[2] = types.ScenarioStep{
+		ID:     3,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+	}
+	h.Scenario.Steps[3] = types.ScenarioStep{
+		ID:     4,
+		Method: "GET",
+		URL:    host1.URL + pathFirst,
+	}
+
+	// Act
+	h.EngineMode = types.EngineModeDistinctUser
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
+	}
+
+	e.Start()
+
+	// one iteration, one host, 4 steps, one's keep-alive is false
+	if len(clientAddress) != 2 {
+		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts, expected 2 connections, got : %d", len(clientAddress))
 	}
 
 }
@@ -1888,16 +2027,14 @@ func TestEngineModeDdosifyKeepAlive(t *testing.T) {
 	h.IterationCount = 2
 	h.Scenario.Steps = make([]types.ScenarioStep, 2)
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:      1,
-		Method:  "GET",
-		URL:     host.URL + pathFirst,
-		Headers: map[string]string{"ID": "1"},
+		ID:     1,
+		Method: "GET",
+		URL:    host.URL + pathFirst,
 	}
 	h.Scenario.Steps[1] = types.ScenarioStep{
-		ID:      2,
-		Method:  "GET",
-		URL:     host.URL + pathSecond,
-		Headers: map[string]string{"ID": "2"},
+		ID:     2,
+		Method: "GET",
+		URL:    host.URL + pathSecond,
 	}
 
 	// Act
