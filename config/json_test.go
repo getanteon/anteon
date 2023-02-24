@@ -90,9 +90,7 @@ func TestCreateHammer(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:      2,
@@ -147,9 +145,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:      2,
@@ -206,9 +202,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:   2,

@@ -485,8 +485,8 @@ func (h *HttpRequester) initTransport() *http.Transport {
 	}
 
 	tr.DisableKeepAlives = false
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		tr.DisableKeepAlives = !val.(bool)
+	if h.packet.Headers["Connection"] == "close" {
+		tr.DisableKeepAlives = true
 	}
 	if val, ok := h.packet.Custom["disable-compression"]; ok {
 		tr.DisableCompression = val.(bool)
@@ -505,8 +505,8 @@ func (h *HttpRequester) updateTransport(tr *http.Transport) {
 	tr.Proxy = http.ProxyURL(h.proxyAddr)
 
 	tr.DisableKeepAlives = false
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		tr.DisableKeepAlives = !val.(bool)
+	if h.packet.Headers["Connection"] == "close" {
+		tr.DisableKeepAlives = true
 	}
 	if val, ok := h.packet.Custom["disable-compression"]; ok {
 		tr.DisableCompression = val.(bool)
@@ -567,8 +567,8 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
 	h.request.Close = false
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		h.request.Close = !val.(bool)
+	if h.packet.Headers["Connection"] == "close" {
+		h.request.Close = true
 	}
 	return
 }

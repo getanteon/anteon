@@ -55,7 +55,6 @@
                 "password": "12345"
             },
             "others": {
-                "keep-alive": true,
                 "disable-compression": false,
                 "h2": true,
                 "disable-redirect": true

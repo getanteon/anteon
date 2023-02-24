@@ -90,9 +90,9 @@ func TestInitClient(t *testing.T) {
 		Method:  http.MethodGet,
 		URL:     "https://test.com",
 		Timeout: types.DefaultTimeout,
+		Headers: map[string]string{"Connection": "close"},
 		Custom: map[string]interface{}{
 			"disable-redirect":    true,
-			"keep-alive":          false,
 			"disable-compression": true,
 			"hostname":            "dummy.com",
 		},
@@ -279,11 +279,9 @@ func TestInitRequest(t *testing.T) {
 			Password: "123",
 		},
 		Headers: map[string]string{
-			"Header1": "Value1",
-			"Header2": "Value2",
-		},
-		Custom: map[string]interface{}{
-			"keep-alive": false,
+			"Header1":    "Value1",
+			"Header2":    "Value2",
+			"Connection": "close",
 		},
 	}
 	expectedWithoutKeepAlive, _ := http.NewRequest(sWithoutKeepAlive.Method,
@@ -292,6 +290,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithoutKeepAlive.Header = make(http.Header)
 	expectedWithoutKeepAlive.Header.Set("Header1", "Value1")
 	expectedWithoutKeepAlive.Header.Set("Header2", "Value2")
+	expectedWithoutKeepAlive.Header.Set("Connection", "close")
 	expectedWithoutKeepAlive.SetBasicAuth(sWithoutKeepAlive.Auth.Username, sWithoutKeepAlive.Auth.Password)
 
 	// Sub Tests

@@ -19,7 +19,6 @@
             "payload": "body yt kanl adnlandlandaln",
             "timeout": 1,
             "others": {
-                "keep-alive": true
             }
         },
         {
@@ -33,7 +32,6 @@
             "payload_file": "config_examples/payload.txt",
             "timeout": 1,
             "others": {
-                "keep-alive": false
             }
         },
     ],

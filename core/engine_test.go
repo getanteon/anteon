@@ -1946,10 +1946,10 @@ func TestEngineModeUserKeepAlive_StepsKeepAliveFalse(t *testing.T) {
 	h.Scenario.Steps = make([]types.ScenarioStep, 4)
 	// connection opened by 1 will not be reused
 	h.Scenario.Steps[0] = types.ScenarioStep{
-		ID:     1,
-		Method: "GET",
-		URL:    host1.URL + pathFirst,
-		Custom: map[string]interface{}{"keep-alive": false},
+		ID:      1,
+		Method:  "GET",
+		URL:     host1.URL + pathFirst,
+		Headers: map[string]string{"Connection": "close"},
 	}
 	// below will use the connection opened by 2
 	h.Scenario.Steps[1] = types.ScenarioStep{
@@ -1982,7 +1982,7 @@ func TestEngineModeUserKeepAlive_StepsKeepAliveFalse(t *testing.T) {
 
 	e.Start()
 
-	// one iteration, one host, 4 steps, one's keep-alive is false
+	// one iteration, one host, 4 steps, one's keep-alive is false (Connection: close)
 	if len(clientAddress) != 2 {
 		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts, expected 2 connections, got : %d", len(clientAddress))
 	}
