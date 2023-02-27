@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/scenario"
@@ -41,6 +42,7 @@ const (
 	// test result status
 	resultDone    = "done"
 	resultStopped = "stopped"
+	resultAborted = "aborted"
 )
 
 type engine struct {
@@ -50,11 +52,15 @@ type engine struct {
 	scenarioService *scenario.ScenarioService
 	reportService   report.ReportService
 
+	// TODO: interface ?
+	assertionService *assertion.AssertionService
+
 	tickCounter int
 	reqCountArr []int
 	wg          sync.WaitGroup
 
 	resultChan chan *types.ScenarioResult
+	abortChan  chan struct{}
 
 	ctx context.Context
 }
@@ -79,13 +85,15 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	}
 
 	ss := scenario.NewScenarioService()
+	as := assertion.NewAssertionService()
 
 	e = &engine{
-		hammer:          h,
-		ctx:             ctx,
-		proxyService:    ps,
-		scenarioService: ss,
-		reportService:   rs,
+		hammer:           h,
+		ctx:              ctx,
+		proxyService:     ps,
+		scenarioService:  ss,
+		reportService:    rs,
+		assertionService: as,
 	}
 
 	return
@@ -111,6 +119,9 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
+	// TODO: check err ?
+	e.abortChan = e.assertionService.Init(e.hammer.Assertions)
+
 	e.initReqCountArr()
 	return
 }
@@ -119,6 +130,10 @@ func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.resultChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 	go e.reportService.Start(e.resultChan)
+
+	// run test wide assertions in parallel
+	// get abortChan and listen to it
+	go e.assertionService.Start(e.resultChan)
 
 	defer func() {
 		ticker.Stop()
@@ -136,6 +151,8 @@ func (e *engine) Start() string {
 		select {
 		case <-e.ctx.Done():
 			return resultStopped
+		case <-e.abortChan:
+			return resultAborted
 		default:
 			mutex.Lock()
 			e.wg.Add(e.reqCountArr[e.tickCounter])

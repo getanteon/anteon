@@ -47,6 +47,12 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
+type TestAssertion struct {
+	Rule  string
+	Abort bool
+	Delay int
+}
+
 // TimeRunCount is the data structure to store manual load type data.
 type TimeRunCount []struct {
 	Duration int
@@ -103,6 +109,9 @@ type Hammer struct {
 
 	// Test Data Config
 	TestDataConf map[string]CsvConf
+
+	// Test-wide assertions
+	Assertions []TestAssertion
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

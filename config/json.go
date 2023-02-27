@@ -148,6 +148,7 @@ type JsonReader struct {
 	IterCount    *int                   `json:"iteration_count"`
 	LoadType     string                 `json:"load_type"`
 	Duration     int                    `json:"duration"`
+	Assertions   []TestAssertion        `json:"assertions"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`
@@ -156,6 +157,12 @@ type JsonReader struct {
 	Data         map[string]CsvConf     `json:"data"`
 	Debug        bool                   `json:"debug"`
 	SamplingRate *int                   `json:"sampling_rate"`
+}
+
+type TestAssertion struct {
+	Rule  string `json:"rule"`
+	Abort bool   `json:"abort"`
+	Delay int    `json:"delay"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -263,6 +270,15 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	testAssertions := make([]types.TestAssertion, 0)
+	for _, as := range j.Assertions {
+		testAssertions = append(testAssertions, types.TestAssertion{
+			Rule:  as.Rule,
+			Abort: as.Abort,
+			Delay: as.Delay,
+		})
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -275,6 +291,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Debug:             j.Debug,
 		SamplingRate:      samplingRate,
 		TestDataConf:      testDataConf,
+		Assertions:        testAssertions,
 	}
 	return
 }
