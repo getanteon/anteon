@@ -1468,6 +1468,26 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 		"A":        "B",
 		"URL_PATH": path,
 	}
+	h.TestDataConf = map[string]types.CsvConf{
+		"info": {
+			Path:          path,
+			Delimiter:     "",
+			SkipFirstLine: false,
+			Vars: map[string]types.Tag{
+				"0": {
+					Tag:  "name",
+					Type: "string",
+				},
+				"1": {
+					Tag:  "age",
+					Type: "string",
+				},
+			},
+			SkipEmptyLine: false,
+			AllowQuota:    false,
+			Order:         "",
+		},
+	}
 	h.IterationCount = 2
 	h.Scenario.Steps[0] = types.ScenarioStep{
 		ID:     1,
