@@ -12,7 +12,6 @@
             "timeout": 3,
             "sleep": "1000",
             "others": {
-                "keep-alive": true
             },
             "capture_env": {
                 "ENV_VAR1" :{"json_path":""},

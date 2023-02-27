@@ -90,9 +90,9 @@ func TestInitClient(t *testing.T) {
 		Method:  http.MethodGet,
 		URL:     "https://test.com",
 		Timeout: types.DefaultTimeout,
+		Headers: map[string]string{"Connection": "close"},
 		Custom: map[string]interface{}{
 			"disable-redirect":    true,
-			"keep-alive":          false,
 			"disable-compression": true,
 			"hostname":            "dummy.com",
 		},
@@ -279,11 +279,9 @@ func TestInitRequest(t *testing.T) {
 			Password: "123",
 		},
 		Headers: map[string]string{
-			"Header1": "Value1",
-			"Header2": "Value2",
-		},
-		Custom: map[string]interface{}{
-			"keep-alive": false,
+			"Header1":    "Value1",
+			"Header2":    "Value2",
+			"Connection": "close",
 		},
 	}
 	expectedWithoutKeepAlive, _ := http.NewRequest(sWithoutKeepAlive.Method,
@@ -292,6 +290,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithoutKeepAlive.Header = make(http.Header)
 	expectedWithoutKeepAlive.Header.Set("Header1", "Value1")
 	expectedWithoutKeepAlive.Header.Set("Header2", "Value2")
+	expectedWithoutKeepAlive.Header.Set("Connection", "close")
 	expectedWithoutKeepAlive.SetBasicAuth(sWithoutKeepAlive.Auth.Username, sWithoutKeepAlive.Auth.Password)
 
 	// Sub Tests
@@ -367,7 +366,7 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		var proxy *url.URL
 		_ = h.Init(ctx, s, proxy, debug, nil)
 		envs := map[string]interface{}{}
-		res := h.Send(envs)
+		res := h.Send(http.DefaultClient, envs)
 
 		if expectedMethod != res.Method {
 			t.Errorf("Method Expected %#v, Found: \n%#v", expectedMethod, res.Method)
@@ -379,11 +378,14 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 			t.Errorf("RequestBody Expected %#v, Found: \n%#v", expectedRequestBody,
 				res.ReqBody)
 		}
-		if !reflect.DeepEqual(expectedRequestHeaders, res.ReqHeaders) {
-			t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", expectedRequestHeaders,
-				res.ReqHeaders)
-		}
 
+		// stepResult has default request headers added by go client
+		for expKey, expVal := range expectedRequestHeaders {
+			if !reflect.DeepEqual(expVal, res.ReqHeaders.Values(expKey)) {
+				t.Errorf("RequestHeaders Expected %#v, Found: \n%#v", expectedRequestHeaders,
+					res.ReqHeaders)
+			}
+		}
 	}
 	t.Run("populate-debug-info", tf)
 }
@@ -427,7 +429,7 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			var proxy *url.URL
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
-			res := h.Send(envs)
+			res := h.Send(http.DefaultClient, envs)
 
 			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
 				t.Errorf("Extracted env should be set empty string on req failure")
@@ -466,7 +468,7 @@ func TestAssertions(t *testing.T) {
 	h := &HttpRequester{}
 	h.Init(ctx, s, nil, false, nil)
 
-	res := h.Send(map[string]interface{}{})
+	res := h.Send(http.DefaultClient, map[string]interface{}{})
 
 	if !strings.EqualFold(res.FailedAssertions[0].Rule, rule1) {
 		t.Errorf("rule expected %s, got %s", rule1, res.FailedAssertions[0].Rule)

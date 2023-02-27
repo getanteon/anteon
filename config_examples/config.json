@@ -4,6 +4,7 @@
     "iteration_count": 30,
     "debug" : false, // use this field for debugging, see verbose result
     "load_type": "linear",
+    "engine_mode": "distinct-user", // could be one of  "distinct-user","repeated-user", or default mode "ddosify"
     "duration": 5,
     "manual_load": [
         {"duration": 5, "count": 5},
@@ -54,7 +55,6 @@
                 "password": "12345"
             },
             "others": {
-                "keep-alive": true,
                 "disable-compression": false,
                 "h2": true,
                 "disable-redirect": true
