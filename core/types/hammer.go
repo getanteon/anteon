@@ -35,6 +35,11 @@ const (
 	LoadTypeIncremental = "incremental"
 	LoadTypeWaved       = "waved"
 
+	// EngineModes
+	EngineModeDistinctUser = "distinct-user"
+	EngineModeRepeatedUser = "repeated-user"
+	EngineModeDdosify      = "ddosify"
+
 	// Default Values
 	DefaultIterCount     = 100
 	DefaultLoadType      = LoadTypeLinear
@@ -46,6 +51,7 @@ const (
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
+var engineModes = [...]string{EngineModeDdosify, EngineModeDistinctUser, EngineModeRepeatedUser}
 
 // TimeRunCount is the data structure to store manual load type data.
 type TimeRunCount []struct {
@@ -101,6 +107,8 @@ type Hammer struct {
 	// Sampling rate
 	SamplingRate int
 
+	// Connection reuse
+	EngineMode string
 	// Test Data Config
 	TestDataConf map[string]CsvConf
 }
@@ -115,6 +123,9 @@ func (h *Hammer) Validate() error {
 
 	if h.LoadType != "" && !util.StringInSlice(h.LoadType, loadTypes[:]) {
 		return fmt.Errorf("unsupported LoadType: %s", h.LoadType)
+	}
+	if h.EngineMode != "" && !util.StringInSlice(h.EngineMode, engineModes[:]) {
+		return fmt.Errorf("unsupported EngineMode: %s", h.EngineMode)
 	}
 
 	if len(h.TimeRunCountMap) > 0 {

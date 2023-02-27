@@ -232,7 +232,7 @@ The features you can use by config file;
 - Custom load type creation
 - Payload from a file
 - Multipart/form-data payload
-- Extra connection configuration, like *keep-alive* enable/disable logic
+- Extra connection configuration
 - HTTP2 support
 
 
@@ -274,6 +274,12 @@ There is an example config file at [config_examples/config.json](/config_example
 - `output` *optional*
 
     This is the equivalent of the `-o` flag.
+- `engine_mode` *optional*
+    Can be one of `distinct-user`, `repeated-user`, or default mode `ddosify`. 
+    - `distinct-user` mode simulates a new user for every iteration.
+    - `repeated-user` mode can use pre-used user in subsequent iterations.
+    - `ddosify` mode is default mode of the engine. In this mode engine runs in its max capacity, and does not show user simulation behaviour.
+
 - `env` *optional*
     Scenario-scoped global variables. Note that dynamic variables changes every iteration. 
     ```json
@@ -282,6 +288,7 @@ There is an example config file at [config_examples/config.json](/config_example
             "randomCountry" : "{{_randomCountry}}"
     }
     ``` 
+
 - `data` *optional*
     Config for loading test data from a CSV file.
     [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
@@ -494,7 +501,6 @@ There is an example config file at [config_examples/config.json](/config_example
 
         ```json
         "others": {
-            "keep-alive": true,              // Default true
             "disable-compression": false,    // Default true
             "h2": true,                      // Enables HTTP/2. Default false.
             "disable-redirect": true         // Default false

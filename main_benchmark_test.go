@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"runtime/pprof"
 	"runtime/trace"
 	"strconv"
@@ -124,18 +125,22 @@ func BenchmarkEngines(t *testing.B) {
 		i, _ := strconv.Atoi(index)
 		conf := table[i]
 		outSuffix := ".out"
+		var err error
+
 		// child proc
+		var cpuProfFile, memProfFile, traceFile *os.File
 		if *cpuprofile != "" {
-			f, err := os.Create(fmt.Sprintf("%s_cpuprof_%s.out", strings.TrimSuffix(*cpuprofile, outSuffix), conf.name))
+			cpuProfFile, err = os.Create(fmt.Sprintf("%s_cpuprof_%s.out", strings.TrimSuffix(*cpuprofile, outSuffix), conf.name))
 			if err != nil {
 				log.Fatal(err)
 			}
-			pprof.StartCPUProfile(f)
+			pprof.StartCPUProfile(cpuProfFile)
+			defer cpuProfFile.Close()
 			defer pprof.StopCPUProfile()
 		}
 
 		if *memprofile != "" { // get memory profile at execution finish
-			memProfFile, err := os.Create(fmt.Sprintf("%s_memprof_%s.out", strings.TrimSuffix(*memprofile, outSuffix),
+			memProfFile, err = os.Create(fmt.Sprintf("%s_memprof_%s.out", strings.TrimSuffix(*memprofile, outSuffix),
 				conf.name))
 			if err != nil {
 				log.Fatal("could not create memory profile: ", err)
@@ -150,17 +155,17 @@ func BenchmarkEngines(t *testing.B) {
 		}
 
 		if *keepTrace != "" {
-			f, err := os.Create(fmt.Sprintf("%s_trace_%s.out", strings.TrimSuffix(*keepTrace, outSuffix), conf.name))
+			traceFile, err = os.Create(fmt.Sprintf("%s_trace_%s.out", strings.TrimSuffix(*keepTrace, outSuffix), conf.name))
 			if err != nil {
 				log.Fatalf("failed to create trace output file: %v", err)
 			}
 			defer func() {
-				if err := f.Close(); err != nil {
+				if err := traceFile.Close(); err != nil {
 					log.Fatalf("failed to close trace file: %v", err)
 				}
 			}()
 
-			if err := trace.Start(f); err != nil {
+			if err := trace.Start(traceFile); err != nil {
 				log.Fatalf("failed to start trace: %v", err)
 			}
 			defer trace.Stop()
@@ -214,10 +219,9 @@ func BenchmarkEngines(t *testing.B) {
 
 		})
 
-		if success {
-			os.Exit(0)
+		if !success {
+			runtime.Goexit()
 		}
-		os.Exit(1)
 	}
 }
 

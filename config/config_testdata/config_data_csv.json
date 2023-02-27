@@ -10,7 +10,6 @@
               "method": "GET",
               "others": {
                 "h2": false,
-                "keep-alive": true,
                 "disable-redirect": true,
                 "disable-compression": false
               },
