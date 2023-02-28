@@ -1,6 +1,7 @@
 package assertion
 
 import (
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -37,5 +38,50 @@ func TestApplyAssertionsAbortsCorrectly(t *testing.T) {
 	timePassed := time.Since(start).Seconds()
 	if int(timePassed) != delay {
 		t.Errorf("Delay, got %f, expected %d", timePassed, delay)
+	}
+}
+
+func TestServiceKeepsIterationTimes(t *testing.T) {
+	service := NewAssertionService()
+	assertions := make(map[string]types.TestAssertionOpt)
+	rule := "false"
+	delay := 3
+	assertions[rule] = types.TestAssertionOpt{
+		Abort: false,
+		Delay: delay,
+	}
+	_ = service.Init(assertions)
+
+	inputChan := make(chan *types.ScenarioResult)
+	go service.Start(inputChan)
+
+	wg := sync.WaitGroup{}
+	go func() {
+		wg.Add(1)
+		<-service.Done()
+		wg.Done()
+	}()
+
+	expectedIterationTimes := []int64{}
+	for i := 0; i < 10; i++ {
+		iterTime := time.Duration(((i * 5) % 4) * int(time.Millisecond))
+		expectedIterationTimes = append(expectedIterationTimes, iterTime.Milliseconds())
+		inputChan <- &types.ScenarioResult{
+			StepResults: []*types.ScenarioStepResult{
+				{
+					StepID:   1,
+					Duration: iterTime,
+				},
+			},
+		}
+	}
+	close(inputChan)
+
+	wg.Wait()
+
+	iterationTimes := service.GetTotalTimes()
+
+	if !reflect.DeepEqual(iterationTimes, expectedIterationTimes) {
+		t.Errorf("TestServiceKeepsIterationTimes, cumulative data store failed")
 	}
 }

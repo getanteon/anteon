@@ -14,6 +14,7 @@ type AssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
 	resultChan chan *types.ScenarioResult
 	abortChan  chan struct{}
+	doneChan   chan struct{}
 	assertEnv  *evaluator.AssertEnv
 	abortTick  map[string]int // rule -> tickIndex
 	mu         sync.Mutex
@@ -27,10 +28,16 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 	as.assertions = assertions
 	abortChan := make(chan struct{})
 	as.abortChan = abortChan
+	doneChan := make(chan struct{})
+	as.doneChan = doneChan
 	as.assertEnv = &evaluator.AssertEnv{}
 	as.abortTick = make(map[string]int)
 	as.mu = sync.Mutex{}
 	return as.abortChan
+}
+
+func (as *AssertionService) GetTotalTimes() []int64 {
+	return as.assertEnv.TotalTime
 }
 
 func (as *AssertionService) Start(input chan *types.ScenarioResult) {
@@ -40,6 +47,7 @@ func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 		as.aggregate(r)
 		as.mu.Unlock()
 	}
+	as.doneChan <- struct{}{}
 }
 
 func (as *AssertionService) aggregate(r *types.ScenarioResult) {
@@ -54,9 +62,17 @@ func (as *AssertionService) ApplyAssertions() {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	tickIndex := 1
 	for range ticker.C {
+		as.mu.Lock()
+		var totalTime []int64
+		totalTime = append(totalTime, as.assertEnv.TotalTime...)
+		assertEnv := evaluator.AssertEnv{
+			TotalTime: totalTime,
+		}
+		as.mu.Unlock()
+
 		// apply assertions
 		for rule, opts := range as.assertions {
-			res, err := assertion.Assert(rule, as.assertEnv)
+			res, err := assertion.Assert(rule, &assertEnv)
 			if err != nil {
 				// TODO
 			}
@@ -90,4 +106,8 @@ func (as *AssertionService) GiveFinalResult() bool {
 		}
 	}
 	return true
+}
+
+func (as *AssertionService) Done() chan struct{} {
+	return as.doneChan
 }
