@@ -85,3 +85,58 @@ func TestServiceKeepsIterationTimes(t *testing.T) {
 		t.Errorf("TestServiceKeepsIterationTimes, cumulative data store failed")
 	}
 }
+
+func TestServiceKeepsFailCount(t *testing.T) {
+	service := NewAssertionService()
+	assertions := make(map[string]types.TestAssertionOpt)
+	_ = service.Init(assertions)
+
+	inputChan := make(chan *types.ScenarioResult)
+	go service.Start(inputChan)
+
+	wg := sync.WaitGroup{}
+	go func() {
+		wg.Add(1)
+		<-service.Done()
+		wg.Done()
+	}()
+
+	N := 10
+	// 2*N times failed iteration result
+	for i := 0; i < N; i++ {
+		inputChan <- &types.ScenarioResult{
+			StepResults: []*types.ScenarioStepResult{
+				{
+					StepID: 1,
+					FailedAssertions: []types.FailedAssertion{
+						{
+							Rule:     "failed assertion expression",
+							Received: map[string]interface{}{},
+							Reason:   "",
+						},
+					},
+				},
+			},
+		}
+		inputChan <- &types.ScenarioResult{
+			StepResults: []*types.ScenarioStepResult{
+				{
+					StepID: 1,
+					Err: types.RequestError{
+						Type:   "server error type",
+						Reason: "",
+					},
+				},
+			},
+		}
+	}
+	close(inputChan)
+
+	wg.Wait()
+
+	failCount := service.GetFailCount()
+
+	if failCount != 2*N {
+		t.Errorf("TestServiceKeepsFailCount, expected : %d, got : %d", 2*N, failCount)
+	}
+}

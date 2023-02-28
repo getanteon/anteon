@@ -39,6 +39,9 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 func (as *AssertionService) GetTotalTimes() []int64 {
 	return as.assertEnv.TotalTime
 }
+func (as *AssertionService) GetFailCount() int {
+	return as.assertEnv.FailCount
+}
 
 func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 	// get iteration results ,add store them cumulatively
@@ -52,8 +55,15 @@ func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 
 func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 	var iterationTime int64
+	var iterFailed bool
 	for _, sr := range r.StepResults {
 		iterationTime += sr.Duration.Milliseconds()
+		if sr.Err.Type != "" || len(sr.FailedAssertions) > 0 {
+			iterFailed = true
+		}
+	}
+	if iterFailed {
+		as.assertEnv.FailCount++
 	}
 	as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
 }
