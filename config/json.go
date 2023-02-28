@@ -270,13 +270,12 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
-	testAssertions := make([]types.TestAssertion, 0)
+	testAssertions := make(map[string]types.TestAssertionOpt, 0)
 	for _, as := range j.Assertions {
-		testAssertions = append(testAssertions, types.TestAssertion{
-			Rule:  as.Rule,
+		testAssertions[as.Rule] = types.TestAssertionOpt{
 			Abort: as.Abort,
 			Delay: as.Delay,
-		})
+		}
 	}
 
 	// Hammer

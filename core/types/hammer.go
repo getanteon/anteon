@@ -47,8 +47,7 @@ const (
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 
-type TestAssertion struct {
-	Rule  string
+type TestAssertionOpt struct {
 	Abort bool
 	Delay int
 }
@@ -111,7 +110,7 @@ type Hammer struct {
 	TestDataConf map[string]CsvConf
 
 	// Test-wide assertions
-	Assertions []TestAssertion
+	Assertions map[string]TestAssertionOpt
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

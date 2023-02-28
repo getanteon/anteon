@@ -207,6 +207,9 @@ func (e *engine) stop() {
 	<-e.reportService.DoneChan()
 	e.proxyService.Done()
 	e.scenarioService.Done()
+
+	// TODO: listen to assertion services final response
+	e.assertionService.GiveFinalResult()
 }
 
 func (e *engine) initReqCountArr() {

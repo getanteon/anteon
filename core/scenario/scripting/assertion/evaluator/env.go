@@ -9,4 +9,7 @@ type AssertEnv struct {
 	Body         string
 	Headers      http.Header
 	Variables    map[string]interface{}
+
+	// For test-wide assertions
+	TotalTime []int64 // in ms
 }
