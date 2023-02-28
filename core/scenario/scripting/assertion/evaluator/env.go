@@ -12,4 +12,5 @@ type AssertEnv struct {
 
 	// For test-wide assertions
 	TotalTime []int64 // in ms
+	FailCount int
 }

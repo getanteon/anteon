@@ -14,7 +14,7 @@ type AssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
 	resultChan chan *types.ScenarioResult
 	abortChan  chan struct{}
-	doneChan   chan struct{}
+	doneChan   chan bool // TODO verbose exp
 	assertEnv  *evaluator.AssertEnv
 	abortTick  map[string]int // rule -> tickIndex
 	mu         sync.Mutex
@@ -28,7 +28,7 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 	as.assertions = assertions
 	abortChan := make(chan struct{})
 	as.abortChan = abortChan
-	doneChan := make(chan struct{})
+	doneChan := make(chan bool)
 	as.doneChan = doneChan
 	as.assertEnv = &evaluator.AssertEnv{}
 	as.abortTick = make(map[string]int)
@@ -45,12 +45,19 @@ func (as *AssertionService) GetFailCount() int {
 
 func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 	// get iteration results ,add store them cumulatively
+	firstResult := true
 	for r := range input {
 		as.mu.Lock()
 		as.aggregate(r)
 		as.mu.Unlock()
+
+		// after first result start checking assertions
+		if firstResult {
+			go as.applyAssertions()
+			firstResult = false
+		}
 	}
-	as.doneChan <- struct{}{}
+	as.doneChan <- as.giveFinalResult()
 }
 
 func (as *AssertionService) aggregate(r *types.ScenarioResult) {
@@ -68,7 +75,7 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 	as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
 }
 
-func (as *AssertionService) ApplyAssertions() {
+func (as *AssertionService) applyAssertions() {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	tickIndex := 1
 	for range ticker.C {
@@ -104,7 +111,7 @@ func (as *AssertionService) ApplyAssertions() {
 }
 
 // TODO return a verbose explanation
-func (as *AssertionService) GiveFinalResult() bool {
+func (as *AssertionService) giveFinalResult() bool {
 	// return final result
 	for rule, _ := range as.assertions {
 		res, err := assertion.Assert(rule, as.assertEnv)
@@ -118,6 +125,6 @@ func (as *AssertionService) GiveFinalResult() bool {
 	return true
 }
 
-func (as *AssertionService) Done() chan struct{} {
+func (as *AssertionService) Done() chan bool {
 	return as.doneChan
 }

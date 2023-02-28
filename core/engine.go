@@ -23,6 +23,7 @@ package core
 import (
 	"context"
 	"math"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -59,8 +60,10 @@ type engine struct {
 	reqCountArr []int
 	wg          sync.WaitGroup
 
-	resultChan chan *types.ScenarioResult
-	abortChan  chan struct{}
+	resultReportChan chan *types.ScenarioResult
+	resultAssertChan chan *types.ScenarioResult
+
+	abortChan chan struct{}
 
 	ctx context.Context
 }
@@ -128,12 +131,14 @@ func (e *engine) Init() (err error) {
 
 func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
-	e.resultChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
-	go e.reportService.Start(e.resultChan)
+	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+
+	go e.reportService.Start(e.resultReportChan)
 
 	// run test wide assertions in parallel
-	// get abortChan and listen to it
-	go e.assertionService.Start(e.resultChan)
+	// listen to abortChan
+	go e.assertionService.Start(e.resultAssertChan)
 
 	defer func() {
 		ticker.Stop()
@@ -198,18 +203,24 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
-	e.resultChan <- res
+	e.resultReportChan <- res
+	e.resultAssertChan <- res
+
 }
 
 func (e *engine) stop() {
 	e.wg.Wait()
-	close(e.resultChan)
+	close(e.resultReportChan)
+	close(e.resultAssertChan)
 	<-e.reportService.DoneChan()
 	e.proxyService.Done()
 	e.scenarioService.Done()
 
-	// TODO: listen to assertion services final response
-	e.assertionService.GiveFinalResult()
+	result := <-e.assertionService.Done()
+	if !result {
+		// TODO print explanation from result
+		os.Exit(1)
+	}
 }
 
 func (e *engine) initReqCountArr() {
