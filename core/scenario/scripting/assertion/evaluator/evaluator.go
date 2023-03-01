@@ -104,6 +104,12 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 					return false, nil
 				case CONTAINS:
 					return contains(args[0].(string), args[1].(string)), nil
+				case AVG:
+					return avg(args[0].([]int64))
+				case MIN:
+					return min(args[0].([]int64))
+				case MAX:
+					return max(args[0].([]int64))
 				case RANGE:
 					var x, low, high int64
 

@@ -81,6 +81,13 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 func (as *AssertionService) applyAssertions() {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	tickIndex := 1
+	// apply assertions on the fly for only abort:true ones
+	assertionsWithAbort := make(map[string]types.TestAssertionOpt)
+	for rule, opts := range as.assertions {
+		if opts.Abort == true {
+			assertionsWithAbort[rule] = opts
+		}
+	}
 	for range ticker.C {
 		as.mu.Lock()
 		var totalTime []int64
@@ -92,7 +99,7 @@ func (as *AssertionService) applyAssertions() {
 		as.mu.Unlock()
 
 		// apply assertions
-		for rule, opts := range as.assertions {
+		for rule, opts := range assertionsWithAbort {
 			res, err := assertion.Assert(rule, &assertEnv)
 			if err != nil {
 				// TODO

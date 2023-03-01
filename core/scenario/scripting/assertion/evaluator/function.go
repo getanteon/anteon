@@ -19,6 +19,49 @@ var not = func(b bool) bool {
 	return !b
 }
 
+var min = func(arr []int64) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on min func")
+	}
+	min := arr[0]
+
+	for _, i := range arr {
+		if min > i {
+			min = i
+		}
+	}
+
+	return min, nil
+}
+
+var max = func(arr []int64) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on max func")
+	}
+	max := arr[0]
+
+	for _, i := range arr {
+		if max < i {
+			max = i
+		}
+	}
+
+	return max, nil
+}
+
+var avg = func(arr []int64) (float64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on avg func")
+	}
+	var total int64
+
+	for _, i := range arr {
+		total += i
+	}
+
+	return float64(total) / float64(len(arr)), nil
+}
+
 var equals = func(a, b interface{}) (bool, error) {
 	b, err := evalInfixExpression("==", a, b)
 	if err != nil {
@@ -126,6 +169,9 @@ var assertionFuncMap = map[string]struct{}{
 	HAS:          {},
 	CONTAINS:     {},
 	RANGE:        {},
+	MIN:          {},
+	MAX:          {},
+	AVG:          {},
 }
 
 const (
@@ -140,4 +186,14 @@ const (
 	CONTAINS     = "contains"
 	RANGE        = "range"
 	EQUALSONFILE = "equals_on_file"
+
+	MIN = "min"
+	MAX = "max"
+	AVG = "avg"
 )
+
+type SortableInt64Slice []int64
+
+func (a SortableInt64Slice) Len() int           { return len(a) }
+func (a SortableInt64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a SortableInt64Slice) Less(i, j int) bool { return a[i] < a[j] }
