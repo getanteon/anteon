@@ -270,7 +270,10 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
-	testAssertions := make(map[string]types.TestAssertionOpt, 0)
+	var testAssertions map[string]types.TestAssertionOpt
+	if len(j.Assertions) > 0 {
+		testAssertions = make(map[string]types.TestAssertionOpt, 0)
+	}
 	for _, as := range j.Assertions {
 		testAssertions[as.Rule] = types.TestAssertionOpt{
 			Abort: as.Abort,
