@@ -111,6 +111,9 @@ type Hammer struct {
 
 	// Test-wide assertions
 	Assertions map[string]TestAssertionOpt
+
+	// Engine runs single
+	SingleMode bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

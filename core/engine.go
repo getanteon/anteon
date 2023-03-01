@@ -88,15 +88,19 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	}
 
 	ss := scenario.NewScenarioService()
-	as := assertion.NewAssertionService()
 
 	e = &engine{
-		hammer:           h,
-		ctx:              ctx,
-		proxyService:     ps,
-		scenarioService:  ss,
-		reportService:    rs,
-		assertionService: as,
+		hammer:          h,
+		ctx:             ctx,
+		proxyService:    ps,
+		scenarioService: ss,
+		reportService:   rs,
+	}
+
+	if e.hammer.SingleMode {
+		// run test-wide assertions
+		as := assertion.NewAssertionService()
+		e.assertionService = as
 	}
 
 	return
@@ -122,8 +126,10 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	// TODO: check err ?
-	e.abortChan = e.assertionService.Init(e.hammer.Assertions)
+	if e.hammer.SingleMode {
+		// TODO: check err ?
+		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
+	}
 
 	e.initReqCountArr()
 	return
@@ -136,9 +142,11 @@ func (e *engine) Start() string {
 
 	go e.reportService.Start(e.resultReportChan)
 
-	// run test wide assertions in parallel
-	// listen to abortChan
-	go e.assertionService.Start(e.resultAssertChan)
+	if e.hammer.SingleMode {
+		// run test wide assertions in parallel
+		// listen to abortChan
+		go e.assertionService.Start(e.resultAssertChan)
+	}
 
 	defer func() {
 		ticker.Stop()
@@ -156,7 +164,7 @@ func (e *engine) Start() string {
 		select {
 		case <-e.ctx.Done():
 			return resultStopped
-		case <-e.abortChan:
+		case <-e.abortChan: // in single mode abortChan will be nil, and case will be ignored
 			return resultAborted
 		default:
 			mutex.Lock()
@@ -216,10 +224,12 @@ func (e *engine) stop() {
 	e.proxyService.Done()
 	e.scenarioService.Done()
 
-	result := <-e.assertionService.Done()
-	if !result {
-		// TODO print explanation from result
-		os.Exit(1)
+	if e.hammer.SingleMode {
+		result := <-e.assertionService.Done()
+		if !result {
+			// TODO print explanation from result
+			os.Exit(1)
+		}
 	}
 }
 
