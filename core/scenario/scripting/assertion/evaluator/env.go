@@ -11,6 +11,7 @@ type AssertEnv struct {
 	Variables    map[string]interface{}
 
 	// For test-wide assertions
-	TotalTime []int64 // in ms
-	FailCount int
+	TotalTime     []int64 // in ms
+	FailCount     int
+	FailCountPerc float64 // should be in range [0,1]
 }

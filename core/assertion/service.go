@@ -17,6 +17,7 @@ type AssertionService struct {
 	doneChan   chan bool // TODO verbose exp
 	assertEnv  *evaluator.AssertEnv
 	abortTick  map[string]int // rule -> tickIndex
+	iterCount  int
 	mu         sync.Mutex
 }
 
@@ -63,6 +64,7 @@ func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 	var iterationTime int64
 	var iterFailed bool
+	as.iterCount++
 	for _, sr := range r.StepResults {
 		iterationTime += sr.Duration.Milliseconds()
 		if sr.Err.Type != "" || len(sr.FailedAssertions) > 0 {
@@ -73,6 +75,7 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 		as.assertEnv.FailCount++
 	}
 	as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
+	as.assertEnv.FailCountPerc = float64(as.assertEnv.FailCount) / float64(as.iterCount)
 }
 
 func (as *AssertionService) applyAssertions() {

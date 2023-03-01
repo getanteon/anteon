@@ -30,7 +30,6 @@ func TestApplyAssertionsAbortsCorrectly(t *testing.T) {
 		wg.Done()
 	}()
 
-	go service.applyAssertions()
 	inputChan <- &types.ScenarioResult{}
 	start := time.Now()
 

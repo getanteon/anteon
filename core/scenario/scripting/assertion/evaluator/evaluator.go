@@ -355,6 +355,10 @@ func evalIdentifier(
 		receivedMap[ident] = env.FailCount
 		return env.FailCount, nil
 	}
+	if strings.EqualFold(ident, "fail_count_perc") {
+		receivedMap[ident] = env.FailCountPerc
+		return env.FailCountPerc, nil
+	}
 	if strings.EqualFold(ident, "iteration_duration") {
 		receivedMap[ident] = env.TotalTime
 		return env.TotalTime, nil
