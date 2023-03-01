@@ -57,6 +57,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -113,6 +114,7 @@ func TestCreateHammer(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -169,6 +171,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -228,6 +231,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -264,6 +268,7 @@ func TestCreateHammerManualLoad(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -300,6 +305,7 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -522,6 +528,7 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -568,6 +575,7 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -605,6 +613,7 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 		},
 		SamplingRate: types.DefaultSamplingCount,
 		TestDataConf: make(map[string]types.CsvConf),
+		SingleMode:   true,
 	}
 
 	h, err := jsonReader.CreateHammer()
