@@ -434,6 +434,34 @@ func TestAssert(t *testing.T) {
 
 			expected: true,
 		},
+		{
+			input: "p99(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p95(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p90(iteration_duration) == 98",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p80(iteration_duration) == 89",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {

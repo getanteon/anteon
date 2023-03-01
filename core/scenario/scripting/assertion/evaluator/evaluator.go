@@ -110,6 +110,15 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 					return min(args[0].([]int64))
 				case MAX:
 					return max(args[0].([]int64))
+				// TODO only one func percentile(arr, num) ?
+				case P99:
+					return percentile(args[0].([]int64), 99)
+				case P95:
+					return percentile(args[0].([]int64), 95)
+				case P90:
+					return percentile(args[0].([]int64), 90)
+				case P80:
+					return percentile(args[0].([]int64), 80)
 				case RANGE:
 					var x, low, high int64
 

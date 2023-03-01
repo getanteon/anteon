@@ -3,8 +3,10 @@ package evaluator
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -17,6 +19,23 @@ var less_than = func(variable int64, limit int64) bool {
 
 var not = func(b bool) bool {
 	return !b
+}
+
+var percentile = func(arr SortableInt64Slice, num int) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on percentile func")
+	}
+	if !sort.IsSorted(arr) {
+		sort.Sort(arr)
+	}
+
+	index := int(math.Ceil(float64(len(arr)*num)/100)) - 1
+
+	if index < 0 {
+		index = 0
+	}
+
+	return arr[index], nil
 }
 
 var min = func(arr []int64) (int64, error) {
@@ -172,6 +191,10 @@ var assertionFuncMap = map[string]struct{}{
 	MIN:          {},
 	MAX:          {},
 	AVG:          {},
+	P99:          {},
+	P95:          {},
+	P90:          {},
+	P80:          {},
 }
 
 const (
@@ -190,6 +213,10 @@ const (
 	MIN = "min"
 	MAX = "max"
 	AVG = "avg"
+	P99 = "p99"
+	P95 = "p95"
+	P90 = "p90"
+	P80 = "p80"
 )
 
 type SortableInt64Slice []int64
