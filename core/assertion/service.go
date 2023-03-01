@@ -84,6 +84,7 @@ func (as *AssertionService) applyAssertions() {
 		totalTime = append(totalTime, as.assertEnv.TotalTime...)
 		assertEnv := evaluator.AssertEnv{
 			TotalTime: totalTime,
+			FailCount: as.assertEnv.FailCount,
 		}
 		as.mu.Unlock()
 

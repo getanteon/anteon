@@ -349,6 +349,17 @@ func evalIdentifier(
 		receivedMap[ident] = env.Body
 		return env.Body, nil
 	}
+
+	// test-wide identifiers
+	if strings.EqualFold(ident, "fail_count") {
+		receivedMap[ident] = env.FailCount
+		return env.FailCount, nil
+	}
+	if strings.EqualFold(ident, "iteration_duration") {
+		receivedMap[ident] = env.TotalTime
+		return env.TotalTime, nil
+	}
+
 	if strings.HasPrefix(ident, "variables.") {
 		vr := strings.TrimPrefix(ident, "variables.")
 		if v, ok := env.Variables[vr]; ok {
