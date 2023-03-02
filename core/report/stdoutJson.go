@@ -26,6 +26,7 @@ import (
 	"io"
 	"math"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -36,14 +37,14 @@ func init() {
 }
 
 type stdoutJson struct {
-	doneChan     chan struct{}
+	doneChan     chan bool
 	result       *Result
 	debug        bool
 	samplingRate int
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan struct{})
+	s.doneChan = make(chan bool)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -52,15 +53,20 @@ func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
+func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
 	if s.debug {
 		s.printInDebugMode(input)
-		s.doneChan <- struct{}{}
+		s.doneChan <- true
 		return
 	}
-	s.listenAndAggregate(input)
+	s.listenAndAggregate(input, assertionResultChan)
 	s.report()
-	s.doneChan <- struct{}{}
+
+	if s.result.TestStatus == "success" {
+		s.doneChan <- true
+	} else {
+		s.doneChan <- false
+	}
 }
 
 func (s *stdoutJson) report() {
@@ -82,17 +88,28 @@ func (s *stdoutJson) report() {
 	printJson(j)
 }
 
-func (s *stdoutJson) DoneChan() <-chan struct{} {
+func (s *stdoutJson) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
-func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
+func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
 	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 	for r := range input {
 		aggregate(s.result, r, samplingCount, s.samplingRate)
 	}
+
+	// listen for assertion result, add to json
+	if assertionResultChan != nil {
+		result := <-assertionResultChan
+		if result.Fail {
+			s.result.TestStatus = "failed"
+		}
+	} else {
+		s.result.TestStatus = "success"
+	}
+
 }
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {

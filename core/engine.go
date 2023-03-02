@@ -29,10 +29,12 @@ import (
 	"time"
 
 	"go.ddosify.com/ddosify/core/assertion"
+
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/scenario"
 	"go.ddosify.com/ddosify/core/scenario/testdata"
+
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -140,7 +142,11 @@ func (e *engine) Start() string {
 	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
-	go e.reportService.Start(e.resultReportChan)
+	var testResultChan chan assertion.TestAssertionResult
+	if e.hammer.SingleMode {
+		testResultChan = e.assertionService.Done()
+	}
+	go e.reportService.Start(e.resultReportChan, testResultChan)
 
 	if e.hammer.SingleMode {
 		// run test wide assertions in parallel
@@ -220,16 +226,12 @@ func (e *engine) stop() {
 	e.wg.Wait()
 	close(e.resultReportChan)
 	close(e.resultAssertChan)
-	<-e.reportService.DoneChan()
 	e.proxyService.Done()
 	e.scenarioService.Done()
 
-	if e.hammer.SingleMode {
-		result := <-e.assertionService.Done()
-		if !result {
-			// TODO print explanation from result
-			os.Exit(1)
-		}
+	success := <-e.reportService.DoneChan()
+	if !success {
+		os.Exit(1)
 	}
 }
 

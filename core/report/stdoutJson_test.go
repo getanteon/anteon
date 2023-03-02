@@ -195,6 +195,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 			uint16(1): itemReport1,
 			uint16(2): itemReport2,
 		},
+		TestStatus: "success",
 	}
 
 	var output string
@@ -205,6 +206,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 	expectedOutputByte := []byte(`{
 		"success_perc": 81,
 		"fail_perc": 19,
+		"test_status": "success",
 		"success_count": 9,
 		"server_fail_count":2,
 		"assertion_fail_count":0,
@@ -286,7 +288,7 @@ func TestStdoutJsonDebugModePrintsValidJson(t *testing.T) {
 	close(inputChan)
 
 	go func() {
-		s.Start(inputChan)
+		s.Start(inputChan, nil)
 		w.Close()
 	}()
 

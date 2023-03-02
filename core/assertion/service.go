@@ -9,12 +9,12 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-var tickerInterval = 1000 // interval in millisecond
+var tickerInterval = 100 // interval in millisecond
 type AssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
 	resultChan chan *types.ScenarioResult
 	abortChan  chan struct{}
-	doneChan   chan bool // TODO verbose exp
+	doneChan   chan TestAssertionResult
 	assertEnv  *evaluator.AssertEnv
 	abortTick  map[string]int // rule -> tickIndex
 	iterCount  int
@@ -29,7 +29,7 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 	as.assertions = assertions
 	abortChan := make(chan struct{})
 	as.abortChan = abortChan
-	doneChan := make(chan bool)
+	doneChan := make(chan TestAssertionResult)
 	as.doneChan = doneChan
 	as.assertEnv = &evaluator.AssertEnv{}
 	as.abortTick = make(map[string]int)
@@ -100,10 +100,7 @@ func (as *AssertionService) applyAssertions() {
 
 		// apply assertions
 		for rule, opts := range assertionsWithAbort {
-			res, err := assertion.Assert(rule, &assertEnv)
-			if err != nil {
-				// TODO
-			}
+			res, _ := assertion.Assert(rule, &assertEnv)
 			if res == false && opts.Abort {
 				// if delay is zero, immediately abort
 				if opts.Delay == 0 || as.abortTick[rule] == tickIndex {
@@ -121,21 +118,40 @@ func (as *AssertionService) applyAssertions() {
 	}
 }
 
-// TODO return a verbose explanation
-func (as *AssertionService) giveFinalResult() bool {
+func (as *AssertionService) giveFinalResult() TestAssertionResult {
 	// return final result
+	result := TestAssertionResult{
+		Fail: false,
+	}
+	failedRules := []FailedRule{}
 	for rule, _ := range as.assertions {
 		res, err := assertion.Assert(rule, as.assertEnv)
-		if err != nil {
-			// TODO
-		}
 		if res == false {
-			return false
+			failedRules = append(failedRules, FailedRule{
+				Rule:        rule,
+				ReceivedMap: err.(assertion.AssertionError).Received(),
+			})
 		}
 	}
-	return true
+
+	if len(failedRules) > 0 {
+		result.Fail = true
+		result.FailedRules = failedRules
+	}
+
+	return result
 }
 
-func (as *AssertionService) Done() chan bool {
+func (as *AssertionService) Done() chan TestAssertionResult {
 	return as.doneChan
+}
+
+type TestAssertionResult struct {
+	Fail        bool
+	FailedRules []FailedRule
+}
+
+type FailedRule struct {
+	Rule        string
+	ReceivedMap map[string]interface{}
 }

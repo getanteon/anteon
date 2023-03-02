@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -31,9 +32,9 @@ var AvailableOutputServices = make(map[string]ReportService)
 
 // ReportService is the interface that abstracts different report implementations.
 type ReportService interface {
-	DoneChan() <-chan struct{}
+	DoneChan() <-chan bool
 	Init(debug bool, samplingRate int) error
-	Start(input chan *types.ScenarioResult)
+	Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult)
 }
 
 // NewReportService is the factory method of the ReportService.

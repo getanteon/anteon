@@ -34,6 +34,7 @@ import (
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
@@ -47,7 +48,7 @@ func init() {
 }
 
 type stdout struct {
-	doneChan     chan struct{}
+	doneChan     chan bool
 	result       *Result
 	printTicker  *time.Ticker
 	mu           sync.Mutex
@@ -63,7 +64,7 @@ var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan struct{})
+	s.doneChan = make(chan bool)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -77,10 +78,10 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdout) Start(input chan *types.ScenarioResult) {
+func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
 	if s.debug {
 		s.printInDebugMode(input)
-		s.doneChan <- struct{}{}
+		s.doneChan <- true
 		return
 	}
 	go s.realTimePrintStart()
@@ -98,14 +99,18 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	s.realTimePrintStop()
 	s.report()
 	stopSampling <- struct{}{}
-	s.doneChan <- struct{}{}
+	if s.result.TestStatus == "success" {
+		s.doneChan <- true
+	} else {
+		s.doneChan <- false
+	}
 }
 
 func (s *stdout) report() {
 	s.printDetails()
 }
 
-func (s *stdout) DoneChan() <-chan struct{} {
+func (s *stdout) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
