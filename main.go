@@ -169,6 +169,10 @@ var run = func(h types.Hammer) {
 	}()
 
 	engine.Start()
+
+	if engine.IsTestFailed() {
+		os.Exit(1)
+	}
 }
 
 var createHammerFromFlags = func() (h types.Hammer, err error) {

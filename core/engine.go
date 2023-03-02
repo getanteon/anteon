@@ -23,7 +23,6 @@ package core
 import (
 	"context"
 	"math"
-	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -65,9 +64,9 @@ type engine struct {
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
 
-	abortChan chan struct{}
-
-	ctx context.Context
+	abortChan   chan struct{}
+	testSuccess bool
+	ctx         context.Context
 }
 
 // NewEngine is the constructor of the engine.
@@ -106,6 +105,10 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	}
 
 	return
+}
+
+func (e *engine) IsTestFailed() bool {
+	return !e.testSuccess
 }
 
 func (e *engine) Init() (err error) {
@@ -171,6 +174,7 @@ func (e *engine) Start() string {
 		case <-e.ctx.Done():
 			return resultStopped
 		case <-e.abortChan: // in single mode abortChan will be nil, and case will be ignored
+			e.testSuccess = false
 			return resultAborted
 		default:
 			mutex.Lock()
@@ -229,10 +233,7 @@ func (e *engine) stop() {
 	e.proxyService.Done()
 	e.scenarioService.Done()
 
-	success := <-e.reportService.DoneChan()
-	if !success {
-		os.Exit(1)
-	}
+	e.testSuccess = <-e.reportService.DoneChan()
 }
 
 func (e *engine) initReqCountArr() {
