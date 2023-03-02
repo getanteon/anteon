@@ -199,6 +199,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 		Proxy:             p,
 		ReportDestination: *output,
 		Debug:             *debug,
+		SingleMode:        true,
 	}
 	return
 }

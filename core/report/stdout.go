@@ -96,9 +96,18 @@ func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan cha
 		s.mu.Unlock()
 	}
 
+	// listen for assertion result
+	s.result.TestStatus = "success"
+	if assertionResultChan != nil {
+		result := <-assertionResultChan
+		if result.Fail {
+			s.result.TestStatus = "failed"
+		}
+	}
 	s.realTimePrintStop()
 	s.report()
 	stopSampling <- struct{}{}
+
 	if s.result.TestStatus == "success" {
 		s.doneChan <- true
 	} else {

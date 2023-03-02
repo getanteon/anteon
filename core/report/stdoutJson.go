@@ -101,15 +101,13 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assert
 	}
 
 	// listen for assertion result, add to json
+	s.result.TestStatus = "success"
 	if assertionResultChan != nil {
 		result := <-assertionResultChan
 		if result.Fail {
 			s.result.TestStatus = "failed"
 		}
-	} else {
-		s.result.TestStatus = "success"
 	}
-
 }
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
