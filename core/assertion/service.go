@@ -152,6 +152,6 @@ type TestAssertionResult struct {
 }
 
 type FailedRule struct {
-	Rule        string
-	ReceivedMap map[string]interface{}
+	Rule        string                 `json:"rule"`
+	ReceivedMap map[string]interface{} `json:"received"`
 }

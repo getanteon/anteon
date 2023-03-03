@@ -106,6 +106,7 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assert
 		result := <-assertionResultChan
 		if result.Fail {
 			s.result.TestStatus = "failed"
+			s.result.TestFailedAssertions = result.FailedRules
 		}
 	}
 }

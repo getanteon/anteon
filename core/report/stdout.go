@@ -102,6 +102,7 @@ func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan cha
 		result := <-assertionResultChan
 		if result.Fail {
 			s.result.TestStatus = "failed"
+			s.result.TestFailedAssertions = result.FailedRules
 		}
 	}
 	s.realTimePrintStop()
@@ -379,7 +380,17 @@ func (s *stdout) printDetails() {
 		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
 
 	} else if s.result.TestStatus == "failed" {
-		fmt.Fprintf(w, "%s", red("Test Status: Failed\n"))
+		fmt.Fprintf(w, "%s\n", red("Test Status: Failed"))
+
+		for _, failedRule := range s.result.TestFailedAssertions {
+			fmt.Fprintf(w, "\tRule : %s\n", failedRule.Rule)
+			fmt.Fprintf(w, "\tReceived : \n")
+
+			for ident, values := range failedRule.ReceivedMap {
+				fmt.Fprintf(w, "\t %s : %v\n", ident, values)
+			}
+		}
+
 	}
 
 	w.Flush()

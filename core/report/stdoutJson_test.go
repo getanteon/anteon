@@ -207,6 +207,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 		"success_perc": 81,
 		"fail_perc": 19,
 		"test_status": "success",
+		"failed_assertions":null,
 		"success_count": 9,
 		"server_fail_count":2,
 		"assertion_fail_count":0,
