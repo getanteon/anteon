@@ -375,6 +375,13 @@ func (s *stdout) printDetails() {
 		fmt.Fprintln(w)
 	}
 
+	if s.result.TestStatus == "success" {
+		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
+
+	} else if s.result.TestStatus == "failed" {
+		fmt.Fprintf(w, "%s", red("Test Status: Failed\n"))
+	}
+
 	w.Flush()
 	fmt.Fprint(out, b.String())
 }
