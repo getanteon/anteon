@@ -490,6 +490,88 @@ func TestAssert(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			input:    "avg([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input:    "percentile([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input:    "min([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input:    "max([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input: "avg(response_size) == 200.6875",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected: false,
+		},
+		{
+			input: "not(response_size)",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input: "less_than(10, 20.3)",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         `equals_on_file("abc", [34,60])`, // filepath must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input: "in(response_size,response_size)", // second arg must be array
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "json_path(23)", // arg must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "xml_path(23)", // arg must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p99(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p95(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p90(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p80(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
 	}
 
 	for _, tc := range tests {
