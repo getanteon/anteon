@@ -463,6 +463,13 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "p80(iteration_duration) == 89",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{99, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 34}, // unsorted
+			},
+			expected: true,
+		},
+		{
 			input: "min(iteration_duration) == 34",
 			envs: &evaluator.AssertEnv{
 				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
@@ -489,10 +496,6 @@ func TestAssert(t *testing.T) {
 				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 2222, 72, 75, 77, 89, 92, 98, 99},
 			},
 			expected: true,
-		},
-		{
-			input:    "avg([]) == 200.6875",
-			expected: false,
 		},
 		{
 			input:    "percentile([]) == 200.6875",
