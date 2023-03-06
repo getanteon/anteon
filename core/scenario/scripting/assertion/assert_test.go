@@ -462,6 +462,34 @@ func TestAssert(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			input: "min(iteration_duration) == 34",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "max(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "max(iteration_duration) == 2222",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 2222, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "avg(iteration_duration) == 200.6875",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 2222, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {
