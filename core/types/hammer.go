@@ -23,6 +23,7 @@ package types
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/util"
@@ -117,7 +118,11 @@ type Hammer struct {
 func (h *Hammer) Validate() error {
 	if len(h.Scenario.Steps) == 0 {
 		return fmt.Errorf("scenario or target is empty")
-	} else if err := h.Scenario.validate(); err != nil {
+	}
+
+	h.Scenario.CsvVars = getCsvEnvs(h.TestDataConf)
+
+	if err := h.Scenario.validate(); err != nil {
 		return err
 	}
 
@@ -137,4 +142,23 @@ func (h *Hammer) Validate() error {
 	}
 
 	return nil
+}
+
+func getCsvEnvs(testDataConf map[string]CsvConf) []string {
+	csvVars := make([]string, 0)
+
+	sb := strings.Builder{}
+	for key, conf := range testDataConf {
+		for _, tag := range conf.Vars {
+			sb.WriteString("data.")
+			sb.WriteString(key)
+			sb.WriteString(".")
+			sb.WriteString(tag.Tag)
+			// data.info.name
+			csvVars = append(csvVars, sb.String())
+			sb.Reset()
+		}
+	}
+
+	return csvVars
 }
