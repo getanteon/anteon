@@ -65,6 +65,7 @@ func newDummyHammer() types.Hammer {
 				},
 			},
 		},
+		SingleMode: true,
 	}
 }
 
@@ -493,9 +494,11 @@ func TestEngineResult(t *testing.T) {
 		name           string
 		cancelCtx      bool
 		expectedStatus string
+		testFailed     bool
 	}{
-		{"CtxCancel", true, "stopped"},
-		{"Normal", false, "done"},
+		{"CtxCancel", true, "stopped", false},
+		{"Normal", false, "done", false},
+		{"Abort", false, "aborted", true},
 	}
 
 	// Act
@@ -522,6 +525,15 @@ func TestEngineResult(t *testing.T) {
 				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
 
+			if test.name == "Abort" {
+				e.hammer.Assertions = map[string]types.TestAssertionOpt{
+					"false": { // rule evaluated to false
+						Abort: true,
+						Delay: 1,
+					},
+				}
+			}
+
 			err = e.Init()
 			if err != nil {
 				t.Errorf("TestRequestTimeout error occurred %v", err)
@@ -540,6 +552,10 @@ func TestEngineResult(t *testing.T) {
 			m.Lock()
 			if res != test.expectedStatus {
 				t.Errorf("Expected %v, Found %v", test.expectedStatus, res)
+			}
+			if test.testFailed != e.IsTestFailed() {
+				t.Errorf("Expected %v, Found %v", test.testFailed, e.IsTestFailed())
+
 			}
 			m.Unlock()
 		})

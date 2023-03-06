@@ -132,7 +132,6 @@ func (e *engine) Init() (err error) {
 	}
 
 	if e.hammer.SingleMode {
-		// TODO: check err ?
 		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
 	}
 
@@ -148,14 +147,11 @@ func (e *engine) Start() string {
 	var testResultChan chan assertion.TestAssertionResult
 	if e.hammer.SingleMode {
 		testResultChan = e.assertionService.Done()
-	}
-	go e.reportService.Start(e.resultReportChan, testResultChan)
-
-	if e.hammer.SingleMode {
 		// run test wide assertions in parallel
 		// listen to abortChan
 		go e.assertionService.Start(e.resultAssertChan)
 	}
+	go e.reportService.Start(e.resultReportChan, testResultChan)
 
 	defer func() {
 		ticker.Stop()

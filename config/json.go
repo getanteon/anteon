@@ -294,7 +294,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SamplingRate:      samplingRate,
 		TestDataConf:      testDataConf,
 		Assertions:        testAssertions,
-		SingleMode:        true,
+		SingleMode:        types.DefaultSingleMode,
 	}
 	return
 }

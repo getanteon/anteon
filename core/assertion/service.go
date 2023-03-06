@@ -45,7 +45,7 @@ func (as *AssertionService) GetFailCount() int {
 }
 
 func (as *AssertionService) Start(input chan *types.ScenarioResult) {
-	// get iteration results ,add store them cumulatively
+	// get iteration results, add store them cumulatively
 	firstResult := true
 	for r := range input {
 		as.mu.Lock()

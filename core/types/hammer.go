@@ -43,6 +43,7 @@ const (
 	DefaultMethod        = http.MethodGet
 	DefaultOutputType    = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 	DefaultSamplingCount = 3
+	DefaultSingleMode    = true
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
