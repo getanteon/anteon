@@ -115,7 +115,6 @@ func (e *engine) Init() (err error) {
 	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
 		return
 	}
-
 	// read test data
 	readData, err := readTestData(e.hammer.TestDataConf)
 	if err != nil {
@@ -123,7 +122,21 @@ func (e *engine) Init() (err error) {
 	}
 	e.hammer.Scenario.Data = readData
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), e.hammer.Debug); err != nil {
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
+		Debug:                  e.hammer.Debug,
+		IterationCount:         e.hammer.IterationCount,
+		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
+		EngineMode:             e.hammer.EngineMode,
+	}); err != nil {
+		return
+	}
+
+	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
+		Debug:                  e.hammer.Debug,
+		IterationCount:         e.hammer.IterationCount,
+		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
+		EngineMode:             e.hammer.EngineMode,
+	}); err != nil {
 		return
 	}
 
@@ -134,7 +147,6 @@ func (e *engine) Init() (err error) {
 	if e.hammer.SingleMode {
 		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
 	}
-
 	e.initReqCountArr()
 	return
 }
@@ -230,6 +242,16 @@ func (e *engine) stop() {
 	e.scenarioService.Done()
 
 	e.testSuccess = <-e.reportService.DoneChan()
+}
+
+func (e *engine) getMaxConcurrentIterCount() int {
+	max := 0
+	for _, v := range e.reqCountArr {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }
 
 func (e *engine) initReqCountArr() {

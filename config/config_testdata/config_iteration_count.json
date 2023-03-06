@@ -13,7 +13,6 @@
             "timeout": 3,
             "sleep": "1000",
             "others": {
-                "keep-alive": true
             }
         },
         {

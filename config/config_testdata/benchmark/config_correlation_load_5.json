@@ -1,6 +1,8 @@
 {
     "iteration_count": 20000,
     "load_type": "waved",
+    "engine_mode": "ddosify",
+
     "duration": 10,
     "steps": [
             {
@@ -10,7 +12,6 @@
               "method": "GET",
               "others": {
                 "h2": false,
-                "keep-alive": true,
                 "disable-redirect": true,
                 "disable-compression": false
               },
@@ -36,7 +37,6 @@
               "method": "GET",
               "others": {
                 "h2": false,
-                "keep-alive": true,
                 "disable-redirect": true,
                 "disable-compression": false
               },
@@ -55,7 +55,6 @@
               "method": "GET",
               "others": {
                 "h2": false,
-                "keep-alive": true,
                 "disable-redirect": true,
                 "disable-compression": false
               },

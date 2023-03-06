@@ -22,7 +22,9 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -44,13 +46,17 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
+	cPool *clientPool
+
 	scenario types.Scenario
 	ctx      context.Context
 
 	clientMutex sync.Mutex
 	debug       bool
-	ei          *injection.EnvironmentInjector
-	iterIndex   int64
+	engineMode  string
+
+	ei        *injection.EnvironmentInjector
+	iterIndex int64
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -58,13 +64,20 @@ func NewScenarioService() *ScenarioService {
 	return &ScenarioService{}
 }
 
+type ScenarioOpts struct {
+	Debug                  bool
+	IterationCount         int
+	MaxConcurrentIterCount int
+	EngineMode             string
+}
+
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
 // Passes the given ctx to the underlying requestor so we are able to control the life of each request.
 func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
-	proxies []*url.URL, debug bool) (err error) {
+	proxies []*url.URL, opts ScenarioOpts) (err error) {
 	s.scenario = scenario
 	s.ctx = ctx
-	s.debug = debug
+	s.debug = opts.Debug
 	s.clients = make(map[*url.URL][]scenarioItemRequester, len(proxies))
 
 	ei := &injection.EnvironmentInjector{}
@@ -80,6 +93,20 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi := &injection.EnvironmentInjector{}
 	vi.Init()
 	s.ei = vi
+	s.engineMode = opts.EngineMode
+
+	if s.engineInUserMode() {
+		// create client pool
+		var initialCount int
+		if s.engineMode == types.EngineModeRepeatedUser {
+			initialCount = opts.MaxConcurrentIterCount
+		} else if s.engineMode == types.EngineModeDistinctUser {
+			initialCount = opts.IterationCount
+		}
+		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, func() *http.Client { return &http.Client{} })
+	}
+	// s.cPool will be nil otherwise
+
 	return
 }
 
@@ -109,8 +136,22 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	s.enrichEnvFromData(envs)
 	atomic.AddInt64(&s.iterIndex, 1)
 
+	var client *http.Client
+	if s.engineInUserMode() {
+		// get client from pool
+		client = s.cPool.Get()
+		defer s.cPool.Put(client)
+	}
+
 	for _, sr := range requesters {
-		res := sr.requester.Send(envs)
+		var res *types.ScenarioStepResult
+		switch sr.requester.Type() {
+		case "HTTP":
+			httpRequester := sr.requester.(requester.HttpRequesterI)
+			res = httpRequester.Send(client, envs)
+		default:
+			res = &types.ScenarioStepResult{Err: types.RequestError{Type: fmt.Sprintf("type not defined: %s", sr.requester.Type())}}
+		}
 
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
@@ -128,6 +169,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 
 		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 	}
+
 	return
 }
 
@@ -135,6 +177,13 @@ func enrichEnvFromPrevStep(m1 map[string]interface{}, m2 map[string]interface{})
 	for k, v := range m2 {
 		m1[k] = v
 	}
+}
+
+func (s *ScenarioService) engineInUserMode() bool {
+	if s.engineMode == types.EngineModeDistinctUser || s.engineMode == types.EngineModeRepeatedUser {
+		return true
+	}
+	return false
 }
 
 func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
@@ -165,6 +214,10 @@ func (s *ScenarioService) Done() {
 		for _, r := range v {
 			r.requester.Done()
 		}
+	}
+
+	if s.cPool != nil {
+		s.cPool.Done()
 	}
 }
 
@@ -199,7 +252,14 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 			},
 		)
 
-		err = r.Init(s.ctx, si, proxy, s.debug, s.ei)
+		switch r.Type() {
+		case "HTTP":
+			httpRequester := r.(requester.HttpRequesterI)
+			err = httpRequester.Init(s.ctx, si, proxy, s.debug, s.ei)
+		default:
+			err = fmt.Errorf("type not defined: %s", r.Type())
+		}
+
 		if err != nil {
 			return
 		}

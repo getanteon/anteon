@@ -73,11 +73,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
 	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
 
-	// TlsConfig
-	tlsConfig := h.initTLSConfig()
-
 	// Transport segment
-	tr := h.initTransport(tlsConfig)
+	tr := h.initTransport()
+	tr.MaxIdleConnsPerHost = 60000
+	tr.MaxIdleConns = 0
 
 	// http client
 	h.client = &http.Client{Transport: tr, Timeout: time.Duration(h.packet.Timeout) * time.Second}
@@ -165,10 +164,11 @@ func (h *HttpRequester) Done() {
 	// let us reuse the connections when keep-alive enabled(default)
 	// When the Job is finished, we have to Close idle connections to prevent sockets to lock in at the TIME_WAIT state.
 	// Otherwise, the next job can't use these sockets because they are reserved for the current target host.
+
 	h.client.CloseIdleConnections()
 }
 
-func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioStepResult) {
+func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (res *types.ScenarioStepResult) {
 	var statusCode int
 	var contentLength int64
 	var requestErr types.RequestError
@@ -188,8 +188,24 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 		usableVars[k] = v
 	}
 
+	if client == nil {
+		// engine mode is 'ddosify'
+		// if passed client is nil , use requesters client that is dedicated to one step, thereby one transport
+		client = h.client
+	} else {
+		// engine mode is 'distinct-user' or 'repeated-user'
+		// passed client is used for multiple steps throughout an iteration, update transport
+		if client.Transport == nil {
+			client.Transport = h.initTransport()
+			client.Transport.(*http.Transport).MaxConnsPerHost = 1 // use same connection per host throughout an iteration
+		} else {
+			h.updateTransport(client.Transport.(*http.Transport))
+		}
+	}
+
 	durations := &duration{}
-	trace := newTrace(durations, h.proxyAddr)
+	headersAddedByClient := make(map[string][]string)
+	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -209,7 +225,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
 
 	// Action
-	httpRes, err := h.client.Do(httpReq)
+	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
@@ -276,7 +292,7 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 
 		Url:         httpReq.URL.String(),
 		Method:      httpReq.Method,
-		ReqHeaders:  httpReq.Header,
+		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient),
 		ReqBody:     copiedReqBody.Bytes(),
 		RespHeaders: respHeaders,
 		RespBody:    respBody,
@@ -307,6 +323,20 @@ func (h *HttpRequester) Send(envs map[string]interface{}) (res *types.ScenarioSt
 
 func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
 	total := make(map[string]interface{})
+
+	for k, v := range envs1 {
+		total[k] = v
+	}
+
+	for k, v := range envs2 {
+		total[k] = v
+	}
+
+	return total
+}
+
+func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
+	total := make(map[string][]string)
 
 	for k, v := range envs1 {
 		total[k] = v
@@ -448,17 +478,15 @@ func fetchErrType(err error) types.RequestError {
 	return requestErr
 }
 
-func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
+func (h *HttpRequester) initTransport() *http.Transport {
 	tr := &http.Transport{
-		TLSClientConfig:     tlsConfig,
-		Proxy:               http.ProxyURL(h.proxyAddr),
-		MaxIdleConnsPerHost: 60000,
-		MaxIdleConns:        0,
+		TLSClientConfig: h.initTLSConfig(),
+		Proxy:           http.ProxyURL(h.proxyAddr),
 	}
 
 	tr.DisableKeepAlives = false
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		tr.DisableKeepAlives = !val.(bool)
+	if h.packet.Headers["Connection"] == "close" {
+		tr.DisableKeepAlives = true
 	}
 	if val, ok := h.packet.Custom["disable-compression"]; ok {
 		tr.DisableCompression = val.(bool)
@@ -470,6 +498,25 @@ func (h *HttpRequester) initTransport(tlsConfig *tls.Config) *http.Transport {
 		}
 	}
 	return tr
+}
+
+func (h *HttpRequester) updateTransport(tr *http.Transport) {
+	tr.TLSClientConfig = h.initTLSConfig()
+	tr.Proxy = http.ProxyURL(h.proxyAddr)
+
+	tr.DisableKeepAlives = false
+	if h.packet.Headers["Connection"] == "close" {
+		tr.DisableKeepAlives = true
+	}
+	if val, ok := h.packet.Custom["disable-compression"]; ok {
+		tr.DisableCompression = val.(bool)
+	}
+	if val, ok := h.packet.Custom["h2"]; ok {
+		val := val.(bool)
+		if val {
+			http2.ConfigureTransport(tr)
+		}
+	}
 }
 
 func (h *HttpRequester) initTLSConfig() *tls.Config {
@@ -520,13 +567,17 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 
 	// If keep-alive is false, prevent the reuse of the previous TCP connection at the request layer also.
 	h.request.Close = false
-	if val, ok := h.packet.Custom["keep-alive"]; ok {
-		h.request.Close = !val.(bool)
+	if h.packet.Headers["Connection"] == "close" {
+		h.request.Close = true
 	}
 	return
 }
 
-func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
+func (h *HttpRequester) Type() string {
+	return "HTTP"
+}
+
+func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string][]string) *httptrace.ClientTrace {
 	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
 
 	// According to the doc in the trace.go;
@@ -612,6 +663,9 @@ func newTrace(duration *duration, proxyAddr *url.URL) *httptrace.ClientTrace {
 			duration.setServerProcessDur(time.Since(serverProcessStart))
 			duration.setResStartTime(time.Now())
 			m.Unlock()
+		},
+		WroteHeaderField: func(key string, value []string) {
+			headersByClient[key] = value
 		},
 	}
 }

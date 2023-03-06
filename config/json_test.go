@@ -56,6 +56,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -90,9 +91,7 @@ func TestCreateHammer(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:      2,
@@ -113,6 +112,7 @@ func TestCreateHammer(t *testing.T) {
 			Addr:     addr,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -147,9 +147,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:      2,
@@ -170,6 +168,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 			Addr:     addr,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -206,9 +205,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 					Timeout: 3,
 					Sleep:   "1000",
 					Payload: "payload str",
-					Custom: map[string]interface{}{
-						"keep-alive": true,
-					},
+					Custom:  map[string]interface{}{},
 				},
 				{
 					ID:   2,
@@ -230,6 +227,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 			Addr:     addr,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -267,6 +265,7 @@ func TestCreateHammerManualLoad(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -304,6 +303,7 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -527,6 +527,7 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -574,6 +575,7 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
@@ -612,6 +614,7 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 			Strategy: proxy.ProxyTypeSingle,
 		},
 		SamplingRate: types.DefaultSamplingCount,
+		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
 	}
