@@ -14,7 +14,6 @@ import (
 var tickerInterval = 100 // interval in millisecond
 type AssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
-	resultChan chan *types.ScenarioResult
 	abortChan  chan struct{}
 	doneChan   chan TestAssertionResult
 	assertEnv  *evaluator.AssertEnv
@@ -39,10 +38,8 @@ func NewAssertionService() (service *AssertionService) {
 
 func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) chan struct{} {
 	as.assertions = assertions
-	abortChan := make(chan struct{})
-	as.abortChan = abortChan
-	doneChan := make(chan TestAssertionResult)
-	as.doneChan = doneChan
+	as.abortChan = make(chan struct{})
+	as.doneChan = make(chan TestAssertionResult)
 	totalTime := make([]int64, 0)
 	as.assertEnv = &evaluator.AssertEnv{TotalTime: totalTime}
 	as.abortTick = make(map[string]int)

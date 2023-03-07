@@ -89,19 +89,15 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 	}
 
 	ss := scenario.NewScenarioService()
+	as := assertion.NewAssertionService()
 
 	e = &engine{
-		hammer:          h,
-		ctx:             ctx,
-		proxyService:    ps,
-		scenarioService: ss,
-		reportService:   rs,
-	}
-
-	if e.hammer.SingleMode {
-		// run test-wide assertions
-		as := assertion.NewAssertionService()
-		e.assertionService = as
+		hammer:           h,
+		ctx:              ctx,
+		proxyService:     ps,
+		scenarioService:  ss,
+		reportService:    rs,
+		assertionService: as,
 	}
 
 	return
@@ -144,7 +140,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.hammer.SingleMode {
+	if e.isTestAssertionsEnabled() {
 		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
 	}
 	e.initReqCountArr()
@@ -157,7 +153,7 @@ func (e *engine) Start() string {
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
 	var testResultChan chan assertion.TestAssertionResult
-	if e.hammer.SingleMode { // test-wide assertions given
+	if e.isTestAssertionsEnabled() { // test-wide assertions given
 		testResultChan = e.assertionService.Done()
 		// run test wide assertions in parallel
 		// listen to abortChan
@@ -230,8 +226,14 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	e.resultReportChan <- res
-	e.resultAssertChan <- res
 
+	if e.isTestAssertionsEnabled() {
+		e.resultAssertChan <- res
+	}
+}
+
+func (e *engine) isTestAssertionsEnabled() bool {
+	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
 func (e *engine) stop() {
