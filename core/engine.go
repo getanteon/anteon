@@ -67,6 +67,8 @@ type engine struct {
 	abortChan   chan struct{}
 	testSuccess bool
 	ctx         context.Context
+
+	assertionEnabled func() bool
 }
 
 // NewEngine is the constructor of the engine.
@@ -99,6 +101,8 @@ func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
 		reportService:    rs,
 		assertionService: as,
 	}
+
+	e.assertionEnabled = e.defaultAssertionEnabled
 
 	return
 }
@@ -140,7 +144,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.isTestAssertionsEnabled() {
+	if e.assertionEnabled() {
 		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
 	}
 	e.initReqCountArr()
@@ -153,7 +157,7 @@ func (e *engine) Start() string {
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
 	var testResultChan chan assertion.TestAssertionResult
-	if e.isTestAssertionsEnabled() { // test-wide assertions given
+	if e.assertionEnabled() { // test-wide assertions given
 		testResultChan = e.assertionService.Done()
 		// run test wide assertions in parallel
 		// listen to abortChan
@@ -227,12 +231,17 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	e.resultReportChan <- res
 
-	if e.isTestAssertionsEnabled() {
+	if e.assertionEnabled() {
 		e.resultAssertChan <- res
 	}
 }
 
-func (e *engine) isTestAssertionsEnabled() bool {
+// for overriding assertion execution behaviour
+func (e *engine) SetAssertionEnabledFunc(f func() bool) {
+	e.assertionEnabled = f
+}
+
+func (e *engine) defaultAssertionEnabled() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
