@@ -157,7 +157,7 @@ func (e *engine) Start() string {
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
 	var testResultChan chan assertion.TestAssertionResult
-	if e.hammer.SingleMode && len(e.hammer.Assertions) > 0 { // test-wide assertions given
+	if e.hammer.SingleMode { // test-wide assertions given
 		testResultChan = e.assertionService.Done()
 		// run test wide assertions in parallel
 		// listen to abortChan
