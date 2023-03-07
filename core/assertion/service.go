@@ -90,7 +90,6 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 
 	// keep totalTime array sorted
 	as.insertSorted(iterationTime)
-	// as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
 
 	as.assertEnv.FailCountPerc = float64(as.assertEnv.FailCount) / float64(as.iterCount)
 }
