@@ -2,6 +2,7 @@ package assertion
 
 import (
 	"reflect"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -24,8 +25,8 @@ func TestApplyAssertionsAbortsCorrectly(t *testing.T) {
 	go service.Start(inputChan)
 
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		<-abortChan
 		wg.Done()
 	}()
@@ -55,13 +56,13 @@ func TestServiceKeepsIterationTimes(t *testing.T) {
 	go service.Start(inputChan)
 
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		<-service.Done()
 		wg.Done()
 	}()
 
-	expectedIterationTimes := []int64{}
+	expectedIterationTimes := SortableInt64Slice{}
 	for i := 0; i < 10; i++ {
 		iterTime := time.Duration(((i * 5) % 4) * int(time.Millisecond))
 		expectedIterationTimes = append(expectedIterationTimes, iterTime.Milliseconds())
@@ -74,13 +75,14 @@ func TestServiceKeepsIterationTimes(t *testing.T) {
 			},
 		}
 	}
+	sort.Sort(expectedIterationTimes)
 	close(inputChan)
 
 	wg.Wait()
 
 	iterationTimes := service.GetTotalTimes()
 
-	if !reflect.DeepEqual(iterationTimes, expectedIterationTimes) {
+	if !reflect.DeepEqual(iterationTimes, []int64(expectedIterationTimes)) {
 		t.Errorf("TestServiceKeepsIterationTimes, cumulative data store failed")
 	}
 }
@@ -94,8 +96,8 @@ func TestServiceKeepsFailCount(t *testing.T) {
 	go service.Start(inputChan)
 
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		<-service.Done()
 		wg.Done()
 	}()
@@ -139,3 +141,9 @@ func TestServiceKeepsFailCount(t *testing.T) {
 		t.Errorf("TestServiceKeepsFailCount, expected : %d, got : %d", 2*N, failCount)
 	}
 }
+
+type SortableInt64Slice []int64
+
+func (a SortableInt64Slice) Len() int           { return len(a) }
+func (a SortableInt64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a SortableInt64Slice) Less(i, j int) bool { return a[i] < a[j] }

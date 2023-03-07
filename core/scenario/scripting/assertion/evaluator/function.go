@@ -6,7 +6,6 @@ import (
 	"math"
 	"os"
 	"reflect"
-	"sort"
 	"strings"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -21,12 +20,10 @@ var not = func(b bool) bool {
 	return !b
 }
 
-var percentile = func(arr SortableInt64Slice, num int) (int64, error) {
+// assumed given array is sorted
+var percentile = func(arr []int64, num int) (int64, error) {
 	if len(arr) == 0 {
 		return 0, fmt.Errorf("empty input array on percentile func")
-	}
-	if !sort.IsSorted(arr) {
-		sort.Sort(arr)
 	}
 
 	index := int(math.Ceil(float64(len(arr)*num)/100)) - 1
@@ -218,9 +215,3 @@ const (
 	P90 = "p90"
 	P80 = "p80"
 )
-
-type SortableInt64Slice []int64
-
-func (a SortableInt64Slice) Len() int           { return len(a) }
-func (a SortableInt64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a SortableInt64Slice) Less(i, j int) bool { return a[i] < a[j] }

@@ -1,12 +1,14 @@
 package assertion
 
 import (
+	"sort"
 	"sync"
 	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/types"
+	"golang.org/x/exp/slices"
 )
 
 var tickerInterval = 100 // interval in millisecond
@@ -21,6 +23,16 @@ type AssertionService struct {
 	mu         sync.Mutex
 }
 
+type TestAssertionResult struct {
+	Fail        bool
+	FailedRules []FailedRule
+}
+
+type FailedRule struct {
+	Rule        string                 `json:"rule"`
+	ReceivedMap map[string]interface{} `json:"received"`
+}
+
 func NewAssertionService() (service *AssertionService) {
 	return &AssertionService{}
 }
@@ -31,7 +43,8 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 	as.abortChan = abortChan
 	doneChan := make(chan TestAssertionResult)
 	as.doneChan = doneChan
-	as.assertEnv = &evaluator.AssertEnv{}
+	totalTime := make([]int64, 0)
+	as.assertEnv = &evaluator.AssertEnv{TotalTime: totalTime}
 	as.abortTick = make(map[string]int)
 	as.mu = sync.Mutex{}
 	return as.abortChan
@@ -74,7 +87,11 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 	if iterFailed {
 		as.assertEnv.FailCount++
 	}
-	as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
+
+	// keep totalTime array sorted
+	as.insertSorted(iterationTime)
+	// as.assertEnv.TotalTime = append(as.assertEnv.TotalTime, iterationTime)
+
 	as.assertEnv.FailCountPerc = float64(as.assertEnv.FailCount) / float64(as.iterCount)
 }
 
@@ -84,7 +101,7 @@ func (as *AssertionService) applyAssertions() {
 	// apply assertions on the fly for only abort:true ones
 	assertionsWithAbort := make(map[string]types.TestAssertionOpt)
 	for rule, opts := range as.assertions {
-		if opts.Abort == true {
+		if opts.Abort {
 			assertionsWithAbort[rule] = opts
 		}
 	}
@@ -146,12 +163,7 @@ func (as *AssertionService) Done() chan TestAssertionResult {
 	return as.doneChan
 }
 
-type TestAssertionResult struct {
-	Fail        bool
-	FailedRules []FailedRule
-}
-
-type FailedRule struct {
-	Rule        string                 `json:"rule"`
-	ReceivedMap map[string]interface{} `json:"received"`
+func (as *AssertionService) insertSorted(v int64) {
+	index := sort.Search(len(as.assertEnv.TotalTime), func(i int) bool { return as.assertEnv.TotalTime[i] >= v })
+	as.assertEnv.TotalTime = slices.Insert(as.assertEnv.TotalTime, index, v)
 }
