@@ -270,6 +270,10 @@ func (e *engine) stop() {
 	e.proxyService.Done()
 	e.scenarioService.Done()
 
+	if len(e.hammer.Assertions) > 0 { // if results are listened, wait
+		<-e.resListener.DoneChan()
+	}
+
 	e.testSuccess = <-e.reportService.DoneChan()
 }
 

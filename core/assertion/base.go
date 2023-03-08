@@ -9,6 +9,7 @@ type Aborter interface {
 }
 type ResultListener interface {
 	Start(input chan *types.ScenarioResult)
+	DoneChan() chan struct{} // indicates processing of results are done
 }
 
 type Asserter interface {

@@ -16,7 +16,8 @@ var tickerInterval = 100 // interval in millisecond
 type DefaultAssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
 	abortChan  chan struct{}
-	doneChan   chan TestAssertionResult
+	doneChan   chan struct{}
+	resChan    chan TestAssertionResult
 	assertEnv  *evaluator.AssertEnv
 	abortTick  map[string]int // rule -> tickIndex
 	iterCount  int
@@ -40,7 +41,8 @@ func NewDefaultAssertionService() (service *DefaultAssertionService) {
 func (as *DefaultAssertionService) Init(assertions map[string]types.TestAssertionOpt) chan struct{} {
 	as.assertions = assertions
 	as.abortChan = make(chan struct{})
-	as.doneChan = make(chan TestAssertionResult)
+	as.doneChan = make(chan struct{})
+	as.resChan = make(chan TestAssertionResult)
 	totalTime := make([]int64, 0)
 	as.assertEnv = &evaluator.AssertEnv{TotalTime: totalTime}
 	as.abortTick = make(map[string]int)
@@ -69,7 +71,8 @@ func (as *DefaultAssertionService) Start(input chan *types.ScenarioResult) {
 			firstResult = false
 		}
 	}
-	as.doneChan <- as.giveFinalResult()
+	as.resChan <- as.giveFinalResult()
+	as.doneChan <- struct{}{}
 }
 
 func (as *DefaultAssertionService) aggregate(r *types.ScenarioResult) {
@@ -157,11 +160,15 @@ func (as *DefaultAssertionService) giveFinalResult() TestAssertionResult {
 }
 
 func (as *DefaultAssertionService) ResultChan() chan TestAssertionResult {
-	return as.doneChan
+	return as.resChan
 }
 
 func (as *DefaultAssertionService) AbortChan() chan struct{} {
 	return as.abortChan
+}
+
+func (as *DefaultAssertionService) DoneChan() chan struct{} {
+	return as.doneChan
 }
 
 func (as *DefaultAssertionService) insertSorted(v int64) {
