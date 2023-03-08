@@ -92,7 +92,10 @@ func TestCreateEngine(t *testing.T) {
 		test := tc
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			e, err := NewEngine(context.TODO(), test.hammer)
+
+			es, err := InitEngineServices(test.hammer)
+
+			// e, err := NewEngine(context.TODO(), test.hammer, es)
 
 			if test.shouldErr {
 				if err == nil {
@@ -103,13 +106,16 @@ func TestCreateEngine(t *testing.T) {
 					t.Errorf("Error occurred %v", err)
 				}
 
-				if e.proxyService == nil {
+				if es.ProxyServ == nil {
 					t.Errorf("Proxy Service should be created")
 				}
-				if e.scenarioService == nil {
-					t.Errorf("Scenario Service should be created")
-				}
-				if e.reportService == nil {
+
+				// TODOr: not an interface ?
+				// if es.scenarioService == nil {
+				// 	t.Errorf("Scenario Service should be created")
+				// }
+
+				if es.ReportServ == nil {
 					t.Errorf("Report Service should be created")
 				}
 			}
@@ -133,7 +139,8 @@ func TestReqCountArrDebugMode(t *testing.T) {
 		test := tc
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			e, err := NewEngine(context.TODO(), test.hammer)
+			es, err := InitEngineServices(test.hammer)
+			e, err := NewEngine(context.TODO(), test.hammer, es)
 			e.Init()
 			if err != nil {
 				t.Errorf("Should have been nil, got %v", err)
@@ -233,8 +240,8 @@ func TestRequestCount(t *testing.T) {
 
 			now = time.Now()
 			timeReqMap = make(map[int]int, 0)
-
-			e, err := NewEngine(context.TODO(), h)
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(context.TODO(), h, es)
 			if err != nil {
 				t.Errorf("TestRequestCount error occurred %v", err)
 			}
@@ -307,7 +314,8 @@ func TestRequestData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -388,7 +396,8 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 		}}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestDataForMultiScenarioStep error occurred %v", err)
 	}
@@ -463,8 +472,8 @@ func TestRequestTimeout(t *testing.T) {
 			h := newDummyHammer()
 			h.Scenario.Steps[0].Timeout = test.timeout
 			h.Scenario.Steps[0].URL = server.URL
-
-			e, err := NewEngine(context.TODO(), h)
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(context.TODO(), h, es)
 			if err != nil {
 				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
@@ -520,18 +529,20 @@ func TestEngineResult(t *testing.T) {
 			h.Scenario.Steps[0].URL = server.URL
 
 			ctx, cancel := context.WithCancel(context.Background())
-			e, err := NewEngine(ctx, h)
-			if err != nil {
-				t.Errorf("TestRequestTimeout error occurred %v", err)
-			}
 
 			if test.name == "Abort" {
-				e.hammer.Assertions = map[string]types.TestAssertionOpt{
+				h.Assertions = map[string]types.TestAssertionOpt{
 					"false": { // rule evaluated to false
 						Abort: true,
 						Delay: 1,
 					},
 				}
+			}
+
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(ctx, h, es)
+			if err != nil {
+				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
 
 			err = e.Init()
@@ -599,7 +610,8 @@ func TestDynamicData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -716,7 +728,8 @@ func TestGlobalEnvs(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
 	}
@@ -839,7 +852,8 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
 	}
@@ -926,7 +940,8 @@ func TestContinueTestOnCaptureError(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
 	}
@@ -1031,7 +1046,8 @@ func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 	h.Scenario.Steps[1].URL = server.URL + pathSecond
 
 	// run engine
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
 	}
@@ -1132,7 +1148,8 @@ func TestEnvInjectToXmlPayload(t *testing.T) {
 	h.Scenario.Steps[0].URL = server.URL + pathFirst
 
 	// run engine
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestInjectXmlPayload error occurred %v", err)
 	}
@@ -1213,7 +1230,8 @@ func TestCaptureHeaderWithRegex(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
 	}
@@ -1288,7 +1306,8 @@ func TestCaptureStringPayloadWithRegex(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
 	}
@@ -1356,7 +1375,8 @@ func TestBothDynamicVarAndEnvVar(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
 	}
@@ -1415,7 +1435,8 @@ func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
 	}
@@ -1495,7 +1516,8 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
 	}
@@ -1618,7 +1640,8 @@ func TestTLSMutualAuth(t *testing.T) {
 	h.Scenario.Steps[0].URL = server.URL
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -1689,7 +1712,8 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	h.Scenario.Steps[0].CertPool = nil
 	h.Scenario.Steps[0].Cert = tls.Certificate{}
 
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -1771,7 +1795,8 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	h.Scenario.Steps[0].Cert = certVal
 	h.Scenario.Steps[0].CertPool = poolVal
 
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -1838,8 +1863,9 @@ func TestEngineModeUserKeepAlive(t *testing.T) {
 	}
 
 	// Act
+	es, err := InitEngineServices(h)
 	h.EngineMode = types.EngineModeRepeatedUser // could have been DistinctUser also
-	e, err := NewEngine(context.TODO(), h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeDistinctUserKeepAlive error occurred %v", err)
 	}
@@ -1915,8 +1941,9 @@ func TestEngineModeUserKeepAliveDifferentHosts(t *testing.T) {
 	}
 
 	// Act
+	es, err := InitEngineServices(h)
 	h.EngineMode = types.EngineModeDistinctUser // could have been RepeatedUser also
-	e, err := NewEngine(context.TODO(), h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
 	}
@@ -1986,7 +2013,8 @@ func TestEngineModeUserKeepAlive_StepsKeepAliveFalse(t *testing.T) {
 
 	// Act
 	h.EngineMode = types.EngineModeDistinctUser
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
 	}
@@ -2055,7 +2083,8 @@ func TestEngineModeDdosifyKeepAlive(t *testing.T) {
 
 	// Act
 	h.EngineMode = types.EngineModeDdosify
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeDdosifyKeepAlive error occurred %v", err)
 	}

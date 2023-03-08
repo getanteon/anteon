@@ -12,7 +12,8 @@ import (
 )
 
 var tickerInterval = 100 // interval in millisecond
-type AssertionService struct {
+
+type DefaultAssertionService struct {
 	assertions map[string]types.TestAssertionOpt // Rule -> Opts
 	abortChan  chan struct{}
 	doneChan   chan TestAssertionResult
@@ -32,11 +33,11 @@ type FailedRule struct {
 	ReceivedMap map[string]interface{} `json:"received"`
 }
 
-func NewAssertionService() (service *AssertionService) {
-	return &AssertionService{}
+func NewDefaultAssertionService() (service *DefaultAssertionService) {
+	return &DefaultAssertionService{}
 }
 
-func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) chan struct{} {
+func (as *DefaultAssertionService) Init(assertions map[string]types.TestAssertionOpt) chan struct{} {
 	as.assertions = assertions
 	as.abortChan = make(chan struct{})
 	as.doneChan = make(chan TestAssertionResult)
@@ -47,14 +48,14 @@ func (as *AssertionService) Init(assertions map[string]types.TestAssertionOpt) c
 	return as.abortChan
 }
 
-func (as *AssertionService) GetTotalTimes() []int64 {
+func (as *DefaultAssertionService) GetTotalTimes() []int64 {
 	return as.assertEnv.TotalTime
 }
-func (as *AssertionService) GetFailCount() int {
+func (as *DefaultAssertionService) GetFailCount() int {
 	return as.assertEnv.FailCount
 }
 
-func (as *AssertionService) Start(input chan *types.ScenarioResult) {
+func (as *DefaultAssertionService) Start(input chan *types.ScenarioResult) {
 	// get iteration results, add store them cumulatively
 	firstResult := true
 	for r := range input {
@@ -71,7 +72,7 @@ func (as *AssertionService) Start(input chan *types.ScenarioResult) {
 	as.doneChan <- as.giveFinalResult()
 }
 
-func (as *AssertionService) aggregate(r *types.ScenarioResult) {
+func (as *DefaultAssertionService) aggregate(r *types.ScenarioResult) {
 	var iterationTime int64
 	var iterFailed bool
 	as.iterCount++
@@ -91,7 +92,7 @@ func (as *AssertionService) aggregate(r *types.ScenarioResult) {
 	as.assertEnv.FailCountPerc = float64(as.assertEnv.FailCount) / float64(as.iterCount)
 }
 
-func (as *AssertionService) applyAssertions() {
+func (as *DefaultAssertionService) applyAssertions() {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	tickIndex := 1
 	// apply assertions on the fly for only abort:true ones
@@ -131,7 +132,7 @@ func (as *AssertionService) applyAssertions() {
 	}
 }
 
-func (as *AssertionService) giveFinalResult() TestAssertionResult {
+func (as *DefaultAssertionService) giveFinalResult() TestAssertionResult {
 	// return final result
 	result := TestAssertionResult{
 		Fail: false,
@@ -155,11 +156,15 @@ func (as *AssertionService) giveFinalResult() TestAssertionResult {
 	return result
 }
 
-func (as *AssertionService) Done() chan TestAssertionResult {
+func (as *DefaultAssertionService) ResultChan() chan TestAssertionResult {
 	return as.doneChan
 }
 
-func (as *AssertionService) insertSorted(v int64) {
+func (as *DefaultAssertionService) AbortChan() chan struct{} {
+	return as.abortChan
+}
+
+func (as *DefaultAssertionService) insertSorted(v int64) {
 	index := sort.Search(len(as.assertEnv.TotalTime), func(i int) bool { return as.assertEnv.TotalTime[i] >= v })
 	as.assertEnv.TotalTime = slices.Insert(as.assertEnv.TotalTime, index, v)
 }

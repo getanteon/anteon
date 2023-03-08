@@ -143,7 +143,12 @@ var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 var run = func(h types.Hammer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	engine, err := core.NewEngine(ctx, h)
+	es, err := core.InitEngineServices(h)
+	if err != nil {
+		exitWithMsg(err.Error())
+	}
+
+	engine, err := core.NewEngine(ctx, h, es)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}

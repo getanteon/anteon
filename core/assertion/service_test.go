@@ -11,7 +11,7 @@ import (
 )
 
 func TestApplyAssertionsAbortsCorrectly(t *testing.T) {
-	service := NewAssertionService()
+	service := NewDefaultAssertionService()
 	assertions := make(map[string]types.TestAssertionOpt)
 	rule := "false"
 	delay := 3
@@ -42,7 +42,7 @@ func TestApplyAssertionsAbortsCorrectly(t *testing.T) {
 }
 
 func TestServiceKeepsIterationTimes(t *testing.T) {
-	service := NewAssertionService()
+	service := NewDefaultAssertionService()
 	assertions := make(map[string]types.TestAssertionOpt)
 	rule := "false"
 	delay := 3
@@ -58,7 +58,7 @@ func TestServiceKeepsIterationTimes(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		<-service.Done()
+		<-service.ResultChan()
 		wg.Done()
 	}()
 
@@ -88,7 +88,7 @@ func TestServiceKeepsIterationTimes(t *testing.T) {
 }
 
 func TestServiceKeepsFailCount(t *testing.T) {
-	service := NewAssertionService()
+	service := NewDefaultAssertionService()
 	assertions := make(map[string]types.TestAssertionOpt)
 	_ = service.Init(assertions)
 
@@ -98,7 +98,7 @@ func TestServiceKeepsFailCount(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		<-service.Done()
+		<-service.ResultChan()
 		wg.Done()
 	}()
 

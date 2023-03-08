@@ -50,12 +50,11 @@ const (
 type engine struct {
 	hammer types.Hammer
 
-	proxyService    proxy.ProxyService
-	scenarioService *scenario.ScenarioService
-	reportService   report.ReportService
+	proxyService     proxy.ProxyService
+	reportService    report.ReportService
+	assertionService assertion.AssertionService
 
-	// TODO: interface ?
-	assertionService *assertion.AssertionService
+	scenarioService *scenario.ScenarioService
 
 	tickCounter int
 	reqCountArr []int
@@ -71,35 +70,60 @@ type engine struct {
 	assertionEnabled func() bool
 }
 
+type EngineServices struct {
+	AssertionServ assertion.AssertionService
+	ProxyServ     proxy.ProxyService
+	ReportServ    report.ReportService
+}
+
+var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
+	// Initialize things here and pass interfaces to NewEngine which it depends ?
+	// this piece can change between implementations
+	as := assertion.NewDefaultAssertionService()
+	as.Init(h.Assertions)
+
+	// TODO: remove reflection ?
+	ps, err := proxy.NewProxyService(h.Proxy.Strategy)
+	if err != nil {
+		return nil, err
+	}
+	err = ps.Init(h.Proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: remove reflection ?
+	rs, err := report.NewReportService(h.ReportDestination)
+	if err != nil {
+		return nil, err
+	}
+	if err = rs.Init(h.Debug, h.SamplingRate); err != nil {
+		return nil, err
+	}
+
+	return &EngineServices{
+		AssertionServ: as,
+		ProxyServ:     ps,
+		ReportServ:    rs,
+	}, nil
+}
+
 // NewEngine is the constructor of the engine.
 // Hammer is used for initializing the engine itself and its' external services.
 // Engine can be stopped by canceling the given ctx.
-func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
-	err = h.Validate()
-	if err != nil {
-		return
-	}
-
-	ps, err := proxy.NewProxyService(h.Proxy.Strategy)
-	if err != nil {
-		return
-	}
-
-	rs, err := report.NewReportService(h.ReportDestination)
-	if err != nil {
-		return
-	}
+func NewEngine(ctx context.Context, h types.Hammer,
+	services *EngineServices,
+) (e *engine, err error) {
 
 	ss := scenario.NewScenarioService()
-	as := assertion.NewAssertionService()
 
 	e = &engine{
 		hammer:           h,
 		ctx:              ctx,
-		proxyService:     ps,
+		proxyService:     services.ProxyServ,
 		scenarioService:  ss,
-		reportService:    rs,
-		assertionService: as,
+		reportService:    services.ReportServ,
+		assertionService: services.AssertionServ,
 	}
 
 	e.assertionEnabled = e.defaultAssertionEnabled
@@ -112,15 +136,14 @@ func (e *engine) IsTestFailed() bool {
 }
 
 func (e *engine) Init() (err error) {
-	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
-		return
-	}
 	// read test data
 	readData, err := readTestData(e.hammer.TestDataConf)
 	if err != nil {
 		return err
 	}
 	e.hammer.Scenario.Data = readData
+
+	e.initReqCountArr()
 
 	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
@@ -131,14 +154,10 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.reportService.Init(e.hammer.Debug, e.hammer.SamplingRate); err != nil {
-		return
+	if e.assertionEnabled() {
+		e.abortChan = e.assertionService.AbortChan()
 	}
 
-	if e.assertionEnabled() {
-		e.abortChan = e.assertionService.Init(e.hammer.Assertions)
-	}
-	e.initReqCountArr()
 	return
 }
 
@@ -149,7 +168,7 @@ func (e *engine) Start() string {
 
 	var testResultChan chan assertion.TestAssertionResult
 	if e.assertionEnabled() { // test-wide assertions given
-		testResultChan = e.assertionService.Done()
+		testResultChan = e.assertionService.ResultChan()
 		// run test wide assertions in parallel
 		// listen to abortChan
 		go e.assertionService.Start(e.resultAssertChan)
