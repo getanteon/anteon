@@ -4,11 +4,13 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
-var AvailableAssertionServices = make(map[string]AssertionService)
-
-// AssertionService is the interface that abstracts different assertion implementations.
-type AssertionService interface {
-	ResultChan() chan TestAssertionResult
-	Start(input chan *types.ScenarioResult)
+type Aborter interface {
 	AbortChan() chan struct{}
+}
+type ResultListener interface {
+	Start(input chan *types.ScenarioResult)
+}
+
+type Asserter interface {
+	ResultChan() chan TestAssertionResult
 }

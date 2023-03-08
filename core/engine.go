@@ -50,11 +50,14 @@ const (
 type engine struct {
 	hammer types.Hammer
 
-	proxyService     proxy.ProxyService
-	reportService    report.ReportService
-	assertionService assertion.AssertionService
-
+	proxyService    proxy.ProxyService
+	reportService   report.ReportService
 	scenarioService *scenario.ScenarioService
+
+	// for assertion
+	aborter     assertion.Aborter
+	asserter    assertion.Asserter
+	resListener assertion.ResultListener
 
 	tickCounter int
 	reqCountArr []int
@@ -66,14 +69,15 @@ type engine struct {
 	abortChan   chan struct{}
 	testSuccess bool
 	ctx         context.Context
-
-	assertionEnabled func() bool
 }
 
 type EngineServices struct {
-	AssertionServ assertion.AssertionService
-	ProxyServ     proxy.ProxyService
-	ReportServ    report.ReportService
+	Aborter     assertion.Aborter
+	Asserter    assertion.Asserter
+	ResListener assertion.ResultListener
+
+	ProxyServ  proxy.ProxyService
+	ReportServ report.ReportService
 }
 
 var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
@@ -102,9 +106,13 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 	}
 
 	return &EngineServices{
-		AssertionServ: as,
-		ProxyServ:     ps,
-		ReportServ:    rs,
+		// defaultAssertionService as implements all
+		Aborter:     as,
+		Asserter:    as,
+		ResListener: as,
+
+		ProxyServ:  ps,
+		ReportServ: rs,
 	}, nil
 }
 
@@ -118,15 +126,17 @@ func NewEngine(ctx context.Context, h types.Hammer,
 	ss := scenario.NewScenarioService()
 
 	e = &engine{
-		hammer:           h,
-		ctx:              ctx,
-		proxyService:     services.ProxyServ,
-		scenarioService:  ss,
-		reportService:    services.ReportServ,
-		assertionService: services.AssertionServ,
-	}
+		hammer:          h,
+		ctx:             ctx,
+		proxyService:    services.ProxyServ,
+		scenarioService: ss,
+		reportService:   services.ReportServ,
 
-	e.assertionEnabled = e.defaultAssertionEnabled
+		// for assertion
+		aborter:     services.Aborter,
+		resListener: services.ResListener,
+		asserter:    services.Asserter,
+	}
 
 	return
 }
@@ -154,8 +164,8 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.assertionEnabled() {
-		e.abortChan = e.assertionService.AbortChan()
+	if e.abortAndAssertEnabled() {
+		e.abortChan = e.aborter.AbortChan()
 	}
 
 	return
@@ -167,12 +177,15 @@ func (e *engine) Start() string {
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
 	var testResultChan chan assertion.TestAssertionResult
-	if e.assertionEnabled() { // test-wide assertions given
-		testResultChan = e.assertionService.ResultChan()
+	if e.abortAndAssertEnabled() {
 		// run test wide assertions in parallel
-		// listen to abortChan
-		go e.assertionService.Start(e.resultAssertChan)
+		testResultChan = e.asserter.ResultChan()
 	}
+
+	if len(e.hammer.Assertions) > 0 { // test-wide assertions given
+		go e.resListener.Start(e.resultAssertChan)
+	}
+
 	go e.reportService.Start(e.resultReportChan, testResultChan)
 
 	defer func() {
@@ -241,17 +254,12 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	e.resultReportChan <- res
 
-	if e.assertionEnabled() {
+	if len(e.hammer.Assertions) > 0 {
 		e.resultAssertChan <- res
 	}
 }
 
-// for overriding assertion execution behaviour
-func (e *engine) SetAssertionEnabledFunc(f func() bool) {
-	e.assertionEnabled = f
-}
-
-func (e *engine) defaultAssertionEnabled() bool {
+func (e *engine) abortAndAssertEnabled() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
