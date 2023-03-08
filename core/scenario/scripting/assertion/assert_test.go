@@ -382,6 +382,13 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "greater_than(status_code,201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 400,
+			},
+			expected: true,
+		},
+		{
 			input: `range(header.content-length,300,400)`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,

@@ -16,6 +16,10 @@ var less_than = func(variable int64, limit int64) bool {
 	return variable < limit
 }
 
+var greater_than = func(variable int64, limit int64) bool {
+	return variable > limit
+}
+
 var not = func(b bool) bool {
 	return !b
 }
@@ -176,6 +180,7 @@ var equalsOnFile = func(source interface{}, filepath string) (bool, error) {
 var assertionFuncMap = map[string]struct{}{
 	NOT:          {},
 	LESSTHAN:     {},
+	GREATERTHAN:  {},
 	EQUALS:       {},
 	EQUALSONFILE: {},
 	IN:           {},
@@ -197,6 +202,7 @@ var assertionFuncMap = map[string]struct{}{
 const (
 	NOT          = "not"
 	LESSTHAN     = "less_than"
+	GREATERTHAN  = "greater_than"
 	EQUALS       = "equals"
 	IN           = "in"
 	JSONPATH     = "json_path"
