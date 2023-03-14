@@ -108,14 +108,14 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
-			input: `has(headers.Content-Type)`,
+			input: `exists(headers.Content-Type)`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
 			},
 			expected: true,
 		},
 		{
-			input: `has(headers.Not-Exist-Header)`,
+			input: `exists(headers.Not-Exist-Header)`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
 			},
@@ -397,7 +397,7 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
-			input: "has(headers.Content-Type2)",
+			input: "exists(headers.Content-Type2)",
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
 			},
