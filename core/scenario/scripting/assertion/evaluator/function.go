@@ -123,7 +123,7 @@ var assertionFuncMap = map[string]struct{}{
 	JSONPATH:     {},
 	XMLPATH:      {},
 	REGEXP:       {},
-	HAS:          {},
+	EXISTS:       {},
 	CONTAINS:     {},
 	RANGE:        {},
 }
@@ -136,7 +136,7 @@ const (
 	JSONPATH     = "json_path"
 	XMLPATH      = "xml_path"
 	REGEXP       = "regexp"
-	HAS          = "has"
+	EXISTS       = "exists"
 	CONTAINS     = "contains"
 	RANGE        = "range"
 	EQUALSONFILE = "equals_on_file"

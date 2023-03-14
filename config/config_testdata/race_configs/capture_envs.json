@@ -1,0 +1,28 @@
+{
+    "iteration_count": 10,
+    "duration": 2,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 2 Json Body",
+            "url": "{{HTTPBIN}}/json",
+            "method": "GET",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "capture_env": {
+                "NUM" :{ "from":"body","json_path":"quoteResponse.result.0.askSize"}
+            }
+        },
+        {
+            "id": 2,
+            "name": "Example Name 1",
+            "url": "{{LOCAL}}",
+            "method": "GET"
+        }
+    ],
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084/hello"
+    }
+}

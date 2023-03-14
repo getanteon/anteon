@@ -191,21 +191,3 @@ type AssertInfo struct {
 	Received map[string][]interface{}
 	Reason   string
 }
-
-func CleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
-	ticker := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			for stepId, ruleMap := range samplingCount {
-				for rule, count := range ruleMap {
-					if count >= samplingRate {
-						samplingCount[stepId][rule] = 0
-					}
-				}
-			}
-		case <-stopSampling:
-			return
-		}
-	}
-}

@@ -1,0 +1,60 @@
+{
+    "debug": false,
+    "steps": [
+      {
+        "id": 1,
+        "url": "https://testserver.ddosify.com/exchange/",
+        "name": "",
+        "method": "GET",
+        "others": {
+          "h2": false,
+          "keep-alive": true,
+          "disable-redirect": true,
+          "disable-compression": false
+        },
+        "timeout": 10,
+        "capture_env": {},
+        "assertion": [
+          "equals(status_code,203)",
+          "contains(body,\"afssafs\")"
+        ]
+      },
+      {
+        "id": 2,
+        "url": "https://testserver.ddosify.com/exchange/",
+        "name": "",
+        "method": "GET",
+        "others": {
+          "h2": false,
+          "keep-alive": true,
+          "disable-redirect": true,
+          "disable-compression": false
+        },
+        "timeout": 10,
+        "capture_env": {},
+        "assertion": [
+          "equals(status_code,401)"
+        ]
+      },
+      {
+        "id": 3,
+        "url": "https://teasgsagasgsastserver.ddosify.com/exchange/",
+        "name": "",
+        "method": "GET",
+        "others": {
+          "h2": false,
+          "keep-alive": true,
+          "disable-redirect": true,
+          "disable-compression": false
+        },
+        "timeout": 10,
+        "capture_env": {},
+        "assertion": [
+          "equals(status_code,401)"
+        ]
+      }
+    ],
+    "iteration_count": 10,
+    "duration": 2,
+    "output": "stdout-json"
+  }

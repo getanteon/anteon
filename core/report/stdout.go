@@ -87,10 +87,10 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
+	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 
 	for r := range input {
-		s.mu.Lock()
+		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
 	}
@@ -99,6 +99,26 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 	s.report()
 	stopSampling <- struct{}{}
 	s.doneChan <- struct{}{}
+}
+
+func (s *stdout) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			s.mu.Lock() // avoid race around samplingCount
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingRate {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+			s.mu.Unlock()
+		case <-stopSampling:
+			return
+		}
+	}
 }
 
 func (s *stdout) report() {

@@ -602,7 +602,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | Function | Parameters|   Description  |             
 | ------ | -------------------------------------------------------- | ------ |  
 | `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
-| `has`   | ( param `any` ) | checks if variable exists |
+| `exists`   | ( param `any` ) | checks if variable exists |
 | `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
 | `equals_on_file`   |    ( param `any`, file_path `string` )   | reads from given file path and checks if it equals to given parameter |
 | `in`   | ( param `any`, array_param `array` ) | checks if expression is in given array |
@@ -629,16 +629,17 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 | Expression | Description   |               
 | ------ | -------------------------------------------------------- |
+| `less_than(status_code,201)`   | checks if status code is less than 201   |
 | `equals(status_code,200)`   | checks if status code equals to 200      |
 | `status_code == 200`   | same as preceding one  |
 | `not(status_code == 500)`   | checks if status code not equals to 500   |
 | `status_code != 500`   | same as preceding one|
 | `equals(json_path(\"employees.0.name\"),\"Name\")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(xpath(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
 | `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
 | `equals_on_file(body,\"file.json\")`   | reads from file.json and compares response body with read file |
-| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
+| `exists(headers.Content-Type)`   | checks if content-type header exists in response headers|
 | `contains(body,\"xyz\")`   | checks if body contains "xyz" in it|
 | `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
