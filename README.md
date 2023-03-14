@@ -629,12 +629,13 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 | Expression | Description   |               
 | ------ | -------------------------------------------------------- |
+| `less_than(status_code,201)`   | checks if status code is less than 201   |
 | `equals(status_code,200)`   | checks if status code equals to 200      |
 | `status_code == 200`   | same as preceding one  |
 | `not(status_code == 500)`   | checks if status code not equals to 500   |
 | `status_code != 500`   | same as preceding one|
 | `equals(json_path(\"employees.0.name\"),\"Name\")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(xpath(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
 | `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
 | `equals_on_file(body,\"file.json\")`   | reads from file.json and compares response body with read file |
