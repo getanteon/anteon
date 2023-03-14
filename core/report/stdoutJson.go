@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sync"
+	"time"
 
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -40,6 +42,7 @@ type stdoutJson struct {
 	result       *Result
 	debug        bool
 	samplingRate int
+	mu           sync.Mutex
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
@@ -89,9 +92,31 @@ func (s *stdoutJson) DoneChan() <-chan struct{} {
 func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
+	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 	for r := range input {
+		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
+		s.mu.Unlock()
+	}
+}
+
+func (s *stdoutJson) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			s.mu.Lock() // avoid race around samplingCount
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingRate {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+			s.mu.Unlock()
+		case <-stopSampling:
+			return
+		}
 	}
 }
 
