@@ -49,8 +49,8 @@ const (
 	// Should match environment variables, reference
 	EnvironmentVariableRegexStr = `{{[a-zA-Z$][a-zA-Z0-9_().]*}}`
 
-	// Should match environment variables, definition
-	EnvironmentVariableNameStr = `^[a-zA-Z][a-zA-Z0-9_]*`
+	// Should match environment variables, definition, exact match
+	EnvironmentVariableNameStr = `^[a-zA-Z][a-zA-Z0-9_]*$`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
@@ -69,7 +69,6 @@ var envVarNameRegexp *regexp.Regexp
 func init() {
 	envVarRegexp = regexp.MustCompile(EnvironmentVariableRegexStr)
 	envVarNameRegexp = regexp.MustCompile(EnvironmentVariableNameStr)
-
 }
 
 // Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
@@ -92,9 +91,12 @@ func (s *Scenario) validate() error {
 		definedEnvs[key] = struct{}{} // exist
 	}
 	// add csv vars
-	for _, key := range s.CsvVars {
-		if !envVarNameRegexp.Match([]byte(key)) { // not a valid env definition
-			return fmt.Errorf("csv env key is not valid: %s", key)
+	for _, key := range s.CsvVars { // data.info.name
+		splitted := strings.Split(key, ".")
+		for _, s := range splitted {
+			if !envVarNameRegexp.Match([]byte(s)) { // not a valid env definition
+				return fmt.Errorf("env key is not valid: %s", key)
+			}
 		}
 		definedEnvs[key] = struct{}{} // exist
 	}
