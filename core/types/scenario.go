@@ -93,6 +93,9 @@ func (s *Scenario) validate() error {
 	// add csv vars
 	for _, key := range s.CsvVars { // data.info.name
 		splitted := strings.Split(key, ".")
+		if len(splitted) != 3 {
+			return fmt.Errorf("csv key can not have dot in it: %s", key)
+		}
 		for _, s := range splitted {
 			if !envVarNameRegexp.Match([]byte(s)) { // not a valid env definition
 				return fmt.Errorf("csv key is not valid: %s", key)
