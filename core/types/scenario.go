@@ -95,7 +95,7 @@ func (s *Scenario) validate() error {
 		splitted := strings.Split(key, ".")
 		for _, s := range splitted {
 			if !envVarNameRegexp.Match([]byte(s)) { // not a valid env definition
-				return fmt.Errorf("env key is not valid: %s", key)
+				return fmt.Errorf("csv key is not valid: %s", key)
 			}
 		}
 		definedEnvs[key] = struct{}{} // exist

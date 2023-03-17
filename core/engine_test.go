@@ -1635,6 +1635,25 @@ func TestDataCsv(t *testing.T) {
 
 }
 
+func TestInvalidCsvEnvs(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_invalid_csv_envs.json"), config.ConfigTypeJson)
+
+	h, _ := jsonReader.CreateHammer()
+
+	err := h.Validate()
+
+	if err == nil {
+		t.Errorf("TestInvalidCsvEnvs shoul be errored")
+	}
+}
+
 // The test creates a web server with Certificate auth,
 // then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {
