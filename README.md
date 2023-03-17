@@ -698,8 +698,8 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-               "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
-               "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
+               "CONTENT_TYPE": {"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
+               "REGEX_MATCH_ENV": {"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
             }         
         }
     ]
@@ -711,7 +711,7 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-                "TOKEN" :{"from":"header", "header_key":"Authorization"},
+                "TOKEN": {"from":"header", "header_key":"Authorization"},
             }         
         }
     ]
@@ -872,6 +872,7 @@ This repository includes the single-node version of the Ddosify Loader. For dist
 ## Disclaimer
 
 Ddosify is created for testing the performance of web applications. Users must be the owner of the target system. Using it for harmful purposes is extremely forbidden. Ddosify team & company is not responsible for its’ usages and consequences.
+
 ## License
 
 Licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
