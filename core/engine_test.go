@@ -722,6 +722,69 @@ func TestGlobalEnvs(t *testing.T) {
 	}
 }
 
+func TestInjectEnvToBasicAuth(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	requestCalled := false
+	headerKey := "Authorization"
+	var gotHeaderVal string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCalled = true
+		gotHeaderVal = r.Header.Get(headerKey)
+	}
+
+	path := "/xxx"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Debug = true
+	h.Scenario.Envs = map[string]interface{}{
+		"URL_PATH": path,
+	}
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:      1,
+		Method:  "GET",
+		URL:     server.URL + "{{URL_PATH}}",
+		Headers: map[string]string{},
+		Auth: types.Auth{
+			Type:     types.AuthHttpBasic,
+			Username: "kfc",
+			Password: "1234",
+		},
+	}
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestInjectEnvToBasicAuth error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestInjectEnvToBasicAuth error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !requestCalled {
+		t.Errorf("TestInjectEnvToBasicAuth test server has not been called, url path injection failed")
+	}
+
+	// base64 encoding of kfc:1234 -> a2ZjOjEyMzQ=
+	expectedAuthzHeader := "Basic a2ZjOjEyMzQ="
+
+	if !strings.EqualFold(gotHeaderVal, expectedAuthzHeader) {
+		t.Errorf("TestInjectEnvToBasicAuth header val could not be set from envs, expected : %s, got: %s", expectedAuthzHeader, gotHeaderVal)
+	}
+}
+
 func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	t.Parallel()
 
@@ -1570,6 +1633,25 @@ func TestDataCsv(t *testing.T) {
 		t.Errorf("TestCreateHammerDataCsv got: %#v expected: %#v", csvData.Rows[0], expectedRow)
 	}
 
+}
+
+func TestInvalidCsvEnvs(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_invalid_csv_envs.json"), config.ConfigTypeJson)
+
+	h, _ := jsonReader.CreateHammer()
+
+	err := h.Validate()
+
+	if err == nil {
+		t.Errorf("TestInvalidCsvEnvs shoul be errored")
+	}
 }
 
 // The test creates a web server with Certificate auth,

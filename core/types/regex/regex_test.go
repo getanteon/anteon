@@ -72,6 +72,9 @@ func TestEnvironmentVariableRegex(t *testing.T) {
 		{"Not Match5", "{{AV-}}", false},
 		{"Not Match6", "{{_A}}", false},
 		{"Not Match7", "{{_AB_2}}", false},
+		{"Not Match8", "{{£AB_2}}", false},
+		{"Not Match8", "{{3AB_2}}", false},
+		{"Not Match8", "{{%3AB_2}}", false},
 	}
 
 	for _, test := range tests {
