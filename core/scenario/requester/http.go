@@ -453,7 +453,9 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 			return nil, err
 		}
 	}
-	httpReq.SetBasicAuth(username, password)
+	if username != "" && password != "" {
+		httpReq.SetBasicAuth(username, password)
+	}
 
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
 	return httpReq, nil
