@@ -390,6 +390,13 @@ func TestAssert(t *testing.T) {
 			expectedError: "NotFoundError", // should be headers....
 		},
 		{
+			input: "greater_than(status_code,201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 400,
+			},
+			expected: true,
+		},
+		{
 			input: `less_than(headers.content-length,500)`,
 			envs: &evaluator.AssertEnv{
 				Headers: testHeader,
