@@ -85,6 +85,19 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 						}
 					}
 					return less_than(variable, limit), nil
+				case GREATERTHAN:
+					variable, ok := args[0].(int64)
+					if !ok {
+						variable, _ = strconv.ParseInt(args[0].(string), 0, 64)
+					}
+					limit, ok := args[1].(int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "limit of greater_than should be integer",
+							wrappedErr: nil,
+						}
+					}
+					return greater_than(variable, limit), nil
 				case EQUALS:
 					return equals(args[0], args[1])
 				case EQUALSONFILE:
