@@ -602,6 +602,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | Function | Parameters|   Description  |             
 | ------ | -------------------------------------------------------- | ------ |  
 | `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
+| `greater_than`   | ( param `int`, limit `int` )   | checks if param is greater than limit |
 | `exists`   | ( param `any` ) | checks if variable exists |
 | `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
 | `equals_on_file`   |    ( param `any`, file_path `string` )   | reads from given file path and checks if it equals to given parameter |
