@@ -386,12 +386,8 @@ func TestVerboseHttpInfoMarshallingSuccessCase(t *testing.T) {
 			Headers map[string]string "json:\"headers\""
 			Body    interface{}       "json:\"body\""
 		}{},
-		Response: struct {
-			StatusCode int               "json:\"statusCode\""
-			Headers    map[string]string "json:\"headers\""
-			Body       interface{}       "json:\"body\""
-		}{},
-		Error: noErrorStr,
+		Response: verboseResponse{},
+		Error:    noErrorStr,
 	}
 
 	bytesWithResponseAndNoError, _ := vSuccess.MarshalJSON()
