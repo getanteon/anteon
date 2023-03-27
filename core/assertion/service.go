@@ -25,8 +25,9 @@ type DefaultAssertionService struct {
 }
 
 type TestAssertionResult struct {
-	Fail        bool
-	FailedRules []FailedRule
+	Fail        bool         `json:"fail"`
+	Aborted     bool         `json:"aborted"`
+	FailedRules []FailedRule `json:"failed_rules"`
 }
 
 type FailedRule struct {
