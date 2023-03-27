@@ -17,9 +17,10 @@ type verboseRequest struct {
 }
 
 type verboseResponse struct {
-	StatusCode int               `json:"status_code"`
-	Headers    map[string]string `json:"headers"`
-	Body       interface{}       `json:"body"`
+	StatusCode   int               `json:"status_code"`
+	Headers      map[string]string `json:"headers"`
+	Body         interface{}       `json:"body"`
+	ResponseTime int64             `json:"response_time"` // in milliseconds
 }
 
 type verboseHttpRequestInfo struct {
@@ -67,9 +68,10 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			sr.RespBody)
 		// TODO what to do with error
 		verboseInfo.Response = verboseResponse{
-			StatusCode: sr.StatusCode,
-			Headers:    responseHeaders,
-			Body:       responseBody,
+			StatusCode:   sr.StatusCode,
+			Headers:      responseHeaders,
+			Body:         responseBody,
+			ResponseTime: sr.Duration.Milliseconds(),
 		}
 	}
 
