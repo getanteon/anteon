@@ -118,26 +118,47 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case CONTAINS:
 					return contains(args[0].(string), args[1].(string)), nil
 				case RANGE:
-					var x, low, high int64
+					var x, low, high float64
 
-					x, ok = args[0].(int64)
+					x, ok = args[0].(float64)
 					if !ok {
-						x, _ = strconv.ParseInt(args[0].(string), 0, 64)
-					}
-
-					low, ok = args[1].(int64)
-					if !ok {
-						return false, ArgumentError{
-							msg:        "arguments of range should be integer",
-							wrappedErr: nil,
+						xInt, ok := args[0].(int64)
+						if ok {
+							x = float64(xInt)
+						} else {
+							// assume that it is string
+							xFloat, err := strconv.ParseFloat(args[0].(string), 64)
+							if err != nil {
+								return false, ArgumentError{
+									msg:        "arguments of range should be integer or float",
+									wrappedErr: nil,
+								}
+							}
+							x = xFloat
 						}
 					}
-					high, ok = args[2].(int64)
+
+					low, ok = args[1].(float64)
 					if !ok {
-						return false, ArgumentError{
-							msg:        "arguments of range should be integer",
-							wrappedErr: nil,
+						lowInt, ok := args[1].(int64)
+						if !ok {
+							return false, ArgumentError{
+								msg:        "arguments of range should be integer or float",
+								wrappedErr: nil,
+							}
 						}
+						low = float64(lowInt)
+					}
+					high, ok = args[2].(float64)
+					if !ok {
+						highInt, ok := args[2].(int64)
+						if !ok {
+							return false, ArgumentError{
+								msg:        "arguments of range should be integer or float",
+								wrappedErr: nil,
+							}
+						}
+						high = float64(highInt)
 					}
 
 					return rangeF(x, low, high), nil
