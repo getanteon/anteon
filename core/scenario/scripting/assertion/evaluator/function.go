@@ -48,7 +48,7 @@ var contains = func(source string, substr string) bool {
 	return false
 }
 
-var rangeF = func(x int64, low int64, hi int64) bool {
+var rangeF = func(x float64, low float64, hi float64) bool {
 	if x >= low && x < hi {
 		return true
 	}
