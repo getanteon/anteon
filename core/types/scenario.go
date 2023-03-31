@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -137,6 +138,17 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 					fmt.Println(v[7 : len(v)-3])
 					if _, ok := definedEnvs[v[7:len(v)-3]]; ok {
 						continue
+					}
+				}
+
+				if strings.HasPrefix(v[2:len(v)-2], "$") {
+					varName := v[3 : len(v)-2];
+					if _, ok := os.LookupEnv(varName); ok {
+						continue
+					}
+
+					return EnvironmentNotDefinedError{
+						msg: fmt.Sprintf("%s is not found in the operating system environment variables", v),
 					}
 				}
 
