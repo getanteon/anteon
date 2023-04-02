@@ -513,6 +513,7 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
+In addition to this, you can also use operating system environment variables. The '$' prefix can be used to access operating system environment variables. To do so, use the syntax {{$OS_ENV_VARIABLE}} in the config file. For example, to use the USER environment variable from the operating system, you would use {{$USER}}.
 
 ### Parameterization on URL
 
