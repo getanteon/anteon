@@ -513,7 +513,6 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
-
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
@@ -554,8 +553,6 @@ Dynamic variables can be used on config file as well. Ddosify sends *100* GET re
 ddosify -config ddosify_config_dynamic.json
 ```
 
-
-
 ```json
 {
     "iteration_count": 100,
@@ -568,6 +565,33 @@ ddosify -config ddosify_config_dynamic.json
             "method": "POST",
             "headers": {
                 "User-Key": "{{_randomInt}}"
+            }
+        }
+    ]
+}
+```
+
+### Operating System Environment Variables
+
+In addition, you can also use operating system environment variables. To access these variables, simply add the `$` prefix followed by the variable name wrapped in double curly braces. The syntax for this is `{{$OS_ENV_VARIABLE}}` within the **config file**. For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, and `Basic Authentication`. Here is an example of using operating system environment variables in the config file. `TARGET_SITE` operating system environment variable is used in `URL` and `USER` environment variable is used in `Headers`.
+    
+```bash
+export TARGET_SITE="https://test_site1.com"
+ddosify -config ddosify_config_os_env.json
+```
+
+```json
+{
+    "iteration_count": 100,
+    "load_type": "linear",
+    "duration": 10,
+    "steps": [
+        {
+            "id": 1,
+            "url": "{{$TARGET_SITE}}",
+            "method": "POST",
+            "headers": {
+                "os-env-user": "{{$USER}}"
             }
         }
     ]
