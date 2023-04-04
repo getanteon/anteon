@@ -33,6 +33,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
@@ -157,6 +158,24 @@ type JsonReader struct {
 	Debug        bool                   `json:"debug"`
 	SamplingRate *int                   `json:"sampling_rate"`
 	EngineMode   string                 `json:"engine_mode"`
+	Cookies      CookieConf             `json:"cookie_jar"`
+}
+
+type CookieConf struct {
+	Cookies []CustomCookie `json:"cookies"`
+	Enabled bool           `json:"enabled"`
+}
+
+type CustomCookie struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Domain   string `json:"domain"`
+	Path     string `json:"path"`
+	Expires  string `json:"expires"`
+	MaxAge   string `json:"max_age"`
+	HttpOnly bool   `json:"http_only"`
+	Secure   bool   `json:"secure"`
+	Raw      string `json:"raw"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -278,6 +297,8 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SamplingRate:      samplingRate,
 		EngineMode:        j.EngineMode,
 		TestDataConf:      testDataConf,
+		Cookies:           *(*[]types.CustomCookie)(unsafe.Pointer(&j.Cookies.Cookies)),
+		CookiesEnabled:    j.Cookies.Enabled,
 	}
 	return
 }
