@@ -103,7 +103,8 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 		} else if s.engineMode == types.EngineModeDistinctUser {
 			initialCount = opts.IterationCount
 		}
-		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, func() *http.Client { return &http.Client{} })
+		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, s.engineMode,
+			createFactoryMethod(s.engineMode))
 	}
 	// s.cPool will be nil otherwise
 
