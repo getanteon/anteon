@@ -191,12 +191,12 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	// could not prepare req, correlation
 	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
-			StepName         string                  `json:"stepName"`
+			StepId           uint16                  `json:"step_id"`
+			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
-			TestData         map[string]interface{}  `json:"testData"`
-			FailedCaptures   map[string]string       `json:"failedCaptures"`
-			FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+			TestData         map[string]interface{}  `json:"test_data"`
+			FailedCaptures   map[string]string       `json:"failed_captures"`
+			FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 			Error            string                  `json:"error"`
 		}
 
@@ -214,12 +214,12 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 
 	if v.Error != "" { // server error no body
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
-			StepName         string                  `json:"stepName"`
+			StepId           uint16                  `json:"step_id"`
+			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
-			TestData         map[string]interface{}  `json:"testData"`
-			FailedCaptures   map[string]string       `json:"failedCaptures"`
-			FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+			TestData         map[string]interface{}  `json:"test_data"`
+			FailedCaptures   map[string]string       `json:"failed_captures"`
+			FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 			Request          struct {
 				Url     string            `json:"url"`
 				Method  string            `json:"method"`
@@ -244,23 +244,19 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	}
 
 	type alias struct {
-		StepId           uint16                  `json:"stepId"`
-		StepName         string                  `json:"stepName"`
+		StepId           uint16                  `json:"step_id"`
+		StepName         string                  `json:"step_name"`
 		Envs             map[string]interface{}  `json:"envs"`
-		TestData         map[string]interface{}  `json:"testData"`
-		FailedCaptures   map[string]string       `json:"failedCaptures"`
-		FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+		TestData         map[string]interface{}  `json:"test_data"`
+		FailedCaptures   map[string]string       `json:"failed_captures"`
+		FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 		Request          struct {
 			Url     string            `json:"url"`
 			Method  string            `json:"method"`
 			Headers map[string]string `json:"headers"`
 			Body    interface{}       `json:"body"`
 		} `json:"request"`
-		Response struct {
-			StatusCode int               `json:"statusCode"`
-			Headers    map[string]string `json:"headers"`
-			Body       interface{}       `json:"body"`
-		} `json:"response"`
+		Response verboseResponse `json:"response"`
 	}
 
 	a := alias{

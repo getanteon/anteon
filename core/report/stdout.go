@@ -248,6 +248,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				// response
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
 				for hKey, hVal := range verboseInfo.Response.Headers {
 					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)

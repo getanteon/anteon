@@ -17,20 +17,21 @@ type verboseRequest struct {
 }
 
 type verboseResponse struct {
-	StatusCode int               `json:"statusCode"`
-	Headers    map[string]string `json:"headers"`
-	Body       interface{}       `json:"body"`
+	StatusCode   int               `json:"status_code"`
+	Headers      map[string]string `json:"headers"`
+	Body         interface{}       `json:"body"`
+	ResponseTime int64             `json:"response_time"` // in milliseconds
 }
 
 type verboseHttpRequestInfo struct {
-	StepId           uint16                  `json:"stepId"`
-	StepName         string                  `json:"stepName"`
+	StepId           uint16                  `json:"step_id"`
+	StepName         string                  `json:"step_name"`
 	Request          verboseRequest          `json:"request"`
 	Response         verboseResponse         `json:"response"`
 	Envs             map[string]interface{}  `json:"envs"`
-	TestData         map[string]interface{}  `json:"testData"`
-	FailedCaptures   map[string]string       `json:"failedCaptures"`
-	FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+	TestData         map[string]interface{}  `json:"test_data"`
+	FailedCaptures   map[string]string       `json:"failed_captures"`
+	FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 	Error            string                  `json:"error"`
 }
 
@@ -66,14 +67,11 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 		responseHeaders, responseBody, _ := decode(sr.RespHeaders,
 			sr.RespBody)
 		// TODO what to do with error
-		verboseInfo.Response = struct {
-			StatusCode int               "json:\"statusCode\""
-			Headers    map[string]string "json:\"headers\""
-			Body       interface{}       `json:"body"`
-		}{
-			StatusCode: sr.StatusCode,
-			Headers:    responseHeaders,
-			Body:       responseBody,
+		verboseInfo.Response = verboseResponse{
+			StatusCode:   sr.StatusCode,
+			Headers:      responseHeaders,
+			Body:         responseBody,
+			ResponseTime: sr.Duration.Milliseconds(),
 		}
 	}
 

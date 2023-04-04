@@ -284,6 +284,27 @@ func TestAssert(t *testing.T) {
 			expectedError: "ArgumentError", // range params should be integer
 		},
 		{
+			input: `range(headers.content-length,200,400.2)`, // range can take floats also
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
+			input: `range(301.2,200,400.2)`, // range can take floats also
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
+			input: `range(301.2,200,400)`, // range can take floats also
+			envs: &evaluator.AssertEnv{
+				Headers: testHeader,
+			},
+			expected: true,
+		},
+		{
 			input:    `equals_on_file("abc","./test_files/a.txt")`,
 			expected: true,
 		},

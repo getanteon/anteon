@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -214,6 +215,14 @@ func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (
 
 	var exists bool
 	val, exists = envs[key]
+
+	isOsEnv := strings.HasPrefix(key, "$")
+
+	if isOsEnv {
+		varName := key[1:];
+		val, exists = os.LookupEnv(varName);
+	}
+
 	if !exists {
 		err = fmt.Errorf("env not found")
 	}
