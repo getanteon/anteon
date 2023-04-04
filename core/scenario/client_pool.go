@@ -127,12 +127,17 @@ var defaultFactory = func() *http.Client {
 	return &http.Client{}
 }
 
-func createFactoryMethod(mode string) Factory {
+// createFactoryMethod returns a Factory function based on the engine mode.
+func createFactoryMethod(mode string, opts ...func(http.CookieJar)) Factory {
 	if mode == types.EngineModeRepeatedUser {
 		return func() *http.Client {
 			jar, err := NewCoooieJarRepeated()
 			if err != nil {
 				return defaultFactory() // no cookie jar, use default factory
+			}
+
+			for _, opt := range opts {
+				opt(jar)
 			}
 			return &http.Client{Jar: jar}
 		}
@@ -143,6 +148,10 @@ func createFactoryMethod(mode string) Factory {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			return defaultFactory() // no cookie jar, use default factory
+		}
+
+		for _, opt := range opts {
+			opt(jar)
 		}
 		return &http.Client{Jar: jar}
 	}
