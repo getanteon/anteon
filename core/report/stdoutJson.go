@@ -191,7 +191,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	// could not prepare req, correlation
 	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
+			StepId           uint16                  `json:"step_id"`
 			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
 			TestData         map[string]interface{}  `json:"test_data"`
@@ -214,7 +214,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 
 	if v.Error != "" { // server error no body
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
+			StepId           uint16                  `json:"step_id"`
 			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
 			TestData         map[string]interface{}  `json:"test_data"`
@@ -244,7 +244,7 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	}
 
 	type alias struct {
-		StepId           uint16                  `json:"stepId"`
+		StepId           uint16                  `json:"step_id"`
 		StepName         string                  `json:"step_name"`
 		Envs             map[string]interface{}  `json:"envs"`
 		TestData         map[string]interface{}  `json:"test_data"`
