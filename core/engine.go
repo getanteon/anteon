@@ -23,6 +23,7 @@ package core
 import (
 	"context"
 	"math"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -103,13 +104,35 @@ func (e *engine) Init() (err error) {
 	}
 	e.hammer.Scenario.Data = readData
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
-		Debug:                  e.hammer.Debug,
-		IterationCount:         e.hammer.IterationCount,
-		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
-		EngineMode:             e.hammer.EngineMode,
-	}); err != nil {
-		return
+	var initialCookies []*http.Cookie
+	if e.hammer.CookiesEnabled && len(e.hammer.Cookies) > 0 {
+		initialCookies = make([]*http.Cookie, 0, len(e.hammer.Cookies))
+		for _, c := range e.hammer.Cookies {
+			var ck *http.Cookie
+			if c.Raw != "" {
+				// TODO parse raw cookie
+			} else {
+				ck = &http.Cookie{
+					Name:       c.Name,
+					Value:      c.Value,
+					Path:       c.Path,
+					Domain:     c.Domain,
+					Expires:    time.Time{}, // TODO : parse expires
+					RawExpires: c.Expires,
+					MaxAge:     c.MaxAge,
+					Secure:     c.Secure,
+					HttpOnly:   c.HttpOnly,
+					Raw:        c.Raw,
+
+					// below fields not used
+					SameSite: 0,
+					Unparsed: []string{},
+				}
+			}
+
+			initialCookies = append(initialCookies, ck)
+
+		}
 	}
 
 	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
@@ -117,6 +140,7 @@ func (e *engine) Init() (err error) {
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
 		EngineMode:             e.hammer.EngineMode,
+		InitialCookies:         initialCookies,
 	}); err != nil {
 		return
 	}

@@ -69,6 +69,7 @@ type ScenarioOpts struct {
 	IterationCount         int
 	MaxConcurrentIterCount int
 	EngineMode             string
+	InitialCookies         []*http.Cookie
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
@@ -104,7 +105,16 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 			initialCount = opts.IterationCount
 		}
 		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, s.engineMode,
-			createFactoryMethod(s.engineMode))
+			createFactoryMethod(s.engineMode, func(cj http.CookieJar) {
+				for _, c := range opts.InitialCookies {
+					var scheme string = "http"
+					if c.Secure {
+						scheme = "https"
+					}
+					url := &url.URL{Host: c.Domain, Scheme: scheme}
+					cj.SetCookies(url, []*http.Cookie{c})
+				}
+			}))
 	}
 	// s.cPool will be nil otherwise
 

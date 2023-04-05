@@ -172,7 +172,7 @@ type CustomCookie struct {
 	Domain   string `json:"domain"`
 	Path     string `json:"path"`
 	Expires  string `json:"expires"`
-	MaxAge   string `json:"max_age"`
+	MaxAge   int    `json:"max_age"`
 	HttpOnly bool   `json:"http_only"`
 	Secure   bool   `json:"secure"`
 	Raw      string `json:"raw"`
