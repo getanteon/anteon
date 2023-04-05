@@ -10,6 +10,10 @@ import (
 	"go.ddosify.com/ddosify/core/types"
 )
 
+// If the user agent receives a new cookie with the same cookie-name,
+// domain-value, and path-value as a cookie that it has already stored,
+// the existing cookie is evicted and replaced with the new cookie
+
 func TestCookieManagerInRepeatedModeOnlySetInFirstIter(t *testing.T) {
 	t.Parallel()
 

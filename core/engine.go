@@ -110,7 +110,9 @@ func (e *engine) Init() (err error) {
 		for _, c := range e.hammer.Cookies {
 			var ck *http.Cookie
 			if c.Raw != "" {
-				// TODO parse raw cookie
+				ck = &http.Cookie{
+					Raw: c.Raw,
+				}
 			} else {
 				ck = &http.Cookie{
 					Name:       c.Name,
@@ -131,7 +133,6 @@ func (e *engine) Init() (err error) {
 			}
 
 			initialCookies = append(initialCookies, ck)
-
 		}
 	}
 

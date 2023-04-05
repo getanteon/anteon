@@ -99,12 +99,19 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	if s.engineInUserMode() {
 		// create client pool
 		var initialCount int
-		if s.engineMode == types.EngineModeRepeatedUser {
+		var maxCount int
+		if opts.Debug {
+			// just one client
+			initialCount = 1
+			maxCount = 1
+		} else if s.engineMode == types.EngineModeRepeatedUser {
 			initialCount = opts.MaxConcurrentIterCount
+			maxCount = opts.MaxConcurrentIterCount
 		} else if s.engineMode == types.EngineModeDistinctUser {
 			initialCount = opts.IterationCount
+			maxCount = opts.MaxConcurrentIterCount
 		}
-		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, s.engineMode,
+		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode,
 			createFactoryMethod(s.engineMode, func(cj http.CookieJar) {
 				for _, c := range opts.InitialCookies {
 					var scheme string = "http"
