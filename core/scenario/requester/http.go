@@ -264,6 +264,21 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
 		}
 
+		cookies := make(map[string]*http.Cookie, len(httpRes.Cookies()))
+		for _, cookie := range httpRes.Cookies() {
+			cookies[cookie.Name] = &http.Cookie{
+				Name:     cookie.Name,
+				Value:    cookie.Value,
+				Path:     cookie.Path,
+				Domain:   cookie.Domain,
+				Expires:  cookie.Expires,
+				Secure:   cookie.Secure,
+				HttpOnly: cookie.HttpOnly,
+				SameSite: cookie.SameSite,
+				Raw:      cookie.Raw,
+				Unparsed: cookie.Unparsed,
+			}
+		}
 		// assert
 		if len(h.packet.Assertions) > 0 {
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
@@ -273,6 +288,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 				Body:         string(respBody),
 				Headers:      httpRes.Header,
 				Variables:    concatEnvs(envs, extractedVars),
+				Cookies:      cookies,
 			})
 		}
 	}

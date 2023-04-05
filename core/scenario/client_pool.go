@@ -73,8 +73,8 @@ func (c *clientPool) Put(client *http.Client) error {
 	case c.clients <- client:
 		// if engine is in repeated mode, notify jar that cookies are already set
 		// to avoid setting them again in the next iteration
-		if c.engineMode == types.EngineModeRepeatedUser && client.Jar != nil && !client.Jar.(*cookieJarRepeated).set {
-			client.Jar.(*cookieJarRepeated).set = true
+		if c.engineMode == types.EngineModeRepeatedUser && client.Jar != nil && !client.Jar.(*cookieJarRepeated).firstIterPassed {
+			client.Jar.(*cookieJarRepeated).firstIterPassed = true
 		}
 		return nil
 	default:
@@ -97,7 +97,7 @@ func (c *clientPool) Done() {
 
 type cookieJarRepeated struct {
 	defaultCookieJar *cookiejar.Jar
-	set              bool
+	firstIterPassed  bool
 }
 
 func NewCoooieJarRepeated() (*cookieJarRepeated, error) {
@@ -111,10 +111,9 @@ func NewCoooieJarRepeated() (*cookieJarRepeated, error) {
 // SetCookies implements the http.CookieJar interface.
 // Only set cookies if they are not already set for repeated mode.
 func (c *cookieJarRepeated) SetCookies(u *url.URL, cookies []*http.Cookie) {
-	if !c.set {
+	if !c.firstIterPassed {
 		// execute default behavior if no cookies are set
 		c.defaultCookieJar.SetCookies(u, cookies)
-		c.set = true
 	}
 }
 
