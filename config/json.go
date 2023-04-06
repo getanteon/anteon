@@ -284,6 +284,10 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	if j.Cookies.Enabled && j.EngineMode == types.EngineModeDdosify {
+		return h, fmt.Errorf("cookies are not supported in ddosify engine mode, please use distinct-user or repeated-user mode")
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
