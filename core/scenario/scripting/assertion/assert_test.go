@@ -462,6 +462,55 @@ func TestAssert(t *testing.T) {
 
 			expected: true,
 		},
+		{
+			input: "equals(cookies.test.value, \"value\")",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "exists(cookies.test)",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "exists(cookies.test2)",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			input: "cookies.test.secure",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						Secure: true,
+					},
+				},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {

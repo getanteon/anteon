@@ -107,35 +107,9 @@ func (e *engine) Init() (err error) {
 
 	var initialCookies []*http.Cookie
 	if e.hammer.CookiesEnabled && len(e.hammer.Cookies) > 0 {
-		initialCookies = make([]*http.Cookie, 0, len(e.hammer.Cookies))
-		for _, c := range e.hammer.Cookies {
-			var ck *http.Cookie
-			if c.Raw != "" {
-				cookies := parseRawCookie(c.Raw)
-				if len(cookies) == 0 {
-					return fmt.Errorf("cookie could not be parsed, got : %s", c.Raw)
-				}
-				ck = cookies[0]
-			} else {
-				ck = &http.Cookie{
-					Name:       c.Name,
-					Value:      c.Value,
-					Path:       c.Path,
-					Domain:     c.Domain,
-					Expires:    time.Time{}, // TODO : parse expires
-					RawExpires: c.Expires,
-					MaxAge:     c.MaxAge,
-					Secure:     c.Secure,
-					HttpOnly:   c.HttpOnly,
-					Raw:        c.Raw,
-
-					// below fields not used
-					SameSite: 0,
-					Unparsed: []string{},
-				}
-			}
-
-			initialCookies = append(initialCookies, ck)
+		initialCookies, err = createInitialCookies(e.hammer.Cookies)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -427,4 +401,43 @@ func parseRawCookie(cookie string) []*http.Cookie {
 	header.Add("Set-Cookie", cookie)
 	req := http.Response{Header: header}
 	return req.Cookies()
+}
+
+var createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+	initialCookies := make([]*http.Cookie, 0, len(cookies))
+	for _, c := range cookies {
+		var ck *http.Cookie
+		if c.Raw != "" {
+			cookies := parseRawCookie(c.Raw)
+			if len(cookies) == 0 {
+				return nil, fmt.Errorf("cookie could not be parsed, got : %s", c.Raw)
+			}
+			ck = cookies[0]
+		} else {
+			expires, err := time.Parse(time.RFC1123, c.Expires)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing cookie expiry: %s", err)
+			}
+			ck = &http.Cookie{
+				Name:       c.Name,
+				Value:      c.Value,
+				Path:       c.Path,
+				Domain:     c.Domain,
+				Expires:    expires,
+				RawExpires: c.Expires,
+				MaxAge:     c.MaxAge,
+				Secure:     c.Secure,
+				HttpOnly:   c.HttpOnly,
+				Raw:        c.Raw,
+
+				// below fields not used
+				SameSite: 0,
+				Unparsed: []string{},
+			}
+		}
+
+		initialCookies = append(initialCookies, ck)
+	}
+
+	return initialCookies, nil
 }

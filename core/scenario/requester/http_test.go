@@ -483,3 +483,49 @@ func TestAssertions(t *testing.T) {
 		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[1].Received)
 	}
 }
+
+func TestResponseCookiesSentToAssertions(t *testing.T) {
+	t.Parallel()
+	// Test server
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "Argentina", Value: "Messi"})
+		http.SetCookie(w, &http.Cookie{Name: "Goat", Value: "Messi"})
+
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	passRule := "equals(cookies.Argentina.value,\"Messi\")"
+	failRule := "equals(cookies.Goat.value,\"Ronaldo\")"
+
+	pathFirst := "/json-body"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	s := types.ScenarioStep{
+		ID:         1,
+		Method:     "GET",
+		URL:        server.URL + pathFirst,
+		Assertions: []string{passRule, failRule},
+	}
+
+	ctx := context.TODO()
+	h := &HttpRequester{}
+	h.Init(ctx, s, nil, false, nil)
+
+	res := h.Send(http.DefaultClient, map[string]interface{}{})
+
+	if len(res.FailedAssertions) != 1 {
+		t.Errorf("expected 1 failed assertion, got %d", len(res.FailedAssertions))
+	}
+
+	if !strings.EqualFold(res.FailedAssertions[0].Rule, failRule) {
+		t.Errorf("rule expected %s, got %s", failRule, res.FailedAssertions[0].Rule)
+	}
+
+	if reflect.DeepEqual(res.FailedAssertions[0].Received, "Ronaldo") {
+		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[0].Received)
+	}
+}

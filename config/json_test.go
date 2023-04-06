@@ -456,6 +456,16 @@ func TestCreateHammerInvalidTarget(t *testing.T) {
 	}
 }
 
+func TestCreateHammerCookiesEnabledValidOnlyOnUserModes(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_invalid_user_mode_for_cookies.json"), ConfigTypeJson)
+
+	_, err := jsonReader.CreateHammer()
+	if err == nil {
+		t.Errorf("TestCreateHammerCookiesEnabledValidOnlyOnUserModes expected error but got nil, cookies enabled only on user modes")
+	}
+}
+
 func TestCreateHammerTLS(t *testing.T) {
 	t.Parallel()
 

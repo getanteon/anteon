@@ -26,6 +26,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -1651,6 +1652,74 @@ func TestInvalidCsvEnvs(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("TestInvalidCsvEnvs shoul be errored")
+	}
+}
+
+func TestCreateInitialCookiesReturnsErr(t *testing.T) {
+	t.Parallel()
+
+	// Prepare
+	h := newDummyHammer()
+	h.CookiesEnabled = true
+	h.Cookies = []types.CustomCookie{
+		{Name: "test", Value: "test"},
+	}
+	tmpFunc := createInitialCookies
+	createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+		return nil, errors.New("test error")
+	}
+	defer func() { createInitialCookies = tmpFunc }()
+
+	// Act
+	e, err := NewEngine(context.TODO(), h)
+	if err != nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err == nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr should be errored")
+	}
+}
+
+func TestCreateInitialCookies(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_init_cookies.json"), config.ConfigTypeJson)
+
+	h, _ := jsonReader.CreateHammer()
+	initCookies, err := createInitialCookies(h.Cookies)
+
+	if err != nil {
+		t.Errorf("TestCreateInitialCookies error occurred: %v", err)
+	}
+
+	rawExpires := "Thu, 16 Mar 2023 09:24:02 GMT"
+	expires, _ := time.Parse(time.RFC1123, rawExpires)
+
+	expectedCookie := http.Cookie{
+		Name:       "platform",
+		Value:      "web",
+		Path:       "/",
+		Domain:     "httpbin.ddosify.com",
+		Expires:    expires,
+		RawExpires: rawExpires,
+		MaxAge:     0,
+		Secure:     false,
+		HttpOnly:   true,
+
+		SameSite: 0,
+		Raw:      "",
+		Unparsed: []string{},
+	}
+
+	if !reflect.DeepEqual(expectedCookie, *initCookies[0]) {
+		t.Errorf("TestCreateInitialCookies got: %v expected: %v", initCookies[0], expectedCookie)
 	}
 }
 
