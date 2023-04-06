@@ -43,6 +43,13 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "response_time < 300.5",
+			envs: &evaluator.AssertEnv{
+				ResponseTime: 220,
+			},
+			expected: true,
+		},
+		{
 			input: "in(status_code,[200,201])",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 500,
@@ -68,6 +75,13 @@ func TestAssert(t *testing.T) {
 		},
 		{
 			input: "status_code == 200",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: true,
+		},
+		{
+			input: "status_code == \"200\"",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 200,
 			},
@@ -164,6 +178,15 @@ func TestAssert(t *testing.T) {
 			},
 			expected:      false,
 			expectedError: "NotFoundError",
+		},
+		{
+			input: `equals(variables.c,null)`,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"c": nil,
+				},
+			},
+			expected: true,
 		},
 		{
 			input: `variables.arr != ["Kenan","Faruk","Cakir"]`,
@@ -547,6 +570,87 @@ func TestAssert(t *testing.T) {
 						Value:      "value",
 						Secure:     true,
 						RawExpires: "Thu, 01 Jan 1970 00:00:00 GMT",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.httpOnly",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.notexists",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.notexists",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.notexists.value",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.test.maxAge == 100",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						MaxAge: 100,
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.domain == \"ddosify.com\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						Domain: "ddosify.com",
 					},
 				},
 			},
