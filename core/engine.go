@@ -22,6 +22,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
 	"reflect"
@@ -110,9 +111,11 @@ func (e *engine) Init() (err error) {
 		for _, c := range e.hammer.Cookies {
 			var ck *http.Cookie
 			if c.Raw != "" {
-				ck = &http.Cookie{
-					Raw: c.Raw,
+				cookies := parseRawCookie(c.Raw)
+				if len(cookies) == 0 {
+					return fmt.Errorf("cookie could not be parsed, got : %s", c.Raw)
 				}
+				ck = cookies[0]
 			} else {
 				ck = &http.Cookie{
 					Name:       c.Name,
@@ -417,4 +420,11 @@ var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types
 	}
 
 	return readData, nil
+}
+
+func parseRawCookie(cookie string) []*http.Cookie {
+	header := http.Header{}
+	header.Add("Set-Cookie", cookie)
+	req := http.Response{Header: header}
+	return req.Cookies()
 }
