@@ -488,9 +488,9 @@ func evalCookieField(c *http.Cookie, fieldName string) (interface{}, error) {
 	case "domain":
 		return c.Domain, nil
 	case "expires":
-		return c.Expires, nil
-	case "rawExpires":
 		return c.RawExpires, nil
+	// case "rawExpires":
+	// 	return c.RawExpires, nil
 	case "maxAge":
 		return c.MaxAge, nil
 	case "secure":
@@ -499,8 +499,8 @@ func evalCookieField(c *http.Cookie, fieldName string) (interface{}, error) {
 		return c.HttpOnly, nil
 	case "raw":
 		return c.Raw, nil
-	case "unparsed":
-		return c.Unparsed, nil
+	// case "unparsed":
+	// 	return c.Unparsed, nil
 	default:
 		return nil, fmt.Errorf("unknown field %s", fieldName)
 	}

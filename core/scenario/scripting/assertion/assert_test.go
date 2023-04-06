@@ -511,6 +511,33 @@ func TestAssert(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			input: "cookies.test.expires == \"Thu, 01 Jan 1970 00:00:00 GMT\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:       "test",
+						Value:      "value",
+						Secure:     true,
+						RawExpires: "Thu, 01 Jan 1970 00:00:00 GMT",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.path == \"/login\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+						Path:  "/login",
+					},
+				},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {
