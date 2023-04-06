@@ -65,6 +65,7 @@ func TestCookieManagerInRepeatedModeOnlySetInFirstIter(t *testing.T) {
 	host := httptest.NewServer(mux)
 	defer host.Close()
 
+	// make sure we get the same client in second iteration, 1,1 means we have only one client
 	pool, _ := NewClientPool(1, 1, types.EngineModeRepeatedUser, createFactoryMethod(types.EngineModeRepeatedUser))
 
 	c := pool.Get()
@@ -73,6 +74,10 @@ func TestCookieManagerInRepeatedModeOnlySetInFirstIter(t *testing.T) {
 	// first iteration
 	c.Get(host.URL + pathFirst)
 	c.Get(host.URL + pathSecond)
+
+	// put client back to pool, so we can reuse it in second iteration
+	pool.Put(c)
+	c = pool.Get()
 
 	// second iteration
 	c.Get(host.URL + pathFirst)
