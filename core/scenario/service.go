@@ -111,21 +111,24 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 			initialCount = opts.IterationCount
 			maxCount = opts.MaxConcurrentIterCount
 		}
-		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode,
-			createFactoryMethod(s.engineMode, func(cj http.CookieJar) {
-				for _, c := range opts.InitialCookies {
-					var scheme string = "http"
-					if c.Secure {
-						scheme = "https"
-					}
-					url := &url.URL{Host: c.Domain, Scheme: scheme}
-					cj.SetCookies(url, []*http.Cookie{c})
-				}
-			}))
+		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode, putInitialCookiesInJarFactory(s.engineMode, opts.InitialCookies))
 	}
 	// s.cPool will be nil otherwise
 
 	return
+}
+
+func putInitialCookiesInJarFactory(engineMode string, initCookies []*http.Cookie) Factory {
+	return createFactoryMethod(engineMode, func(cj http.CookieJar) {
+		for _, c := range initCookies {
+			var scheme string = "http"
+			if c.Secure {
+				scheme = "https"
+			}
+			url := &url.URL{Host: c.Domain, Scheme: scheme}
+			cj.SetCookies(url, []*http.Cookie{c})
+		}
+	})
 }
 
 // Do executes the scenario for the given proxy.

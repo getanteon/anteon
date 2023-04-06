@@ -211,5 +211,44 @@ func TestSetCookiesSecure(t *testing.T) {
 	if httpsServerGotCookie == nil || httpsServerGotCookie.Value != secureCookieVal {
 		t.Errorf("TestSetCookiesSecure, expected cookie to be sent to https host, got %s", httpsServerGotCookie.Value)
 	}
+}
 
+func TestPutInitialCookiesInJarFactory(t *testing.T) {
+	mode := types.EngineModeDistinctUser
+	pool, _ := NewClientPool(1, 1, mode, putInitialCookiesInJarFactory(mode,
+		[]*http.Cookie{
+			{
+				Name:   "test",
+				Value:  "test",
+				Domain: "ddosify.com",
+				Secure: false,
+			},
+			{
+				Name:   "test",
+				Value:  "test",
+				Domain: "servdown.com",
+				Secure: true,
+			}}))
+
+	c := pool.Get()
+
+	cookies := c.Jar.Cookies(&url.URL{Scheme: "http", Host: "ddosify.com"})
+
+	if len(cookies) != 1 {
+		t.Errorf("TestPutInitialCookiesInJarFactory, expected 1 cookie, got %d", len(cookies))
+	}
+
+	if cookies[0].Value != "test" {
+		t.Errorf("TestPutInitialCookiesInJarFactory, expected cookie value 'test', got %s", cookies[0].Value)
+	}
+
+	cookies = c.Jar.Cookies(&url.URL{Scheme: "https", Host: "servdown.com"})
+
+	if len(cookies) != 1 {
+		t.Errorf("TestPutInitialCookiesInJarFactory, expected 1 cookie, got %d", len(cookies))
+	}
+
+	if cookies[0].Value != "test" {
+		t.Errorf("TestPutInitialCookiesInJarFactory, expected cookie value 'test', got %s", cookies[0].Value)
+	}
 }

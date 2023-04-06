@@ -705,3 +705,33 @@ func TestInjectDynamicVars(t *testing.T) {
 		t.Errorf("not found key should stay same")
 	}
 }
+
+func TestOnlyOneClientInDebugModeInUserMode(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	scenario := types.Scenario{
+		Steps: []types.ScenarioStep{
+			{
+				ID:      1,
+				Method:  types.DefaultMethod,
+				URL:     "test.com",
+				Timeout: types.DefaultDuration,
+			},
+		},
+	}
+	p1, _ := url.Parse("http://proxy_server.com:80")
+	proxies := []*url.URL{p1}
+	ctx := context.TODO()
+
+	service := ScenarioService{}
+	service.Init(ctx, scenario, proxies, ScenarioOpts{
+		Debug:                  true,
+		EngineMode:             types.EngineModeDistinctUser,
+		IterationCount:         100,
+		MaxConcurrentIterCount: 5,
+	})
+
+	if service.cPool.Len() != 1 {
+		t.Fatal("TestOnlyOneClientInDebugModeInUserMode should have only one client")
+	}
+}
