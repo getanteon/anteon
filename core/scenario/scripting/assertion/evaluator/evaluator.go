@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
 )
@@ -118,6 +119,8 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 					return false, nil
 				case CONTAINS:
 					return contains(args[0].(string), args[1].(string)), nil
+				case TIME:
+					return timeF(args[0].(string))
 				case RANGE:
 					var x, low, high float64
 
@@ -234,6 +237,15 @@ func evalInfixExpression(
 		return evalIntegerInfixExpression(operator, left.(int64), rightInt)
 	}
 
+	if lTime, lok := left.(time.Time); lok {
+		if rTime, rok := right.(time.Time); rok {
+			return evalTimeInfixExpression(operator, lTime, rTime)
+		}
+		return nil, OperatorError{
+			msg: "time can be only compared with time",
+		}
+	}
+
 	// other types
 	if operator == "==" {
 		return reflect.DeepEqual(left, right), nil
@@ -327,6 +339,24 @@ func evalFloatInfixExpression(operator string,
 	default:
 		return 0, OperatorError{
 			msg:        fmt.Sprintf("unknown operator %s for floats", operator),
+			wrappedErr: nil,
+		}
+	}
+}
+
+func evalTimeInfixExpression(operator string, lTime, rTime time.Time) (interface{}, error) {
+	switch operator {
+	case "==":
+		return lTime == rTime, nil
+	case "!=":
+		return lTime != rTime, nil
+	case "<":
+		return lTime.Before(rTime), nil
+	case ">":
+		return lTime.After(rTime), nil
+	default:
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("unknown operator %s for time.Time", operator),
 			wrappedErr: nil,
 		}
 	}
@@ -488,9 +518,9 @@ func evalCookieField(c *http.Cookie, fieldName string) (interface{}, error) {
 	case "domain":
 		return c.Domain, nil
 	case "expires":
+		return c.Expires, nil
+	case "rawExpires":
 		return c.RawExpires, nil
-	// case "rawExpires":
-	// 	return c.RawExpires, nil
 	case "maxAge":
 		return c.MaxAge, nil
 	case "secure":

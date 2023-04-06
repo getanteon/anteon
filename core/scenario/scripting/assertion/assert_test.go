@@ -512,7 +512,7 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
-			input: "cookies.test.expires == \"Thu, 01 Jan 1970 00:00:00 GMT\"",
+			input: "cookies.test.rawExpires == \"Thu, 01 Jan 1970 00:00:00 GMT\"",
 			envs: &evaluator.AssertEnv{
 				Cookies: map[string]*http.Cookie{
 					"test": {
@@ -533,6 +533,20 @@ func TestAssert(t *testing.T) {
 						Name:  "test",
 						Value: "value",
 						Path:  "/login",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:       "test",
+						Value:      "value",
+						Secure:     true,
+						RawExpires: "Thu, 01 Jan 1970 00:00:00 GMT",
 					},
 				},
 			},
