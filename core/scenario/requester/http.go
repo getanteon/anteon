@@ -232,7 +232,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
-		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
+		failedCaptures = h.captureEnvironmentVariables(nil, nil, nil, extractedVars)
 	}
 	durations.setResDur()
 
@@ -258,12 +258,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		respHeaders = httpRes.Header
 		contentLength = httpRes.ContentLength
 		statusCode = httpRes.StatusCode
-
-		// capture
-		if len(h.packet.EnvsToCapture) > 0 {
-			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, extractedVars)
-		}
-
 		cookies := make(map[string]*http.Cookie, len(httpRes.Cookies()))
 		for _, cookie := range httpRes.Cookies() {
 			cookies[cookie.Name] = &http.Cookie{
@@ -279,6 +273,12 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 				Unparsed: cookie.Unparsed,
 			}
 		}
+
+		// capture
+		if len(h.packet.EnvsToCapture) > 0 {
+			failedCaptures = h.captureEnvironmentVariables(httpRes.Header, respBody, cookies, extractedVars)
+		}
+
 		// assert
 		if len(h.packet.Assertions) > 0 {
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
@@ -736,7 +736,7 @@ func (h *HttpRequester) applyAssertions(assertEnv *evaluator.AssertEnv) (bool, [
 }
 
 func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody []byte,
-	extractedVars map[string]interface{}) map[string]string {
+	cookies map[string]*http.Cookie, extractedVars map[string]interface{}) map[string]string {
 	var err error
 	failedCaptures := make(map[string]string, 0)
 	var captureError extraction.ExtractionError
@@ -758,6 +758,8 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 			val, err = extraction.Extract(header, ce)
 		case types.Body:
 			val, err = extraction.Extract(respBody, ce)
+		case types.Cookie:
+			val, err = extraction.Extract(cookies, ce)
 		}
 		if err != nil && errors.As(err, &captureError) {
 			// do not terminate in case of a capture error, continue capturing

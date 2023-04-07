@@ -50,6 +50,18 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 		} else if ce.Xpath != nil {
 			val, err = ExtractFromXml(source, *ce.Xpath)
 		}
+	case types.Cookie:
+		cookies := source.(map[string]*http.Cookie)
+		if ce.CookieName != nil { // cookie name specified
+			c, ok := cookies[*ce.CookieName]
+			if !ok {
+				err = fmt.Errorf("cookie %s not found", *ce.CookieName)
+			} else {
+				val = c.Value
+			}
+		} else {
+			err = fmt.Errorf("cookie name not specified")
+		}
 	}
 
 	if err != nil {

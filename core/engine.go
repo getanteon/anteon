@@ -414,10 +414,15 @@ var createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, e
 			}
 			ck = cookies[0]
 		} else {
-			expires, err := time.Parse(time.RFC1123, c.Expires)
-			if err != nil {
-				return nil, fmt.Errorf("error parsing cookie expiry: %s", err)
+			var expires time.Time
+			if c.Expires != "" {
+				var err error
+				expires, err = time.Parse(time.RFC1123, c.Expires)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cookie expiry: %s", err)
+				}
 			}
+
 			ck = &http.Cookie{
 				Name:       c.Name,
 				Value:      c.Value,

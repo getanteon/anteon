@@ -412,14 +412,21 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_capture_environment.json"), ConfigTypeJson)
 	json_path := "num"
-	expectedEnvsToCapture0 := []types.EnvCaptureConf{{
-		Name:     "NUM",
-		From:     types.Body,
-		JsonPath: &json_path,
-	}}
+	cookie_name := "x"
+	expectedEnvsToCaptureFirstStep := []types.EnvCaptureConf{
+		{
+			Name:     "NUM",
+			From:     types.Body,
+			JsonPath: &json_path,
+		},
+		{
+			Name:       "X_COOKIE",
+			From:       types.Cookie,
+			CookieName: &cookie_name,
+		}}
 
 	regex := "[a-z]+_[0-9]+"
-	expectedEnvsToCapture1 := []types.EnvCaptureConf{{
+	expectedEnvsToCaptureSecondStep := []types.EnvCaptureConf{{
 		Name: "REGEX_MATCH_ENV",
 		From: types.Body,
 		RegExp: &types.RegexCaptureConf{
@@ -435,14 +442,14 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 
 	envsToCapture0 := h.Scenario.Steps[0].EnvsToCapture
 
-	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCapture0) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCapture0)
+	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCaptureFirstStep) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCaptureFirstStep)
 	}
 
-	envsToCapture1 := h.Scenario.Steps[1].EnvsToCapture
+	envsToCaptureSecondStep := h.Scenario.Steps[1].EnvsToCapture
 
-	if !reflect.DeepEqual(envsToCapture1, expectedEnvsToCapture1) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture1, expectedEnvsToCapture1)
+	if !reflect.DeepEqual(envsToCaptureSecondStep, expectedEnvsToCaptureSecondStep) {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCaptureSecondStep, expectedEnvsToCaptureSecondStep)
 	}
 }
 

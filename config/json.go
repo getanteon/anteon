@@ -68,11 +68,12 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath  *string           `json:"json_path"`
-	XPath     *string           `json:"xpath"`
-	RegExp    *RegexCaptureConf `json:"regexp"`
-	From      string            `json:"from"`       // body,header
-	HeaderKey *string           `json:"header_key"` // header key
+	JsonPath   *string           `json:"json_path"`
+	XPath      *string           `json:"xpath"`
+	RegExp     *RegexCaptureConf `json:"regexp"`
+	From       string            `json:"from"` // body,header,cookie
+	CookieName *string           `json:"cookie_name"`
+	HeaderKey  *string           `json:"header_key"` // header key
 }
 
 type step struct {
@@ -343,11 +344,12 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	var capturedEnvs []types.EnvCaptureConf
 	for name, path := range s.CaptureEnv {
 		capConf := types.EnvCaptureConf{
-			JsonPath: path.JsonPath,
-			Xpath:    path.XPath,
-			Name:     name,
-			From:     types.SourceType(path.From),
-			Key:      path.HeaderKey,
+			JsonPath:   path.JsonPath,
+			Xpath:      path.XPath,
+			Name:       name,
+			From:       types.SourceType(path.From),
+			Key:        path.HeaderKey,
+			CookieName: path.CookieName,
 		}
 
 		if path.RegExp != nil {
