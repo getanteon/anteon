@@ -4,7 +4,7 @@ WORKDIR /workspace
 
 COPY go.mod ./
 COPY go.sum ./
-
+ 
 ENV GOPATH /go
 ENV GOBIN /go/bin
 
@@ -24,7 +24,7 @@ RUN go install -v github.com/rogpeppe/godef@v1.1.2
 RUN go install -v github.com/rakyll/gotest@v0.0.6
 RUN go install -v github.com/ramya-rao-a/go-outline@1.0.0
 RUN go install -v github.com/go-delve/delve/cmd/dlv@v1.8.1
-RUN go install -v golang.org/x/perf/cmd/benchstat@latest
+RUN go install -v golang.org/x/perf/cmd/benchstat@v0.0.0-20221222172245-91a04616dc65
 RUN go mod download
 
 CMD [ "zsh" ]

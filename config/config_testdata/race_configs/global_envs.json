@@ -1,0 +1,25 @@
+{
+    "iteration_count": 10,
+    "duration": 2,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "{{LOCAL}}",
+            "method": "GET"
+        },
+        {
+            "id": 2,
+            "name": "Example Name 2 Json Body",
+            "url": "{{HTTPBIN}}",
+            "method": "GET",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+    ],
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084/hello"
+    }
+}

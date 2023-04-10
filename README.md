@@ -513,7 +513,6 @@ Just like the Postman, Ddosify supports parameterization (dynamic variables) on 
 
 The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
 
-
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
@@ -554,8 +553,6 @@ Dynamic variables can be used on config file as well. Ddosify sends *100* GET re
 ddosify -config ddosify_config_dynamic.json
 ```
 
-
-
 ```json
 {
     "iteration_count": 100,
@@ -568,6 +565,33 @@ ddosify -config ddosify_config_dynamic.json
             "method": "POST",
             "headers": {
                 "User-Key": "{{_randomInt}}"
+            }
+        }
+    ]
+}
+```
+
+### Operating System Environment Variables
+
+In addition, you can also use operating system environment variables. To access these variables, simply add the `$` prefix followed by the variable name wrapped in double curly braces. The syntax for this is `{{$OS_ENV_VARIABLE}}` within the **config file**. For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, and `Basic Authentication`. Here is an example of using operating system environment variables in the config file. `TARGET_SITE` operating system environment variable is used in `URL` and `USER` environment variable is used in `Headers`.
+    
+```bash
+export TARGET_SITE="https://test_site1.com"
+ddosify -config ddosify_config_os_env.json
+```
+
+```json
+{
+    "iteration_count": 100,
+    "load_type": "linear",
+    "duration": 10,
+    "steps": [
+        {
+            "id": 1,
+            "url": "{{$TARGET_SITE}}",
+            "method": "POST",
+            "headers": {
+                "os-env-user": "{{$USER}}"
             }
         }
     ]
@@ -603,7 +627,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | ------ | -------------------------------------------------------- | ------ |  
 | `less_than`   | ( param `int`, limit `int` )   | checks if param is less than limit |
 | `greater_than`   | ( param `int`, limit `int` )   | checks if param is greater than limit |
-| `has`   | ( param `any` ) | checks if variable exists |
+| `exists`   | ( param `any` ) | checks if variable exists |
 | `equals`   | ( param1 `any`, param2 `any` ) | checks if given parameters are equal |
 | `equals_on_file`   |    ( param `any`, file_path `string` )   | reads from given file path and checks if it equals to given parameter |
 | `in`   | ( param `any`, array_param `array` ) | checks if expression is in given array |
@@ -630,16 +654,17 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 | Expression | Description   |               
 | ------ | -------------------------------------------------------- |
+| `less_than(status_code,201)`   | checks if status code is less than 201   |
 | `equals(status_code,200)`   | checks if status code equals to 200      |
 | `status_code == 200`   | same as preceding one  |
 | `not(status_code == 500)`   | checks if status code not equals to 500   |
 | `status_code != 500`   | same as preceding one|
 | `equals(json_path(\"employees.0.name\"),\"Name\")`   | checks if json extracted value is equal to "Name"|
-| `equals(xml_path(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(xpath(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
 | `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
 | `equals_on_file(body,\"file.json\")`   | reads from file.json and compares response body with read file |
-| `has(headers.Content-Type)`   | checks if content-type header exists in response headers|
+| `exists(headers.Content-Type)`   | checks if content-type header exists in response headers|
 | `contains(body,\"xyz\")`   | checks if body contains "xyz" in it|
 | `range(headers.content-length,100,300)`   | checks if content-length header is in range [100,300) | 
 | `in(status_code,[200,201])`   | checks if status code equal to 200 or 201     |
@@ -698,8 +723,8 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-               "CONTENT_TYPE" :{"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
-               "REGEX_MATCH_ENV" :{"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
+               "CONTENT_TYPE": {"from":"header", "header_key":"Content-Type" ,"regexp":{"exp":"application\/(\\w)+","matchNo":0}} ,
+               "REGEX_MATCH_ENV": {"from":"body","regexp":{"exp" : "[a-z]+_[0-9]+", "matchNo": 1}}          
             }         
         }
     ]
@@ -711,7 +736,7 @@ ddosify -config ddosify_config_correlation.json -debug
     "steps": [
         {
             "capture_env": {
-                "TOKEN" :{"from":"header", "header_key":"Authorization"},
+                "TOKEN": {"from":"header", "header_key":"Authorization"},
             }         
         }
     ]
@@ -872,6 +897,7 @@ This repository includes the single-node version of the Ddosify Loader. For dist
 ## Disclaimer
 
 Ddosify is created for testing the performance of web applications. Users must be the owner of the target system. Using it for harmful purposes is extremely forbidden. Ddosify team & company is not responsible for its’ usages and consequences.
+
 ## License
 
 Licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html

@@ -37,6 +37,10 @@ fi'''
       steps {
         lock('multi_branch_server') {
           sh 'go run --race main.go -t https://servdown.com/ -d 1 -n 1500'
+          sh 'go run --race main.go -config config/config_testdata/race_configs/step_assertions_stdout.json'
+          sh 'go run --race main.go -config config/config_testdata/race_configs/step_assertions_stdout_json.json'
+          sh 'go run --race main.go -config config/config_testdata/race_configs/capture_envs.json'
+          sh 'go run --race main.go -config config/config_testdata/race_configs/global_envs.json'
           sh 'go test -race -run ^TestDynamicVariableRace$ go.ddosify.com/ddosify/core/scenario/scripting/injection'
         }
       }

@@ -154,13 +154,13 @@ func TestNextToken(t *testing.T) {
 			},
 		},
 		{
-			input: "!has(headers.referrer)",
+			input: "!exists(headers.referrer)",
 			expected: []struct {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
 				{token.BANG, "!"},
-				{token.IDENT, "has"},
+				{token.IDENT, "exists"},
 				{token.LPAREN, "("},
 				{token.IDENT, "headers.referrer"},
 				{token.RPAREN, ")"},

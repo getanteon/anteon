@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sync"
+	"time"
 
 	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
@@ -41,6 +43,7 @@ type stdoutJson struct {
 	result       *Result
 	debug        bool
 	samplingRate int
+	mu           sync.Mutex
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
@@ -95,11 +98,12 @@ func (s *stdoutJson) DoneChan() <-chan bool {
 func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
+	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 	for r := range input {
+		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
+		s.mu.Unlock()
 	}
-
 	// listen for assertion result, add to json
 	s.result.TestStatus = "success"
 	if assertionResultChan != nil {
@@ -107,6 +111,26 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assert
 		if result.Fail {
 			s.result.TestStatus = "failed"
 			s.result.TestFailedAssertions = result.FailedRules
+		}
+	}
+}
+
+func (s *stdoutJson) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			s.mu.Lock() // avoid race around samplingCount
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingRate {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+			s.mu.Unlock()
+		case <-stopSampling:
+			return
 		}
 	}
 }
@@ -182,12 +206,12 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	// could not prepare req, correlation
 	if v.Error != "" && isVerboseInfoRequestEmpty(v.Request) {
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
-			StepName         string                  `json:"stepName"`
+			StepId           uint16                  `json:"step_id"`
+			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
-			TestData         map[string]interface{}  `json:"testData"`
-			FailedCaptures   map[string]string       `json:"failedCaptures"`
-			FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+			TestData         map[string]interface{}  `json:"test_data"`
+			FailedCaptures   map[string]string       `json:"failed_captures"`
+			FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 			Error            string                  `json:"error"`
 		}
 
@@ -205,12 +229,12 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 
 	if v.Error != "" { // server error no body
 		type alias struct {
-			StepId           uint16                  `json:"stepId"`
-			StepName         string                  `json:"stepName"`
+			StepId           uint16                  `json:"step_id"`
+			StepName         string                  `json:"step_name"`
 			Envs             map[string]interface{}  `json:"envs"`
-			TestData         map[string]interface{}  `json:"testData"`
-			FailedCaptures   map[string]string       `json:"failedCaptures"`
-			FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+			TestData         map[string]interface{}  `json:"test_data"`
+			FailedCaptures   map[string]string       `json:"failed_captures"`
+			FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 			Request          struct {
 				Url     string            `json:"url"`
 				Method  string            `json:"method"`
@@ -235,23 +259,19 @@ func (v verboseHttpRequestInfo) MarshalJSON() ([]byte, error) {
 	}
 
 	type alias struct {
-		StepId           uint16                  `json:"stepId"`
-		StepName         string                  `json:"stepName"`
+		StepId           uint16                  `json:"step_id"`
+		StepName         string                  `json:"step_name"`
 		Envs             map[string]interface{}  `json:"envs"`
-		TestData         map[string]interface{}  `json:"testData"`
-		FailedCaptures   map[string]string       `json:"failedCaptures"`
-		FailedAssertions []types.FailedAssertion `json:"failedAssertions"`
+		TestData         map[string]interface{}  `json:"test_data"`
+		FailedCaptures   map[string]string       `json:"failed_captures"`
+		FailedAssertions []types.FailedAssertion `json:"failed_assertions"`
 		Request          struct {
 			Url     string            `json:"url"`
 			Method  string            `json:"method"`
 			Headers map[string]string `json:"headers"`
 			Body    interface{}       `json:"body"`
 		} `json:"request"`
-		Response struct {
-			StatusCode int               `json:"statusCode"`
-			Headers    map[string]string `json:"headers"`
-			Body       interface{}       `json:"body"`
-		} `json:"response"`
+		Response verboseResponse `json:"response"`
 	}
 
 	a := alias{

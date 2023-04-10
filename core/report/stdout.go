@@ -88,10 +88,10 @@ func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan cha
 
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
-	go CleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
+	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
 
 	for r := range input {
-		s.mu.Lock()
+		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
 	}
@@ -113,6 +113,26 @@ func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan cha
 		s.doneChan <- true
 	} else {
 		s.doneChan <- false
+	}
+}
+
+func (s *stdout) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			s.mu.Lock() // avoid race around samplingCount
+			for stepId, ruleMap := range samplingCount {
+				for rule, count := range ruleMap {
+					if count >= samplingRate {
+						samplingCount[stepId][rule] = 0
+					}
+				}
+			}
+			s.mu.Unlock()
+		case <-stopSampling:
+			return
+		}
 	}
 }
 
@@ -243,6 +263,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				// response
 				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
+				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
 				for hKey, hVal := range verboseInfo.Response.Headers {
 					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)

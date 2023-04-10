@@ -15,7 +15,6 @@ import (
 var less_than = func(variable int64, limit int64) bool {
 	return variable < limit
 }
-
 var greater_than = func(variable int64, limit int64) bool {
 	return variable > limit
 }
@@ -108,7 +107,7 @@ var contains = func(source string, substr string) bool {
 	return false
 }
 
-var rangeF = func(x int64, low int64, hi int64) bool {
+var rangeF = func(x float64, low float64, hi float64) bool {
 	if x >= low && x < hi {
 		return true
 	}
@@ -187,7 +186,7 @@ var assertionFuncMap = map[string]struct{}{
 	JSONPATH:     {},
 	XMLPATH:      {},
 	REGEXP:       {},
-	HAS:          {},
+	EXISTS:       {},
 	CONTAINS:     {},
 	RANGE:        {},
 	MIN:          {},
@@ -208,7 +207,7 @@ const (
 	JSONPATH     = "json_path"
 	XMLPATH      = "xml_path"
 	REGEXP       = "regexp"
-	HAS          = "has"
+	EXISTS       = "exists"
 	CONTAINS     = "contains"
 	RANGE        = "range"
 	EQUALSONFILE = "equals_on_file"

@@ -156,6 +156,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		h.containsDynamicField["basicauth"] = true
 	}
 
+	if h.envRgx.MatchString(h.packet.Auth.Username) || h.envRgx.MatchString(h.packet.Auth.Password) {
+		h.containsEnvVar["basicauth"] = true
+	}
+
 	return
 }
 
@@ -432,9 +436,24 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 		}
 	}
 
+	username, password := h.packet.Auth.Username, h.packet.Auth.Password
 	if h.containsDynamicField["basicauth"] {
-		username, _ := h.ei.InjectDynamic(h.packet.Auth.Username)
-		password, _ := h.ei.InjectDynamic(h.packet.Auth.Password)
+		username, _ = h.ei.InjectDynamic(username)
+		password, _ = h.ei.InjectDynamic(password)
+	}
+	if h.containsEnvVar["basicauth"] {
+		var err error
+		username, err = h.ei.InjectEnv(username, envs)
+		if err != nil {
+			return nil, err
+		}
+
+		password, err = h.ei.InjectEnv(password, envs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if username != "" && password != "" {
 		httpReq.SetBasicAuth(username, password)
 	}
 

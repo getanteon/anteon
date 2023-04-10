@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -297,6 +298,33 @@ func TestConcatVariablesAndInjectAsTyped(t *testing.T) {
 
 	if !reflect.DeepEqual(got, expected.String()) {
 		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), got)
+	}
+
+}
+
+func TestOSEnvInjection(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	actualEnvVal := os.Getenv("PATH")
+
+	envs := map[string]interface{}{
+		"key1": "val1",
+	}
+
+	val, err := replacer.getEnv(envs, "$PATH")
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	found := false
+
+	if reflect.DeepEqual(actualEnvVal, val) {
+		found = true
+	}
+
+	if !found {
+		t.Errorf("expected os env val not found")
 	}
 
 }

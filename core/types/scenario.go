@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -46,8 +47,11 @@ const (
 	// Max sleep in ms (90s)
 	maxSleep = 90000
 
-	// Should match environment variables
-	EnvironmentVariableRegexStr = `\{{[^_]\w+\}}`
+	// Should match environment variables, reference
+	EnvironmentVariableRegexStr = `{{[a-zA-Z$][a-zA-Z0-9_().]*}}`
+
+	// Should match environment variables, definition, exact match
+	EnvironmentVariableNameStr = `^[a-zA-Z][a-zA-Z0-9_]*$`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
@@ -61,16 +65,19 @@ var supportedAuthentications = []string{
 }
 
 var envVarRegexp *regexp.Regexp
+var envVarNameRegexp *regexp.Regexp
 
 func init() {
 	envVarRegexp = regexp.MustCompile(EnvironmentVariableRegexStr)
+	envVarNameRegexp = regexp.MustCompile(EnvironmentVariableNameStr)
 }
 
 // Scenario struct contains a list of ScenarioStep so scenario.ScenarioService can execute the scenario step by step.
 type Scenario struct {
-	Steps []ScenarioStep
-	Envs  map[string]interface{}
-	Data  map[string]CsvData
+	Steps   []ScenarioStep
+	Envs    map[string]interface{}
+	CsvVars []string           // only for validation
+	Data    map[string]CsvData // populated data
 }
 
 func (s *Scenario) validate() error {
@@ -79,6 +86,22 @@ func (s *Scenario) validate() error {
 
 	// add global envs
 	for key := range s.Envs {
+		if !envVarNameRegexp.Match([]byte(key)) { // not a valid env definition
+			return fmt.Errorf("env key is not valid: %s", key)
+		}
+		definedEnvs[key] = struct{}{} // exist
+	}
+	// add csv vars
+	for _, key := range s.CsvVars { // data.info.name
+		splitted := strings.Split(key, ".")
+		if len(splitted) > 3 {
+			return fmt.Errorf("csv key can not have dot in it: %s", key)
+		}
+		for _, s := range splitted {
+			if !envVarNameRegexp.Match([]byte(s)) { // not a valid env definition
+				return fmt.Errorf("csv key is not valid: %s", key)
+			}
+		}
 		definedEnvs[key] = struct{}{} // exist
 	}
 
@@ -89,6 +112,9 @@ func (s *Scenario) validate() error {
 
 		// enrich Envs map with captured envs from each step
 		for _, ce := range st.EnvsToCapture {
+			if !envVarNameRegexp.Match([]byte(ce.Name)) { // not a valid env definition
+				return fmt.Errorf("captured env key is not valid: %s", ce.Name)
+			}
 			definedEnvs[ce.Name] = struct{}{}
 		}
 
@@ -105,6 +131,27 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 	matchInEnvs := func(matches []string) error {
 		for _, v := range matches {
 			if _, ok := definedEnvs[v[2:len(v)-2]]; !ok { // {{....}}
+				// utility functions are matched too, check if starts with rand
+				// TODO: find a better solution about utility functions and validation checks
+
+				if strings.HasPrefix(v[2:len(v)-2], "rand(") {
+					fmt.Println(v[7 : len(v)-3])
+					if _, ok := definedEnvs[v[7:len(v)-3]]; ok {
+						continue
+					}
+				}
+
+				if strings.HasPrefix(v[2:len(v)-2], "$") {
+					varName := v[3 : len(v)-2];
+					if _, ok := os.LookupEnv(varName); ok {
+						continue
+					}
+
+					return EnvironmentNotDefinedError{
+						msg: fmt.Sprintf("%s is not found in the operating system environment variables", v),
+					}
+				}
+
 				return EnvironmentNotDefinedError{
 					msg: fmt.Sprintf("%s is not defined to use by global and captured environments", v),
 				}

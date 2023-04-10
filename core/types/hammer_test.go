@@ -21,6 +21,7 @@
 package types
 
 import (
+	"errors"
 	"testing"
 
 	"go.ddosify.com/ddosify/core/proxy"
@@ -319,5 +320,46 @@ func TestHammerInvalidManualLoadDuration(t *testing.T) {
 
 	if err := h.Validate(); err == nil {
 		t.Errorf("TestHammerInvalidManualLoadDuration errored")
+	}
+}
+
+func TestHammerAccessingNotDefinedCsvEnvs(t *testing.T) {
+	h := newDummyHammer()
+	h.TestDataConf = make(map[string]CsvConf)
+
+	h.TestDataConf["info"] = CsvConf{
+		Path:          "",
+		Delimiter:     "",
+		SkipFirstLine: false,
+		Vars: map[string]Tag{
+			"0": {
+				Tag:  "a",
+				Type: "string",
+			},
+		},
+		SkipEmptyLine: false,
+		AllowQuota:    false,
+		Order:         "",
+	}
+
+	h.Scenario.Steps = []ScenarioStep{
+		{
+			ID:   1,
+			Name: "x",
+
+			Method: "GET",
+			Headers: map[string]string{
+				"{{data.info.x}}": "X",
+			},
+			Payload: "",
+			URL:     "https://ddosify.com",
+		},
+	}
+	err := h.Validate()
+
+	var environmentNotDefined EnvironmentNotDefinedError
+
+	if !errors.As(err, &environmentNotDefined) {
+		t.Errorf("Should be EnvironmentNotDefinedError")
 	}
 }
