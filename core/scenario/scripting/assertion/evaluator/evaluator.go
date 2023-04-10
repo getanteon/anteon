@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -361,6 +362,19 @@ func evalInfixExpression(
 	}
 
 	// other types
+
+	if leftType == reflect.String && rightType == reflect.String {
+		// json marshalling is used to compare json strings
+		var lJson, rJson interface{}
+
+		isLJson := json.Unmarshal([]byte(left.(string)), &lJson)
+		isRJson := json.Unmarshal([]byte(right.(string)), &rJson)
+
+		if isLJson == nil && isRJson == nil {
+			return reflect.DeepEqual(lJson, rJson), nil
+		}
+	}
+
 	if operator == "==" {
 		return reflect.DeepEqual(left, right), nil
 	}

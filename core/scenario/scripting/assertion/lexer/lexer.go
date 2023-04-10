@@ -94,6 +94,13 @@ func (l *Lexer) NextToken() token.Token {
 			l.readChar()
 			return tok
 		}
+		if l.ch == 39 { // '
+			l.readChar()
+			tok.Literal = l.readRawString()
+			tok.Type = token.STRING
+			l.readChar()
+			return tok
+		}
 		if isDigit(l.ch) { // number
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
@@ -154,6 +161,14 @@ func (l *Lexer) readIdentifier() string {
 func (l *Lexer) readString() string {
 	position := l.position
 	for l.ch != 34 { // "
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) readRawString() string {
+	position := l.position
+	for l.ch != 39 { // '
 		l.readChar()
 	}
 	return l.input[position:l.position]
