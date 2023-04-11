@@ -342,6 +342,13 @@ func TestAssert(t *testing.T) {
 			},
 		},
 		{
+			input:    "equals(body, {\"name\":\"Ar'gentina\",\"num\":25,\"isChampion\":false})",
+			expected: true,
+			envs: &evaluator.AssertEnv{
+				Body: "{\"num\":25,\"name\":\"Ar'gentina\",\"isChampion\":false}",
+			},
+		},
+		{
 			input:    `equals_on_file(body,"./test_files/number.json")`,
 			expected: true,
 			envs: &evaluator.AssertEnv{

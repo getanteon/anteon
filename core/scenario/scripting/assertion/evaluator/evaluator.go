@@ -31,6 +31,12 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 			return nil, err
 		}
 		return args, nil
+	case *ast.ObjectLiteral:
+		args, err := evalObjectExpressions(node.Elems, env, receivedMap)
+		if err != nil {
+			return nil, err
+		}
+		return args, nil
 	case *ast.Boolean:
 		return node.GetVal(), nil
 	case *ast.PrefixExpression:
@@ -375,6 +381,27 @@ func evalInfixExpression(
 		}
 	}
 
+	if leftType == reflect.String && rightType == reflect.Map {
+		var lJson interface{}
+		isLJson := json.Unmarshal([]byte(left.(string)), &lJson)
+
+		if isLJson == nil {
+			rJsonBy, _ := json.Marshal(right)
+			lJsonBy, _ := json.Marshal(lJson)
+			return reflect.DeepEqual(rJsonBy, lJsonBy), nil
+		}
+	}
+	if leftType == reflect.Map && rightType == reflect.String {
+		var rJson interface{}
+		isRJson := json.Unmarshal([]byte(right.(string)), &rJson)
+
+		if isRJson == nil {
+			lJsonBy, _ := json.Marshal(left)
+			rJsonBy, _ := json.Marshal(rJson)
+			return reflect.DeepEqual(lJsonBy, rJsonBy), nil
+		}
+	}
+
 	if operator == "==" {
 		return reflect.DeepEqual(left, right), nil
 	}
@@ -567,6 +594,30 @@ func evalIdentifier(
 		source:     fmt.Sprintf("%s not defined", ident),
 		wrappedErr: nil,
 	}
+}
+
+func evalObjectExpressions(
+	exps map[string]ast.Expression,
+	env *AssertEnv,
+	receivedMap map[string]interface{},
+) (map[string]interface{}, error) {
+	var result = make(map[string]interface{})
+	for k, e := range exps {
+		evaluated, err := Eval(e, env, receivedMap)
+		if err != nil {
+			return nil, err
+		}
+		switch e.(type) {
+		case *ast.Identifier:
+			receivedMap[e.String()] = evaluated
+		case *ast.CallExpression:
+			receivedMap[e.String()] = evaluated
+		}
+
+		result[k] = evaluated
+	}
+
+	return result, nil
 }
 
 func evalExpressions(
