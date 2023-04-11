@@ -56,7 +56,7 @@ func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
+func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
 		s.printInDebugMode(input)
 		s.doneChan <- true
@@ -95,7 +95,7 @@ func (s *stdoutJson) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
-func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
+func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
 	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)

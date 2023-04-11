@@ -34,7 +34,7 @@ var AvailableOutputServices = make(map[string]ReportService)
 type ReportService interface {
 	DoneChan() <-chan bool
 	Init(debug bool, samplingRate int) error
-	Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult)
+	Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult)
 }
 
 // NewReportService is the factory method of the ReportService.

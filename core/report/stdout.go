@@ -78,7 +78,7 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan chan assertion.TestAssertionResult) {
+func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
 		s.printInDebugMode(input)
 		s.doneChan <- true

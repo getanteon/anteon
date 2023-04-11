@@ -5,13 +5,14 @@ import (
 )
 
 type Aborter interface {
-	AbortChan() chan struct{}
+	AbortChan() <-chan struct{}
 }
+
 type ResultListener interface {
-	Start(input chan *types.ScenarioResult)
-	DoneChan() chan struct{} // indicates processing of results are done
+	Start(input <-chan *types.ScenarioResult)
+	DoneChan() <-chan struct{} // indicates processing of results are done
 }
 
 type Asserter interface {
-	ResultChan() chan TestAssertionResult
+	ResultChan() <-chan TestAssertionResult
 }

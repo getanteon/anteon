@@ -66,7 +66,7 @@ type engine struct {
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
 
-	abortChan   chan struct{}
+	abortChan   <-chan struct{}
 	testSuccess bool
 	ctx         context.Context
 }
@@ -164,9 +164,7 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if e.abortAndAssertEnabled() {
-		e.abortChan = e.aborter.AbortChan()
-	}
+	e.abortChan = e.aborter.AbortChan()
 
 	return
 }
@@ -176,8 +174,8 @@ func (e *engine) Start() string {
 	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 
-	var testResultChan chan assertion.TestAssertionResult
-	if e.abortAndAssertEnabled() {
+	var testResultChan <-chan assertion.TestAssertionResult
+	if e.runAssertionsInEngine() {
 		// run test wide assertions in parallel
 		testResultChan = e.asserter.ResultChan()
 	}
@@ -204,7 +202,7 @@ func (e *engine) Start() string {
 		select {
 		case <-e.ctx.Done():
 			return resultStopped
-		case <-e.abortChan: // in single mode abortChan will be nil, and case will be ignored
+		case <-e.abortChan:
 			e.testSuccess = false
 			return resultAborted
 		default:
@@ -259,7 +257,7 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	}
 }
 
-func (e *engine) abortAndAssertEnabled() bool {
+func (e *engine) runAssertionsInEngine() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 

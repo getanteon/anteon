@@ -58,7 +58,7 @@ func (as *DefaultAssertionService) GetFailCount() int {
 	return as.assertEnv.FailCount
 }
 
-func (as *DefaultAssertionService) Start(input chan *types.ScenarioResult) {
+func (as *DefaultAssertionService) Start(input <-chan *types.ScenarioResult) {
 	// get iteration results, add store them cumulatively
 	firstResult := true
 	for r := range input {
@@ -160,15 +160,15 @@ func (as *DefaultAssertionService) giveFinalResult() TestAssertionResult {
 	return result
 }
 
-func (as *DefaultAssertionService) ResultChan() chan TestAssertionResult {
+func (as *DefaultAssertionService) ResultChan() <-chan TestAssertionResult {
 	return as.resChan
 }
 
-func (as *DefaultAssertionService) AbortChan() chan struct{} {
+func (as *DefaultAssertionService) AbortChan() <-chan struct{} {
 	return as.abortChan
 }
 
-func (as *DefaultAssertionService) DoneChan() chan struct{} {
+func (as *DefaultAssertionService) DoneChan() <-chan struct{} {
 	return as.doneChan
 }
 
