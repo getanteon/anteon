@@ -610,6 +610,22 @@ func TestAssert(t *testing.T) {
 			expected:      false,
 			expectedError: "ArgumentError",
 		},
+		{
+			input:    "p80([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "min([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "max([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "avg([])", // empty interface array, not []int64
+			expected: false,
+		},
 	}
 
 	for _, tc := range tests {

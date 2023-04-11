@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -405,5 +406,49 @@ func TestVerboseHttpInfoMarshallingSuccessCase(t *testing.T) {
 		t.Errorf("Verbose Http Info should not have error key in success case")
 	} else if !respExists {
 		t.Errorf("Verbose Http Info should have response in success case")
+	}
+}
+
+func TestStdoutJsonTestResultStatusShouldBeTrueWhenNoAssertion(t *testing.T) {
+	s := &stdoutJson{}
+	s.Init(false, 0)
+
+	inputChan := make(chan *types.ScenarioResult, 1)
+	inputChan <- &types.ScenarioResult{}
+	close(inputChan)
+
+	go func() {
+		s.Start(inputChan, nil)
+	}()
+
+	testStatus := <-s.DoneChan()
+
+	if !testStatus {
+		t.Errorf("Test status should be true")
+	}
+
+}
+
+func TestStdoutJsonTestResultStatusShouldBeFalseWhenAssertionsFail(t *testing.T) {
+	s := &stdoutJson{}
+	s.Init(false, 0)
+
+	inputChan := make(chan *types.ScenarioResult, 1)
+	inputChan <- &types.ScenarioResult{}
+	close(inputChan)
+
+	assertionResultChan := make(chan assertion.TestAssertionResult, 1)
+	assertionResultChan <- assertion.TestAssertionResult{
+		Fail: true,
+	}
+
+	go func() {
+		s.Start(inputChan, assertionResultChan)
+	}()
+
+	testStatus := <-s.DoneChan()
+
+	if testStatus {
+		t.Errorf("Test status should be false")
 	}
 }

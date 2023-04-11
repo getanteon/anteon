@@ -625,7 +625,7 @@ func evalExpressions(
 	env *AssertEnv,
 	receivedMap map[string]interface{},
 ) ([]interface{}, error) {
-	var result []interface{}
+	var result = make([]interface{}, 0)
 
 	for _, e := range exps {
 		evaluated, err := Eval(e, env, receivedMap)
