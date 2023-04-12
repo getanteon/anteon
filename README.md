@@ -710,6 +710,18 @@ Note that functions and operators mentioned in Assertion section can be used tes
 | `iteration_duration` | Response times of iterations in ms   | Used for percentile functions                                     |
 | `fail_count_perc`    | Fail count percentage, in range[0,1] | Used for aborting when test exceeds certain fail count percentage |
 
+### Functions
+
+| Function | Parameters           | Description                                     |
+| ---------- | ---------------------- | ------------------------------------------------- |
+| `p99`    | ( array`int array` ) | 99th percentile, use as `p99(iteration_duration)` |
+| `p95`    | ( array`int array`)  | 95th percentile, use as `p95(iteration_duration)` |
+| `p90`    | ( array`int array`)  | 90th percentile, use as `p90(iteration_duration)` |
+| `p80`    | ( array`int array`)  | 80th percentile, use as `p80(iteration_duration)` |
+| `min`    | ( array`int array`)  | returns minimum element                         |
+| `max`    | ( array`int array`)  | returns maximum element                         |
+| `avg`    | ( array`int array`)  | calculates and returns average                  |
+
 ### Examples
 | Expression                        | Description                                               |
 | ----------------------------------- | ----------------------------------------------------------- |
