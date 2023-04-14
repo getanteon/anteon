@@ -363,19 +363,25 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	httpReq := h.request.Clone(h.ctx)
 	var err error
 	// body
-	body := h.packet.Payload
-	if h.containsDynamicField["body"] {
-		body, _ = h.ei.InjectDynamic(body)
-	}
-	if h.containsEnvVar["body"] {
-		body, err = h.ei.InjectEnv(body, envs)
-		if err != nil {
-			return nil, err
+	var body string
+	if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
+		body = h.packet.Payload
+		if h.containsDynamicField["body"] {
+			body, _ = h.ei.InjectDynamic(body)
 		}
+		if h.containsEnvVar["body"] {
+			body, err = h.ei.InjectEnv(body, envs)
+			if err != nil {
+				return nil, err
+			}
+		}
+		httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
+		httpReq.ContentLength = int64(len(body))
+	} else {
+		// Reuse original request body if no dynamic fields or environment variables are involved
+		httpReq.Body = h.request.Body
+		httpReq.ContentLength = h.request.ContentLength
 	}
-
-	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
-	httpReq.ContentLength = int64(len(body))
 
 	// url
 	hostURL := h.packet.URL
