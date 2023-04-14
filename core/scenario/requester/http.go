@@ -225,8 +225,13 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
-	io.Copy(&copiedReqBody, httpReq.Body)
-	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	if h.debug {
+		// copy req body for debug
+		if httpReq.Body != nil {
+			io.Copy(&copiedReqBody, httpReq.Body)
+			httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+		}
+	}
 
 	// Action
 	httpRes, err := client.Do(httpReq)
