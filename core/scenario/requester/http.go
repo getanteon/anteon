@@ -58,6 +58,8 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
+
+	constantBodyReader *bytes.Reader
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -106,6 +108,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	if h.envRgx.MatchString(h.packet.Payload) {
 		h.containsEnvVar["body"] = true
+	}
+
+	if !h.containsDynamicField["body"] && !h.containsEnvVar["body"] {
+		h.constantBodyReader = bytes.NewReader([]byte(h.packet.Payload))
 	}
 
 	// url
@@ -362,10 +368,13 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 	var err error
-	// body
-	var body string
-	if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
-		body = h.packet.Payload
+
+	if h.constantBodyReader != nil {
+		sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
+		httpReq.Body = &SectionReadCloser{sectionReader}
+		httpReq.ContentLength = h.request.ContentLength
+	} else {
+		body := h.packet.Payload
 		if h.containsDynamicField["body"] {
 			body, _ = h.ei.InjectDynamic(body)
 		}
@@ -377,10 +386,6 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 		}
 		httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
 		httpReq.ContentLength = int64(len(body))
-	} else {
-		// Reuse original request body if no dynamic fields or environment variables are involved
-		httpReq.Body = h.request.Body
-		httpReq.ContentLength = h.request.ContentLength
 	}
 
 	// url
@@ -886,4 +891,13 @@ func (d *duration) totalDuration() time.Duration {
 	defer d.mu.Unlock()
 
 	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+}
+
+type SectionReadCloser struct {
+	*io.SectionReader
+}
+
+func (s *SectionReadCloser) Close() error {
+	// No resources to close in SectionReader, so it's a no-op.
+	return nil
 }
