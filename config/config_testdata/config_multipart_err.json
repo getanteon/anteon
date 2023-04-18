@@ -1,0 +1,18 @@
+{
+    "steps": [
+        {
+            "id": 1,
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+            "method": "GET",
+            "payload_multipart": [
+                
+                {
+                    "name": "example-name-5",
+                    "value": "https://uplo333ad.wikimedia.org/wikipedia/commons/b/bd/Test.svg",
+                    "type": "file",
+                    "src": "remote"
+                }
+            ]
+        }
+    ]
+}

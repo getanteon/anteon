@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -26,6 +27,36 @@ func TestValidateCsvConf(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("TestValidateCsvConf should be errored")
+	}
+}
+
+func TestReadCsv_RemoteErr(t *testing.T) {
+	t.Parallel()
+	conf := types.CsvConf{
+		Path:          "https://invalidurl.com/csv",
+		Delimiter:     ";",
+		SkipFirstLine: true,
+		Vars: map[string]types.Tag{
+			"0": {Tag: "name", Type: "string"},
+			"3": {Tag: "payload", Type: "json"},
+			"4": {Tag: "age", Type: "int"},
+			"5": {Tag: "percent", Type: "float"},
+			"6": {Tag: "boolField", Type: "bool"},
+		},
+		SkipEmptyLine: true,
+		AllowQuota:    true,
+		Order:         "sequential",
+	}
+
+	_, err := ReadCsv(conf)
+
+	if err == nil {
+		t.Errorf("TestReadCsv_RemoteErr %v", err)
+	}
+
+	var remoteCsvErr RemoteCsvError
+	if !errors.As(err, &remoteCsvErr) {
+		t.Errorf("Expected: %v, Found: %v", remoteCsvErr, err)
 	}
 }
 
