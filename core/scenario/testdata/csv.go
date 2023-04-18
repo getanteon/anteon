@@ -20,6 +20,19 @@ func validateConf(conf types.CsvConf) error {
 	return nil
 }
 
+type RemoteCsvError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (nf RemoteCsvError) Error() string {
+	return fmt.Sprintf("%s", nf.msg)
+}
+
+func (nf RemoteCsvError) Unwrap() error {
+	return nf.wrappedErr
+}
+
 func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	err := validateConf(conf)
 	if err != nil {
@@ -29,18 +42,24 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	var reader io.Reader
 
 	var pUrl *url.URL
+	var csvReqError RemoteCsvError
 	if pUrl, err = url.ParseRequestURI(conf.Path); err == nil && pUrl.IsAbs() { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
-			return nil, err
+			csvReqError.msg = "can not create request"
+			csvReqError.wrappedErr = err
+			return nil, csvReqError
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return nil, err
+			csvReqError.msg = "can not send request"
+			csvReqError.wrappedErr = err
+			return nil, csvReqError
 		}
 
 		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-			return nil, fmt.Errorf("request to remote url failed: %d", resp.StatusCode)
+			csvReqError.msg = fmt.Sprintf("request to remote url failed: %d", resp.StatusCode)
+			return nil, csvReqError
 		}
 		reader = resp.Body
 		defer resp.Body.Close()
@@ -52,7 +71,8 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 		reader = f
 		defer f.Close()
 	} else {
-		return nil, err
+		csvReqError.msg = fmt.Sprintf("can not parse path: %s", conf.Path)
+		return nil, csvReqError
 	}
 
 	// read csv values using csv.Reader
