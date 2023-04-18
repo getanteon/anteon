@@ -48,10 +48,10 @@ const (
 	maxSleep = 90000
 
 	// Should match environment variables, reference
-	EnvironmentVariableRegexStr = `{{[a-zA-Z$][a-zA-Z0-9_().]*}}`
+	EnvironmentVariableRegexStr = `{{[a-zA-Z$][a-zA-Z0-9_().-]*}}`
 
 	// Should match environment variables, definition, exact match
-	EnvironmentVariableNameStr = `^[a-zA-Z][a-zA-Z0-9_]*$`
+	EnvironmentVariableNameStr = `^[a-zA-Z][a-zA-Z0-9_-]*$`
 )
 
 // SupportedProtocols should be updated whenever a new requester.Requester interface implemented
@@ -142,7 +142,7 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 				}
 
 				if strings.HasPrefix(v[2:len(v)-2], "$") {
-					varName := v[3 : len(v)-2];
+					varName := v[3 : len(v)-2]
 					if _, ok := os.LookupEnv(varName); ok {
 						continue
 					}
