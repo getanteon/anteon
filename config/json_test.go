@@ -21,6 +21,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -359,6 +360,21 @@ func TestCreateHammerMultipartPayload(t *testing.T) {
 	// Payload Check - Ensure that payload contains 4 form field.
 	if c := strings.Count(steps[0].Payload, "Content-Disposition: form-data;"); c != 4 {
 		t.Errorf("Expected: %v, Found: %v", 4, c)
+	}
+}
+
+func TestCreateHammerMultipartPayload_RemoteErr(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_multipart_err.json"), ConfigTypeJson)
+
+	_, err := jsonReader.CreateHammer()
+	if err == nil {
+		t.Error("TestCreateHammerMultipartPayload_RemoteErr should return error")
+	}
+
+	var multipartErr RemoteMultipartError
+	if !errors.As(err, &multipartErr) {
+		t.Errorf("Expected: %v, Found: %v", multipartErr, err)
 	}
 }
 
