@@ -88,14 +88,14 @@ func TestInjectionRegexReplacer(t *testing.T) {
 
 	for _, test := range tests {
 		tf := func(t *testing.T) {
-			got, err := replacer.InjectEnv(test.target, test.envs)
+			buff, err := replacer.InjectEnvIntoBuffer(test.target, test.envs, nil)
 
 			if err != nil {
 				t.Errorf("injection failed %v", err)
 			}
 
-			if !reflect.DeepEqual(got, test.expected) {
-				t.Errorf("injection unsuccessful, expected : %s, got :%s", test.expected, got)
+			if !reflect.DeepEqual(buff.String(), test.expected) {
+				t.Errorf("injection unsuccessful, expected : %s, got :%s", test.expected, buff.String())
 			}
 		}
 		t.Run(test.name, tf)
@@ -106,9 +106,9 @@ func ExampleEnvironmentInjector() {
 	replacer := EnvironmentInjector{}
 	replacer.Init()
 
-	randInt, err := replacer.InjectDynamic("{{_randomInt}}")
+	buff, err := replacer.InjectDynamicIntoBuffer("{{_randomInt}}", nil)
 	if err == nil {
-		fmt.Println(randInt)
+		fmt.Println(buff.String())
 	}
 }
 
@@ -290,14 +290,14 @@ func TestConcatVariablesAndInjectAsTyped(t *testing.T) {
 		panic(err)
 	}
 
-	got, err := replacer.InjectEnv(payload, envs)
+	buff, err := replacer.InjectEnvIntoBuffer(payload, envs, nil)
 
 	if err != nil {
 		t.Errorf("injection failed %v", err)
 	}
 
-	if !reflect.DeepEqual(got, expected.String()) {
-		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), got)
+	if !reflect.DeepEqual(buff.String(), expected.String()) {
+		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), buff.String())
 	}
 
 }
