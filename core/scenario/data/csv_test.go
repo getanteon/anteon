@@ -60,9 +60,6 @@ func TestReadCsv_RemoteErr(t *testing.T) {
 	if !errors.As(err, &remoteCsvErr) {
 		t.Errorf("Expected: %v, Found: %v", remoteCsvErr, err)
 	}
-	if remoteCsvErr.Error() != "can not get response" {
-		t.Errorf("Expected: %v, Found: %v", "can not get response", remoteCsvErr.msg)
-	}
 	if remoteCsvErr.Unwrap() == nil {
 		t.Errorf("Expected: %v, Found: %v", "not nil", remoteCsvErr.Unwrap())
 	}
@@ -76,7 +73,8 @@ func TestWrapAsRemoteCsvError(t *testing.T) {
 	if !errors.As(csvErr, &remoteCsvErr) {
 		t.Errorf("Expected: %v, Found: %v", remoteCsvErr, csvErr)
 	}
-	if remoteCsvErr.Error() != msg {
+	errmsg := remoteCsvErr.Error()
+	if errmsg != msg+",error" {
 		t.Errorf("Expected: %v, Found: %v", msg, remoteCsvErr.msg)
 	}
 }

@@ -430,7 +430,10 @@ type RemoteMultipartError struct { // UnWrappable
 }
 
 func (nf RemoteMultipartError) Error() string {
-	return fmt.Sprintf("%s", nf.msg)
+	if nf.wrappedErr != nil {
+		return fmt.Sprintf("%s, %s", nf.msg, nf.wrappedErr.Error())
+	}
+	return nf.msg
 }
 
 func (nf RemoteMultipartError) Unwrap() error {
