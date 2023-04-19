@@ -368,32 +368,37 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 	writer := multipart.NewWriter(byteBody)
 
 	for _, part := range parts {
-		var err error
-
+		var multipartError RemoteMultipartError
 		if strings.EqualFold(part.Type, "file") {
 			if strings.EqualFold(part.Src, "remote") {
 				response, err := http.Get(part.Value)
 				if err != nil {
-					return "", "", err
+					multipartError.wrappedErr = err
+					multipartError.msg = "Error while getting remote file"
+					return "", "", multipartError
 				}
 				defer response.Body.Close()
 
 				u, _ := url.Parse(part.Value)
 				formPart, err := writer.CreateFormFile(part.Name, path.Base(u.Path))
 				if err != nil {
+					multipartError.wrappedErr = err
+					multipartError.msg = "Error while creating form file"
 					return "", "", err
 				}
 
 				_, err = io.Copy(formPart, response.Body)
 				if err != nil {
-					return "", "", err
+					multipartError.wrappedErr = err
+					multipartError.msg = "Error while copying response body"
+					return "", "", multipartError
 				}
 			} else {
 				file, err := os.Open(part.Value)
-				defer file.Close()
 				if err != nil {
 					return "", "", err
 				}
+				defer file.Close()
 
 				formPart, err := writer.CreateFormFile(part.Name, filepath.Base(file.Name()))
 				if err != nil {
@@ -417,4 +422,20 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 
 	writer.Close()
 	return byteBody.String(), writer.FormDataContentType(), err
+}
+
+type RemoteMultipartError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (nf RemoteMultipartError) Error() string {
+	if nf.wrappedErr != nil {
+		return fmt.Sprintf("%s, %s", nf.msg, nf.wrappedErr.Error())
+	}
+	return nf.msg
+}
+
+func (nf RemoteMultipartError) Unwrap() error {
+	return nf.wrappedErr
 }
