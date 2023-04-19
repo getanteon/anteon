@@ -1,4 +1,4 @@
-package testdata
+package data
 
 import (
 	"encoding/csv"

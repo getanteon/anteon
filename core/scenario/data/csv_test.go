@@ -1,8 +1,10 @@
-package testdata
+package data
 
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -77,6 +79,48 @@ func TestWrapAsRemoteCsvError(t *testing.T) {
 	if remoteCsvErr.Error() != msg {
 		t.Errorf("Expected: %v, Found: %v", msg, remoteCsvErr.msg)
 	}
+}
+
+func TestReadCsvFromRemote(t *testing.T) {
+	// Test server
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	path := "/csv"
+	mux := http.NewServeMux()
+	mux.HandleFunc(path, handler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	conf := types.CsvConf{
+		Path:          server.URL + path,
+		Delimiter:     ";",
+		SkipFirstLine: true,
+		Vars: map[string]types.Tag{
+			"0": {Tag: "name", Type: "string"},
+			"3": {Tag: "payload", Type: "json"},
+			"4": {Tag: "age", Type: "int"},
+			"5": {Tag: "percent", Type: "float"},
+			"6": {Tag: "boolField", Type: "bool"},
+		},
+		SkipEmptyLine: true,
+		AllowQuota:    true,
+		Order:         "sequential",
+	}
+
+	_, err := ReadCsv(conf)
+
+	if err == nil {
+		t.Errorf("TestReadCsvFromRemote %v", err)
+	}
+
+	var remoteCsvErr RemoteCsvError
+	if !errors.As(err, &remoteCsvErr) {
+		t.Errorf("Expected: %v, Found: %v", remoteCsvErr, err)
+	}
+
 }
 
 func TestReadCsv(t *testing.T) {
