@@ -26,7 +26,8 @@
             "method": "POST",
             "headers": {
                 "Content-Type": "application/json",
-                "num": "{{NUM}}"
+                "num": "{{NUM}}",
+                "bool" : "{{IS_CHAMPION}}"
             },
             "payload_file" : "../config/config_testdata/json_payload.json",
             "capture_env": {

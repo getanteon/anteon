@@ -19,7 +19,7 @@
         "payload_multipart": [
           {
             "src": "remote",
-            "name": "fghj",
+            "name": "image",
             "type": "file",
             "value": "https://ddosify-backend-storage.s3.amazonaws.com/media/staging/multipart/vijzOnuqKiOkAWzAFo1wsGpdhk4M1DSGx99MIzPzufs/56_mv_1082778177_1681206249576109599_440.jpg"
           },
@@ -30,13 +30,8 @@
         ]
       }
     ],
-    "job_id": 7294684,
     "output": "stdout",
     "duration": 10,
     "load_type": "linear",
-    "sub_job_id": 28630,
-    "proxy_config": {
-      "TR": 100
-    },
     "iteration_count": 100
   }

@@ -612,7 +612,6 @@ func TestDynamicData(t *testing.T) {
 			}
 		}
 		fmt.Println(k, v)
-
 	}
 
 	// body
@@ -691,7 +690,7 @@ func TestGlobalEnvs(t *testing.T) {
 		Headers: map[string]string{
 			"HEADER_KEY": "{{HEADER_VAL}}",
 		},
-		Payload: "{{_randomJobArea}}",
+		Payload: "{{_randomJobArea}}{{_randomInt}}{{_randomBoolean}}",
 		Auth: types.Auth{
 			Type:     types.AuthHttpBasic,
 			Username: "testuser",
@@ -1003,6 +1002,9 @@ func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 	secondRequestCalled := false
 	secondReqBody := make(map[string]interface{}, 0)
 
+	var secondReqboolHeader string
+	var secondReqnumHeader string
+
 	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
 		firstRequestCalled = true
 		body := struct {
@@ -1043,6 +1045,8 @@ func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 		secondRequestCalled = true
 		bBody, _ := io.ReadAll(r.Body)
 		json.Unmarshal(bBody, &secondReqBody)
+		secondReqnumHeader = r.Header.Get("num")
+		secondReqboolHeader = r.Header.Get("bool")
 	}
 	pathFirst := "/header-capture"
 	pathSecond := "/passed-captured-vars"
@@ -1123,6 +1127,13 @@ func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 	}
 	if _, ok := obj["arrayField"].([]interface{}); !ok {
 		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload array field could not be injected to json payload")
+	}
+
+	if secondReqnumHeader != "25" {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload num header could not be injected to json payload")
+	}
+	if secondReqboolHeader != "true" {
+		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload bool header could not be injected to json payload")
 	}
 
 }

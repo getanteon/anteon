@@ -32,22 +32,6 @@ func (ei *EnvironmentInjector) Init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func (ei *EnvironmentInjector) getFakeData(key string) (interface{}, error) {
-	var fakeFunc interface{}
-	var keyExists bool
-	if fakeFunc, keyExists = dynamicFakeDataMap[key]; !keyExists {
-		return nil, fmt.Errorf("%s is not a valid dynamic variable", key)
-	}
-
-	preventRaceOnRandomFunc := func(fakeFunc interface{}) interface{} {
-		ei.mu.Lock()
-		defer ei.mu.Unlock()
-		return reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
-	}
-
-	return preventRaceOnRandomFunc(fakeFunc), nil
-}
-
 func truncateTag(tag string, rx string) string {
 	if strings.EqualFold(rx, regex.EnvironmentVariableRegex) {
 		return tag[2 : len(tag)-2] // {{...}}
@@ -64,55 +48,8 @@ func truncateTag(tag string, rx string) string {
 func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{}) (string, error) {
 	errors := []error{}
 
-	injectStrFunc := func(s string) string {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.EnvironmentVariableRegex)
-		env, err = ei.getEnv(envs, truncated)
-
-		if err == nil {
-			switch env.(type) {
-			case string:
-				return env.(string)
-			case []byte:
-				return string(env.([]byte))
-			case int64:
-				return fmt.Sprintf("%d", env)
-			case int:
-				return fmt.Sprintf("%d", env)
-			case float64:
-				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
-			case bool:
-				return fmt.Sprintf("%t", env)
-			default:
-				return fmt.Sprint(env)
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-	injectToJsonByteFunc := func(s []byte) []byte {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.JsonEnvironmentVarRegex)
-		env, err = ei.getEnv(envs, truncated)
-
-		if err == nil {
-			mEnv, err := json.Marshal(env)
-			if err == nil {
-				return mEnv
-			}
-		}
-
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps: %v", truncated, err))
-		return s
-	}
+	injectStrFunc := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
+	injectToJsonByteFunc := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
 
 	// json injection
 	bText := StringToBytes(text)
@@ -135,77 +72,6 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 
 }
 
-func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {
-	errors := []error{}
-
-	injectStrFunc := func(s string) string {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.DynamicVariableRegex)
-		env, err = ei.getFakeData(truncated)
-
-		if err == nil {
-			switch env.(type) {
-			case string:
-				return env.(string)
-			case []byte:
-				return string(env.([]byte))
-			case int64:
-				return fmt.Sprintf("%d", env)
-			case int:
-				return fmt.Sprintf("%d", env)
-			case float64:
-				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
-			case bool:
-				return fmt.Sprintf("%t", env)
-			default:
-				return fmt.Sprint(env)
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-	injectToJsonByteFunc := func(s []byte) []byte {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.JsonDynamicVariableRegex)
-		env, err = ei.getFakeData(truncated)
-
-		if err == nil {
-			mEnv, err := json.Marshal(env)
-			if err == nil {
-				return mEnv
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-
-	// json injection
-	bText := StringToBytes(text)
-	if json.Valid(bText) {
-		if ei.jr.Match(bText) {
-			replacedBytes := ei.jdr.ReplaceAllFunc(bText, injectToJsonByteFunc)
-			return string(replacedBytes), nil
-		}
-	}
-
-	// string injection
-	replaced := ei.dr.ReplaceAllStringFunc(text, injectStrFunc)
-	if len(errors) == 0 {
-		return replaced, nil
-	}
-
-	return replaced, unifyErrors(errors)
-
-}
-
 // expects an empty buffer and writes the result to it
 func (ei *EnvironmentInjector) InjectEnvIntoBuffer(text string, envs map[string]interface{}, buffer *bytes.Buffer) (*bytes.Buffer, error) {
 	// TODO: if did not inject anything, write text to buffer
@@ -213,55 +79,8 @@ func (ei *EnvironmentInjector) InjectEnvIntoBuffer(text string, envs map[string]
 	if buffer == nil {
 		buffer = &bytes.Buffer{}
 	}
-	injectStrFunc := func(s string) string {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.EnvironmentVariableRegex)
-		env, err = ei.getEnv(envs, truncated)
-
-		if err == nil {
-			switch env.(type) {
-			case string:
-				return env.(string)
-			case []byte:
-				return string(env.([]byte))
-			case int64:
-				return fmt.Sprintf("%d", env)
-			case int:
-				return fmt.Sprintf("%d", env)
-			case float64:
-				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
-			case bool:
-				return fmt.Sprintf("%t", env)
-			default:
-				return fmt.Sprint(env)
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-	injectToJsonByteFunc := func(s []byte) []byte {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.JsonEnvironmentVarRegex)
-		env, err = ei.getEnv(envs, truncated)
-
-		if err == nil {
-			mEnv, err := json.Marshal(env)
-			if err == nil {
-				return mEnv
-			}
-		}
-
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps: %v", truncated, err))
-		return []byte(s)
-	}
+	injectStrFunc := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
+	injectToJsonByteFunc := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
 
 	// json injection
 	bText := StringToBytes(text)
@@ -310,108 +129,6 @@ func (ei *EnvironmentInjector) InjectEnvIntoBuffer(text string, envs map[string]
 	}
 
 	return nil, unifyErrors(errors)
-}
-
-func (ei *EnvironmentInjector) InjectDynamicIntoBuffer(text string, buffer *bytes.Buffer) (*bytes.Buffer, error) {
-	errors := []error{}
-	if buffer == nil {
-		buffer = &bytes.Buffer{}
-	}
-
-	injectStrFunc := func(s string) string {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.DynamicVariableRegex)
-		env, err = ei.getFakeData(truncated)
-
-		if err == nil {
-			switch env.(type) {
-			case string:
-				return env.(string)
-			case []byte:
-				return string(env.([]byte))
-			case int64:
-				return fmt.Sprintf("%d", env)
-			case int:
-				return fmt.Sprintf("%d", env)
-			case float64:
-				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
-			case bool:
-				return fmt.Sprintf("%t", env)
-			default:
-				return fmt.Sprint(env)
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-	injectToJsonByteFunc := func(s []byte) []byte {
-		var truncated string
-		var env interface{}
-		var err error
-
-		truncated = truncateTag(string(s), regex.JsonDynamicVariableRegex)
-		env, err = ei.getFakeData(truncated)
-
-		if err == nil {
-			mEnv, err := json.Marshal(env)
-			if err == nil {
-				return mEnv
-			}
-		}
-		errors = append(errors,
-			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
-		return s
-	}
-
-	// json injection
-	bText := StringToBytes(text)
-	if json.Valid(bText) {
-		if ei.jr.Match(bText) {
-			foundMatches := ei.jdr.FindAll(bText, -1)
-			args := make([]string, 0)
-			for _, match := range foundMatches {
-				args = append(args, string(match))
-				args = append(args, string(injectToJsonByteFunc(match)))
-			}
-
-			replacer := strings.NewReplacer(args...)
-			_, err := replacer.WriteString(buffer, text)
-			if err != nil {
-				return nil, err
-			}
-			return buffer, nil
-		}
-	}
-
-	// string injection
-	foundMatches := ei.dr.FindAllString(text, -1)
-	if len(foundMatches) == 0 {
-		return buffer, nil
-	} else {
-		buffer.Reset()
-		args := make([]string, 0)
-		for _, match := range foundMatches {
-			args = append(args, match)
-			args = append(args, injectStrFunc(match))
-		}
-		replacer := strings.NewReplacer(args...)
-
-		_, err := replacer.WriteString(buffer, text)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(errors) == 0 {
-		return buffer, nil
-	}
-
-	return nil, unifyErrors(errors)
-
 }
 
 func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (interface{}, error) {
@@ -474,4 +191,81 @@ func StringToBytes(s string) (b []byte) {
 	sliceHeader.Len = len(s)
 	sliceHeader.Cap = len(s)
 	return b
+}
+
+func getInjectStrFunc(rx string,
+	ei *EnvironmentInjector,
+	envs map[string]interface{},
+	errors []error,
+) func(string) string {
+	return func(s string) string {
+		var truncated string
+		var env interface{}
+		var err error
+
+		truncated = truncateTag(string(s), rx)
+
+		if rx == regex.EnvironmentVariableRegex {
+			env, err = ei.getEnv(envs, truncated)
+		} else if rx == regex.DynamicVariableRegex {
+			env, err = ei.getFakeData(truncated)
+		} else {
+			// this should never happen
+			panic("invalid regex")
+		}
+
+		if err == nil {
+			switch env.(type) {
+			case string:
+				return env.(string)
+			case []byte:
+				return string(env.([]byte))
+			case int64:
+				return fmt.Sprintf("%d", env)
+			case int:
+				return fmt.Sprintf("%d", env)
+			case float64:
+				return fmt.Sprintf("%g", env) // %g it is the smallest number of digits necessary to identify the value uniquely
+			case bool:
+				return fmt.Sprintf("%t", env)
+			default:
+				return fmt.Sprint(env)
+			}
+		}
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+		return s
+	}
+}
+
+func getInjectJsonFunc(rx string,
+	ei *EnvironmentInjector,
+	envs map[string]interface{},
+	errors []error,
+) func(s []byte) []byte {
+	return func(s []byte) []byte {
+		var truncated string
+		var env interface{}
+		var err error
+
+		truncated = truncateTag(string(s), rx)
+		if rx == regex.JsonDynamicVariableRegex {
+			env, err = ei.getFakeData(truncated)
+		} else if rx == regex.JsonEnvironmentVarRegex {
+			env, err = ei.getEnv(envs, truncated)
+		} else {
+			// this should never happen
+			panic("invalid regex")
+		}
+
+		if err == nil {
+			mEnv, err := json.Marshal(env)
+			if err == nil {
+				return mEnv
+			}
+		}
+		errors = append(errors,
+			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
+		return s
+	}
 }
