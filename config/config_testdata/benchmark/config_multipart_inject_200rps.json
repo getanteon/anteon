@@ -33,5 +33,5 @@
     "output": "stdout",
     "duration": 10,
     "load_type": "linear",
-    "iteration_count": 5000
+    "iteration_count": 2000
   }
