@@ -79,7 +79,8 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	h.bufferPool = sync.Pool{}
 	h.bufferPool.New = func() interface{} {
-		return new(bytes.Buffer)
+		offset := 1024 // bytes
+		return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
 	}
 
 	// Transport segment
@@ -223,6 +224,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	durations := &duration{}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
+
 	buff := h.bufferPool.Get().(*bytes.Buffer)
 	httpReq, err := h.prepareReq(usableVars, trace, buff)
 

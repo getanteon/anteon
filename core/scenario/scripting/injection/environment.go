@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"go.ddosify.com/ddosify/core/types/regex"
 )
@@ -114,7 +115,7 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 	}
 
 	// json injection
-	bText := []byte(text)
+	bText := StringToBytes(text)
 	if json.Valid(bText) {
 		replacedBytes := ei.jr.ReplaceAllFunc(bText, injectToJsonByteFunc)
 		if len(errors) == 0 {
@@ -187,7 +188,7 @@ func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {
 	}
 
 	// json injection
-	bText := []byte(text)
+	bText := StringToBytes(text)
 	if json.Valid(bText) {
 		if ei.jr.Match(bText) {
 			replacedBytes := ei.jdr.ReplaceAllFunc(bText, injectToJsonByteFunc)
@@ -263,7 +264,7 @@ func (ei *EnvironmentInjector) InjectEnvIntoBuffer(text string, envs map[string]
 	}
 
 	// json injection
-	bText := []byte(text)
+	bText := StringToBytes(text)
 	if json.Valid(bText) {
 		foundMatches := ei.jr.FindAll(bText, -1)
 		args := make([]string, 0)
@@ -367,7 +368,7 @@ func (ei *EnvironmentInjector) InjectDynamicIntoBuffer(text string, buffer *byte
 	}
 
 	// json injection
-	bText := []byte(text)
+	bText := StringToBytes(text)
 	if json.Valid(bText) {
 		if ei.jr.Match(bText) {
 			foundMatches := ei.jdr.FindAll(bText, -1)
@@ -464,4 +465,13 @@ func unifyErrors(errors []error) error {
 	}
 
 	return fmt.Errorf("%s", sb.String())
+}
+
+func StringToBytes(s string) (b []byte) {
+	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	sliceHeader.Data = stringHeader.Data
+	sliceHeader.Len = len(s)
+	sliceHeader.Cap = len(s)
+	return b
 }
