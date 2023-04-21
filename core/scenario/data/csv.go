@@ -1,4 +1,4 @@
-package testdata
+package data
 
 import (
 	"encoding/csv"
@@ -20,6 +20,22 @@ func validateConf(conf types.CsvConf) error {
 	return nil
 }
 
+type RemoteCsvError struct { // UnWrappable
+	msg        string
+	wrappedErr error
+}
+
+func (nf RemoteCsvError) Error() string {
+	if nf.wrappedErr != nil {
+		return fmt.Sprintf("%s,%s", nf.msg, nf.wrappedErr.Error())
+	}
+	return nf.msg
+}
+
+func (nf RemoteCsvError) Unwrap() error {
+	return nf.wrappedErr
+}
+
 func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	err := validateConf(conf)
 	if err != nil {
@@ -32,15 +48,15 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	if pUrl, err = url.ParseRequestURI(conf.Path); err == nil && pUrl.IsAbs() { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
-			return nil, err
+			return nil, wrapAsCsvError("can not create request", err)
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return nil, err
+			return nil, wrapAsCsvError("can not get response", err)
 		}
 
 		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-			return nil, fmt.Errorf("request to remote url failed: %d", resp.StatusCode)
+			return nil, wrapAsCsvError(fmt.Sprintf("request to remote url failed: %d", resp.StatusCode), nil)
 		}
 		reader = resp.Body
 		defer resp.Body.Close()
@@ -52,7 +68,7 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 		reader = f
 		defer f.Close()
 	} else {
-		return nil, err
+		return nil, wrapAsCsvError(fmt.Sprintf("can not parse path: %s", conf.Path), err)
 	}
 
 	// read csv values using csv.Reader
@@ -131,4 +147,11 @@ func emptyLine(row []string) bool {
 		}
 	}
 	return true
+}
+
+func wrapAsCsvError(msg string, err error) RemoteCsvError {
+	var csvReqError RemoteCsvError
+	csvReqError.msg = msg
+	csvReqError.wrappedErr = err
+	return csvReqError
 }

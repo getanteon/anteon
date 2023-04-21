@@ -185,7 +185,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	var reqStartTime = time.Now()
 
 	// for debug mode
-	var copiedReqBody bytes.Buffer
+	var copiedReqBody []byte
 	var respBody []byte
 	var respHeaders http.Header
 	var bodyReadErr error
@@ -231,11 +231,22 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
-	if h.debug {
-		// copy req body for debug
-		if httpReq.Body != nil {
-			io.Copy(&copiedReqBody, httpReq.Body)
-			httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	if httpReq.Body != nil {
+		if int64(len(h.packet.Payload)) > 300000 {
+			// Don't store req bodies bigger than 300KB
+			copiedReqBody = []byte("too long body")
+		} else {
+			if h.constantBodyReader != nil {
+				// copy req body for debug
+				sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
+				copiedReqBody = make([]byte, len(h.packet.Payload))
+				sectionReader.Read(copiedReqBody)
+			} else {
+				buf := bytes.Buffer{}
+				io.Copy(&buf, httpReq.Body)
+				copiedReqBody = buf.Bytes()
+				httpReq.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
+			}
 		}
 	}
 
@@ -308,7 +319,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		Url:         httpReq.URL.String(),
 		Method:      httpReq.Method,
 		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient),
-		ReqBody:     copiedReqBody.Bytes(),
+		ReqBody:     copiedReqBody,
 		RespHeaders: respHeaders,
 		RespBody:    respBody,
 
