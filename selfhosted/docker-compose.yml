@@ -36,9 +36,11 @@ services:
       - ddosify
     restart: always
     # pull_policy: always
-    command: /workspace/start_scripts/start_app.sh
+    command: /workspace/start_scripts/start_app_onprem.sh
 
   hammermanager:
+    ports:
+      - "8001:8001"
     image: ddosify/selfhosted_hammermanager:latest
     depends_on:
       - postgres_selfhosted
