@@ -184,3 +184,4 @@ volumes:
 
 networks:
   ddosify:
+    name: selfhosted_ddosify
