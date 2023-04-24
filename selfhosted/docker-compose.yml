@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  ddosify_nginx:
+  nginx:
     image: nginx:1.23.3-alpine
     ports:
       - '8014:80'
@@ -14,22 +14,22 @@ services:
     networks:
       - ddosify
 
-  ddosify_frontend:
+  frontend:
     image: ddosify/selfhosted_frontend:latest
     depends_on:
-      - ddosify_backend
+      - backend
     restart: always
     pull_policy: always
     networks:
       - ddosify
 
-  ddosify_backend:
+  backend:
     image: ddosify/selfhosted_backend:latest
     depends_on:
-      - ddosify_postgres_selfhosted
-      - ddosify_influxdb
-      - ddosify_backend_redis
-      - ddosify_minio
+      - postgres_selfhosted
+      - influxdb
+      - backend_redis
+      - minio
     env_file:
       - .env
     networks:
@@ -38,14 +38,14 @@ services:
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
 
-  ddosify_hammermanager:
+  hammermanager:
     ports:
       - "8001:8001"
     image: ddosify/selfhosted_hammermanager:latest
     depends_on:
-      - ddosify_postgres_selfhosted
-      - ddosify_rabbitmq_job
-      - ddosify_rabbitmq_celery
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
     env_file:
       - .env
     networks:
@@ -54,13 +54,13 @@ services:
     pull_policy: always
     command: /workspace/start_scripts/start_app.sh
 
-  ddosify_hammermanager_celery_worker:
+  hammermanager_celery_worker:
     image: ddosify/selfhosted_hammermanager:latest
     depends_on:
-      - ddosify_postgres_selfhosted
-      - ddosify_rabbitmq_job
-      - ddosify_rabbitmq_celery
-      - ddosify_hammermanager
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
+      - hammermanager
     env_file:
       - .env
     networks:
@@ -69,13 +69,13 @@ services:
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
-  ddosify_hammermanager_celery_beat:
+  hammermanager_celery_beat:
     image: ddosify/selfhosted_hammermanager:latest
     depends_on:
-      - ddosify_postgres_selfhosted
-      - ddosify_rabbitmq_job
-      - ddosify_rabbitmq_celery
-      - ddosify_hammermanager
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
+      - hammermanager
     env_file:
       - .env
     networks:
@@ -84,13 +84,13 @@ services:
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
 
-  ddosify_hammer:
+  hammer:
     image: ddosify/selfhosted_hammer:latest
     depends_on:
-      - ddosify_rabbitmq_job
-      - ddosify_influxdb
-      - ddosify_hammermanager
-      - ddosify_minio
+      - rabbitmq_job
+      - influxdb
+      - hammermanager
+      - minio
     env_file:
       - .env
     networks:
@@ -98,12 +98,12 @@ services:
     restart: always
     pull_policy: always
 
-  ddosify_hammerdebug:
+  hammerdebug:
     image: ddosify/selfhosted_hammer:latest
     depends_on:
-      - ddosify_rabbitmq_job
-      - ddosify_influxdb
-      - ddosify_hammermanager
+      - rabbitmq_job
+      - influxdb
+      - hammermanager
     env_file:
       - .env
     environment:
@@ -113,10 +113,10 @@ services:
     restart: always
     pull_policy: always
 
-  ddosify_postgres_selfhosted:
+  postgres_selfhosted:
     image: "postgres:13.6"
     volumes:
-      - ddosify_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./init_scripts/postgres:/docker-entrypoint-initdb.d
     env_file:
       - .env
@@ -124,22 +124,22 @@ services:
       - ddosify
     restart: always
 
-  ddosify_rabbitmq_celery:
+  rabbitmq_celery:
     image: "rabbitmq:3.9.4"
     networks:
       - ddosify
     restart: always
 
-  ddosify_rabbitmq_job:
+  rabbitmq_job:
     image: "rabbitmq:3.9.4"
     networks:
       - ddosify
     restart: always
 
-  ddosify_influxdb:
+  influxdb:
     image: "influxdb:2.1.1"
     volumes:
-      - ddosify_influxdb_data:/var/lib/influxdb
+      - influxdb_data:/var/lib/influxdb
       - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
@@ -151,15 +151,15 @@ services:
       - ddosify
     restart: always
 
-  ddosify_backend_redis:
+  backend_redis:
     image: "redis:6.2.6"
     volumes:
-      - ddosify_redis_data:/data
+      - redis_data:/data
     networks:
       - ddosify
     restart: always
 
-  ddosify_minio:
+  minio:
     image: minio/minio:RELEASE.2023-04-13T03-08-07Z
     ports:
       - "9000:9000"
@@ -172,14 +172,14 @@ services:
       - ddosify
     restart: always
     volumes:
-      - ddosify_minio_data:/data
+      - minio_data:/data
     command: server /data
 
 volumes:
-  ddosify_postgres_data:
-  ddosify_influxdb_data:
-  ddosify_redis_data:
-  ddosify_minio_data:
+  postgres_data:
+  influxdb_data:
+  redis_data:
+  minio_data:
 
 
 networks:
