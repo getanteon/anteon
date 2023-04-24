@@ -103,6 +103,21 @@ docker run --name $NAME -dit \
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
 
 
+## 🧹 Clean Up
+
+If you added new engines, stop the engines first. Change the name of the engine container to the name of your engine container.
+
+```bash
+docker rm -f ddosify_hammer_1
+```
+
+If you installed the project using the [install.sh](./install.sh) script, you must first change the directory to the `$HOME/.ddosify` directory before running the commands below.
+
+```bash
+cd $HOME/.ddosify
+docker-compose down
+```
+
 ## 🧩 Services Overview
 
 | Service              | Description                                                                                       |
