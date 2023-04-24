@@ -40,7 +40,7 @@ services:
 
   hammermanager:
     ports:
-      - "8001:8001"
+      - "9901:8001"
     image: ddosify/selfhosted_hammermanager:latest
     depends_on:
       - postgres_selfhosted
@@ -132,7 +132,7 @@ services:
 
   rabbitmq_job:
     ports:
-      - "5672:5672"
+      - "6672:5672"
     image: "rabbitmq:3.9.4"
     networks:
       - ddosify
@@ -140,7 +140,7 @@ services:
 
   influxdb:
     ports:
-      - "8086:8086"
+      - "9086:8086"
     image: "influxdb:2.1.1"
     volumes:
       - influxdb_data:/var/lib/influxdb
@@ -166,7 +166,7 @@ services:
   minio:
     image: minio/minio:RELEASE.2023-04-13T03-08-07Z
     ports:
-      - "9000:9000"
+      - "9900:9000"
     environment:
       MINIO_ROOT_USER: minio_accesskey
       MINIO_ROOT_PASSWORD: minio_secretkey
@@ -184,7 +184,6 @@ volumes:
   influxdb_data:
   redis_data:
   minio_data:
-
 
 networks:
   ddosify:

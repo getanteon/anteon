@@ -6,6 +6,27 @@ echo "⚡ Installing Ddosify Self Hosted..."
 
 echo "🔍 Checking prerequisites..."
 
+# Function to check if a port is available
+is_port_available() {
+  local port="$1"
+
+  if ! command -v lsof >/dev/null 2>&1; then
+    echo "❌ lsof not found. Please install lsof and try again."
+    exit 1
+  fi
+
+  if lsof -i :"$port" >/dev/null 2>&1; then
+    echo "❌ Port $port is already in use. Free up the current port and try again."
+    exit 1
+  fi
+}
+
+is_port_available 8014
+is_port_available 9901
+is_port_available 6672
+is_port_available 9086
+is_port_available 9900
+
 # Check if Git is installed
 if ! command -v git >/dev/null 2>&1; then
   echo "❌ Git not found. Please install Git and try again."
