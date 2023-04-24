@@ -75,7 +75,7 @@ In case you have modified the default values like InfluxDB password in the `.env
 - **Example 1**: Adding the engine to the same server where the [install.sh](install.sh) script was run.
 
 ```bash
-NAME=ddosify_hammer_2
+NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --network ddosify_selfhosted_ddosify \
     --restart always \
