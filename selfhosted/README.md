@@ -64,10 +64,10 @@ Make sure the new engine server can access the service server. Use the `DDOSIFY_
 
 The engine server must connect to the following ports on the `DDOSIFY_SERVICE_ADDRESS`:
 
-- `8001`: Hammer Manager service. The service server utilizes this port to register the engine.
-- `5672`: RabbitMQ server. The engine server connects to this port to send and receive messages to and from the service server.
-- `8086`: InfluxDB server. The engine server accesses this port to transmit metrics to the backend.
-- `9000`: Object storage server. The engine server uses this port to exchange files with the service server.
+- `9901`: Hammer Manager service. The service server utilizes this port to register the engine.
+- `6672`: RabbitMQ server. The engine server connects to this port to send and receive messages to and from the service server.
+- `9086`: InfluxDB server. The engine server accesses this port to transmit metrics to the backend.
+- `9900`: Object storage server. The engine server uses this port to exchange files with the service server.
 
 In case you have modified the default values like InfluxDB password in the `.env` file, utilize the `--env` flag in the docker run command to establish the necessary environment variables.
 
