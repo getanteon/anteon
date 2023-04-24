@@ -77,7 +77,7 @@ In case you have modified the default values like InfluxDB password in the `.env
 ```bash
 NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
-    --network ddosify_selfhosted_ddosify \
+    --network selfhosted_ddosify \
     --restart always \
     ddosify/selfhosted_hammer
 ```
@@ -95,7 +95,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --env DDOSIFY_SERVICE_ADDRESS=$DDOSIFY_SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
-    --network ddosify_selfhosted_ddosify \
+    --network selfhosted_ddosify \
     --restart always \
     ddosify/selfhosted_hammer
 ```
