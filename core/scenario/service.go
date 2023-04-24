@@ -46,7 +46,7 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
-	cPool *clientPool
+	cPool *Pool[*http.Client]
 
 	scenario types.Scenario
 	ctx      context.Context
@@ -103,7 +103,7 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 		} else if s.engineMode == types.EngineModeDistinctUser {
 			initialCount = opts.IterationCount
 		}
-		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, func() *http.Client { return &http.Client{} })
+		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, func() *http.Client { return &http.Client{} }, func(c *http.Client) { c.CloseIdleConnections() })
 	}
 	// s.cPool will be nil otherwise
 

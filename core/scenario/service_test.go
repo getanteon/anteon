@@ -242,7 +242,7 @@ func TestDo(t *testing.T) {
 			requester:      &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}},
 		},
 	}
-	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
+	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} }, func(c *http.Client) { c.CloseIdleConnections() })
 	service := ScenarioService{
 		clients: map[*url.URL][]scenarioItemRequester{
 			p1: requesters,
@@ -328,7 +328,7 @@ func TestDoErrorOnSend(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
+			cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} }, func(c *http.Client) { c.CloseIdleConnections() })
 			service := ScenarioService{
 				clients: map[*url.URL][]scenarioItemRequester{
 					p1: test.requesters,
@@ -418,7 +418,7 @@ func TestDone(t *testing.T) {
 	p2, _ := url.Parse("http://proxy_server.com:8080")
 	ctx := context.TODO()
 
-	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} })
+	cPool, _ := NewClientPool(1, 1, func() *http.Client { return &http.Client{} }, func(c *http.Client) { c.CloseIdleConnections() })
 
 	requester1 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 1}}
 	requester2 := &MockHttpRequester{ReturnSend: &types.ScenarioStepResult{StepID: 2}}
