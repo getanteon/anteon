@@ -37,12 +37,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/core/util"
 	"golang.org/x/net/http2"
 )
 
@@ -59,7 +61,8 @@ type HttpRequester struct {
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
 
-	bufferPool sync.Pool
+	// bufferPool sync.Pool
+	bufferPool *util.Pool[*bytes.Buffer]
 
 	constantBodyReader *bytes.Reader
 }
@@ -77,10 +80,22 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
 	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
 
-	h.bufferPool = sync.Pool{}
-	h.bufferPool.New = func() interface{} {
+	// h.bufferPool = sync.Pool{}
+	// h.bufferPool.New = func() interface{} {
+	// 	offset := 1024 // bytes
+	// 	return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
+	// }
+
+	maxIterCount := 2000 // temp for checking 200 rps
+	initCount := 200     // temp for checking 200 rps
+	h.bufferPool, err = util.NewBufferPool(initCount, maxIterCount, func() *bytes.Buffer {
 		offset := 1024 // bytes
 		return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
+	}, func(buf *bytes.Buffer) {
+		buf.Reset()
+	})
+	if err != nil {
+		return
 	}
 
 	// Transport segment
@@ -225,7 +240,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
-	buff := h.bufferPool.Get().(*bytes.Buffer)
+	buff := h.bufferPool.Get()
 	httpReq, err := h.prepareReq(usableVars, trace, buff)
 
 	if err != nil { // could not prepare req

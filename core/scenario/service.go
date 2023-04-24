@@ -37,6 +37,7 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
@@ -46,7 +47,7 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
-	cPool *Pool[*http.Client]
+	cPool *util.Pool[*http.Client]
 
 	scenario types.Scenario
 	ctx      context.Context
