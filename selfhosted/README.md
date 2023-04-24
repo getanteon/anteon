@@ -114,7 +114,7 @@ docker rm -f ddosify_hammer_1
 If you installed the project using the [install.sh](./install.sh) script, you must first change the directory to the `$HOME/.ddosify` directory before running the commands below.
 
 ```bash
-cd $HOME/.ddosify
+cd $HOME/.ddosify/selfhosted
 docker compose down
 ```
 
