@@ -82,7 +82,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --env DDOSIFY_SERVICE_ADDRESS=$DDOSIFY_SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
-    --network ddosify \
+    --network selfhosted_ddosify \
     --restart always \
     ddosify/selfhosted_hammer
 ```
