@@ -115,7 +115,7 @@ If you installed the project using the [install.sh](./install.sh) script, you mu
 
 ```bash
 cd $HOME/.ddosify
-docker-compose down
+docker compose down
 ```
 
 ## 🧩 Services Overview
