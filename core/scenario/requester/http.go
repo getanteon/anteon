@@ -87,7 +87,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	// }
 
 	maxIterCount := 2000 // temp for checking 200 rps
-	initCount := 200     // temp for checking 200 rps
+	initCount := 0       // temp for checking 200 rps
 	h.bufferPool, err = util.NewBufferPool(initCount, maxIterCount, func() *bytes.Buffer {
 		offset := 1024 // bytes
 		return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
