@@ -65,7 +65,7 @@ fi
 echo "🚀 Deploying Ddosify Self Hosted..."
 $COMPOSE_COMMAND -f "$REPO_DIR/selfhosted/docker-compose.yml" up -d
 echo "⏳ Waiting for services to be ready..."
-docker run --rm --network ddosify_selfhosted_ddosify busybox:1.34.1 /bin/sh -c "until nc -z nginx 80 && nc -z backend 8008 && nc -z hammermanager 8001 && nc -z rabbitmq_celery 5672 && nc -z rabbitmq_job 5672 && nc -z postgres_selfhosted 5432 && nc -z influxdb 8086; do sleep 5; done"
+docker run --rm --network selfhosted_ddosify busybox:1.34.1 /bin/sh -c "until nc -z nginx 80 && nc -z backend 8008 && nc -z hammermanager 8001 && nc -z rabbitmq_celery 5672 && nc -z rabbitmq_job 5672 && nc -z postgres_selfhosted 5432 && nc -z influxdb 8086; do sleep 5; done"
 echo "✅ Ddosify Self Hosted installation complete!"
 echo "📁 Installation directory: $REPO_DIR/selfhosted"
 
