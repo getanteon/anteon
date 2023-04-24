@@ -131,12 +131,16 @@ services:
     restart: always
 
   rabbitmq_job:
+    ports:
+      - "5672:5672"
     image: "rabbitmq:3.9.4"
     networks:
       - ddosify
     restart: always
 
   influxdb:
+    ports:
+      - "8086:8086"
     image: "influxdb:2.1.1"
     volumes:
       - influxdb_data:/var/lib/influxdb
