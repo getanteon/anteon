@@ -71,7 +71,7 @@ The engine server must connect to the following ports on the `DDOSIFY_SERVICE_AD
 - `9086`: InfluxDB server. The engine server accesses this port to transmit metrics to the backend.
 - `9900`: Object storage server. The engine server uses this port to exchange files with the service server.
 
-- **Example 1**: Adding the engine to the same server where the [install.sh](install.sh) script was run.
+### **Example 1**: Adding the engine to the same server
 
 ```bash
 NAME=ddosify_hammer_1
@@ -81,7 +81,7 @@ docker run --name $NAME -dit \
     ddosify/selfhosted_hammer
 ```
 
-- **Example 2**: Adding the engine to a different server.
+### **Example 2**: Adding the engine to a different server
 
 Set `DDOSIFY_SERVICE_ADDRESS` to the IP address of the service server. Set `IP_ADDRESS` to the IP address of the engine server.
 
