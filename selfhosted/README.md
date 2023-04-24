@@ -19,7 +19,7 @@
 
 - [Git](https://git-scm.com/)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Docker Compose](https://docs.docker.com/compose/install/) (`docker-compose` or `docker compose`)
 
 ## ⚡️ Quick Start (Recommended)
 
