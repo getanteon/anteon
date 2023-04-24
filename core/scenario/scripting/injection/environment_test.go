@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -327,4 +328,151 @@ func TestOSEnvInjection(t *testing.T) {
 		t.Errorf("expected os env val not found")
 	}
 
+}
+
+func TestGenerateBodyPieces(t *testing.T) {
+	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	if len(pieces) != 4 {
+		t.Errorf("expected 4 pieces, got %d", len(pieces))
+	}
+
+	if pieces[0].start != 0 && pieces[0].end != 4 {
+		t.Errorf("expected start 0 and end 4, got %d and %d", pieces[0].start, pieces[0].end)
+	}
+
+	if pieces[1].start != 4 && pieces[1].end != 12 {
+		t.Errorf("expected start 4 and end 12, got %d and %d", pieces[1].start, pieces[1].end)
+	}
+
+	if pieces[2].start != 12 && pieces[2].end != 15 {
+		t.Errorf("expected start 12 and end 15, got %d and %d", pieces[2].start, pieces[2].end)
+	}
+
+	if pieces[3].start != 15 && pieces[3].end != 23 {
+		t.Errorf("expected start 15 and end 23, got %d and %d", pieces[3].start, pieces[3].end)
+	}
+
+	if !pieces[1].injectable {
+		t.Errorf("expected piece 1 to be injectable")
+	}
+	if !pieces[3].injectable {
+		t.Errorf("expected piece 3 to be injectable")
+	}
+
+	if pieces[0].injectable {
+		t.Errorf("expected piece 0 to not be injectable")
+	}
+	if pieces[2].injectable {
+		t.Errorf("expected piece 2 to not be injectable")
+	}
+
+	if pieces[1].value != "123" {
+		t.Errorf("expected piece 1 value to be 123")
+	}
+	if pieces[3].value != "456" {
+		t.Errorf("expected piece 3 value to be 456")
+	}
+
+	// test content length
+	// 4 + {8} + 3 + {8} = 23
+	// 4 + {3} + 3 + {3} = 13
+	if GetContentLength(pieces) != 13 {
+		t.Errorf("expected content length to be 13")
+	}
+}
+
+func TestDdosifyBodyReader(t *testing.T) {
+	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	byteArray := make([]byte, GetContentLength(pieces))
+	n, err := customReader.Read(byteArray)
+
+	// expect EOF
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+	if n != GetContentLength(pieces) {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces), n)
+	}
+
+	if string(byteArray) != "test123xyz456" {
+		t.Errorf("expected test123xyz456, got %s", string(byteArray))
+	}
+}
+
+func TestDdosifyBodyReaderSplitted(t *testing.T) {
+	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, GetContentLength(pieces)-5)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != GetContentLength(pieces)-5 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "test123x" {
+		t.Errorf("expected test123x, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, 5)
+	n, err = customReader.Read(secondPart)
+
+	// expect EOF here
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+	if n != 5 {
+		t.Errorf("expected to read %d bytes, read %d", 5, n)
+	}
+
+	if string(secondPart) != "yz456" {
+		t.Errorf("expected yz456, got %s", string(secondPart))
+	}
 }

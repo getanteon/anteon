@@ -407,7 +407,7 @@ func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace, bodyBuff *bytes.Buffer) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-	var err error
+	// var err error
 
 	if h.constantBodyReader != nil {
 		sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
@@ -416,29 +416,42 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	} else {
 		body := h.packet.Payload
 		var bodyInBuffer bool
+		var customReaderVersion bool
 
 		if h.containsDynamicField["body"] {
 			_, _ = h.ei.InjectDynamicIntoBuffer(body, bodyBuff)
 			bodyInBuffer = true
 		}
 		if h.containsEnvVar["body"] {
-			if bodyInBuffer { // if dynamic field is present, then body is already in buffer
-				body = bodyBuff.String()
-				bodyBuff.Reset()
+
+			// if bodyInBuffer { // if dynamic field is present, then body is already in buffer
+			// 	body = bodyBuff.String()
+			// 	bodyBuff.Reset()
+			// }
+			// _, err = h.ei.InjectEnvIntoBuffer(body, envs, bodyBuff)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// bodyInBuffer = true
+
+			pieces := h.ei.GenerateBodyPieces(body, envs)
+			customReader := injection.DdosifyBodyReader{
+				Body:   body,
+				Pieces: pieces,
 			}
-			_, err = h.ei.InjectEnvIntoBuffer(body, envs, bodyBuff)
-			if err != nil {
-				return nil, err
-			}
-			bodyInBuffer = true
+			httpReq.Body = io.NopCloser(&customReader)
+			httpReq.ContentLength = int64(injection.GetContentLength(pieces))
+			customReaderVersion = true
 		}
 
-		if bodyInBuffer {
-			httpReq.Body = io.NopCloser(bodyBuff)
-			httpReq.ContentLength = int64(bodyBuff.Len())
-		} else {
-			httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
-			httpReq.ContentLength = int64(len(body))
+		if !customReaderVersion {
+			if bodyInBuffer {
+				httpReq.Body = io.NopCloser(bodyBuff)
+				httpReq.ContentLength = int64(bodyBuff.Len())
+			} else {
+				httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
+				httpReq.ContentLength = int64(len(body))
+			}
 		}
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"reflect"
@@ -15,6 +16,102 @@ import (
 
 	"go.ddosify.com/ddosify/core/types/regex"
 )
+
+type BodyPiece struct {
+	start      int
+	end        int // end is not inclusive
+	injectable bool
+	value      string // []byte // exist only if injectable is true
+}
+
+type DdosifyBodyReader struct {
+	Body   string // []byte
+	Pieces []BodyPiece
+
+	pieceIndex int
+	valIndex   int
+}
+
+// TODO: check bounds
+func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
+	// TODO: check
+	leftSpaceOnDst := len(dst) // assume dst is empty, so we can write to it from the beginning
+
+	var readUntilPieceIndex int
+	var readUntilPieceValueIndex int
+
+	readUntilPieceIndex = dbr.pieceIndex
+	readUntilPieceValueIndex = dbr.valIndex
+
+	for leftSpaceOnDst > 0 {
+		var unReadOnCurrentPiece int
+		piece := dbr.Pieces[readUntilPieceIndex]
+		if piece.injectable { // has injected value
+			unReadOnCurrentPiece = len(piece.value[readUntilPieceValueIndex:])
+		} else {
+			unReadOnCurrentPiece = piece.end - piece.start - dbr.valIndex
+		}
+
+		if unReadOnCurrentPiece > leftSpaceOnDst {
+			// will be a partial read
+			// set readUntilPieceIndex and readUntilPieceValueIndex
+			readUntilPieceValueIndex += leftSpaceOnDst
+			leftSpaceOnDst = 0
+		} else {
+			// will be a full read of the current piece
+			// set readUntilPieceIndex and readUntilPieceValueIndex
+			readUntilPieceIndex++
+			readUntilPieceValueIndex = 0
+			leftSpaceOnDst -= unReadOnCurrentPiece
+		}
+	}
+
+	// TODO: fails on big first piece
+
+	// continue reading from pieceIndex and valIndex
+	// in first iteration, read from dbr.valIndex till the end of the piece
+	// later on read from the beginning of the piece till the end of the piece
+	for i := dbr.pieceIndex; i < readUntilPieceIndex; i++ {
+		piece := dbr.Pieces[i]
+		if piece.injectable {
+			copy(dst[n:n+len(piece.value)-dbr.valIndex], piece.value[dbr.valIndex:])
+			n += len(piece.value) - dbr.valIndex
+		} else {
+			copy(dst[n:n+piece.end-piece.start-dbr.valIndex], dbr.Body[piece.start+dbr.valIndex:piece.end])
+			n += piece.end - piece.start - dbr.valIndex
+		}
+		dbr.valIndex = 0
+	}
+
+	// check if EOF
+	if readUntilPieceIndex == len(dbr.Pieces) {
+		return n, io.EOF
+	}
+
+	// read from dbr.valIndex to readUntilPieceValueIndex
+	lastPiece := dbr.Pieces[readUntilPieceIndex]
+	if lastPiece.injectable {
+		copy(dst[n:n+readUntilPieceValueIndex], lastPiece.value[0:readUntilPieceValueIndex])
+		n += readUntilPieceValueIndex
+	} else {
+		copy(dst[n:n+readUntilPieceValueIndex], dbr.Body[lastPiece.start:lastPiece.start+readUntilPieceValueIndex])
+		n += readUntilPieceValueIndex
+	}
+
+	// check if EOF
+	if readUntilPieceIndex == len(dbr.Pieces)-1 {
+		piece := dbr.Pieces[readUntilPieceIndex]
+		if piece.injectable && readUntilPieceValueIndex == len(piece.value)-1 {
+			return n, io.EOF
+		} else if !piece.injectable && readUntilPieceValueIndex == piece.end-piece.start {
+			return n, io.EOF
+		}
+	}
+
+	dbr.pieceIndex = readUntilPieceIndex
+	dbr.valIndex = readUntilPieceValueIndex
+	return n, nil
+}
 
 type EnvironmentInjector struct {
 	r   *regexp.Regexp
@@ -268,4 +365,61 @@ func getInjectJsonFunc(rx string,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
 		return s
 	}
+}
+
+func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]interface{}) []BodyPiece {
+	// generate body pieces
+	pieces := make([]BodyPiece, 0)
+
+	// TODO: find matches for all regexes and sort them by start index
+	foundMatches := ei.r.FindAllStringIndex(body, -1)
+
+	errors := make([]error, 0)
+
+	off := 0
+
+	for _, match := range foundMatches {
+		if match[0] > off {
+			pieces = append(pieces, BodyPiece{
+				start:      off,
+				end:        match[0],
+				injectable: false,
+				// value:      body[off:match[0]], // no need to put values in here
+			})
+		}
+
+		f := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
+		val := f(body[match[0]:match[1]])
+		pieces = append(pieces, BodyPiece{
+			start:      match[0],
+			end:        match[1],
+			injectable: true,
+			value:      val, // only put values in injected pieces
+		})
+
+		off = match[1]
+	}
+
+	if off < len(body) {
+		pieces = append(pieces, BodyPiece{
+			start:      off,
+			end:        len(body),
+			injectable: false,
+			// value:      body[off:],
+		})
+	}
+
+	return pieces
+}
+
+func GetContentLength(pieces []BodyPiece) int {
+	var contentLength int
+	for _, piece := range pieces {
+		if piece.injectable {
+			contentLength += len(piece.value)
+		} else {
+			contentLength += piece.end - piece.start
+		}
+	}
+	return contentLength
 }
