@@ -131,6 +131,12 @@ cd $HOME/.ddosify/selfhosted
 docker compose down
 ```
 
+You may encounter the following error when running the `docker compose down` command if you did not [remove the engine](#-remove-new-engine) containers. This is completely fine. The network `selfhosted_ddosify` is not removed from docker. If you do not want to see this error, you can [remove the engine](#-remove-new-engine) containers first then run the `docker compose down` command again.
+
+```text
+failed to remove network selfhosted_ddosify: Error response from...
+```
+
 If you want to start the project again, you can run the following command.
 
 ```bash
