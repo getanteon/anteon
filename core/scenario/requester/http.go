@@ -44,7 +44,6 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/types/regex"
-	"go.ddosify.com/ddosify/core/util"
 	"golang.org/x/net/http2"
 )
 
@@ -60,11 +59,7 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
-
-	// bufferPool sync.Pool
-	bufferPool *util.Pool[*bytes.Buffer]
-
-	constantBodyReader *bytes.Reader
+	constantBodyReader   *bytes.Reader
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -79,24 +74,6 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 	h.debug = debug
 	h.dynamicRgx = regexp.MustCompile(regex.DynamicVariableRegex)
 	h.envRgx = regexp.MustCompile(regex.EnvironmentVariableRegex)
-
-	// h.bufferPool = sync.Pool{}
-	// h.bufferPool.New = func() interface{} {
-	// 	offset := 1024 // bytes
-	// 	return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
-	// }
-
-	maxIterCount := 2000 // temp for checking 200 rps
-	initCount := 0       // temp for checking 200 rps
-	h.bufferPool, err = util.NewBufferPool(initCount, maxIterCount, func() *bytes.Buffer {
-		offset := 1024 // bytes
-		return bytes.NewBuffer(make([]byte, 0, len(h.packet.Payload)+offset))
-	}, func(buf *bytes.Buffer) {
-		buf.Reset()
-	})
-	if err != nil {
-		return
-	}
 
 	// Transport segment
 	tr := h.initTransport()
@@ -240,9 +217,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
-	// TODObuff: temp close this feature
-	// buff := h.bufferPool.Get()
-	httpReq, err := h.prepareReq(usableVars, trace, nil)
+	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
 		requestErr.Type = types.ErrorInvalidRequest
@@ -283,11 +258,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
 	}
 	durations.setResDur()
-
-	// Reset req body buffer
-	// TODObuff: temp close this feature
-	// buff.Reset()
-	// h.bufferPool.Put(buff)
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
@@ -406,7 +376,7 @@ func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
 	return total
 }
 
-func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace, bodyBuff *bytes.Buffer) (*http.Request, error) {
+func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
 	// var err error
@@ -417,25 +387,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 		httpReq.ContentLength = h.request.ContentLength
 	} else {
 		body := h.packet.Payload
-		var bodyInBuffer bool
-		var customReaderVersion bool
-
-		if h.containsDynamicField["body"] {
-			bodyBuff, _ = h.ei.InjectDynamicIntoBuffer(body, bodyBuff)
-			bodyInBuffer = true
-		}
-		if h.containsEnvVar["body"] {
-
-			// if bodyInBuffer { // if dynamic field is present, then body is already in buffer
-			// 	body = bodyBuff.String()
-			// 	bodyBuff.Reset()
-			// }
-			// _, err = h.ei.InjectEnvIntoBuffer(body, envs, bodyBuff)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			// bodyInBuffer = true
-
+		if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
 			pieces := h.ei.GenerateBodyPieces(body, envs)
 			customReader := injection.DdosifyBodyReader{
 				Body:   body,
@@ -443,17 +395,9 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 			}
 			httpReq.Body = io.NopCloser(&customReader)
 			httpReq.ContentLength = int64(injection.GetContentLength(pieces))
-			customReaderVersion = true
-		}
-
-		if !customReaderVersion {
-			if bodyInBuffer {
-				httpReq.Body = io.NopCloser(bodyBuff)
-				httpReq.ContentLength = int64(bodyBuff.Len())
-			} else {
-				httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
-				httpReq.ContentLength = int64(len(body))
-			}
+		} else {
+			httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
+			httpReq.ContentLength = int64(len(body))
 		}
 	}
 

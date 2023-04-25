@@ -1,7 +1,6 @@
 package injection
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -190,65 +190,6 @@ func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{
 
 }
 
-// expects an empty buffer and writes the result to it
-func (ei *EnvironmentInjector) InjectEnvIntoBuffer(text string, envs map[string]interface{}, buffer *bytes.Buffer) (*bytes.Buffer, error) {
-	// TODO: if did not inject anything, write text to buffer
-	errors := []error{}
-	if buffer == nil {
-		buffer = &bytes.Buffer{}
-	}
-	injectStrFunc := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
-	injectToJsonByteFunc := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
-
-	// json injection
-	bText := StringToBytes(text)
-	if json.Valid(bText) {
-		foundMatches := ei.jr.FindAll(bText, -1)
-		args := make([]string, 0)
-		for _, match := range foundMatches {
-			args = append(args, string(match))
-			args = append(args, string(injectToJsonByteFunc(match)))
-		}
-
-		replacer := strings.NewReplacer(args...)
-		_, err := replacer.WriteString(buffer, text)
-		if err != nil {
-			return nil, err
-		}
-		if len(errors) == 0 {
-			text = buffer.String()
-		} else {
-			return nil, unifyErrors(errors)
-		}
-	}
-
-	// continue with string injection
-	// string injection
-	foundMatches := ei.r.FindAllString(text, -1)
-	if len(foundMatches) == 0 {
-		return buffer, nil
-	} else {
-		buffer.Reset()
-
-		args := make([]string, 0)
-		for _, match := range foundMatches {
-			args = append(args, match)
-			args = append(args, injectStrFunc(match))
-		}
-		replacer := strings.NewReplacer(args...)
-		_, err := replacer.WriteString(buffer, text)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(errors) == 0 {
-		return buffer, nil
-	}
-
-	return nil, unifyErrors(errors)
-}
-
 func (ei *EnvironmentInjector) getEnv(envs map[string]interface{}, key string) (interface{}, error) {
 	var err error
 	var val interface{}
@@ -388,37 +329,106 @@ func getInjectJsonFunc(rx string,
 	}
 }
 
+type EnvMatch struct {
+	regex string // matched regex
+	found []int  // indexes of match
+}
+type EnvMatchSlice []EnvMatch
+
+func (a EnvMatchSlice) Len() int           { return len(a) }
+func (a EnvMatchSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a EnvMatchSlice) Less(i, j int) bool { return a[i].found[0] < a[j].found[0] }
+
 func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]interface{}) []BodyPiece {
 	// generate body pieces
 	pieces := make([]BodyPiece, 0)
+	matches := EnvMatchSlice{}
 
-	// TODO: find matches for all regexes and sort them by start index
-	foundMatches := ei.r.FindAllStringIndex(body, -1)
+	bText := StringToBytes(body)
+	if json.Valid(bText) {
+		jsonEnvMatches := ei.jr.FindAllStringIndex(body, -1)
+		for _, match := range jsonEnvMatches {
+			matches = append(matches, EnvMatch{
+				regex: regex.JsonEnvironmentVarRegex,
+				found: match,
+			})
+		}
+
+		jsonDynamicMatches := ei.jdr.FindAllStringIndex(body, -1)
+		for _, match := range jsonDynamicMatches {
+			matches = append(matches, EnvMatch{
+				regex: regex.JsonDynamicVariableRegex,
+				found: match,
+			})
+		}
+	} else {
+		// not json
+		envMatches := ei.r.FindAllStringIndex(body, -1)
+		for _, match := range envMatches {
+			matches = append(matches, EnvMatch{
+				regex: regex.EnvironmentVariableRegex,
+				found: match,
+			})
+		}
+
+		dynamicMathces := ei.dr.FindAllStringIndex(body, -1)
+		for _, match := range dynamicMathces {
+			matches = append(matches, EnvMatch{
+				regex: regex.DynamicVariableRegex,
+				found: match,
+			})
+		}
+	}
+
+	sort.Sort(matches) // by start index
 
 	errors := make([]error, 0)
-
 	off := 0
 
-	for _, match := range foundMatches {
-		if match[0] > off {
+	for _, match := range matches {
+		r := match.regex
+		start := match.found[0]
+		end := match.found[1]
+
+		if start > off {
 			pieces = append(pieces, BodyPiece{
 				start:      off,
-				end:        match[0],
+				end:        start,
 				injectable: false,
 				// value:      body[off:match[0]], // no need to put values in here
 			})
 		}
 
 		f := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
-		val := f(body[match[0]:match[1]])
+		fd := getInjectStrFunc(regex.DynamicVariableRegex, ei, nil, errors)
+
+		jf := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
+		jfd := getInjectJsonFunc(regex.JsonDynamicVariableRegex, ei, nil, errors)
+
+		getValue := func(s string, r string) string {
+			if r == regex.JsonEnvironmentVarRegex {
+				return string(jf([]byte(s))) // TODO: check
+			} else if r == regex.JsonDynamicVariableRegex {
+				return string(jfd(StringToBytes(s)))
+			} else if r == regex.EnvironmentVariableRegex {
+				return f(s)
+			} else if r == regex.DynamicVariableRegex {
+				return fd(s)
+			}
+			return s // TODO: this should never happen
+		}
+
+		val := getValue(body[start:end], r)
+
 		pieces = append(pieces, BodyPiece{
-			start:      match[0],
-			end:        match[1],
+			start:      start,
+			end:        end,
 			injectable: true,
 			value:      val, // only put values in injected pieces
 		})
 
-		off = match[1]
+		off = end
+
 	}
 
 	if off < len(body) {
