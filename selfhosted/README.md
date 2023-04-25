@@ -144,7 +144,7 @@ You may encounter the following error when running the `docker compose down` com
 failed to remove network selfhosted_ddosify: Error response from...
 ```
 
-If you want to start the project again, run the script in the [Quick Start](#-quick-start-recommended) section again. 
+If you want to start the project again, run the script in the [Quick Start](#%EF%B8%8F-quick-start-recommended) section again. 
 
 
 ## 🧩 Services Overview
