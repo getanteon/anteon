@@ -14,7 +14,7 @@
         "headers": {
           "Content-Type": "multipart/form-data"
         },
-        "timeout": 10,
+        "timeout": 60,
         "capture_env": {},
         "payload_multipart": [
           {
@@ -25,12 +25,15 @@
           },
           {
             "name": "ballot_id",
-            "value": "{{_randomInt}}"
+            "value": "{{sandikID}}"
           }
         ]
       }
     ],
     "output": "stdout",
+    "env":{
+      "sandikID" : "mamak75yil"
+    },
     "duration": 10,
     "load_type": "linear",
     "iteration_count": 1000

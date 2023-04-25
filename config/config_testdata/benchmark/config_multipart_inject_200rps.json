@@ -25,12 +25,15 @@
           },
           {
             "name": "ballot_id",
-            "value": "{{_randomInt}}"
+            "value": "{{sandikID}}"
           }
         ]
       }
     ],
     "output": "stdout",
+    "env":{
+      "sandikID" : "mamak75yil"
+    },
     "duration": 10,
     "load_type": "linear",
     "iteration_count": 2000
