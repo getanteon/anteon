@@ -240,8 +240,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
-	buff := h.bufferPool.Get()
-	httpReq, err := h.prepareReq(usableVars, trace, buff)
+	// TODObuff: temp close this feature
+	// buff := h.bufferPool.Get()
+	httpReq, err := h.prepareReq(usableVars, trace, nil)
 
 	if err != nil { // could not prepare req
 		requestErr.Type = types.ErrorInvalidRequest
@@ -284,8 +285,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	durations.setResDur()
 
 	// Reset req body buffer
-	buff.Reset()
-	h.bufferPool.Put(buff)
+	// TODObuff: temp close this feature
+	// buff.Reset()
+	// h.bufferPool.Put(buff)
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
@@ -419,7 +421,7 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 		var customReaderVersion bool
 
 		if h.containsDynamicField["body"] {
-			_, _ = h.ei.InjectDynamicIntoBuffer(body, bodyBuff)
+			bodyBuff, _ = h.ei.InjectDynamicIntoBuffer(body, bodyBuff)
 			bodyInBuffer = true
 		}
 		if h.containsEnvVar["body"] {
