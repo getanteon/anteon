@@ -1,10 +1,9 @@
 <h1 align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
+    Distributed, No-code Performance Testing within Your Own Infrastructure
 </h1>
 
-## Ddosify Self hosted
-**Distributed, No-code Performance Testing within Your Own Infrastructure**
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
 </p>
