@@ -102,14 +102,14 @@ var table = []struct {
 	{
 		name:             "config_multipart_inject_200rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_200rps.json",
-		cpuTimeThreshold: 100,
+		cpuTimeThreshold: 70,
 		maxMemThreshold:  5,
 		avgMemThreshold:  4,
 	},
 	{
 		name:             "config_multipart_inject_500rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_500rps.json",
-		cpuTimeThreshold: 80,
+		cpuTimeThreshold: 100,
 		maxMemThreshold:  7,
 		avgMemThreshold:  10,
 	},

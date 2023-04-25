@@ -407,7 +407,7 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 
 		getValue := func(s string, r string) string {
 			if r == regex.JsonEnvironmentVarRegex {
-				return string(jf([]byte(s))) // TODO: check
+				return string(jf(StringToBytes(s))) // TODO: check
 			} else if r == regex.JsonDynamicVariableRegex {
 				return string(jfd(StringToBytes(s)))
 			} else if r == regex.EnvironmentVariableRegex {

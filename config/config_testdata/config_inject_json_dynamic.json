@@ -1,0 +1,43 @@
+{
+    "iteration_count": 100,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "{{LOCAL}}",
+            "method": "GET",
+            "capture_env": {
+                "NUM" :{ "from":"body","json_path":"num"},
+                "NAME" :{ "from":"body","json_path":"name"},
+                "IS_CHAMPION": {"from":"body","json_path":"isChampion"},
+                "MESSI" : {"from":"body","json_path":"squad.players.0"},
+                "PLAYERS" :{"from":"body","json_path":"squad.players"},
+                "SQUAD" :{"from":"body","json_path":"squad"},
+                "ARGENTINA" :{"from":"header", "header_key":"Argentina"},
+                "m10" :{"from":"header", "header_key":"Argentina" ,"regexp":{"exp":"[a-z]+_[0-9]+","matchNo":1}  }             
+            }         
+        },
+        {
+            "id": 2,
+            "name": "Example Name 2 Json Body",
+            "url": "{{LOCAL}}",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json",
+                "num": "{{NUM}}",
+                "bool" : "{{IS_CHAMPION}}"
+            },
+            "payload_file" : "../config/config_testdata/json_payload_dynamic.json",
+            "capture_env": {
+                "REGEX_MATCH_ENV" :{"from":"body","json_path":"num"}
+            }   
+        }
+    ],
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com",
+        "LOCAL" : "http://localhost:8084/hello"
+    },
+    "debug" : true
+}
