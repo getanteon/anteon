@@ -107,6 +107,13 @@ var table = []struct {
 		maxMemThreshold:  100,
 		avgMemThreshold:  100,
 	},
+	{
+		name:             "config_multipart_inject_500rps",
+		path:             "config/config_testdata/benchmark/config_multipart_inject_500rps.json",
+		cpuTimeThreshold: 100,
+		maxMemThreshold:  100,
+		avgMemThreshold:  100,
+	},
 }
 
 var cpuprofile = flag.String("cpuprof", "", "write cpu profiles")
