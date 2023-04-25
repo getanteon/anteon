@@ -530,6 +530,193 @@ func TestDdosifyBodyReaderSplittedPiece2(t *testing.T) {
 
 }
 
+func TestDdosifyBodyReaderSplittedPiece3(t *testing.T) {
+	body := "test{{env1}}xyz" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, 2)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != 2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "te" {
+		t.Errorf("expected te, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, 5)
+	n, err = customReader.Read(secondPart)
+
+	// fully read the second part, no EOF
+	if err == io.EOF {
+		t.Errorf("expected no EOF, got %v", err)
+	}
+
+	if n != 5 {
+		t.Errorf("expected to read %d bytes, read %d", 5, n)
+	}
+
+	if string(secondPart[0:n]) != "st123" {
+		t.Errorf("expected st123, got %s", string(secondPart))
+	}
+
+	// try to read again, should be EOF
+	lastPart := make([]byte, GetContentLength(pieces))
+	n, err = customReader.Read(lastPart)
+
+	if n != 3 {
+		t.Errorf("expected to read %d bytes, read %d", 0, n)
+	}
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+}
+
+func TestDdosifyBodyReaderSplittedPiece4(t *testing.T) {
+	body := "test{{env1}}{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, 2)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != 2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "te" {
+		t.Errorf("expected te, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, 5)
+	n, err = customReader.Read(secondPart)
+
+	// fully read the second part, no EOF
+	if err == io.EOF {
+		t.Errorf("expected no EOF, got %v", err)
+	}
+
+	if n != 5 {
+		t.Errorf("expected to read %d bytes, read %d", 5, n)
+	}
+
+	if string(secondPart[0:n]) != "st123" {
+		t.Errorf("expected st123, got %s", string(secondPart))
+	}
+
+	// try to read again, should be EOF
+	lastPart := make([]byte, GetContentLength(pieces))
+	n, err = customReader.Read(lastPart)
+
+	if n != 3 {
+		t.Errorf("expected to read %d bytes, read %d", 0, n)
+	}
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+}
+
+func TestDdosifyBodyReaderSplittedPiece5(t *testing.T) {
+	body := "test{{env1}}xyz" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, 2)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != 2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "te" {
+		t.Errorf("expected te, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, 5)
+	n, err = customReader.Read(secondPart)
+
+	// fully read the second part, no EOF
+	if err == io.EOF {
+		t.Errorf("expected no EOF, got %v", err)
+	}
+
+	if n != 5 {
+		t.Errorf("expected to read %d bytes, read %d", 5, n)
+	}
+
+	if string(secondPart[0:n]) != "st123" {
+		t.Errorf("expected st123, got %s", string(secondPart))
+	}
+
+	// try to read again, should be EOF
+	lastPart := make([]byte, 3)
+	n, err = customReader.Read(lastPart)
+
+	if n != 3 {
+		t.Errorf("expected to read %d bytes, read %d", 0, n)
+	}
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+}
+
 func TestGenerateBodyPieces(t *testing.T) {
 	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
 

@@ -117,7 +117,7 @@ func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
 		dbr.vi = 0
 	}
 
-	// check if EOF
+	// check if we have reached the end of the body
 	if readUntilPieceIndex == len(dbr.Pieces)-1 {
 		piece := dbr.Pieces[readUntilPieceIndex]
 		if piece.injectable && readUntilPieceValueIndex == len(piece.value) {
@@ -129,6 +129,8 @@ func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
 		}
 	}
 
+	// readUntilPieceIndex is not the last piece, we fully filled dst
+	// set where we left off
 	dbr.pi = readUntilPieceIndex
 	dbr.vi = readUntilPieceValueIndex
 	return n, nil
