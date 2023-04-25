@@ -45,6 +45,11 @@ if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker >/dev/null
   exit 1
 fi
 
+# Check if Docker is running
+if ! docker info >/dev/null 2>&1; then
+  echo "❌ Docker is not running. Please start Docker and try again."
+  exit 1
+fi
 
 echo "🚀 Starting installation of Ddosify Self Hosted..."
 
@@ -86,9 +91,13 @@ fi
 echo "🚀 Deploying Ddosify Self Hosted..."
 $COMPOSE_COMMAND -f "$REPO_DIR/selfhosted/docker-compose.yml" up -d
 docker pull busybox:1.34.1 >/dev/null 2>&1
+echo ""
 echo "⏳ Waiting for services to be ready..."
 docker run --rm --network selfhosted_ddosify busybox:1.34.1 /bin/sh -c "until nc -z nginx 80 && nc -z backend 8008 && nc -z hammermanager 8001 && nc -z rabbitmq_celery 5672 && nc -z rabbitmq_job 5672 && nc -z postgres_selfhosted 5432 && nc -z influxdb 8086; do sleep 5; done"
 echo "✅ Ddosify Self Hosted installation complete!"
 echo "📁 Installation directory: $REPO_DIR/selfhosted"
-
+echo "🔥 To remove Ddosify Self Hosted, run: $COMPOSE_COMMAND down"
+echo ""
 echo "🌐 Open http://localhost:8014 in your browser to access the application."
+
+
