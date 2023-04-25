@@ -1,12 +1,16 @@
-# Ddosify Self hosted
+<h1 align="center">
+    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
+    Distributed, No-code Performance Testing within Your Own Infrastructure
+</h1>
 
-## Introduction
+<p align="center">
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
+</p>
 
-## Features
+This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
 
-✅ **No Code Web UI**: No need to write code to run load tests. Simply specify the target URL and the load test parameters.
-
-✅ **Distributed Mode**: Scale your load testing capabilities by utilizing multiple engines simultaneously.
+## Effortless Installation
 
 ✅ **Arm64 and Amd64 Support**: Broad architecture compatibility ensures the tool works seamlessly across different systems on both Linux and MacOS.
 
