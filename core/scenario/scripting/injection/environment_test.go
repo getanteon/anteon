@@ -291,14 +291,95 @@ func TestConcatVariablesAndInjectAsTyped(t *testing.T) {
 		panic(err)
 	}
 
-	res, err := replacer.InjectEnv(payload, envs)
-
-	if err != nil {
-		t.Errorf("injection failed %v", err)
+	pieces := replacer.GenerateBodyPieces(payload, envs)
+	r := DdosifyBodyReader{
+		Body:   payload,
+		Pieces: pieces,
 	}
 
-	if !reflect.DeepEqual(res, expected.String()) {
+	res := make([]byte, 100)
+	n, err := r.Read(res)
+
+	if err != io.EOF {
 		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), res)
+	}
+
+	if !reflect.DeepEqual(string(res[0:n]), expected.String()) {
+		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), res)
+	}
+
+}
+
+func TestConcatVariablesAndInjectAsTyped2(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+	// injection to json payload
+	payload := `{"a":["--{{number_int}}{{number_string}}--","23","{{number_int}}"]}`
+
+	envs := map[string]interface{}{
+		"number_int":    1,
+		"number_string": "2",
+	}
+
+	expectedPayload := `{"a":["--12--","23",1]}`
+
+	expected := &bytes.Buffer{}
+	if err := json.Compact(expected, []byte(expectedPayload)); err != nil {
+		panic(err)
+	}
+
+	pieces := replacer.GenerateBodyPieces(payload, envs)
+	r := DdosifyBodyReader{
+		Body:   payload,
+		Pieces: pieces,
+	}
+
+	res := make([]byte, 100)
+	n, err := r.Read(res)
+
+	if err != io.EOF {
+		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), res)
+	}
+
+	if !reflect.DeepEqual(string(res[0:n]), expected.String()) {
+		t.Errorf("injection unsuccessful, expected : %s, got :%s", expected.String(), res)
+	}
+
+}
+
+func TestConcatVariablesAndInjectAsTypedDynamic(t *testing.T) {
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+	// injection to json payload
+	payload := `{"a":["--{{_randomInt}}--{{number_string}}--","23","{{number_int}}"]}`
+
+	envs := map[string]interface{}{
+		"number_int":    1,
+		"number_string": "2",
+	}
+
+	dynamicInjectFailPayload := `{"a":["--{{_randomInt}}--2--","23",1]}`
+
+	notExpected := &bytes.Buffer{}
+	if err := json.Compact(notExpected, []byte(dynamicInjectFailPayload)); err != nil {
+		panic(err)
+	}
+
+	pieces := replacer.GenerateBodyPieces(payload, envs)
+	r := DdosifyBodyReader{
+		Body:   payload,
+		Pieces: pieces,
+	}
+
+	res := make([]byte, 100)
+	n, err := r.Read(res)
+
+	if err != io.EOF {
+		t.Error(err)
+	}
+
+	if reflect.DeepEqual(string(res[0:n]), notExpected.String()) {
+		t.Errorf("injection unsuccessful, not expected : %s, got :%s", notExpected.String(), res)
 	}
 
 }

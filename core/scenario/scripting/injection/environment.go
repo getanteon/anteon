@@ -356,10 +356,52 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 			})
 		}
 
+		envsInJsonStringMatches := ei.r.FindAllStringIndex(body, -1)
+		for _, match := range envsInJsonStringMatches {
+			// exclude ones that are already matched as json envs
+			alreadyMatched := false
+			for _, jsonMatch := range jsonEnvMatches {
+				if match[0] >= jsonMatch[0] && match[1] <= jsonMatch[1] {
+					alreadyMatched = true
+					break
+				}
+			}
+
+			if alreadyMatched {
+				continue
+			}
+
+			matches = append(matches, EnvMatch{
+				regex: regex.EnvironmentVariableRegex,
+				found: match,
+			})
+		}
+
 		jsonDynamicMatches := ei.jdr.FindAllStringIndex(body, -1)
 		for _, match := range jsonDynamicMatches {
 			matches = append(matches, EnvMatch{
 				regex: regex.JsonDynamicVariableRegex,
+				found: match,
+			})
+		}
+
+		dynamicEnvsInJsonStringMatches := ei.dr.FindAllStringIndex(body, -1)
+		for _, match := range dynamicEnvsInJsonStringMatches {
+			// exclude ones that are already matched as json dynamic envs
+			alreadyMatched := false
+			for _, jsonMatch := range jsonDynamicMatches {
+				if match[0] >= jsonMatch[0] && match[1] <= jsonMatch[1] {
+					alreadyMatched = true
+					break
+				}
+			}
+
+			if alreadyMatched {
+				continue
+			}
+
+			matches = append(matches, EnvMatch{
+				regex: regex.DynamicVariableRegex,
 				found: match,
 			})
 		}
@@ -409,7 +451,7 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 
 		getValue := func(s string, r string) string {
 			if r == regex.JsonEnvironmentVarRegex {
-				return string(jf(StringToBytes(s))) // TODO: check
+				return string(jf(StringToBytes(s)))
 			} else if r == regex.JsonDynamicVariableRegex {
 				return string(jfd(StringToBytes(s)))
 			} else if r == regex.EnvironmentVariableRegex {
