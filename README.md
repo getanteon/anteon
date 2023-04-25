@@ -53,44 +53,44 @@ Check out [Ddosify Cloud](https://ddosify.com) to start effortless testing.
 ## Features
 
 #### ✅  Parametrization
-Use built-in random data generators. [More →](https://docs.ddosify.com/concepts/parameterization)
+Use built-in random data generators. <a href="https://docs.ddosify.com/concepts/parameterization" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/4dc3f294-6319-4c2b-a56b-c359276d5e00/public" alt="Ddosify - Parametrization Feature" />
 </p>
 
 
 #### ✅  CSV Data Import
-Import test data from CSV and use it in the scenario. [More →](https://docs.ddosify.com/concepts/test-data-import)
+Import test data from CSV and use it in the scenario. <a href="https://docs.ddosify.com/concepts/test-data-import" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/6c769b68-e046-440d-137c-b20dd3518300/public" alt="Ddosify - Test Data Feature" />
 </p>
 
 #### ✅  Environments
-Store constant values as environment variables. [More →](https://docs.ddosify.com/concepts/environment-variables)
+Store constant values as environment variables. <a href="https://docs.ddosify.com/concepts/environment-variables" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/78c45dca-03de-4cbf-0edc-fb2b8a2e6600/public" alt="Ddosify - Environment Feature" />
 </p>
 
 #### ✅  Correlation
-Extract variables from earlier phases and pass them on to the following ones. [More →](https://docs.ddosify.com/concepts/correlation)
+Extract variables from earlier phases and pass them on to the following ones. <a href="https://docs.ddosify.com/concepts/correlation" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/7ac98b0f-043b-494f-3c17-7a5436e81400/public" alt="Ddosify - Correlation Feature" />
 </p>
 
 #### ✅  Assertion
-Verify that the response matches your expectations. [More →](https://docs.ddosify.com/concepts/assertion)
+Verify that the response matches your expectations. <a href="https://docs.ddosify.com/concepts/assertion" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/f2f0df70-8e2b-4308-ca6a-4259274d0400/public" alt="Ddosify - Assertion Feature" />
 </p>
 
 #### ✅  Debugging
-Analyze request and response data before starting the load test. [More →](https://docs.ddosify.com/concepts/debugging)
+Analyze request and response data before starting the load test. <a href="https://docs.ddosify.com/concepts/debugging" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/82322e21-2e3a-4284-9643-1c8dacda2400/public" alt="Ddosify - Debugging Feature" />
 </p>
 
 #### ✅  Postman Import
-Import Postman collections with ease and transform them into load testing scenarios. [More →](https://docs.ddosify.com/concepts/postman-import)
+Import Postman collections with ease and transform them into load testing scenarios. <a href="https://docs.ddosify.com/concepts/postman-import" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/873bf1e3-07a0-427c-8f32-0791d1728900/public" alt="Ddosify - Postman Import Feature" />
 </p>
@@ -98,7 +98,7 @@ Import Postman collections with ease and transform them into load testing scenar
 
 ## About This Repository
 
-This repository includes the source code for the Ddosify Engine, as well as the build images for Ddosify Self-Hosted.
+This repository includes the source code for the Ddosify Engine. You can access Docker Images for the Ddosify Engine and Self Hosted on <a href="https://hub.docker.com/u/ddosify" target="_blank">Docker Hub</a>.
 
 The [Engine Docs](https://github.com/ddosify/ddosify/tree/master/engine_docs) folder provides information on the installation, usage, and features of the Ddosify Engine. The [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. To learn about the usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://docs.ddosify.com/concepts/test-suite).
 
