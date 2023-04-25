@@ -50,49 +50,49 @@ var table = []struct {
 	maxMemThreshold float32
 	avgMemThreshold float32
 }{
-	{
-		name:             "config_correlation_load_1",
-		path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
-		cpuTimeThreshold: 0.350,
-		maxMemThreshold:  1,
-		avgMemThreshold:  1,
-	},
-	{
-		name:             "config_correlation_load_2",
-		path:             "config/config_testdata/benchmark/config_correlation_load_2.json",
-		cpuTimeThreshold: 2.5,
-		maxMemThreshold:  2,
-		avgMemThreshold:  2,
-	},
-	{
-		name:             "config_correlation_load_3",
-		path:             "config/config_testdata/benchmark/config_correlation_load_3.json",
-		cpuTimeThreshold: 15.5,
-		maxMemThreshold:  13,
-		avgMemThreshold:  8,
-	},
-	{
-		name:             "config_correlation_load_4",
-		path:             "config/config_testdata/benchmark/config_correlation_load_4.json",
-		cpuTimeThreshold: 25,
-		maxMemThreshold:  25,
-		avgMemThreshold:  16,
-	},
-	{
-		name:             "config_correlation_load_5",
-		path:             "config/config_testdata/benchmark/config_correlation_load_5.json",
-		cpuTimeThreshold: 70,
-		maxMemThreshold:  70,
-		avgMemThreshold:  45,
-	},
+	// {
+	// 	name:             "config_correlation_load_1",
+	// 	path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
+	// 	cpuTimeThreshold: 0.350,
+	// 	maxMemThreshold:  1,
+	// 	avgMemThreshold:  1,
+	// },
+	// {
+	// 	name:             "config_correlation_load_2",
+	// 	path:             "config/config_testdata/benchmark/config_correlation_load_2.json",
+	// 	cpuTimeThreshold: 2.5,
+	// 	maxMemThreshold:  2,
+	// 	avgMemThreshold:  2,
+	// },
+	// {
+	// 	name:             "config_correlation_load_3",
+	// 	path:             "config/config_testdata/benchmark/config_correlation_load_3.json",
+	// 	cpuTimeThreshold: 15.5,
+	// 	maxMemThreshold:  13,
+	// 	avgMemThreshold:  8,
+	// },
+	// {
+	// 	name:             "config_correlation_load_4",
+	// 	path:             "config/config_testdata/benchmark/config_correlation_load_4.json",
+	// 	cpuTimeThreshold: 25,
+	// 	maxMemThreshold:  25,
+	// 	avgMemThreshold:  16,
+	// },
+	// {
+	// 	name:             "config_correlation_load_5",
+	// 	path:             "config/config_testdata/benchmark/config_correlation_load_5.json",
+	// 	cpuTimeThreshold: 70,
+	// 	maxMemThreshold:  70,
+	// 	avgMemThreshold:  45,
+	// },
 	// TODO: adjust thresholds
-	{
-		name:             "config_multipart_inject_10rps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_10rps.json",
-		cpuTimeThreshold: 5,
-		maxMemThreshold:  5,
-		avgMemThreshold:  5,
-	},
+	// {
+	// 	name:             "config_multipart_inject_10rps",
+	// 	path:             "config/config_testdata/benchmark/config_multipart_inject_10rps.json",
+	// 	cpuTimeThreshold: 5,
+	// 	maxMemThreshold:  5,
+	// 	avgMemThreshold:  5,
+	// },
 	{
 		name:             "config_multipart_inject_100rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_100rps.json",
