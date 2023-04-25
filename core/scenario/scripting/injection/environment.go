@@ -29,28 +29,27 @@ type DdosifyBodyReader struct {
 	Pieces []BodyPiece
 
 	// keeps track of the current read position
-	pieceIndex int
-	valIndex   int
+	pi int // piece index
+	vi int // index in the value of the current piece
 }
 
-// TODO: check bounds
 func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
-	// TODO: check
 	leftSpaceOnDst := len(dst) // assume dst is empty, so we can write to it from the beginning
 
 	var readUntilPieceIndex int
 	var readUntilPieceValueIndex int
 
-	readUntilPieceIndex = dbr.pieceIndex
-	readUntilPieceValueIndex = dbr.valIndex
+	readUntilPieceIndex = dbr.pi
+	readUntilPieceValueIndex = dbr.vi
 
-	for leftSpaceOnDst > 0 {
+	// find the piece index and value index to read until
+	for leftSpaceOnDst > 0 && readUntilPieceIndex < len(dbr.Pieces) {
 		var unReadOnCurrentPiece int
 		piece := dbr.Pieces[readUntilPieceIndex]
 		if piece.injectable { // has injected value
 			unReadOnCurrentPiece = len(piece.value[readUntilPieceValueIndex:])
 		} else {
-			unReadOnCurrentPiece = piece.end - piece.start - dbr.valIndex
+			unReadOnCurrentPiece = piece.end - piece.start - readUntilPieceValueIndex
 		}
 
 		if unReadOnCurrentPiece > leftSpaceOnDst {
@@ -69,66 +68,69 @@ func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
 				readUntilPieceIndex++
 				readUntilPieceValueIndex = 0
 			}
-
 		}
 	}
-
-	// TODO: fails on big first piece
 
 	// continue reading from pieceIndex and valIndex
 	// in first iteration, read from dbr.valIndex till the end of the piece
 	// later on read from the beginning of the piece till the end of the piece
-	for i := dbr.pieceIndex; i <= readUntilPieceIndex; i++ {
+	for i := dbr.pi; i <= readUntilPieceIndex; i++ {
+		if i == len(dbr.Pieces) {
+			dbr.pi = i
+			return n, io.EOF
+		}
 		piece := dbr.Pieces[i]
 		if piece.injectable {
 			// if dst has enough space to hold the whole piece
 			// copy the whole piece from where we left off
-			if len(dst[n:]) >= len(piece.value)-dbr.valIndex {
-				copy(dst[n:n+len(piece.value)-dbr.valIndex], piece.value[dbr.valIndex:])
-				n += len(piece.value) - dbr.valIndex
+			if len(dst[n:]) >= len(piece.value)-dbr.vi {
+				copy(dst[n:n+len(piece.value)-dbr.vi], piece.value[dbr.vi:])
+				n += len(piece.value) - dbr.vi
 			} else {
 				// if dst does not have enough space to hold the whole piece
 				// copy as much as we can and return
 				leftSpaceOnDst := len(dst[n:])
-				copy(dst[n:], piece.value[dbr.valIndex:dbr.valIndex+leftSpaceOnDst])
+				copy(dst[n:], piece.value[dbr.vi:dbr.vi+leftSpaceOnDst])
 				n += leftSpaceOnDst
-				dbr.pieceIndex = i
-				dbr.valIndex = dbr.valIndex + leftSpaceOnDst
+				dbr.pi = i
+				dbr.vi = dbr.vi + leftSpaceOnDst
 				return n, nil
 			}
-
 		} else {
 			// if dst has enough space to hold the whole piece
 			// copy the whole piece from where we left off
-			if len(dst[n:]) >= piece.end-piece.start-dbr.valIndex {
-				copy(dst[n:n+piece.end-piece.start-dbr.valIndex], dbr.Body[piece.start+dbr.valIndex:piece.end])
-				n += piece.end - piece.start - dbr.valIndex
+			if len(dst[n:]) >= piece.end-piece.start-dbr.vi {
+				copy(dst[n:n+piece.end-piece.start-dbr.vi], dbr.Body[piece.start+dbr.vi:piece.end])
+				n += piece.end - piece.start - dbr.vi
 			} else {
 				// if dst does not have enough space to hold the whole piece
 				// copy as much as we can and return
 				leftSpaceOnDst := len(dst[n:])
-				copy(dst[n:], dbr.Body[piece.start+dbr.valIndex:piece.start+dbr.valIndex+leftSpaceOnDst])
+				copy(dst[n:], dbr.Body[piece.start+dbr.vi:piece.start+dbr.vi+leftSpaceOnDst])
 				n += leftSpaceOnDst
-				dbr.pieceIndex = i
-				dbr.valIndex = dbr.valIndex + leftSpaceOnDst
+				dbr.pi = i
+				dbr.vi = dbr.vi + leftSpaceOnDst
 				return n, nil
 			}
 		}
-		dbr.valIndex = 0
+		// jump to the next piece
+		dbr.vi = 0
 	}
 
 	// check if EOF
 	if readUntilPieceIndex == len(dbr.Pieces)-1 {
 		piece := dbr.Pieces[readUntilPieceIndex]
 		if piece.injectable && readUntilPieceValueIndex == len(piece.value) {
+			dbr.pi = readUntilPieceIndex + 1 // consumed the whole body
 			return n, io.EOF
 		} else if !piece.injectable && readUntilPieceValueIndex == piece.end-piece.start {
+			dbr.pi = readUntilPieceIndex + 1 // consumed the whole body
 			return n, io.EOF
 		}
 	}
 
-	dbr.pieceIndex = readUntilPieceIndex
-	dbr.valIndex = readUntilPieceValueIndex
+	dbr.pi = readUntilPieceIndex
+	dbr.vi = readUntilPieceValueIndex
 	return n, nil
 }
 

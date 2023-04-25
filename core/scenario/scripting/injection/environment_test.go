@@ -476,3 +476,117 @@ func TestDdosifyBodyReaderSplitted(t *testing.T) {
 		t.Errorf("expected yz456, got %s", string(secondPart))
 	}
 }
+
+func TestDdosifyBodyReaderSplittedPiece(t *testing.T) {
+	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, 2)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != 2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "te" {
+		t.Errorf("expected te, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, GetContentLength(pieces)-2)
+	n, err = customReader.Read(secondPart)
+
+	// expect EOF here
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+	if n != GetContentLength(pieces)-2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-2, n)
+	}
+
+	if string(secondPart) != "st123xyz456" {
+		t.Errorf("expected st123xyz456, got %s", string(secondPart))
+	}
+}
+
+func TestDdosifyBodyReaderSplittedPiece2(t *testing.T) {
+	body := "test{{env1}}xyz{{env2}}" // only for env vars for now
+
+	ei := EnvironmentInjector{}
+	ei.Init()
+
+	envs := make(map[string]interface{})
+	envs["env1"] = "123"
+	envs["env2"] = "456"
+
+	pieces := ei.GenerateBodyPieces(body, envs)
+
+	customReader := DdosifyBodyReader{
+		Body:   body,
+		Pieces: pieces,
+	}
+
+	firstPart := make([]byte, 2)
+	n, err := customReader.Read(firstPart)
+
+	// do not expect EOF here
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if n != 2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-5, n)
+	}
+
+	if string(firstPart) != "te" {
+		t.Errorf("expected te, got %s", string(firstPart))
+	}
+
+	secondPart := make([]byte, GetContentLength(pieces))
+	n, err = customReader.Read(secondPart)
+
+	// expect EOF here
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+	if n != GetContentLength(pieces)-2 {
+		t.Errorf("expected to read %d bytes, read %d", GetContentLength(pieces)-2, n)
+	}
+
+	if string(secondPart[0:n]) != "st123xyz456" {
+		t.Errorf("expected st123xyz456, got %s", string(secondPart))
+	}
+
+	// try to read again, should be EOF
+	emptyPart := make([]byte, GetContentLength(pieces))
+	n, err = customReader.Read(emptyPart)
+
+	if n != 0 {
+		t.Errorf("expected to read %d bytes, read %d", 0, n)
+	}
+
+	if err != io.EOF {
+		t.Errorf("expected EOF, got %v", err)
+	}
+
+}
