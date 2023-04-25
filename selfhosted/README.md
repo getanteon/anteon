@@ -23,11 +23,11 @@
 
 ## ⚡️ Quick Start (Recommended)
 
-You can quickly deploy Ddosify Self Hosted by running the following command. This script clones the Ddosify repository to your `$HOME/.ddosify` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#📖-manual-installation) section.
+You can quickly deploy Ddosify Self Hosted by running the following command. This script clones the Ddosify repository to your `$HOME/.ddosify` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
 
 Only Linux and MacOS are supported at the moment. Windows is not supported.
 
-Ddosify Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Clean Up](#🧹-clean-up) section.
+Ddosify Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Stop/Start the Services](#-stopstart-the-services) section.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/selfhosted_release/selfhosted/install.sh | bash
@@ -63,7 +63,7 @@ The dashboard is available at [http://localhost:8014](http://localhost:8014)
 ### 5. Show the logs
 
 ```bash
-docker-compose logs -f
+docker-compose logs
 ```
 
 ## 🔧 Add New Engine
@@ -83,7 +83,7 @@ The engine server must connect to the following ports on the `DDOSIFY_SERVICE_AD
 - `9086`: InfluxDB server. The engine server accesses this port to transmit metrics to the backend.
 - `9900`: Object storage server. The engine server uses this port to exchange files with the service server.
 
-The `NAME` environment variable is used to specify the name of the engine container. You can change this value to whatever you want. It is also used in the [Clean Up](#🧹-clean-up) section for removing the engine container.
+The `NAME` environment variable is used to specify the name of the engine container. You can change this value to whatever you want. It is also used in the [Remove New Engine](#-remove-new-engine) section for removing the engine container.
 
 ### **Example 1**: Adding the engine to the same server
 
@@ -114,14 +114,15 @@ docker run --name $NAME -dit \
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
 
+## 🧹 Remove New Engine
 
-## 🧹 Clean Up
-
-If you added new engines, stop the engines first. Change the docker container name `ddosify_hammer_1` to the name of the engine you added.
+If you added new engines, you can remove them by running the following command. Change the docker container name `ddosify_hammer_1` to the name of the engine you added.
 
 ```bash
 docker rm -f ddosify_hammer_1
 ```
+
+## 🛑 Stop/Start the Services
 
 If you installed the project using the [install.sh](./install.sh) script, you must first change the directory to the `$HOME/.ddosify` directory before running the commands below.
 
@@ -130,20 +131,26 @@ cd $HOME/.ddosify/selfhosted
 docker compose down
 ```
 
-If you want to start the project again, you can run the command in the [Quick Start](#⚡️-quick-start-recommended) section.
+If you want to start the project again, you can run the following command.
+
+```bash
+cd $HOME/.ddosify/selfhosted
+docker compose up -d
+```
+
 
 ## 🧩 Services Overview
 
 | Service              | Description                                                                                       |
 |----------------------|---------------------------------------------------------------------------------------------------|
-| Hammer               | The engine responsible for executing load tests. You can add multiple hammers to scale your load testing capabilities.                                                  |
-| Hammer Manager       | Manages the engines (Hammers) involved in load testing.                                           |
-| Backend              | Handles load test management and stores results.                                                  |
-| InfluxDB             | Database that stores metrics collected during testing.                                            |
-| Postgres             | Database that preserves load test results.                                                        |
-| RabbitMQ             | Message broker enabling communication between Hammer Manager and Hammers.                         |
-| Minio Object Storage | Object storage for multipart files and test data (CSV) used in load tests.                        |
-| Nginx                | Reverse proxy for backend and frontend services.                                                  |
+| `Hammer`               | The engine responsible for executing load tests. You can add multiple hammers to scale your load testing capabilities.                                                  |
+| `Hammer Manager`       | Manages the engines (Hammers) involved in load testing.                                           |
+| `Backend`             | Handles load test management and stores results.                                                  |
+| `InfluxDB`             | Database that stores metrics collected during testing.                                            |
+| `Postgres`             | Database that preserves load test results.                                                        |
+| `RabbitMQ`             | Message broker enabling communication between Hammer Manager and Hammers.                         |
+| `Minio Object Storage` | Object storage for multipart files and test data (CSV) used in load tests.                        |
+| `Nginx`                | Reverse proxy for backend and frontend services.                                                  |
 
 ## 📝 License
 
