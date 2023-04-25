@@ -25,7 +25,7 @@
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/68e07b5f-22a5-4244-5dc2-9d02bd2c9e00/public" alt="Ddosify - Engine" />
 </p>
 
-## What is Ddosify?
+## What is Ddosify?
 Ddosify is a comprehensive performance testing platform, designed specifically to evaluate backend load and latency. It offers three distinct deployment options to cater to various needs: Ddosify Engine, Ddosify Self-Hosted, and Ddosify Cloud.
 
 ### :rocket: Ddosify Engine
@@ -38,12 +38,12 @@ In contrast to the Engine version, Ddosify Self-Hosted features a web-based user
 
 Check out the [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) page for more information and usage.
 
-### ☁️ Ddosify Cloud
+### ☁️ Ddosify Cloud
 Ddosify Cloud enables users to assess backend endpoints' performance through load and latency testing, offering a user-friendly interface, comprehensive charts, extensive geographic targeting options, and additional features for an improved testing experience.
 
 Check out [Ddosify Cloud](https://ddosify.com) to start effortless testing.
 
-### ☁️ Ddosify Cloud vs 🏠 Ddosify Self-Hosted  vs :rocket: Ddosify Engine
+### ☁️ Ddosify Cloud vs 🏠 Ddosify Self-Hosted  vs :rocket: Ddosify Engine
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/7d6b9778-1367-426e-b6e9-5fc8f0d34200/public" alt="Ddosify versus" />
 </p>
