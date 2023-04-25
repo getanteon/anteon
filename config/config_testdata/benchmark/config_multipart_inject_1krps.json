@@ -14,7 +14,7 @@
         "headers": {
           "Content-Type": "multipart/form-data"
         },
-        "timeout": 10,
+        "timeout": 30,
         "capture_env": {},
         "payload_multipart": [
           {
@@ -40,5 +40,5 @@
     },
     "duration": 10,
     "load_type": "linear",
-    "iteration_count": 2000
+    "iteration_count": 10000
   }
