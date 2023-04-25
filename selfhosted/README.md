@@ -92,7 +92,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --network selfhosted_ddosify \
     --restart always \
-    ddosify/selfhosted_hammer
+    ddosify/selfhosted_hammer:0.1.0
 ```
 
 ### **Example 2**: Adding the engine to a different server
