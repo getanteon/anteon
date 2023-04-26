@@ -56,7 +56,7 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 		}
 
 		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-			return nil, wrapAsCsvError(fmt.Sprintf("request to remote url failed: %d", resp.StatusCode), nil)
+			return nil, wrapAsCsvError(fmt.Sprintf("request to remote url (%s) failed. Status Code: %d", conf.Path, resp.StatusCode), nil)
 		}
 		reader = resp.Body
 		defer resp.Body.Close()
