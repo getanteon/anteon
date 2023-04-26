@@ -59,7 +59,7 @@ REPO_DIR="$HOME/.ddosify"
 if [ -d "$REPO_DIR" ]; then
   echo "🔄 Repository already exists at $REPO_DIR - Attempting to update..."
   cd "$REPO_DIR"
-  git checkout selfhosted_release >/dev/null 2>&1
+  git checkout master >/dev/null 2>&1
   cd "$REPO_DIR/selfhosted"
   git pull >/dev/null 2>&1
 
@@ -78,7 +78,7 @@ else
   echo "📦 Cloning repository to $REPO_DIR directory..."
   git clone https://github.com/ddosify/ddosify.git "$REPO_DIR" >/dev/null 2>&1
   cd "$REPO_DIR"
-  git checkout selfhosted_release >/dev/null 2>&1
+  git checkout master >/dev/null 2>&1
   cd "$REPO_DIR/selfhosted"
 fi
 

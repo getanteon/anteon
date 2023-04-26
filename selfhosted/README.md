@@ -34,7 +34,7 @@ Only Linux and MacOS are supported at the moment. Windows is not supported.
 Ddosify Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Stop/Start the Services](#-stopstart-the-services) section.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/selfhosted_release/selfhosted/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
 ```
 
 ## 📖 Manual Installation
@@ -96,7 +96,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --network selfhosted_ddosify \
     --restart always \
-    ddosify/selfhosted_hammer:0.1.0
+    ddosify/selfhosted_hammer:1.0.0
 ```
 
 ### **Example 2**: Adding the engine to a different server
