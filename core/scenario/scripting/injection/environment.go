@@ -33,6 +33,9 @@ type DdosifyBodyReader struct {
 	vi int // index in the value of the current piece
 }
 
+// no-op close
+func (dbr *DdosifyBodyReader) Close() error { return nil }
+
 func (dbr *DdosifyBodyReader) Read(dst []byte) (n int, err error) {
 	leftSpaceOnDst := len(dst) // assume dst is empty, so we can write to it from the beginning
 
