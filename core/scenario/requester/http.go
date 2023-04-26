@@ -98,7 +98,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
-		_, err = h.ei.InjectDynamicIntoBuffer(h.packet.Payload, nil)
+		_, err = h.ei.InjectDynamic(h.packet.Payload)
 		if err != nil {
 			return
 		}
