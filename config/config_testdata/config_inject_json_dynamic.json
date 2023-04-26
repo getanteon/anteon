@@ -29,7 +29,7 @@
                 "num": "{{NUM}}",
                 "bool" : "{{IS_CHAMPION}}"
             },
-            "payload_file" : "../config/config_testdata/json_payload.json",
+            "payload_file" : "../config/config_testdata/json_payload_dynamic.json",
             "capture_env": {
                 "REGEX_MATCH_ENV" :{"from":"body","json_path":"num"}
             }   

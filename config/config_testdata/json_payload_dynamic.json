@@ -1,0 +1,5 @@
+{
+    "name" : "{{_randomString}}",
+    "city" : "{{_randomCity}}",
+    "age" : "{{_randomInt}}"
+}

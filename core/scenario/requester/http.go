@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -58,8 +59,6 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
-
-	constantBodyReader *bytes.Reader
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -99,7 +98,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
-		_, err = h.ei.InjectDynamic(h.packet.Payload)
+		_, err = h.ei.InjectDynamicIntoBuffer(h.packet.Payload, nil)
 		if err != nil {
 			return
 		}
@@ -108,10 +107,6 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	if h.envRgx.MatchString(h.packet.Payload) {
 		h.containsEnvVar["body"] = true
-	}
-
-	if !h.containsDynamicField["body"] && !h.containsEnvVar["body"] {
-		h.constantBodyReader = bytes.NewReader([]byte(h.packet.Payload))
 	}
 
 	// url
@@ -216,6 +211,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	durations := &duration{}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
+
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -236,17 +232,12 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 			// Don't store req bodies bigger than 300KB
 			copiedReqBody = []byte("too long body")
 		} else {
-			if h.constantBodyReader != nil {
-				// copy req body for debug
-				sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
-				copiedReqBody = make([]byte, len(h.packet.Payload))
-				sectionReader.Read(copiedReqBody)
-			} else {
-				buf := bytes.Buffer{}
-				io.Copy(&buf, httpReq.Body)
-				copiedReqBody = buf.Bytes()
-				httpReq.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-			}
+			// TODO: make copiedReqBody an io.Reader, and pass same underlying buffer to both httpReq and copiedReqBody
+			// copy
+			buf := new(bytes.Buffer)
+			io.Copy(buf, httpReq.Body)
+			copiedReqBody = buf.Bytes()
+			httpReq.Body = io.NopCloser(bytes.NewBuffer(copiedReqBody)) // restore body
 		}
 	}
 
@@ -378,24 +369,19 @@ func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-	var err error
 
-	if h.constantBodyReader != nil {
-		sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
-		httpReq.Body = &SectionReadCloser{sectionReader}
-		httpReq.ContentLength = h.request.ContentLength
+	body := h.packet.Payload
+	if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
+		pieces := h.ei.GenerateBodyPieces(body, envs)
+		customReader := injection.DdosifyBodyReader{
+			Body:   body,
+			Pieces: pieces,
+		}
+		httpReq.Body = &customReader
+		httpReq.ContentLength = int64(injection.GetContentLength(pieces))
 	} else {
-		body := h.packet.Payload
-		if h.containsDynamicField["body"] {
-			body, _ = h.ei.InjectDynamic(body)
-		}
-		if h.containsEnvVar["body"] {
-			body, err = h.ei.InjectEnv(body, envs)
-			if err != nil {
-				return nil, err
-			}
-		}
-		httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
+		// if body is constant, we can just set it
+		httpReq.Body = io.NopCloser(bytes.NewReader(injection.StringToBytes(body)))
 		httpReq.ContentLength = int64(len(body))
 	}
 
