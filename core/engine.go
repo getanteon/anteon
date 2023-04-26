@@ -112,15 +112,6 @@ func (e *engine) Init() (err error) {
 		return
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
-		Debug:                  e.hammer.Debug,
-		IterationCount:         e.hammer.IterationCount,
-		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
-		EngineMode:             e.hammer.EngineMode,
-	}); err != nil {
-		return
-	}
-
 	if err = e.reportService.Init(e.hammer.Debug, e.hammer.SamplingRate); err != nil {
 		return
 	}

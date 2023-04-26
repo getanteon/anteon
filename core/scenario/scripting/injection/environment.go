@@ -171,8 +171,8 @@ func truncateTag(tag string, rx string) string {
 func (ei *EnvironmentInjector) InjectEnv(text string, envs map[string]interface{}) (string, error) {
 	errors := []error{}
 
-	injectStrFunc := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
-	injectToJsonByteFunc := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
+	injectStrFunc := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, &errors)
+	injectToJsonByteFunc := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, &errors)
 
 	// json injection
 	bText := StringToBytes(text)
@@ -260,7 +260,7 @@ func StringToBytes(s string) (b []byte) {
 func getInjectStrFunc(rx string,
 	ei *EnvironmentInjector,
 	envs map[string]interface{},
-	errors []error,
+	errors *[]error,
 ) func(string) string {
 	return func(s string) string {
 		var truncated string
@@ -296,7 +296,7 @@ func getInjectStrFunc(rx string,
 				return fmt.Sprint(env)
 			}
 		}
-		errors = append(errors,
+		*errors = append(*errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
 		return s
 	}
@@ -305,7 +305,7 @@ func getInjectStrFunc(rx string,
 func getInjectJsonFunc(rx string,
 	ei *EnvironmentInjector,
 	envs map[string]interface{},
-	errors []error,
+	errors *[]error,
 ) func(s []byte) []byte {
 	return func(s []byte) []byte {
 		var truncated string
@@ -328,7 +328,7 @@ func getInjectJsonFunc(rx string,
 				return mEnv
 			}
 		}
-		errors = append(errors,
+		*errors = append(*errors,
 			fmt.Errorf("%s could not be found in vars global and extracted from previous steps", truncated))
 		return s
 	}
@@ -446,11 +446,11 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 			})
 		}
 
-		f := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, errors)
-		fd := getInjectStrFunc(regex.DynamicVariableRegex, ei, nil, errors)
+		f := getInjectStrFunc(regex.EnvironmentVariableRegex, ei, envs, &errors)
+		fd := getInjectStrFunc(regex.DynamicVariableRegex, ei, nil, &errors)
 
-		jf := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, errors)
-		jfd := getInjectJsonFunc(regex.JsonDynamicVariableRegex, ei, nil, errors)
+		jf := getInjectJsonFunc(regex.JsonEnvironmentVarRegex, ei, envs, &errors)
+		jfd := getInjectJsonFunc(regex.JsonDynamicVariableRegex, ei, nil, &errors)
 
 		getValue := func(s string, r string) string {
 			if r == regex.JsonEnvironmentVarRegex {
@@ -462,7 +462,7 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 			} else if r == regex.DynamicVariableRegex {
 				return fd(s)
 			}
-			return s // TODO: this should never happen
+			return s // this should never happen
 		}
 
 		val := getValue(body[start:end], r)
@@ -475,7 +475,6 @@ func (ei *EnvironmentInjector) GenerateBodyPieces(body string, envs map[string]i
 		})
 
 		off = end
-
 	}
 
 	if off < len(body) {

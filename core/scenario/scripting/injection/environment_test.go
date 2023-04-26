@@ -107,9 +107,9 @@ func ExampleEnvironmentInjector() {
 	replacer := EnvironmentInjector{}
 	replacer.Init()
 
-	buff, err := replacer.InjectDynamicIntoBuffer("{{_randomInt}}", nil)
+	res, err := replacer.InjectDynamic("{{_randomInt}}")
 	if err == nil {
-		fmt.Println(buff.String())
+		fmt.Println(res)
 	}
 }
 
@@ -382,6 +382,18 @@ func TestConcatVariablesAndInjectAsTypedDynamic(t *testing.T) {
 		t.Errorf("injection unsuccessful, not expected : %s, got :%s", notExpected.String(), res)
 	}
 
+}
+
+func TestInvalidDynamicVarInjection(t *testing.T) {
+	text := "http://test.com/{{_invalidVar}}"
+
+	replacer := EnvironmentInjector{}
+	replacer.Init()
+
+	_, err := replacer.InjectDynamic(text)
+	if err == nil {
+		t.Errorf("expected error not found")
+	}
 }
 
 func TestOSEnvInjection(t *testing.T) {
