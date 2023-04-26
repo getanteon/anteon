@@ -1,0 +1,44 @@
+{
+    "steps": [
+      {
+        "id": 1,
+        "url": "https://testserver.ddosify.com/upload_image/",
+        "name": "",
+        "method": "POST",
+        "others": {
+          "h2": false,
+          "keep-alive": true,
+          "disable-redirect": true,
+          "disable-compression": false
+        },
+        "headers": {
+          "Content-Type": "multipart/form-data"
+        },
+        "timeout": 30,
+        "capture_env": {},
+        "payload_multipart": [
+          {
+            "src": "remote",
+            "name": "image",
+            "type": "file",
+            "value": "https://ddosify-backend-storage.s3.amazonaws.com/media/staging/multipart/vijzOnuqKiOkAWzAFo1wsGpdhk4M1DSGx99MIzPzufs/56_mv_1082778177_1681206249576109599_440.jpg"
+          },
+          {
+            "name": "ballot_id",
+            "value": "{{sandikID}}"
+          },
+          {
+            "name": "dynamic_city",
+            "value": "{{_randomCity}}"
+          }
+        ]
+      }
+    ],
+    "output": "stdout",
+    "env":{
+      "sandikID" : "mamak75yil"
+    },
+    "duration": 10,
+    "load_type": "linear",
+    "iteration_count": 20000
+  }

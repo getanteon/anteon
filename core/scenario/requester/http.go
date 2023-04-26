@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -58,8 +59,7 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
-
-	constantBodyReader *bytes.Reader
+	constantBodyReader   *bytes.Reader
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -99,7 +99,7 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 
 	// body
 	if h.dynamicRgx.MatchString(h.packet.Payload) {
-		_, err = h.ei.InjectDynamic(h.packet.Payload)
+		_, err = h.ei.InjectDynamicIntoBuffer(h.packet.Payload, nil)
 		if err != nil {
 			return
 		}
@@ -216,6 +216,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	durations := &duration{}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
+
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -378,7 +379,7 @@ func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-	var err error
+	// var err error
 
 	if h.constantBodyReader != nil {
 		sectionReader := io.NewSectionReader(h.constantBodyReader, 0, int64(len(h.packet.Payload)))
@@ -386,17 +387,18 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 		httpReq.ContentLength = h.request.ContentLength
 	} else {
 		body := h.packet.Payload
-		if h.containsDynamicField["body"] {
-			body, _ = h.ei.InjectDynamic(body)
-		}
-		if h.containsEnvVar["body"] {
-			body, err = h.ei.InjectEnv(body, envs)
-			if err != nil {
-				return nil, err
+		if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
+			pieces := h.ei.GenerateBodyPieces(body, envs)
+			customReader := injection.DdosifyBodyReader{
+				Body:   body,
+				Pieces: pieces,
 			}
+			httpReq.Body = io.NopCloser(&customReader)
+			httpReq.ContentLength = int64(injection.GetContentLength(pieces))
+		} else {
+			httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
+			httpReq.ContentLength = int64(len(body))
 		}
-		httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
-		httpReq.ContentLength = int64(len(body))
 	}
 
 	// url
