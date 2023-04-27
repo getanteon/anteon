@@ -208,7 +208,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		}
 	}
 
-	durations := &duration{}
+	durations := &duration{cond: sync.Cond{L: &sync.Mutex{}}}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
@@ -246,8 +246,10 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
+	} else {
+		// got response, no timeout or any other error, resStart should be set
+		durations.setResDur()
 	}
-	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
@@ -791,13 +793,21 @@ type duration struct {
 	resDur time.Duration
 
 	mu sync.Mutex
+
+	// setResStartTime will signal, and setResDur will wait for this signal unless resStart is already set
+	cond sync.Cond
 }
 
 func (d *duration) setResStartTime(t time.Time) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	if d.resStart.IsZero() {
+		d.cond.L.Lock()
+
+		d.mu.Lock()
 		d.resStart = t
+		d.mu.Unlock()
+
+		d.cond.Signal()
+		d.cond.L.Unlock()
 	}
 }
 
@@ -872,9 +882,16 @@ func (d *duration) getServerProcessDur() time.Duration {
 }
 
 func (d *duration) setResDur() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.cond.L.Lock()
+
+	// if signal occurs before wait and condition set, then wait is skipped and resStart is already set
+	if d.resStart.IsZero() {
+		d.cond.Wait()
+	}
+
 	d.resDur = time.Since(d.resStart)
+	d.cond.L.Unlock()
+
 }
 
 func (d *duration) getResDur() time.Duration {
