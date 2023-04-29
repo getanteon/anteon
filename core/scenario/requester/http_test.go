@@ -26,9 +26,11 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
 	"net/url"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -481,5 +483,162 @@ func TestAssertions(t *testing.T) {
 	}
 	if reflect.DeepEqual(res.FailedAssertions[0].Received, "Ronaldo") {
 		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[1].Received)
+	}
+}
+
+func TestTraceResDur_TypicalScenario(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+		go trace.GotFirstResponseByte()
+	}()
+
+	// called by Send method
+	d.setResDur()
+
+	// called by Send method
+	resDur := d.getResDur()
+
+	if resDur == time.Duration(maxDuration) {
+		t.Errorf("resDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceResDur_UnusualScenario(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(100 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	d.setResDur()
+
+	// called by Send method
+	resDur := d.getResDur()
+
+	if resDur == time.Duration(maxDuration) {
+		t.Errorf("resDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+		go trace.GotFirstResponseByte()
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur_2(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(10 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur_ErrCase(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+		resDurCh:             make(chan time.Duration, 1),
+		resStartCh:           make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+
+		// not called in err case
+		// go trace.GotFirstResponseByte()
+	}()
+
+	// .. in case of error
+	// channels should be closed
+	close(d.serverProcessDurCh)
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
 	}
 }

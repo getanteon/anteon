@@ -208,7 +208,13 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		}
 	}
 
-	durations := &duration{cond: sync.Cond{L: &sync.Mutex{}}}
+	durations := &duration{
+		cond:                 sync.Cond{L: &sync.Mutex{}},
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+		resDurCh:             make(chan time.Duration, 1),
+		resStartCh:           make(chan time.Time, 1),
+	}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
@@ -246,6 +252,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
+		durations.close()
 	} else {
 		// got response, no timeout or any other error, resStart should be set
 		durations.setResDur()
@@ -612,7 +619,7 @@ func (h *HttpRequester) Type() string {
 }
 
 func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string][]string) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
+	var dnsStart, connStart, tlsStart, reqStart time.Time
 
 	// According to the doc in the trace.go;
 	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
@@ -684,19 +691,17 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			m.Unlock()
 		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			m.Lock()
+
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if w.Err == nil {
 				duration.setReqDur(time.Since(reqStart))
-				serverProcessStart = time.Now()
+				duration.serverProcessStartCh <- time.Now()
 			}
-			m.Unlock()
+
 		},
 		GotFirstResponseByte: func() {
-			m.Lock()
-			duration.setServerProcessDur(time.Since(serverProcessStart))
-			duration.setResStartTime(time.Now())
-			m.Unlock()
+			duration.setServerProcessDur()
+			duration.resStartCh <- time.Now()
 		},
 		WroteHeaderField: func(key string, value []string) {
 			headersByClient[key] = value
@@ -774,6 +779,8 @@ type duration struct {
 	// Time at response reading start
 	resStart time.Time
 
+	resStartCh chan time.Time
+
 	// DNS lookup duration. If IP:Port porvided instead of domain, this will be 0
 	dnsDur time.Duration
 
@@ -789,8 +796,14 @@ type duration struct {
 	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
 	serverProcessDur time.Duration
 
+	serverProcessDurCh chan time.Duration
+
+	serverProcessStartCh chan time.Time
+
 	// Response read duration
 	resDur time.Duration
+
+	resDurCh chan time.Duration
 
 	mu sync.Mutex
 
@@ -799,16 +812,7 @@ type duration struct {
 }
 
 func (d *duration) setResStartTime(t time.Time) {
-	if d.resStart.IsZero() {
-		d.cond.L.Lock()
-
-		d.mu.Lock()
-		d.resStart = t
-		d.mu.Unlock()
-
-		d.cond.Signal()
-		d.cond.L.Unlock()
-	}
+	d.resStartCh <- t
 }
 
 func (d *duration) setDNSDur(t time.Duration) {
@@ -867,37 +871,40 @@ func (d *duration) getReqDur() time.Duration {
 	return d.reqDur
 }
 
-func (d *duration) setServerProcessDur(t time.Duration) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.serverProcessDur == 0 {
-		d.serverProcessDur = t
-	}
+func (d *duration) setServerProcessDur() {
+	serverProcessStart := <-d.serverProcessStartCh
+	d.serverProcessDurCh <- time.Since(serverProcessStart)
+}
+
+func (d *duration) close() {
+	close(d.serverProcessStartCh)
+	close(d.serverProcessDurCh)
+	close(d.resStartCh)
+	close(d.resDurCh)
 }
 
 func (d *duration) getServerProcessDur() time.Duration {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	var ok bool
+	d.serverProcessDur, ok = <-d.serverProcessDurCh
+	if !ok {
+		return 0 // channel closed
+	}
 	return d.serverProcessDur
 }
 
 func (d *duration) setResDur() {
-	d.cond.L.Lock()
-
-	// if signal occurs before wait and condition set, then wait is skipped and resStart is already set
-	if d.resStart.IsZero() {
-		d.cond.Wait()
-	}
-
-	d.resDur = time.Since(d.resStart)
-	d.cond.L.Unlock()
-
+	resStart := <-d.resStartCh
+	d.resDurCh <- time.Since(resStart)
 }
 
 func (d *duration) getResDur() time.Duration {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	var ok bool
+	d.resDur, ok = <-d.resDurCh
+	if !ok {
+		return 0 // channel closed
+	}
 	return d.resDur
+
 }
 
 func (d *duration) totalDuration() time.Duration {
