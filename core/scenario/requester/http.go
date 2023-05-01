@@ -252,7 +252,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
-		durations.close()
 	} else {
 		// got response, no timeout or any other error, resStart should be set
 		durations.setResDur()
@@ -304,6 +303,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		resTime, _ := strconv.ParseFloat(httpRes.Header.Get("x-ddsfy-response-time"), 8)
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
+
+	// we assume readLoop and writeLoop are done by now
+	durations.close()
 
 	// Finalize
 	res = &types.ScenarioStepResult{
@@ -872,7 +874,7 @@ func (d *duration) getReqDur() time.Duration {
 }
 
 func (d *duration) setServerProcessDur() {
-	serverProcessStart := <-d.serverProcessStartCh
+	serverProcessStart := <-d.serverProcessStartCh // TODO: get last value
 	d.serverProcessDurCh <- time.Since(serverProcessStart)
 }
 
