@@ -697,13 +697,13 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if w.Err == nil {
 				duration.setReqDur(time.Since(reqStart))
-				duration.serverProcessStartCh <- time.Now()
+				duration.setServerProcessStart(time.Now())
 			}
 
 		},
 		GotFirstResponseByte: func() {
 			duration.setServerProcessDur()
-			duration.resStartCh <- time.Now()
+			duration.setResStartTime(time.Now())
 		},
 		WroteHeaderField: func(key string, value []string) {
 			headersByClient[key] = value
@@ -811,10 +811,26 @@ type duration struct {
 
 	// setResStartTime will signal, and setResDur will wait for this signal unless resStart is already set
 	cond sync.Cond
+
+	chMu sync.Mutex
+
+	chClose bool
 }
 
 func (d *duration) setResStartTime(t time.Time) {
-	d.resStartCh <- t
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+	if !d.chClose {
+		d.resStartCh <- t
+	}
+}
+
+func (d *duration) setServerProcessStart(t time.Time) {
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+	if !d.chClose {
+		d.serverProcessStartCh <- t
+	}
 }
 
 func (d *duration) setDNSDur(t time.Duration) {
@@ -875,10 +891,20 @@ func (d *duration) getReqDur() time.Duration {
 
 func (d *duration) setServerProcessDur() {
 	serverProcessStart := <-d.serverProcessStartCh // TODO: get last value
-	d.serverProcessDurCh <- time.Since(serverProcessStart)
+
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+	if !d.chClose {
+		d.serverProcessDurCh <- time.Since(serverProcessStart)
+	}
 }
 
 func (d *duration) close() {
+	d.chMu.Lock()
+	defer func() {
+		d.chClose = true
+		d.chMu.Unlock()
+	}()
 	close(d.serverProcessStartCh)
 	close(d.serverProcessDurCh)
 	close(d.resStartCh)
@@ -896,7 +922,12 @@ func (d *duration) getServerProcessDur() time.Duration {
 
 func (d *duration) setResDur() {
 	resStart := <-d.resStartCh
-	d.resDurCh <- time.Since(resStart)
+
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+	if !d.chClose {
+		d.resDurCh <- time.Since(resStart)
+	}
 }
 
 func (d *duration) getResDur() time.Duration {
