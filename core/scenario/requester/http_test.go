@@ -30,7 +30,6 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -431,7 +430,23 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			var proxy *url.URL
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
+
+			tempDurationClose := durationCloseFunc
+
+			durationCloseCalled := false
+			durationCloseFunc = func(d *duration) func() {
+				return func() {
+					tempDurationClose(d)()
+					durationCloseCalled = true
+				}
+			}
+			defer func() { durationCloseFunc = tempDurationClose }()
+
 			res := h.Send(http.DefaultClient, envs)
+
+			if !durationCloseCalled {
+				t.Errorf("Duration close should be called")
+			}
 
 			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
 				t.Errorf("Extracted env should be set empty string on req failure")
@@ -489,7 +504,6 @@ func TestAssertions(t *testing.T) {
 func TestTraceResDur_TypicalScenario(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
 	d := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 
@@ -521,7 +535,6 @@ func TestTraceResDur_TypicalScenario(t *testing.T) {
 func TestTraceResDur_UnusualScenario(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
 	d := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 
@@ -554,7 +567,6 @@ func TestTraceResDur_UnusualScenario(t *testing.T) {
 func TestTraceServerProcessDur(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
 	d := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 
@@ -582,7 +594,6 @@ func TestTraceServerProcessDur(t *testing.T) {
 func TestTraceServerProcessDur_2(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
 	d := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 
@@ -609,10 +620,44 @@ func TestTraceServerProcessDur_2(t *testing.T) {
 	}
 }
 
+func TestTraceServerProcessDur_3(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(10 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur1 := d.getServerProcessDur()
+
+	if serverProcessDur1 == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+
+	serverProcessDur2 := d.getServerProcessDur()
+
+	if serverProcessDur1 != serverProcessDur2 {
+		t.Errorf("serverProcessDur1 and serverProcessDur2 should be equal")
+	}
+}
+
 func TestTraceServerProcessDur_ErrCase(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
 	d := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 		resDurCh:             make(chan time.Duration, 1),
@@ -630,9 +675,9 @@ func TestTraceServerProcessDur_ErrCase(t *testing.T) {
 		// go trace.GotFirstResponseByte()
 	}()
 
-	// .. in case of error
-	// channels should be closed
-	close(d.serverProcessDurCh)
+	// called by Send method
+	// channels should be closed, otherwise get calls can block forever
+	durationCloseFunc(d)()
 
 	// called by Send method
 	// this get needs to wait for GotFirstResponseByte

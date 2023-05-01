@@ -209,7 +209,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	durations := &duration{
-		cond:                 sync.Cond{L: &sync.Mutex{}},
 		serverProcessDurCh:   make(chan time.Duration, 1),
 		serverProcessStartCh: make(chan time.Time, 1),
 		resDurCh:             make(chan time.Duration, 1),
@@ -304,8 +303,8 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
-	// we assume readLoop and writeLoop are done by now
-	durations.close()
+	// close duration channels, so that if any goroutine is waiting on them, it can return
+	go time.AfterFunc(10*time.Millisecond, durationCloseFunc(durations))
 
 	// Finalize
 	res = &types.ScenarioStepResult{
@@ -347,6 +346,12 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	return
+}
+
+var durationCloseFunc = func(d *duration) func() {
+	return func() {
+		d.close()
+	}
 }
 
 func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
@@ -778,10 +783,6 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 }
 
 type duration struct {
-	// Time at response reading start
-	resStart time.Time
-
-	resStartCh chan time.Time
 
 	// DNS lookup duration. If IP:Port porvided instead of domain, this will be 0
 	dnsDur time.Duration
@@ -795,41 +796,50 @@ type duration struct {
 	// Request write duration
 	reqDur time.Duration
 
-	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
-	serverProcessDur time.Duration
-
-	serverProcessDurCh chan time.Duration
-
-	serverProcessStartCh chan time.Time
-
 	// Response read duration
 	resDur time.Duration
 
-	resDurCh chan time.Duration
+	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
+	serverProcessDur time.Duration
 
-	mu sync.Mutex
+	// Time at response reading start
+	resStart         time.Time
+	resStartCh       chan time.Time
+	resStartChClosed bool
 
-	// setResStartTime will signal, and setResDur will wait for this signal unless resStart is already set
-	cond sync.Cond
+	serverProcessDurCh       chan time.Duration
+	serverProcessDurChClosed bool
 
+	serverProcessStartCh       chan time.Time
+	serverProcessStartChClosed bool
+
+	resDurCh       chan time.Duration
+	resDurChClosed bool
+
+	mu   sync.Mutex
 	chMu sync.Mutex
-
-	chClose bool
 }
 
 func (d *duration) setResStartTime(t time.Time) {
 	d.chMu.Lock()
 	defer d.chMu.Unlock()
-	if !d.chClose {
+
+	if !d.resStartChClosed {
 		d.resStartCh <- t
+		d.resStartChClosed = true
+		close(d.resStartCh)
 	}
 }
 
+// this maybe called multiple times in case of retried requests by WroteRequest hook
 func (d *duration) setServerProcessStart(t time.Time) {
 	d.chMu.Lock()
 	defer d.chMu.Unlock()
-	if !d.chClose {
+
+	if !d.serverProcessStartChClosed {
 		d.serverProcessStartCh <- t
+		d.serverProcessStartChClosed = true
+		close(d.serverProcessStartCh)
 	}
 }
 
@@ -890,33 +900,26 @@ func (d *duration) getReqDur() time.Duration {
 }
 
 func (d *duration) setServerProcessDur() {
-	serverProcessStart := <-d.serverProcessStartCh // TODO: get last value
+	serverProcessStart := <-d.serverProcessStartCh
 
 	d.chMu.Lock()
 	defer d.chMu.Unlock()
-	if !d.chClose {
-		d.serverProcessDurCh <- time.Since(serverProcessStart)
-	}
-}
 
-func (d *duration) close() {
-	d.chMu.Lock()
-	defer func() {
-		d.chClose = true
-		d.chMu.Unlock()
-	}()
-	close(d.serverProcessStartCh)
-	close(d.serverProcessDurCh)
-	close(d.resStartCh)
-	close(d.resDurCh)
+	if !d.serverProcessDurChClosed {
+		d.serverProcessDurCh <- time.Since(serverProcessStart)
+		close(d.serverProcessDurCh)
+	}
+
 }
 
 func (d *duration) getServerProcessDur() time.Duration {
-	var ok bool
-	d.serverProcessDur, ok = <-d.serverProcessDurCh
-	if !ok {
-		return 0 // channel closed
+	serverProcessDur, ok := <-d.serverProcessDurCh
+
+	if !ok { // channel closed, dur already set or closed by timer
+		return d.serverProcessDur
 	}
+
+	d.serverProcessDur = serverProcessDur
 	return d.serverProcessDur
 }
 
@@ -925,17 +928,23 @@ func (d *duration) setResDur() {
 
 	d.chMu.Lock()
 	defer d.chMu.Unlock()
-	if !d.chClose {
+
+	if !d.resDurChClosed {
 		d.resDurCh <- time.Since(resStart)
+		d.resDurChClosed = true
+		close(d.resDurCh)
 	}
+
 }
 
 func (d *duration) getResDur() time.Duration {
-	var ok bool
-	d.resDur, ok = <-d.resDurCh
-	if !ok {
-		return 0 // channel closed
+	resDur, ok := <-d.resDurCh
+
+	if !ok { // channel closed, probably resDur already set and chan closed by sender
+		return d.resDur
 	}
+
+	d.resDur = resDur
 	return d.resDur
 
 }
@@ -944,14 +953,53 @@ func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.getServerProcessDur() + d.getResDur()
 }
 
-type SectionReadCloser struct {
-	*io.SectionReader
-}
+// normally channels are closed by sender, but in case of senders are not called, we close them here
+func (d *duration) close() {
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
 
-func (s *SectionReadCloser) Close() error {
-	// No resources to close in SectionReader, so it's a no-op.
-	return nil
+	// close channels
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.serverProcessStartChClosed = true
+		close(d.serverProcessStartCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.serverProcessDurChClosed = true
+		close(d.serverProcessDurCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.resStartChClosed = true
+		close(d.resStartCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.resDurChClosed = true
+		close(d.resDurCh)
+	}()
+
 }
