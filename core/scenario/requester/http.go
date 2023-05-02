@@ -698,13 +698,11 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			m.Unlock()
 		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
-
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if w.Err == nil {
 				duration.setReqDur(time.Since(reqStart))
 				duration.setServerProcessStart(time.Now())
 			}
-
 		},
 		GotFirstResponseByte: func() {
 			duration.setServerProcessDur()
@@ -816,8 +814,9 @@ type duration struct {
 	resDurCh       chan time.Duration
 	resDurChClosed bool
 
-	mu   sync.Mutex
-	chMu sync.Mutex
+	mu        sync.Mutex
+	chMu      sync.Mutex
+	getChLock sync.Mutex
 }
 
 func (d *duration) setResStartTime(t time.Time) {
@@ -901,18 +900,21 @@ func (d *duration) getReqDur() time.Duration {
 
 func (d *duration) setServerProcessDur() {
 	serverProcessStart := <-d.serverProcessStartCh
-
 	d.chMu.Lock()
 	defer d.chMu.Unlock()
 
 	if !d.serverProcessDurChClosed {
 		d.serverProcessDurCh <- time.Since(serverProcessStart)
+		d.serverProcessDurChClosed = true
 		close(d.serverProcessDurCh)
 	}
 
 }
 
 func (d *duration) getServerProcessDur() time.Duration {
+	d.getChLock.Lock()
+	defer d.getChLock.Unlock()
+
 	serverProcessDur, ok := <-d.serverProcessDurCh
 
 	if !ok { // channel closed, dur already set or closed by timer
@@ -938,6 +940,9 @@ func (d *duration) setResDur() {
 }
 
 func (d *duration) getResDur() time.Duration {
+	d.getChLock.Lock()
+	defer d.getChLock.Unlock()
+
 	resDur, ok := <-d.resDurCh
 
 	if !ok { // channel closed, probably resDur already set and chan closed by sender
