@@ -132,37 +132,45 @@ var table = []struct {
 var cpuprofile = flag.String("cpuprof", "", "write cpu profiles")
 var memprofile = flag.String("memprof", "", "write memory profiles")
 var keepTrace = flag.String("tracef", "", "write execution traces")
+var runBenchmarkN = flag.Int("runN", 1, "run benchmarks N times")
 
 func BenchmarkEngines(t *testing.B) {
 	index := os.Getenv("index")
 	if index == "" {
+		N := 1
+		if *runBenchmarkN > 1 {
+			N = *runBenchmarkN
+		}
 		// parent
 		success := true
 		for i, _ := range table { // open a new process for each test config
-			// start a child
-			env := fmt.Sprintf("index=%d", i)
-			cPid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{Files: []uintptr{0, 1, 2}, Env: []string{env}})
-			if err != nil {
-				panic(err.Error())
-			}
+			for j := 0; j < N; j++ { // run each test config N times
+				// start a child
+				env := fmt.Sprintf("index=%d", i)
+				cPid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{Files: []uintptr{0, 1, 2}, Env: []string{env}})
+				if err != nil {
+					panic(err.Error())
+				}
 
-			proc, err := os.FindProcess(cPid)
-			if err != nil {
-				panic(err.Error())
-			}
+				proc, err := os.FindProcess(cPid)
+				if err != nil {
+					panic(err.Error())
+				}
 
-			pState, err := proc.Wait()
-			if err != nil {
-				panic(err.Error())
-			}
+				pState, err := proc.Wait()
+				if err != nil {
+					panic(err.Error())
+				}
 
-			if !pState.Success() {
-				success = false
+				if !pState.Success() {
+					success = false
+				}
+			}
+			if !success {
+				t.Fail()
 			}
 		}
-		if !success {
-			t.Fail()
-		}
+
 	} else {
 		i, _ := strconv.Atoi(index)
 		conf := table[i]
@@ -221,7 +229,7 @@ func BenchmarkEngines(t *testing.B) {
 			run = tempRun
 			doneChan := make(chan struct{}, 1)
 			go func() {
-				ticker := time.NewTicker(time.Duration(100 * time.Millisecond))
+				ticker := time.NewTicker(100 * time.Millisecond)
 				pid := os.Getpid()
 				proc, _ := gopsProc.NewProcess(int32(pid))
 				for {
