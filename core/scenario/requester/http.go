@@ -700,13 +700,13 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if w.Err == nil {
-				duration.setReqDur(time.Since(reqStart))
-				duration.setServerProcessStart(time.Now())
+				go duration.setReqDur(time.Since(reqStart))
+				go duration.setServerProcessStart(time.Now())
 			}
 		},
 		GotFirstResponseByte: func() {
-			duration.setServerProcessDur()
-			duration.setResStartTime(time.Now())
+			go duration.setServerProcessDur()
+			go duration.setResStartTime(time.Now())
 		},
 		WroteHeaderField: func(key string, value []string) {
 			headersByClient[key] = value
