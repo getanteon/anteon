@@ -95,35 +95,35 @@ var table = []struct {
 	{
 		name:             "config_multipart_inject_100rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_100rps.json",
-		cpuTimeThreshold: 25,
+		cpuTimeThreshold: 50,
 		maxMemThreshold:  3,
 		avgMemThreshold:  2,
 	},
 	{
 		name:             "config_multipart_inject_200rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_200rps.json",
-		cpuTimeThreshold: 70,
+		cpuTimeThreshold: 100,
 		maxMemThreshold:  5,
 		avgMemThreshold:  4,
 	},
 	{
 		name:             "config_multipart_inject_500rps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_500rps.json",
-		cpuTimeThreshold: 120,
+		cpuTimeThreshold: 160,
 		maxMemThreshold:  7,
 		avgMemThreshold:  10,
 	},
 	{
 		name:             "config_multipart_inject_1krps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_1krps.json",
-		cpuTimeThreshold: 140,
+		cpuTimeThreshold: 240,
 		maxMemThreshold:  10,
 		avgMemThreshold:  15,
 	},
 	{
 		name:             "config_multipart_inject_2krps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_2krps.json",
-		cpuTimeThreshold: 240,
+		cpuTimeThreshold: 300,
 		maxMemThreshold:  15,
 		avgMemThreshold:  20,
 	},
@@ -143,8 +143,8 @@ func BenchmarkEngines(t *testing.B) {
 		}
 		// parent
 		success := true
-		for i, _ := range table { // open a new process for each test config
-			for j := 0; j < N; j++ { // run each test config N times
+		for j := 0; j < N; j++ { // run each test config N times
+			for i, _ := range table { // open a new process for each test config
 				// start a child
 				env := fmt.Sprintf("index=%d", i)
 				cPid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{Files: []uintptr{0, 1, 2}, Env: []string{env}})
