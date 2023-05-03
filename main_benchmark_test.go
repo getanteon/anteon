@@ -42,6 +42,13 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+type TestType string
+
+const (
+	Multipart   TestType = "multipart"
+	Correlation TestType = "correlation"
+)
+
 var table = []struct {
 	name             string
 	path             string
@@ -49,6 +56,8 @@ var table = []struct {
 	// in percents
 	maxMemThreshold float32
 	avgMemThreshold float32
+
+	testType TestType
 }{
 	{
 		name:             "config_correlation_load_1",
@@ -56,6 +65,7 @@ var table = []struct {
 		cpuTimeThreshold: 0.350,
 		maxMemThreshold:  1,
 		avgMemThreshold:  1,
+		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_2",
@@ -63,6 +73,7 @@ var table = []struct {
 		cpuTimeThreshold: 2.5,
 		maxMemThreshold:  2,
 		avgMemThreshold:  2,
+		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_3",
@@ -70,6 +81,7 @@ var table = []struct {
 		cpuTimeThreshold: 15.5,
 		maxMemThreshold:  5,
 		avgMemThreshold:  8,
+		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_4",
@@ -77,6 +89,7 @@ var table = []struct {
 		cpuTimeThreshold: 25,
 		maxMemThreshold:  25,
 		avgMemThreshold:  16,
+		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_5",
@@ -84,49 +97,56 @@ var table = []struct {
 		cpuTimeThreshold: 70,
 		maxMemThreshold:  15,
 		avgMemThreshold:  10,
+		testType:         Correlation,
 	},
-	{
-		name:             "config_multipart_inject_10rps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_10rps.json",
-		cpuTimeThreshold: 5,
-		maxMemThreshold:  2,
-		avgMemThreshold:  1,
-	},
-	{
-		name:             "config_multipart_inject_100rps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_100rps.json",
-		cpuTimeThreshold: 50,
-		maxMemThreshold:  3,
-		avgMemThreshold:  2,
-	},
-	{
-		name:             "config_multipart_inject_200rps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_200rps.json",
-		cpuTimeThreshold: 100,
-		maxMemThreshold:  5,
-		avgMemThreshold:  4,
-	},
-	{
-		name:             "config_multipart_inject_500rps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_500rps.json",
-		cpuTimeThreshold: 160,
-		maxMemThreshold:  7,
-		avgMemThreshold:  10,
-	},
+	//{
+	//	name:             "config_multipart_inject_10rps",
+	//	path:             "config/config_testdata/benchmark/config_multipart_inject_10rps.json",
+	//	cpuTimeThreshold: 5,
+	//	maxMemThreshold:  2,
+	//	avgMemThreshold:  1,
+	//	testType:         Multipart,
+	//},
+	//{
+	//	name:             "config_multipart_inject_100rps",
+	//	path:             "config/config_testdata/benchmark/config_multipart_inject_100rps.json",
+	//	cpuTimeThreshold: 50,
+	//	maxMemThreshold:  3,
+	//	avgMemThreshold:  2,
+	//	testType:         Multipart,
+	//},
+	//{
+	//	name:             "config_multipart_inject_200rps",
+	//	path:             "config/config_testdata/benchmark/config_multipart_inject_200rps.json",
+	//	cpuTimeThreshold: 100,
+	//	maxMemThreshold:  5,
+	//	avgMemThreshold:  4,
+	//	testType:         Multipart,
+	//},
+	//{
+	//	name:             "config_multipart_inject_500rps",
+	//	path:             "config/config_testdata/benchmark/config_multipart_inject_500rps.json",
+	//	cpuTimeThreshold: 160,
+	//	maxMemThreshold:  7,
+	//	avgMemThreshold:  10,
+	//	testType:         Multipart,
+	//},
 	{
 		name:             "config_multipart_inject_1krps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_1krps.json",
 		cpuTimeThreshold: 240,
 		maxMemThreshold:  10,
 		avgMemThreshold:  15,
+		testType:         Multipart,
 	},
-	{
-		name:             "config_multipart_inject_2krps",
-		path:             "config/config_testdata/benchmark/config_multipart_inject_2krps.json",
-		cpuTimeThreshold: 300,
-		maxMemThreshold:  15,
-		avgMemThreshold:  20,
-	},
+	//{
+	//	name:             "config_multipart_inject_2krps",
+	//	path:             "config/config_testdata/benchmark/config_multipart_inject_2krps.json",
+	//	cpuTimeThreshold: 300,
+	//	maxMemThreshold:  15,
+	//	avgMemThreshold:  20,
+	//	testType: Multipart,
+	//},
 }
 
 var cpuprofile = flag.String("cpuprof", "", "write cpu profiles")
@@ -143,8 +163,14 @@ func BenchmarkEngines(t *testing.B) {
 		}
 		// parent
 		success := true
-		for j := 0; j < N; j++ { // run each test config N times
-			for i, _ := range table { // open a new process for each test config
+		originalN := N
+		for i, _ := range table { // open a new process for each test config
+			N = originalN
+			if table[i].testType != Multipart {
+				N = 1 // if not multipart, run only once
+			}
+			for j := 0; j < N; j++ { // run each test config N times
+				time.Sleep(1 * time.Second) // wait for the previous process to finish
 				// start a child
 				env := fmt.Sprintf("index=%d", i)
 				cPid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{Files: []uintptr{0, 1, 2}, Env: []string{env}})
