@@ -167,3 +167,4 @@ If you want to start the project again, run the script in the [Quick Start](#%EF
 ## 📝 License
 
 Ddosify Self Hosted is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
+
