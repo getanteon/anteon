@@ -31,8 +31,8 @@ pipeline {
         lock('multi_branch_server_benchmark') {
           sh 'git fetch origin develop:develop ||  git checkout develop && git pull && set -o pipefail && GOCACHE=/tmp/ go test -benchmem -timeout 60m -benchtime=1x -cpuprof=cpu_develop.out -memprof=mem_develop.out -tracef=trace_develop.out -run=^$ -bench ^BenchmarkEngines/$ -count 1 -runN=10 | tee gobench_develop.txt'
           sh "git checkout ${BRANCH_NAME}"
-          sh "benchstat --sort delta gobench_develop.txt gobench_branch.txt | tee gobench_branch_result.txt"
-          sh "benchstat  --sort delta --html gobench_develop.txt gobench_branch.txt > 00_gobench_result.html && echo ${BUILD_URL}artifact/00_gobench_result.html"
+          sh "benchstat -alpha 1.01 --sort delta gobench_develop.txt gobench_branch.txt | tee gobench_branch_result.txt"
+          sh "benchstat -alpha 1.01 --sort delta --html gobench_develop.txt gobench_branch.txt > 00_gobench_result.html && echo ${BUILD_URL}artifact/00_gobench_result.html"
           
           withCredentials([usernamePassword(credentialsId: 'ddosifyadmin_comment_github_access', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME')]) {
             sh "./scripts/testing/benchstat.sh ${GITHUB_TOKEN} ${env.CHANGE_ID}"
