@@ -14,7 +14,7 @@
         "headers": {
           "Content-Type": "multipart/form-data"
         },
-        "timeout": 30,
+        "timeout": 15,
         "capture_env": {},
         "payload_multipart": [
           {
@@ -26,10 +26,6 @@
           {
             "name": "ballot_id",
             "value": "{{sandikID}}"
-          },
-          {
-            "name": "dynamic_city",
-            "value": "{{_randomCity}}"
           }
         ]
       }

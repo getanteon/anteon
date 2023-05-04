@@ -135,7 +135,6 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 				// TODO: find a better solution about utility functions and validation checks
 
 				if strings.HasPrefix(v[2:len(v)-2], "rand(") {
-					fmt.Println(v[7 : len(v)-3])
 					if _, ok := definedEnvs[v[7:len(v)-3]]; ok {
 						continue
 					}

@@ -26,10 +26,6 @@
           {
             "name": "ballot_id",
             "value": "{{sandikID}}"
-          },
-          {
-            "name": "dynamic_city",
-            "value": "{{_randomCity}}"
           }
         ]
       }
