@@ -25,6 +25,13 @@ This README provides instructions for installing and an overview of the system r
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/) (`docker-compose` or `docker compose`)
 
+**Recommended System Requirements**
+
+- **Operating System**: macOS 10.15 Catalina or later, or Linux (Ubuntu 20.04 LTS, Debian 10, CentOS 8 or later). Windows is not supported.
+- **Processor**: Quad-core CPU (4 cores) at 2.5 GHz or higher, ARM-based processors are also supported (e.g., Apple M1, M2)
+- **Memory**: 8 GB RAM or more
+- **Storage**: At least 5 GB of available hard drive space (preferably SSD for faster load times)
+
 ## ⚡️ Quick Start (Recommended)
 
 You can quickly deploy Ddosify Self Hosted by running the following command. This script clones the Ddosify repository to your `$HOME/.ddosify` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
