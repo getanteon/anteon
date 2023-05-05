@@ -41,6 +41,8 @@ const (
 	LBRACKET = "["
 	RBRACKET = "]"
 
+	COLON = ":"
+
 	// Keywords
 	TRUE  = "TRUE"
 	FALSE = "FALSE"

@@ -13,14 +13,15 @@ import (
 const (
 	_ int = iota
 	LOWEST
-	ANDOR       // && ||
-	EQUALS      // ==
-	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
-	PREFIX      // -X or !X
-	ARRAYDEFINE // []
-	CALL        // myFunction(X)
+	ANDOR        // && ||
+	EQUALS       // ==
+	LESSGREATER  // > or <
+	SUM          // +
+	PRODUCT      // *
+	PREFIX       // -X or !X
+	ARRAYDEFINE  // []
+	OBJECTDEFINE // {}
+	CALL         // myFunction(X)
 )
 
 var precedences = map[token.TokenType]int{
@@ -33,6 +34,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LBRACKET: ARRAYDEFINE,
+	token.LBRACE:   OBJECTDEFINE,
 	token.LPAREN:   CALL,
 	token.AND:      ANDOR,
 	token.OR:       ANDOR,
@@ -72,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns[token.NULL] = p.parseNull
 	p.prefixParseFns[token.LPAREN] = p.parseGroupedExpression
 	p.prefixParseFns[token.LBRACKET] = p.parseArrayLiteral
+	p.prefixParseFns[token.LBRACE] = p.parseObjectLiteral
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.infixParseFns[token.PLUS] = p.parseInfixExpression
@@ -267,6 +270,13 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseObjectLiteral() ast.Expression {
+	lit := &ast.ObjectLiteral{Token: p.curToken}
+	lit.Elems = p.parseObjectElements()
+
+	return lit
+}
+
 func (p *Parser) parseArrayLiteral() ast.Expression {
 	lit := &ast.ArrayLiteral{Token: p.curToken}
 	lit.Elems = p.parseArrayElements()
@@ -322,6 +332,44 @@ func (p *Parser) parseArrayElements() []ast.Expression {
 	}
 
 	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+
+	return elems
+}
+
+func (p *Parser) parseObjectElements() map[string]ast.Expression {
+	elems := make(map[string]ast.Expression)
+
+	if p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		return elems
+	}
+
+	p.nextToken()
+	key := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	p.nextToken()
+	value := p.parseExpression(LOWEST)
+	elems[key.String()] = value
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		key := p.parseExpression(LOWEST)
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+
+		p.nextToken()
+		value := p.parseExpression(LOWEST)
+		elems[key.String()] = value
+	}
+
+	if !p.expectPeek(token.RBRACE) {
 		return nil
 	}
 

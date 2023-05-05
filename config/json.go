@@ -148,6 +148,7 @@ type JsonReader struct {
 	IterCount    *int                   `json:"iteration_count"`
 	LoadType     string                 `json:"load_type"`
 	Duration     int                    `json:"duration"`
+	Assertions   []TestAssertion        `json:"assertions"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`
@@ -157,6 +158,12 @@ type JsonReader struct {
 	Debug        bool                   `json:"debug"`
 	SamplingRate *int                   `json:"sampling_rate"`
 	EngineMode   string                 `json:"engine_mode"`
+}
+
+type TestAssertion struct {
+	Rule  string `json:"rule"`
+	Abort bool   `json:"abort"`
+	Delay int    `json:"delay"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -265,6 +272,17 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	var testAssertions map[string]types.TestAssertionOpt
+	if len(j.Assertions) > 0 {
+		testAssertions = make(map[string]types.TestAssertionOpt, 0)
+	}
+	for _, as := range j.Assertions {
+		testAssertions[as.Rule] = types.TestAssertionOpt{
+			Abort: as.Abort,
+			Delay: as.Delay,
+		}
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -278,6 +296,8 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SamplingRate:      samplingRate,
 		EngineMode:        j.EngineMode,
 		TestDataConf:      testDataConf,
+		Assertions:        testAssertions,
+		SingleMode:        types.DefaultSingleMode,
 	}
 	return
 }

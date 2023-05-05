@@ -143,7 +143,12 @@ var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 var run = func(h types.Hammer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	engine, err := core.NewEngine(ctx, h)
+	es, err := core.InitEngineServices(h)
+	if err != nil {
+		exitWithMsg(err.Error())
+	}
+
+	engine, err := core.NewEngine(ctx, h, es)
 	if err != nil {
 		exitWithMsg(err.Error())
 	}
@@ -169,6 +174,10 @@ var run = func(h types.Hammer) {
 	}()
 
 	engine.Start()
+
+	if engine.IsTestFailed() {
+		os.Exit(1)
+	}
 }
 
 var createHammerFromFlags = func() (h types.Hammer, err error) {
@@ -195,6 +204,7 @@ var createHammerFromFlags = func() (h types.Hammer, err error) {
 		Proxy:             p,
 		ReportDestination: *output,
 		Debug:             *debug,
+		SingleMode:        true,
 	}
 	return
 }

@@ -108,6 +108,15 @@ func (il *ArrayLiteral) expressionNode()      {}
 func (il *ArrayLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *ArrayLiteral) String() string       { return il.Token.Literal }
 
+type ObjectLiteral struct {
+	Token token.Token
+	Elems map[string]Expression
+}
+
+func (il *ObjectLiteral) expressionNode()      {}
+func (il *ObjectLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *ObjectLiteral) String() string       { return il.Token.Literal }
+
 type PrefixExpression struct {
 	Token    token.Token // The prefix token, e.g. !
 	Operator string

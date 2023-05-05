@@ -1,3 +1,6 @@
+//go:build linux || darwin
+// +build linux darwin
+
 /*
 *
 *	Ddosify - Load testing tool for any web system.
@@ -18,33 +21,45 @@
 *
  */
 
-package report
+package main
 
 import (
 	"fmt"
-	"reflect"
+	"os"
+	"syscall"
+	"testing"
 
-	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
-var AvailableOutputServices = make(map[string]ReportService)
+func TestExitStatusOnTestFail(t *testing.T) {
+	index := os.Getenv("index")
+	if index == "" { // parent
+		// start a test in child proc, look for its exit status
+		env := fmt.Sprintf("index=%d", 1)
+		cPid, err := syscall.ForkExec(os.Args[0], os.Args, &syscall.ProcAttr{Files: []uintptr{0, 1, 2}, Env: []string{env}})
+		if err != nil {
+			panic(err.Error())
+		}
 
-// ReportService is the interface that abstracts different report implementations.
-type ReportService interface {
-	DoneChan() <-chan bool
-	Init(debug bool, samplingRate int) error
-	Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult)
-}
+		proc, err := os.FindProcess(cPid)
+		if err != nil {
+			panic(err.Error())
+		}
 
-// NewReportService is the factory method of the ReportService.
-func NewReportService(s string) (service ReportService, err error) {
-	if val, ok := AvailableOutputServices[s]; ok {
-		// Create a new object from the service type
-		service = reflect.New(reflect.TypeOf(val).Elem()).Interface().(ReportService)
+		// expected child to fail with exit code 1
+		pState, err := proc.Wait()
+		if err != nil {
+			panic(err.Error())
+		}
+		if pState.Success() {
+			t.Fail()
+		}
 	} else {
-		err = fmt.Errorf("unsupported output type: %s", s)
+		// run a failed engine
+		*configPath = "config/config_testdata/config_test_assertion_fail.json"
+		run = tempRun
+		start()
+		run = func(h types.Hammer) {}
 	}
-
-	return
 }

@@ -79,10 +79,16 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LPAREN, l.ch)
 	case ')':
 		tok = newToken(token.RPAREN, l.ch)
+	case '{':
+		tok = newToken(token.LBRACE, l.ch)
+	case '}':
+		tok = newToken(token.RBRACE, l.ch)
 	case '[':
 		tok = newToken(token.LBRACKET, l.ch)
 	case ']':
 		tok = newToken(token.RBRACKET, l.ch)
+	case ':':
+		tok = newToken(token.COLON, l.ch)
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -90,6 +96,13 @@ func (l *Lexer) NextToken() token.Token {
 		if l.ch == 34 { // "
 			l.readChar()
 			tok.Literal = l.readString()
+			tok.Type = token.STRING
+			l.readChar()
+			return tok
+		}
+		if l.ch == 39 { // '
+			l.readChar()
+			tok.Literal = l.readRawString()
 			tok.Type = token.STRING
 			l.readChar()
 			return tok
@@ -154,6 +167,14 @@ func (l *Lexer) readIdentifier() string {
 func (l *Lexer) readString() string {
 	position := l.position
 	for l.ch != 34 { // "
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) readRawString() string {
+	position := l.position
+	for l.ch != 39 { // '
 		l.readChar()
 	}
 	return l.input[position:l.position]
