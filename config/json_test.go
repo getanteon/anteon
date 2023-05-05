@@ -464,14 +464,33 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 
 	envsToCapture0 := h.Scenario.Steps[0].EnvsToCapture
 
-	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCaptureFirstStep) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCaptureFirstStep)
+	var numCapturedEnv, xcookieCaptureEnv types.EnvCaptureConf
+	for i := range envsToCapture0 {
+		if envsToCapture0[i].Name == "NUM" {
+			numCapturedEnv = envsToCapture0[i]
+		} else if envsToCapture0[i].Name == "X_COOKIE" {
+			xcookieCaptureEnv = envsToCapture0[i]
+		}
+	}
+
+	if numCapturedEnv.Name != "NUM" || numCapturedEnv.From != types.Body || *numCapturedEnv.JsonPath != "num" {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", numCapturedEnv, expectedEnvsToCaptureFirstStep[0])
+	}
+
+	if xcookieCaptureEnv.Name != "X_COOKIE" || xcookieCaptureEnv.From != types.Cookie || *xcookieCaptureEnv.CookieName != "x" {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", xcookieCaptureEnv, expectedEnvsToCaptureFirstStep[1])
 	}
 
 	envsToCaptureSecondStep := h.Scenario.Steps[1].EnvsToCapture
+	var regexMatchEnv types.EnvCaptureConf
+	for i := range envsToCaptureSecondStep {
+		if envsToCaptureSecondStep[i].Name == "REGEX_MATCH_ENV" {
+			regexMatchEnv = envsToCaptureSecondStep[i]
+		}
+	}
 
-	if !reflect.DeepEqual(envsToCaptureSecondStep, expectedEnvsToCaptureSecondStep) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCaptureSecondStep, expectedEnvsToCaptureSecondStep)
+	if regexMatchEnv.Name != "REGEX_MATCH_ENV" || regexMatchEnv.From != types.Body || *regexMatchEnv.RegExp.Exp != "[a-z]+_[0-9]+" || regexMatchEnv.RegExp.No != 1 {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", regexMatchEnv, expectedEnvsToCaptureSecondStep[0])
 	}
 }
 
