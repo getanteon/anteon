@@ -35,6 +35,8 @@
 
 ✅ **[Assertion](#assertion)** -  Verify that the response matches your expectations.
 
+✅ **[Cookies](#cookies)** -  Pass cookies through steps and set initial cookies if you want.
+
 ✅ **Widely Used Protocols** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
 
@@ -229,6 +231,7 @@ The features you can use by config file;
 - Environment variables
 - Correlation
 - Assertions
+- Cookies
 - Custom load type creation
 - Payload from a file
 - Multipart/form-data payload
@@ -637,6 +640,59 @@ You can write multiple assertions for a step. If any assertion fails, the step i
 
 If Ddosify can't receive the response for a request, that step is marked as Failed without processing the assertions. You will see a **Server Error** as a failure reason on the test result instead of an **Assertion Error**.
 
+## Cookies
+
+Ddosify supports cookies in the following engine modes, `distinct-user` and `repeated-user`.
+
+Please note that cookies are not supported in default `ddosify` mode.
+
+In `repeated-user` mode Ddosify uses the same cookie jar for all iterations executed by the same user. It sets cookies returned at first successful iteration and does not change them afterwards. This way same cookies are passed through steps in all iterations executed by the same user.
+
+In `distinct-user` mode Ddosify uses a different cookie jar for each iteration, cookies passed through steps in one iteration only.
+
+You can set initial cookies for your test scenario using `cookie_jar` field in the config file. Check the [example config](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/config_init_cookies.csv).
+
+
+
+### Cookie Capture
+You can capture values from cookies just like you do for headers and body and use them in your test scenario.
+```json
+{
+    "iteration_count": 100,
+    "load_type": "linear",
+    "duration": 10,
+    "steps": [
+        {
+          <other fields>
+          "capture_env": {
+            "TEST" :{"from":"cookies","cookie_name":"test"}
+          }
+        }
+    ]
+}
+```
+
+
+
+### Cookie Assertion
+You can refer to cookie values as `cookies.cookie_name` while you write assertions for your steps.
+
+Following fields are available for cookie assertion:
+- `name`: Name of the cookie
+- `domain`: Domain of the cookie
+- `path`: Path of the cookie
+- `value`: Value of the cookie
+- `expires`: Expiration date of the cookie
+- `maxAge`: Max age of the cookie
+- `secure`: Secure flag of the cookie
+- `httpOnly`: Http only flag of the cookie
+- `rawExpires`: Raw expiration date of the cookie
+
+> `cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")` is a valid assertion expression. It checks if the cookie named `test` has an expiration date before `Thu, 01 Jan 1990 00:00:00 GMT`.
+
+
+> `cookies.test.path == \"/login\"` is another valid assertion expression. It checks if the cookie named `test` has a path value equal to `/login`.
+
 ### Keywords
 
 | Keyword | Description                  | Usage | 
@@ -744,6 +800,7 @@ Ddosify enables you to capture variables from steps using **json_path**, **xpath
 > - You must specify **'header_key'** when capturing from header.
 > - For json_path syntax, please take a look at [gjson syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md) doc.
 > - Regular expression are expected in  **'Golang'** style regex. For converting your existing regular expressions, you can use [regex101](https://regex101.com/).
+> - You can extract values from **headers**, **body**, and **cookies**.
 
 You can use **debug** parameter to validate your config.
 
