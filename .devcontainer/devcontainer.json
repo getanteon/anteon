@@ -1,5 +1,3 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.155.1/containers/go
 {
 	"name": "Ddosify Open Source",
 	"build": {
@@ -14,31 +12,32 @@
 		"seccomp=unconfined",
 		"--ipc",
 		"host",
-		"--network",
-		"ddosify",
 		"--hostname",
 		"ddosify"
 	],
-	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"terminal.integrated.defaultProfile.linux": "zsh",
-		"go.useLanguageServer": true,
-		"go.gopath": "/go",
-		"go.goroot": "/usr/local/go",
-		"go.toolsGopath": "/go",
-		"go.lintTool": "golangci-lint",
-		"go.lintFlags": [
-			"--config=${workspaceFolder}/.golangci.yml",
-			"--fast"
-		],
-		"files.eol": "\n"
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"go.useLanguageServer": true,
+				"go.gopath": "/go",
+				"go.goroot": "/usr/local/go",
+				"go.toolsGopath": "/go",
+				"go.lintTool": "golangci-lint",
+				"go.lintFlags": [
+					"--config=${workspaceFolder}/.golangci.yml",
+					"--fast"
+				],
+				"files.eol": "\n"
+			},
+			"extensions": [
+				"golang.Go",
+				"eamodio.gitlens",
+				"premparihar.gotestexplorer"
+			]
+		}
 	},
 	"postCreateCommand": "mkdir -p ~/.ssh && cp -r ~/.ssh-localhost/* ~/.ssh && chmod 700 ~/.ssh && chmod 600 ~/.ssh/*",
-	"extensions": [
-		"golang.Go",
-		"eamodio.gitlens",
-		"premparihar.gotestexplorer"
-	],
 	"mounts": [
 		// "source=${env:HOME}/.zsh_history,target=/root/.zsh_history,type=bind,consistency=cached"
 		// "source=${env:HOME}/.bash_history,target=/root/.zsh_history,type=bind,consistency=cached"

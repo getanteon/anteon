@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -179,7 +180,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	var reqStartTime = time.Now()
 
 	// for debug mode
-	var copiedReqBody bytes.Buffer
+	var copiedReqBody []byte
 	var respBody []byte
 	var respHeaders http.Header
 	var bodyReadErr error
@@ -207,9 +208,15 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		}
 	}
 
-	durations := &duration{}
+	durations := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+		resDurCh:             make(chan time.Duration, 1),
+		resStartCh:           make(chan time.Time, 1),
+	}
 	headersAddedByClient := make(map[string][]string)
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
+
 	httpReq, err := h.prepareReq(usableVars, trace)
 
 	if err != nil { // could not prepare req
@@ -225,16 +232,29 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
-	io.Copy(&copiedReqBody, httpReq.Body)
-	httpReq.Body = io.NopCloser(bytes.NewReader(copiedReqBody.Bytes()))
+	if httpReq.Body != nil {
+		if int64(len(h.packet.Payload)) > 300000 {
+			// Don't store req bodies bigger than 300KB
+			copiedReqBody = []byte("too long body")
+		} else {
+			// TODO: make copiedReqBody an io.Reader, and pass same underlying buffer to both httpReq and copiedReqBody
+			// copy
+			buf := new(bytes.Buffer)
+			io.Copy(buf, httpReq.Body)
+			copiedReqBody = buf.Bytes()
+			httpReq.Body = io.NopCloser(bytes.NewBuffer(copiedReqBody)) // restore body
+		}
+	}
 
 	// Action
 	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
 		failedCaptures = h.captureEnvironmentVariables(nil, nil, extractedVars)
+	} else {
+		// got response, no timeout or any other error, resStart should be set
+		durations.setResDur()
 	}
-	durations.setResDur()
 
 	// From the DOC: If the Body is not both read to EOF and closed,
 	// the Client's underlying RoundTripper (typically Transport)
@@ -283,6 +303,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
+	// close duration channels, so that if any goroutine is waiting on them, it can return
+	go time.AfterFunc(10*time.Millisecond, durationCloseFunc(durations))
+
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -297,7 +320,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		Url:         httpReq.URL.String(),
 		Method:      httpReq.Method,
 		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient),
-		ReqBody:     copiedReqBody.Bytes(),
+		ReqBody:     copiedReqBody,
 		RespHeaders: respHeaders,
 		RespBody:    respBody,
 
@@ -323,6 +346,12 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	return
+}
+
+var durationCloseFunc = func(d *duration) func() {
+	return func() {
+		d.close()
+	}
 }
 
 func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
@@ -356,21 +385,21 @@ func concatHeaders(envs1, envs2 map[string][]string) map[string][]string {
 func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace.ClientTrace) (*http.Request, error) {
 	re := regexp.MustCompile(regex.DynamicVariableRegex)
 	httpReq := h.request.Clone(h.ctx)
-	var err error
-	// body
-	body := h.packet.Payload
-	if h.containsDynamicField["body"] {
-		body, _ = h.ei.InjectDynamic(body)
-	}
-	if h.containsEnvVar["body"] {
-		body, err = h.ei.InjectEnv(body, envs)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	httpReq.Body = io.NopCloser(bytes.NewBufferString(body))
-	httpReq.ContentLength = int64(len(body))
+	body := h.packet.Payload
+	if h.containsDynamicField["body"] || h.containsEnvVar["body"] {
+		pieces := h.ei.GenerateBodyPieces(body, envs)
+		customReader := injection.DdosifyBodyReader{
+			Body:   body,
+			Pieces: pieces,
+		}
+		httpReq.Body = &customReader
+		httpReq.ContentLength = int64(injection.GetContentLength(pieces))
+	} else {
+		// if body is constant, we can just set it
+		httpReq.Body = io.NopCloser(bytes.NewReader(injection.StringToBytes(body)))
+		httpReq.ContentLength = int64(len(body))
+	}
 
 	// url
 	hostURL := h.packet.URL
@@ -597,7 +626,7 @@ func (h *HttpRequester) Type() string {
 }
 
 func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string][]string) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, reqStart, serverProcessStart time.Time
+	var dnsStart, connStart, tlsStart, reqStart time.Time
 
 	// According to the doc in the trace.go;
 	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
@@ -669,19 +698,15 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			m.Unlock()
 		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			m.Lock()
 			// no need to handle error in here. We can detect it at http.Client.Do return.
 			if w.Err == nil {
-				duration.setReqDur(time.Since(reqStart))
-				serverProcessStart = time.Now()
+				go duration.setReqDur(time.Since(reqStart))
+				go duration.setServerProcessStart(time.Now())
 			}
-			m.Unlock()
 		},
 		GotFirstResponseByte: func() {
-			m.Lock()
-			duration.setServerProcessDur(time.Since(serverProcessStart))
-			duration.setResStartTime(time.Now())
-			m.Unlock()
+			go duration.setServerProcessDur()
+			go duration.setResStartTime(time.Now())
 		},
 		WroteHeaderField: func(key string, value []string) {
 			headersByClient[key] = value
@@ -756,8 +781,6 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 }
 
 type duration struct {
-	// Time at response reading start
-	resStart time.Time
 
 	// DNS lookup duration. If IP:Port porvided instead of domain, this will be 0
 	dnsDur time.Duration
@@ -771,20 +794,51 @@ type duration struct {
 	// Request write duration
 	reqDur time.Duration
 
-	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
-	serverProcessDur time.Duration
-
 	// Response read duration
 	resDur time.Duration
 
-	mu sync.Mutex
+	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
+	serverProcessDur time.Duration
+
+	// Time at response reading start
+	resStart         time.Time
+	resStartCh       chan time.Time
+	resStartChClosed bool
+
+	serverProcessDurCh       chan time.Duration
+	serverProcessDurChClosed bool
+
+	serverProcessStartCh       chan time.Time
+	serverProcessStartChClosed bool
+
+	resDurCh       chan time.Duration
+	resDurChClosed bool
+
+	mu        sync.Mutex
+	chMu      sync.Mutex
+	getChLock sync.Mutex
 }
 
 func (d *duration) setResStartTime(t time.Time) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.resStart.IsZero() {
-		d.resStart = t
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+
+	if !d.resStartChClosed {
+		d.resStartCh <- t
+		d.resStartChClosed = true
+		close(d.resStartCh)
+	}
+}
+
+// this maybe called multiple times in case of retried requests by WroteRequest hook
+func (d *duration) setServerProcessStart(t time.Time) {
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+
+	if !d.serverProcessStartChClosed {
+		d.serverProcessStartCh <- t
+		d.serverProcessStartChClosed = true
+		close(d.serverProcessStartCh)
 	}
 }
 
@@ -844,35 +898,113 @@ func (d *duration) getReqDur() time.Duration {
 	return d.reqDur
 }
 
-func (d *duration) setServerProcessDur(t time.Duration) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.serverProcessDur == 0 {
-		d.serverProcessDur = t
+func (d *duration) setServerProcessDur() {
+	serverProcessStart := <-d.serverProcessStartCh
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+
+	if !d.serverProcessDurChClosed {
+		d.serverProcessDurCh <- time.Since(serverProcessStart)
+		d.serverProcessDurChClosed = true
+		close(d.serverProcessDurCh)
 	}
+
 }
 
 func (d *duration) getServerProcessDur() time.Duration {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.getChLock.Lock()
+	defer d.getChLock.Unlock()
+
+	serverProcessDur, ok := <-d.serverProcessDurCh
+
+	if !ok { // channel closed, dur already set or closed by timer
+		return d.serverProcessDur
+	}
+
+	d.serverProcessDur = serverProcessDur
 	return d.serverProcessDur
 }
 
 func (d *duration) setResDur() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.resDur = time.Since(d.resStart)
+	resStart := <-d.resStartCh
+
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+
+	if !d.resDurChClosed {
+		d.resDurCh <- time.Since(resStart)
+		d.resDurChClosed = true
+		close(d.resDurCh)
+	}
+
 }
 
 func (d *duration) getResDur() time.Duration {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.getChLock.Lock()
+	defer d.getChLock.Unlock()
+
+	resDur, ok := <-d.resDurCh
+
+	if !ok { // channel closed, probably resDur already set and chan closed by sender
+		return d.resDur
+	}
+
+	d.resDur = resDur
 	return d.resDur
+
 }
 
 func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.serverProcessDur + d.resDur
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.getServerProcessDur() + d.getResDur()
+}
+
+// normally channels are closed by sender, but in case of senders are not called, we close them here
+func (d *duration) close() {
+	d.chMu.Lock()
+	defer d.chMu.Unlock()
+
+	// close channels
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.serverProcessStartChClosed = true
+		close(d.serverProcessStartCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.serverProcessDurChClosed = true
+		close(d.serverProcessDurCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.resStartChClosed = true
+		close(d.resStartCh)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// channel already closed
+			}
+		}()
+		d.resDurChClosed = true
+		close(d.resDurCh)
+	}()
+
 }

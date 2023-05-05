@@ -32,8 +32,7 @@ import (
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/scenario"
-	"go.ddosify.com/ddosify/core/scenario/testdata"
-
+	"go.ddosify.com/ddosify/core/scenario/data"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -120,9 +119,7 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 // Hammer is used for initializing the engine itself and its' external services.
 // Engine can be stopped by canceling the given ctx.
 func NewEngine(ctx context.Context, h types.Hammer,
-	services *EngineServices,
-) (e *engine, err error) {
-
+	services *EngineServices) (e *engine, err error) {
 	ss := scenario.NewScenarioService()
 
 	e = &engine{
@@ -273,6 +270,7 @@ func (e *engine) stop() {
 	}
 
 	e.testSuccess = <-e.reportService.DoneChan()
+
 }
 
 func (e *engine) getMaxConcurrentIterCount() int {
@@ -448,7 +446,7 @@ var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types
 	for k, conf := range testDataConf {
 		var rows []map[string]interface{}
 		var err error
-		rows, err = testdata.ReadCsv(conf)
+		rows, err = data.ReadCsv(conf)
 		if err != nil {
 			return nil, err
 		}
