@@ -150,6 +150,7 @@ type JsonReader struct {
 	IterCount    *int                   `json:"iteration_count"`
 	LoadType     string                 `json:"load_type"`
 	Duration     int                    `json:"duration"`
+	Assertions   []TestAssertion        `json:"assertions"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`
@@ -177,6 +178,12 @@ type CustomCookie struct {
 	HttpOnly bool   `json:"http_only"`
 	Secure   bool   `json:"secure"`
 	Raw      string `json:"raw"`
+}
+
+type TestAssertion struct {
+	Rule  string `json:"rule"`
+	Abort bool   `json:"abort"`
+	Delay int    `json:"delay"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -289,6 +296,17 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		return h, fmt.Errorf("cookies are not supported in ddosify engine mode, please use distinct-user or repeated-user mode")
 	}
 
+	var testAssertions map[string]types.TestAssertionOpt
+	if len(j.Assertions) > 0 {
+		testAssertions = make(map[string]types.TestAssertionOpt, 0)
+	}
+	for _, as := range j.Assertions {
+		testAssertions[as.Rule] = types.TestAssertionOpt{
+			Abort: as.Abort,
+			Delay: as.Delay,
+		}
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -304,6 +322,8 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		TestDataConf:      testDataConf,
 		Cookies:           *(*[]types.CustomCookie)(unsafe.Pointer(&j.Cookies.Cookies)),
 		CookiesEnabled:    j.Cookies.Enabled,
+		Assertions:        testAssertions,
+		SingleMode:        types.DefaultSingleMode,
 	}
 	return
 }

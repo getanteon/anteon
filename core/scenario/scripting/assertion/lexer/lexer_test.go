@@ -92,6 +92,21 @@ func TestNextToken(t *testing.T) {
 			},
 		},
 		{
+			input: "equals(body, '{\"c\": \"d\"}')",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.IDENT, "equals"},
+				{token.LPAREN, "("},
+				{token.IDENT, "body"},
+				{token.COMMA, ","},
+				{token.STRING, "{\"c\": \"d\"}"},
+				{token.RPAREN, ")"},
+				{token.EOF, ""},
+			},
+		},
+		{
 			input: "equals(json_path(employees.percentage), 32.3)",
 			expected: []struct {
 				expectedType    token.TokenType

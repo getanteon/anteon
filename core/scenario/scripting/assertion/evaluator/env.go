@@ -10,4 +10,9 @@ type AssertEnv struct {
 	Headers      http.Header
 	Variables    map[string]interface{}
 	Cookies      map[string]*http.Cookie // cookies sent by the server, name -> cookie
+
+	// For test-wide assertions
+	TotalTime     []int64 // in ms
+	FailCount     int
+	FailCountPerc float64 // should be in range [0,1]
 }

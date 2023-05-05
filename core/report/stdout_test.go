@@ -170,7 +170,7 @@ func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 	close(inputChan)
 
 	go func() {
-		s.Start(inputChan)
+		s.Start(inputChan, nil)
 		w.Close()
 	}()
 

@@ -1,8 +1,19 @@
 <h1 align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    Ddosify Engine - High-performance Traffic Generator
+    Ddosify - High-performance load testing tool
 </h1>
+
+<p align="center">
+    <a href="https://github.com/ddosify/ddosify/releases" target="_blank"><img src="https://img.shields.io/github/v/release/ddosify/ddosify?style=for-the-badge&logo=github&color=orange" alt="ddosify latest version" /></a>&nbsp;
+    <a href="https://github.com/ddosify/ddosify/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/ddosify/ddosify/test.yml?branch=master&style=for-the-badge&logo=github" alt="ddosify build result" /></a>&nbsp;
+    <a href="https://pkg.go.dev/go.ddosify.com/ddosify" target="_blank"><img src="https://img.shields.io/github/go-mod/go-version/ddosify/ddosify?style=for-the-badge&logo=go" alt="golang version" /></a>&nbsp;
+    <a href="https://app.codecov.io/gh/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/codecov/c/github/ddosify/ddosify?style=for-the-badge&logo=codecov" alt="go coverage" /></a>&nbsp;
+    <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/ddosify/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;
+    <a href="https://github.com/ddosify/ddosify/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
+    <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="ddosify discord server" /></a>
+    <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&logo=docker&label=docker&sort=semver" alt="ddosify docker image" /></a>
+</p>
 
 
 <p align="center">
@@ -78,7 +89,7 @@ pkg install ddosify
 - Download *.zip file for your architecture. For example download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
 - Unzip `ddosify_x.x.x_windows_amd64.zip`
 - Open Powershell or CMD (Command Prompt) and change directory to unzipped folder: `ddosify_x.x.x_windows_amd64`
-- Run ddosify: 
+- Run ddosify:
 
 ```bash
 .\ddosify.exe -t http://target_site.com
@@ -106,34 +117,34 @@ go install -v go.ddosify.com/ddosify@latest
 
 ## Easy Start
 This section aims to show you how to use Ddosify without deep dive into its details easily.
-    
+
 1. ### Simple load test
 
-		ddosify -t http://target_site.com
+   	ddosify -t http://target_site.com
 
-    The above command runs a load test with the default value that is 100 requests in 10 seconds.
+   The above command runs a load test with the default value that is 100 requests in 10 seconds.
 
 2. ### Using some of the features
 
-		ddosify -t http://target_site.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80
+   	ddosify -t http://target_site.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80
 
-    Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
+   Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
 
 3. ### Usage for CI/CD pipelines (JSON output)
 
     	ddosify -t http://target_site.com -o stdout-json | jq .avg_duration
 
-    Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic. 
+   Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic.
 
 4. ### Scenario based load test
 
-		ddosify -config config_examples/config.json
-    Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
+   	ddosify -config config_examples/config.json
+   Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
 5. ### Load test with Dynamic Variables (Parameterization)
 
     	ddosify -t http://target_site.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'
-    Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
+   Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
 
 6. ### Correlation (Captured Variables)
 
@@ -210,7 +221,7 @@ Result:
 
 ### Config File
 
-Config file lets you use all capabilities of Ddosify. 
+Config file lets you use all capabilities of Ddosify.
 
 The features you can use by config file;
 
@@ -234,20 +245,20 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `iteration_count` *optional*
 
-    This is the equivalent of the `-n` flag. The difference is that if you have multiple steps in your scenario, this value represents the iteration count of the steps.
+  This is the equivalent of the `-n` flag. The difference is that if you have multiple steps in your scenario, this value represents the iteration count of the steps.
 
 - `load_type` *optional*
 
-    This is the equivalent of the `-l` flag.
+  This is the equivalent of the `-l` flag.
 
 - `duration` *optional*
 
-    This is the equivalent of the `-d` flag.
+  This is the equivalent of the `-d` flag.
 
 - `manual_load` *optional*
 
-    If you are looking for creating your own custom load type, you can use this feature. The example below says that Ddosify will run the scenario 5 times, 10 times, and 20 times, respectively along with the provided durations. `iteration_count` and `duration` will be auto-filled by Ddosify according to `manual_load` configuration. In this example, `iteration_count` will be 35 and the `duration` will be 18 seconds.
-    Also `manual_load` overrides `load_type` if you provide both of them. As a result, you don't need to provide these 3 parameters when using `manual_load`.
+  If you are looking for creating your own custom load type, you can use this feature. The example below says that Ddosify will run the scenario 5 times, 10 times, and 20 times, respectively along with the provided durations. `iteration_count` and `duration` will be auto-filled by Ddosify according to `manual_load` configuration. In this example, `iteration_count` will be 35 and the `duration` will be 18 seconds.
+  Also `manual_load` overrides `load_type` if you provide both of them. As a result, you don't need to provide these 3 parameters when using `manual_load`.
     ```json
     "manual_load": [
         {"duration": 5, "count": 5},
@@ -258,19 +269,19 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `proxy` *optional*
 
-    This is the equivalent of the `-P` flag.
+  This is the equivalent of the `-P` flag.
 
 - `output` *optional*
 
-    This is the equivalent of the `-o` flag.
+  This is the equivalent of the `-o` flag.
 - `engine_mode` *optional*
-    Can be one of `distinct-user`, `repeated-user`, or default mode `ddosify`. 
+  Can be one of `distinct-user`, `repeated-user`, or default mode `ddosify`.
     - `distinct-user` mode simulates a new user for every iteration.
     - `repeated-user` mode can use pre-used user in subsequent iterations.
     - `ddosify` mode is default mode of the engine. In this mode engine runs in its max capacity, and does not show user simulation behaviour.
 
 - `env` *optional*
-    Scenario-scoped global variables. Note that dynamic variables changes every iteration. 
+  Scenario-scoped global variables. Note that dynamic variables changes every iteration.
     ```json
     "env": {
             "COMPANY_NAME" :"Ddosify",
@@ -279,8 +290,8 @@ There is an example config file at [config_examples/config.json](/config_example
     ``` 
 
 - `data` *optional*
-    Config for loading test data from a CSV file.
-    [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config. 
+  Config for loading test data from a CSV file.
+  [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config.
     ```json
     "data":{
         "info": {
@@ -300,54 +311,81 @@ There is an example config file at [config_examples/config.json](/config_example
         }
     }
     ```
-    | Field | Description                  | Type     | Default | Required?  |
-    | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
-    | `path`   | Local path or remote url for your CSV file         | `string` | - | Yes        |
-    | `delimiter`   | Delimiter for reading CSV                                      | `string`    | `,`   | No         |
-    | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
-    | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
-    | `order`   | Order of reading records from CSV. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
-    | `skip_first_line`   | Skips first line while reading records from CSV.                                | `bool`    | `false`    | No         |
-    | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
-   
+  | Field | Description                  | Type     | Default | Required?  |
+      | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+  | `path`   | Local path or remote url for your CSV file         | `string` | - | Yes        |
+  | `delimiter`   | Delimiter for reading CSV                                      | `string`    | `,`   | No         |
+  | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
+  | `allow_quota`   | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field | `bool`    | `false`    | No  |
+  | `order`   | Order of reading records from CSV. Can be `random` or `sequential`                                | `string`    | `random`    | No         |
+  | `skip_first_line`   | Skips first line while reading records from CSV.                                | `bool`    | `false`    | No         |
+  | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
+
+- `assertions` *optional*
+  Config for test-wide assertion. *abort* and *delay* fields can be used to adjust the abort behaviour in case assertion failure. If abort is true for a rule and rules fails at certain point, engine will decide to abort test immediately if delay is 0 or not given. If delay is given, it will wait for delay seconds and reassert the rule.
+  **Example:** Check *90th percentile* and *fail_count*;
+    ```json
+    { 
+     "duration": 10,
+     <other_global_configurations>,
+     "assertions": [
+      {
+        "rule" : "p90(iteration_time) < 220", 
+        "abort" : false
+      },
+      {
+        "rule" : "fail_count_perc < 0.1", 
+        "abort" : true,
+        "delay" : 1
+      },
+      {
+        "rule" : "fail_count < 100", 
+        "abort" : true,
+        "delay" : 0
+      }
+    ],
+     "steps": [....]
+    }
+    ``` 
+
 - `steps` *mandatory*
 
-    This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
-    
-    **Details of each parameter for a step;**
+  This parameter lets you create your scenario. Ddosify runs the provided steps, respectively. For the given example file step id: 2 will be executed immediately after the response of step id: 1 is received. The order of the execution is the same as the order of the steps in the config file.
+
+  **Details of each parameter for a step;**
     - `id` *mandatory*
-    
-        Each step must have a unique integer id.
+
+      Each step must have a unique integer id.
 
     - `url` *mandatory*
 
-        This is the equivalent of the `-t` flag.
+      This is the equivalent of the `-t` flag.
 
     - `name` *optional* <a name="#step-name"></a>
-    
-        Name of the step.
+
+      Name of the step.
 
     - `method` *optional*
 
-        This is the equivalent of the `-m` flag.
+      This is the equivalent of the `-m` flag.
 
     - `headers` *optional*
 
-        List of headers with key:value format.
+      List of headers with key:value format.
 
     - `payload` *optional*
 
-        This is the equivalent of the `-b` flag.
+      This is the equivalent of the `-b` flag.
 
     - `payload_file` *optional*
 
-        If you need a long payload, we suggest using this parameter instead of `payload`.  
+      If you need a long payload, we suggest using this parameter instead of `payload`.
 
     - `payload_multipart` *optional* <a name="#payload_multipart"></a>
 
-        Use this for `multipart/form-data` Content-Type.
+      Use this for `multipart/form-data` Content-Type.
 
-        Accepts list of `form-field` objects, structured as below;
+      Accepts list of `form-field` objects, structured as below;
         ```json
         {
             "name": [field-name],
@@ -357,7 +395,7 @@ There is an example config file at [config_examples/config.json](/config_example
         }
         ```
 
-        **Example:** Sending form name-value pairs;
+      **Example:** Sending form name-value pairs;
         ```json
         "payload_multipart": [
             {
@@ -367,7 +405,7 @@ There is an example config file at [config_examples/config.json](/config_example
         ]
         ```
 
-        **Example:** Sending form name-value pairs and a local file;
+      **Example:** Sending form name-value pairs and a local file;
         ```json
         "payload_multipart": [
             {
@@ -382,7 +420,7 @@ There is an example config file at [config_examples/config.json](/config_example
         ]
         ```
 
-        **Example:** Sending form name-value pairs and a local file and a remote file;
+      **Example:** Sending form name-value pairs and a local file and a remote file;
         ```json
         "payload_multipart": [
             {
@@ -403,16 +441,16 @@ There is an example config file at [config_examples/config.json](/config_example
         ]
         ```
 
-        *Note:* Ddosify adds `Content-Type: multipart/form-data; boundary=[generated-boundary-value]` header to the request when using `payload_multipart`.
+      *Note:* Ddosify adds `Content-Type: multipart/form-data; boundary=[generated-boundary-value]` header to the request when using `payload_multipart`.
 
     - `timeout` *optional*
 
-        This is the equivalent of the `-T` flag. 
+      This is the equivalent of the `-T` flag.
 
     - `capture_env` *optional*
 
-        Config for extraction of variables to use them in next steps. 
-        **Example:** Capture *NUM* variable from steps response body;
+      Config for extraction of variables to use them in next steps.
+      **Example:** Capture *NUM* variable from steps response body;
         ```json
         "steps": [
             {
@@ -424,28 +462,28 @@ There is an example config file at [config_examples/config.json](/config_example
             },
         ]
         ``` 
-     - `assertion` *optional*
+    - `assertion` *optional*
 
-        The response from this step will be subject to the assertion rules. If one of the provided rules fails, step is considered as failure. 
-        **Example:** Check *status code* and *content-length* header values;
-        ```json
-        "steps": [
-            {
-                "id": 1,
-                "url": "http://target.com/endpoint1",
-                "assertion": [
-                    "equals(status_code,200)",
-                    "in(headers.content-length,[2000,3000])"
-                ]
-            },
-        ]
-        ``` 
+      The response from this step will be subject to the assertion rules. If one of the provided rules fails, step is considered as failure.
+      **Example:** Check *status code* and *content-length* header values;
+       ```json
+       "steps": [
+           {
+               "id": 1,
+               "url": "http://target.com/endpoint1",
+               "assertion": [
+                   "equals(status_code,200)",
+                   "in(headers.content-length,[2000,3000])"
+               ]
+           },
+       ]
+       ``` 
 
     - `sleep` *optional* <a name="#sleep"></a>
 
-        Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
+      Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
 
-        **Example:** Sleep 1000ms after step-1;
+      **Example:** Sleep 1000ms after step-1;
         ```json
         "steps": [
             {
@@ -460,7 +498,7 @@ There is an example config file at [config_examples/config.json](/config_example
         ]
         ```
 
-        **Example:** Sleep between 300ms-500ms after step-1;
+      **Example:** Sleep between 300ms-500ms after step-1;
         ```json
         "steps": [
             {
@@ -476,8 +514,8 @@ There is an example config file at [config_examples/config.json](/config_example
         ```
 
     - `auth` *optional*
-        
-        Basic authentication.
+
+      Basic authentication.
         ```json
         "auth": {
             "username": "test_user",
@@ -486,7 +524,7 @@ There is an example config file at [config_examples/config.json](/config_example
         ```
     - `others` *optional*
 
-        This parameter accepts dynamic *key: value* pairs to configure connection details of the protocol in use.
+      This parameter accepts dynamic *key: value* pairs to configure connection details of the protocol in use.
 
         ```json
         "others": {
@@ -498,13 +536,13 @@ There is an example config file at [config_examples/config.json](/config_example
 
 ## Parameterization (Dynamic Variables)
 
-Just like the Postman, Ddosify supports parameterization (dynamic variables) on *URL*, *headers*, *payload (body)* and *basic authentication*. Actually, we support all the random methods Postman supports. If you use `{{$randomVariable}}` on Postman you can use it as `{{_randomVariable}}` on Ddosify. Just change `$` to `_` and you will be fine. To simulate a realistic load test on your system, Ddosify can send every request with dynamic variables. 
+Just like the Postman, Ddosify supports parameterization (dynamic variables) on *URL*, *headers*, *payload (body)* and *basic authentication*. Actually, we support all the random methods Postman supports. If you use `{{$randomVariable}}` on Postman you can use it as `{{_randomVariable}}` on Ddosify. Just change `$` to `_` and you will be fine. To simulate a realistic load test on your system, Ddosify can send every request with dynamic variables.
 
-The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization). 
+The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
 
 ### Parameterization on URL
 
-Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass. 
+Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass.
 
 ```bash
 ddosify -t http://target_site.com/?key={{_randomString}} -d 10 -n 100
@@ -520,7 +558,7 @@ ddosify -t http://target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTr
 
 ### Parameterization on Payload (Body)
 
-Ddosify sends *100* GET requests in *10* seconds with random `latitude` and `longitude` values in body. 
+Ddosify sends *100* GET requests in *10* seconds with random `latitude` and `longitude` values in body.
 
 ```bash
 ddosify -t http://target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
@@ -536,7 +574,7 @@ ddosify -t http://target_site.com -d 10 -n 100 -a '{{_randomUserName}}:{{_random
 
 ### Parameterization on Config File
 
-Dynamic variables can be used on config file as well. Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter in URL and random `User-Key` header. 
+Dynamic variables can be used on config file as well. Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter in URL and random `User-Key` header.
 
 ```bash
 ddosify -config ddosify_config_dynamic.json
@@ -563,7 +601,7 @@ ddosify -config ddosify_config_dynamic.json
 ### Operating System Environment Variables
 
 In addition, you can also use operating system environment variables. To access these variables, simply add the `$` prefix followed by the variable name wrapped in double curly braces. The syntax for this is `{{$OS_ENV_VARIABLE}}` within the **config file**. For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, and `Basic Authentication`. Here is an example of using operating system environment variables in the config file. `TARGET_SITE` operating system environment variable is used in `URL` and `USER` environment variable is used in `Headers`.
-    
+
 ```bash
 export TARGET_SITE="https://test_site1.com"
 ddosify -config ddosify_config_os_env.json
@@ -624,7 +662,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `not`   | ( param `bool` ) | returns converse of given param |
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
-| `xpath`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
 | `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
 ### Operators
@@ -660,7 +698,44 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
 | `regexp(body,\"[a-z]+_[0-9]+\",0) == \"messi_10\"`   | checks if matched result from regex is equal to "messi_10" |
 
+## Test-Wide Assertion
 
+Ddosify supports test-wide assertions, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
+
+Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
+
+Note that the functions and operators mentioned in the [Step Assertion](#assertion). section can also be utilized for the Test-Wide Assertion keywords listed below.
+
+## Difference Between Test-Wide Assertions and Step Assertions
+Unlike assertions focused on individual steps, which determine the success or failure of a step according to its response, Test-Wide assertions create an abort/continue logic for the entire test, which is based on the accumulated data from all iterations.
+
+### Keywords
+
+
+| Keyword              | Description                          | Usage                                                             |
+| ---------------------- | -------------------------------------- | ------------------------------------------------------------------- |
+| `fail_count`         | Failure count of iterations          | Used for aborting when test exceeds certain fail_count            |
+| `iteration_duration` | Response times of iterations in ms   | Used for percentile functions                                     |
+| `fail_count_perc`    | Fail count percentage, in range[0,1] | Used for aborting when test exceeds certain fail count percentage |
+
+### Functions
+
+| Function | Parameters           | Description                                     |
+| ---------- | ---------------------- | ------------------------------------------------- |
+| `p99`    | ( array`int array` ) | 99th percentile, use as `p99(iteration_duration)` |
+| `p95`    | ( array`int array`)  | 95th percentile, use as `p95(iteration_duration)` |
+| `p90`    | ( array`int array`)  | 90th percentile, use as `p90(iteration_duration)` |
+| `p80`    | ( array`int array`)  | 80th percentile, use as `p80(iteration_duration)` |
+| `min`    | ( array`int array`)  | returns minimum element                         |
+| `max`    | ( array`int array`)  | returns maximum element                         |
+| `avg`    | ( array`int array`)  | calculates and returns average                  |
+
+### Examples
+| Expression                        | Description                                               |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `p95(iteration_duration) < 100`   | 95th percentile should be less than 100 ms                |
+| `less_than(fail_count,120)`       | Total fail count should be less than 120 |
+| `less_than(fail_count_perc,0.05)` | Fail count percentage should be less than 5%              |
 
 ## Correlation
 Ddosify enables you to capture variables from steps using **json_path**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
@@ -693,7 +768,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-### Capture With XPath	
+### Capture With XPath
 ```json
 {
     "steps": [
@@ -877,7 +952,11 @@ You can refer to tagged variables in your request like below.
 
 ## Communication
 
-You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else. 
+You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else.
+
+## More
+
+This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Ddosify Cloud](https://ddosify.com)
 
 ## Disclaimer
 

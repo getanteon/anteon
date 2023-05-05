@@ -159,7 +159,7 @@ func TestStart(t *testing.T) {
 	s.Init(debug, 0)
 
 	responseChan := make(chan *types.ScenarioResult, len(responses))
-	go s.Start(responseChan)
+	go s.Start(responseChan, nil)
 
 	go func() {
 		for _, r := range responses {

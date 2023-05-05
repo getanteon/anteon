@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -125,11 +126,13 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 
 // Total test result, all scenario iterations combined
 type Result struct {
-	SuccessCount       int64                                 `json:"success_count"`
-	ServerFailedCount  int64                                 `json:"server_fail_count"`
-	AssertionFailCount int64                                 `json:"assertion_fail_count"`
-	AvgDuration        float32                               `json:"avg_duration"`
-	StepResults        map[uint16]*ScenarioStepResultSummary `json:"steps"`
+	TestStatus           string                                `json:"test_status"`
+	TestFailedAssertions []assertion.FailedRule                `json:"failed_assertions"`
+	SuccessCount         int64                                 `json:"success_count"`
+	ServerFailedCount    int64                                 `json:"server_fail_count"`
+	AssertionFailCount   int64                                 `json:"assertion_fail_count"`
+	AvgDuration          float32                               `json:"avg_duration"`
+	StepResults          map[uint16]*ScenarioStepResultSummary `json:"steps"`
 }
 
 func (r *Result) successPercentage() int {

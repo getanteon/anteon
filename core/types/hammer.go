@@ -49,10 +49,16 @@ const (
 	DefaultMethod        = http.MethodGet
 	DefaultOutputType    = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 	DefaultSamplingCount = 3
+	DefaultSingleMode    = true
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 var engineModes = [...]string{EngineModeDdosify, EngineModeDistinctUser, EngineModeRepeatedUser}
+
+type TestAssertionOpt struct {
+	Abort bool
+	Delay int
+}
 
 // TimeRunCount is the data structure to store manual load type data.
 type TimeRunCount []struct {
@@ -132,6 +138,12 @@ type Hammer struct {
 
 	// Custom Cookies Enabled
 	CookiesEnabled bool
+
+	// Test-wide assertions
+	Assertions map[string]TestAssertionOpt
+
+	// Engine runs single
+	SingleMode bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

@@ -65,6 +65,8 @@ func resetFlags() {
 
 	*certPath = ""
 	*certKeyPath = ""
+
+	*debug = false
 }
 
 func TestDefaultFlagValues(t *testing.T) {
@@ -206,6 +208,7 @@ func TestDebugFlagOverridesConfig(t *testing.T) {
 
 		t.Run(test.name, tf)
 	}
+	resetFlags()
 }
 
 func TestCreateScenario(t *testing.T) {

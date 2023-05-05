@@ -34,6 +34,7 @@ import (
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
@@ -47,7 +48,7 @@ func init() {
 }
 
 type stdout struct {
-	doneChan     chan struct{}
+	doneChan     chan bool
 	result       *Result
 	printTicker  *time.Ticker
 	mu           sync.Mutex
@@ -63,7 +64,7 @@ var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan struct{})
+	s.doneChan = make(chan bool)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -77,10 +78,10 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdout) Start(input chan *types.ScenarioResult) {
+func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
 		s.printInDebugMode(input)
-		s.doneChan <- struct{}{}
+		s.doneChan <- true
 		return
 	}
 	go s.realTimePrintStart()
@@ -95,10 +96,24 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 		s.mu.Unlock()
 	}
 
+	// listen for assertion result
+	s.result.TestStatus = "success"
+	if assertionResultChan != nil {
+		result := <-assertionResultChan
+		if result.Fail {
+			s.result.TestStatus = "failed"
+			s.result.TestFailedAssertions = result.FailedRules
+		}
+	}
 	s.realTimePrintStop()
 	s.report()
 	stopSampling <- struct{}{}
-	s.doneChan <- struct{}{}
+
+	if s.result.TestStatus == "success" {
+		s.doneChan <- true
+	} else {
+		s.doneChan <- false
+	}
 }
 
 func (s *stdout) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
@@ -125,7 +140,7 @@ func (s *stdout) report() {
 	s.printDetails()
 }
 
-func (s *stdout) DoneChan() <-chan struct{} {
+func (s *stdout) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
@@ -380,6 +395,23 @@ func (s *stdout) printDetails() {
 			}
 		}
 		fmt.Fprintln(w)
+	}
+
+	if s.result.TestStatus == "success" {
+		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
+
+	} else if s.result.TestStatus == "failed" {
+		fmt.Fprintf(w, "%s\n", red("Test Status: Failed"))
+
+		for _, failedRule := range s.result.TestFailedAssertions {
+			fmt.Fprintf(w, "\tRule : %s\n", failedRule.Rule)
+			fmt.Fprintf(w, "\tReceived : \n")
+
+			for ident, values := range failedRule.ReceivedMap {
+				fmt.Fprintf(w, "\t %s : %v\n", ident, values)
+			}
+		}
+
 	}
 
 	w.Flush()
