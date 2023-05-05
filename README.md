@@ -325,6 +325,9 @@ There is an example config file at [config_examples/config.json](/config_example
     Config for test-wide assertion. *abort* and *delay* fields can be used to adjust the abort behaviour in case assertion failure. If abort is true for a rule and rules fails at certain point, engine will decide to abort test immediately if delay is 0 or not given. If delay is given, it will wait for delay seconds and reassert the rule.
     **Example:** Check *90th percentile* and *fail_count*;
     ```json
+    { 
+     "duration": 10,
+     <other_global_configurations>,
      "assertions": [
       {
         "rule" : "p90(iteration_time) < 220", 
@@ -341,6 +344,8 @@ There is an example config file at [config_examples/config.json](/config_example
         "delay" : 0
       }
     ],
+     "steps": [....]
+    }
     ``` 
 
 - `steps` *mandatory*
@@ -695,11 +700,14 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 ## Test-Wide Assertion
 
-Ddosify now supports test-wide assertions, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
+Ddosify supports test-wide assertions, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
 
 Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
 
-Note that functions and operators mentioned in Assertion section can be used test-wide assertions also.
+Note that the functions and operators mentioned in the [Step Assertion](#assertion). section can also be utilized for the Test-Wide Assertion keywords listed below.
+
+## Difference Between Test-Wide Assertions and Step Assertions
+Unlike assertions focused on individual steps, which determine the success or failure of a step according to its response, Test-Wide assertions create an abort/continue logic for the entire test, which is based on the accumulated data from all iterations.
 
 ### Keywords
 
