@@ -162,3 +162,33 @@ func TestScenarioStep_InvalidCaptureConfig(t *testing.T) {
 		t.Run(test.name, tf)
 	}
 }
+
+func TestScenarioStepValid_OSEnvVariableInPayload(t *testing.T) {
+	url := "https://test.com"
+	st := ScenarioStep{
+		ID:            22,
+		Name:          "",
+		Method:        http.MethodGet,
+		Auth:          Auth{},
+		Cert:          tls.Certificate{},
+		CertPool:      &x509.CertPool{},
+		Headers:       map[string]string{},
+		Payload:       "{{$SOME_OS_ENV_XX}}",
+		URL:           url,
+		Timeout:       0,
+		Sleep:         "",
+		Custom:        map[string]interface{}{},
+		EnvsToCapture: []EnvCaptureConf{},
+	}
+
+	definedEnvs := map[string]struct{}{}
+	err := st.validate(definedEnvs)
+
+	var environmentNotDefined EnvironmentNotDefinedError
+
+	if !errors.As(err, &environmentNotDefined) {
+		t.Errorf("Should be EnvironmentNotDefinedError")
+	}
+
+	t.Logf("%v", environmentNotDefined)
+}

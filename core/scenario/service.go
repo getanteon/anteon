@@ -37,6 +37,7 @@ import (
 	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/core/util"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
@@ -46,7 +47,7 @@ type ScenarioService struct {
 	// Each scenarioItem has a requester
 	clients map[*url.URL][]scenarioItemRequester
 
-	cPool *clientPool
+	cPool *util.Pool[*http.Client]
 
 	scenario types.Scenario
 	ctx      context.Context
@@ -111,15 +112,15 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 			initialCount = opts.IterationCount
 			maxCount = opts.MaxConcurrentIterCount
 		}
-		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode, putInitialCookiesInJarFactory(s.engineMode, opts.InitialCookies))
+		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode, putInitialCookiesInJarFactory(s.engineMode, opts.InitialCookies), func(c *http.Client) { c.CloseIdleConnections() })
 	}
 	// s.cPool will be nil otherwise
 
 	return
 }
 
-func putInitialCookiesInJarFactory(engineMode string, initCookies []*http.Cookie) Factory {
-	return createFactoryMethod(engineMode, func(cj http.CookieJar) {
+func putInitialCookiesInJarFactory(engineMode string, initCookies []*http.Cookie) ClientFactoryMethod {
+	return createClientFactoryMethod(engineMode, func(cj http.CookieJar) {
 		for _, c := range initCookies {
 			var scheme string = "http"
 			if c.Secure {

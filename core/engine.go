@@ -32,7 +32,7 @@ import (
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
 	"go.ddosify.com/ddosify/core/scenario"
-	"go.ddosify.com/ddosify/core/scenario/testdata"
+	"go.ddosify.com/ddosify/core/scenario/data"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -380,7 +380,7 @@ var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types
 	for k, conf := range testDataConf {
 		var rows []map[string]interface{}
 		var err error
-		rows, err = testdata.ReadCsv(conf)
+		rows, err = data.ReadCsv(conf)
 		if err != nil {
 			return nil, err
 		}

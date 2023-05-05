@@ -24,7 +24,7 @@ type verboseResponse struct {
 }
 
 type verboseHttpRequestInfo struct {
-	StepId           uint16                  `json:"stepId"`
+	StepId           uint16                  `json:"step_id"`
 	StepName         string                  `json:"step_name"`
 	Request          verboseRequest          `json:"request"`
 	Response         verboseResponse         `json:"response"`

@@ -1,0 +1,195 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.23.3-alpine
+    ports:
+      - '8014:80'
+    volumes:
+      - ./nginx/default_reverseproxy.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+    networks:
+      - ddosify
+
+  frontend:
+    image: ddosify/selfhosted_frontend:1.0.0
+    depends_on:
+      - backend
+    restart: always
+    pull_policy: always
+    networks:
+      - ddosify
+
+  backend:
+    image: ddosify/selfhosted_backend:1.0.0
+    depends_on:
+      - postgres_selfhosted
+      - influxdb
+      - backend_redis
+      - minio
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_app_onprem.sh
+
+  hammermanager:
+    ports:
+      - "9901:8001"
+    image: ddosify/selfhosted_hammermanager:1.0.0
+    depends_on:
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_app.sh
+
+  hammermanager_celery_worker:
+    image: ddosify/selfhosted_hammermanager:1.0.0
+    depends_on:
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
+      - hammermanager
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  hammermanager_celery_beat:
+    image: ddosify/selfhosted_hammermanager:1.0.0
+    depends_on:
+      - postgres_selfhosted
+      - rabbitmq_job
+      - rabbitmq_celery
+      - hammermanager
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_beat.sh
+
+  hammer:
+    image: ddosify/selfhosted_hammer:1.0.0
+    volumes:
+      - hammer_id:/root/uuid
+    depends_on:
+      - rabbitmq_job
+      - influxdb
+      - hammermanager
+      - minio
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+
+  hammerdebug:
+    image: ddosify/selfhosted_hammer:1.0.0
+    volumes:
+      - hammerdebug_id:/root/uuid
+    depends_on:
+      - rabbitmq_job
+      - influxdb
+      - hammermanager
+    env_file:
+      - .env
+    environment:
+      - IS_DEBUG=true
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+
+  postgres_selfhosted:
+    image: "postgres:13.6"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_scripts/postgres:/docker-entrypoint-initdb.d
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+
+  rabbitmq_celery:
+    image: "rabbitmq:3.9.4"
+    networks:
+      - ddosify
+    restart: always
+
+  rabbitmq_job:
+    ports:
+      - "6672:5672"
+    image: "rabbitmq:3.9.4"
+    networks:
+      - ddosify
+    restart: always
+
+  influxdb:
+    ports:
+      - "9086:8086"
+    image: "influxdb:2.1.1"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_ORG=ddosify
+      - DOCKER_INFLUXDB_INIT_BUCKET=hammerBucket
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+
+  backend_redis:
+    image: "redis:6.2.6"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ddosify
+    restart: always
+
+  minio:
+    image: minio/minio:RELEASE.2023-04-13T03-08-07Z
+    ports:
+      - "9900:9000"
+    environment:
+      MINIO_ROOT_USER: minio_accesskey
+      MINIO_ROOT_PASSWORD: minio_secretkey
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    volumes:
+      - minio_data:/data
+    command: server /data
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  redis_data:
+  minio_data:
+  hammer_id:
+  hammerdebug_id:
+
+networks:
+  ddosify:

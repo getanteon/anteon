@@ -66,7 +66,7 @@ func TestCookieManagerInRepeatedModeOnlySetInFirstIter(t *testing.T) {
 	defer host.Close()
 
 	// make sure we get the same client in second iteration, 1,1 means we have only one client
-	pool, _ := NewClientPool(1, 1, types.EngineModeRepeatedUser, createFactoryMethod(types.EngineModeRepeatedUser))
+	pool, _ := NewClientPool(1, 1, types.EngineModeRepeatedUser, createClientFactoryMethod(types.EngineModeRepeatedUser), defaultClose)
 
 	c := pool.Get()
 	// using same client
@@ -228,7 +228,7 @@ func TestPutInitialCookiesInJarFactory(t *testing.T) {
 				Value:  "test",
 				Domain: "servdown.com",
 				Secure: true,
-			}}))
+			}}), defaultClose)
 
 	c := pool.Get()
 
