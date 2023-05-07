@@ -206,6 +206,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		} else {
 			h.updateTransport(client.Transport.(*http.Transport))
 		}
+
+		// update client timeout
+		client.Timeout = time.Duration(h.packet.Timeout) * time.Second
 	}
 
 	durations := &duration{
