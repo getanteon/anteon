@@ -513,6 +513,8 @@ func fetchErrType(err error) types.RequestError {
 			}
 		} else if strings.Contains(errString, context.DeadlineExceeded.Error()) {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
+		} else if strings.Contains(errString, "Client.Timeout exceeded while awaiting headers") {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
 		} else if strings.Contains(errString, "i/o timeout") {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
 		} else if strings.Contains(errString, "connection refused") {
