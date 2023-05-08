@@ -205,6 +205,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		} else {
 			h.updateTransport(client.Transport.(*http.Transport))
 		}
+
+		// update client timeout
+		client.Timeout = time.Duration(h.packet.Timeout) * time.Second
 	}
 
 	durations := &duration{
@@ -524,6 +527,8 @@ func fetchErrType(err error) types.RequestError {
 				requestErr = types.RequestError{Type: types.ErrorProxy, Reason: errString}
 			}
 		} else if strings.Contains(errString, context.DeadlineExceeded.Error()) {
+			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
+		} else if strings.Contains(errString, "Client.Timeout exceeded while awaiting headers") {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonConnTimeout}
 		} else if strings.Contains(errString, "i/o timeout") {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
