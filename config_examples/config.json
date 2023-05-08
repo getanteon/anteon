@@ -38,7 +38,7 @@
     },
     "assertions": [
         {
-          "rule" : "p90(iteration_time) < 220", 
+          "rule" : "p90(iteration_duration) < 220", 
           "abort" : false
         },
         {

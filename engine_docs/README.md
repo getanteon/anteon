@@ -315,7 +315,7 @@ There is an example config file at [config_examples/config.json](/config_example
     }
     ```
   | Field | Description                  | Type     | Default | Required?  |
-      | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
+  | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
   | `path`   | Local path or remote url for your CSV file         | `string` | - | Yes        |
   | `delimiter`   | Delimiter for reading CSV                                      | `string`    | `,`   | No         |
   | `vars`   | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`.                          | `map`    | -    | Yes         |
@@ -333,7 +333,7 @@ There is an example config file at [config_examples/config.json](/config_example
      <other_global_configurations>,
      "assertions": [
       {
-        "rule" : "p90(iteration_time) < 220", 
+        "rule" : "p90(iteration_duration) < 220", 
         "abort" : false
       },
       {
@@ -719,7 +719,9 @@ Ddosify supports test-wide assertions, allowing users to verify the success of t
 
 Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
 
-Note that the functions and operators mentioned in the [Step Assertion](#assertion). section can also be utilized for the Test-Wide Assertion keywords listed below.
+Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Test-Wide Assertion keywords listed below.
+
+If one of the step assertion fails, the iteration is considered as failed.
 
 ## Difference Between Test-Wide Assertions and Step Assertions
 Unlike assertions focused on individual steps, which determine the success or failure of a step according to its response, Test-Wide assertions create an abort/continue logic for the entire test, which is based on the accumulated data from all iterations.
@@ -731,19 +733,19 @@ Unlike assertions focused on individual steps, which determine the success or fa
 | ---------------------- | -------------------------------------- | ------------------------------------------------------------------- |
 | `fail_count`         | Failure count of iterations          | Used for aborting when test exceeds certain fail_count            |
 | `iteration_duration` | Response times of iterations in ms   | Used for percentile functions                                     |
-| `fail_count_perc`    | Fail count percentage, in range[0,1] | Used for aborting when test exceeds certain fail count percentage |
+| `fail_count_perc`    | Fail count percentage, in range [0,1] | Used for aborting when test exceeds certain fail count percentage |
 
 ### Functions
 
 | Function | Parameters           | Description                                     |
 | ---------- | ---------------------- | ------------------------------------------------- |
-| `p99`    | ( array`int array` ) | 99th percentile, use as `p99(iteration_duration)` |
-| `p95`    | ( array`int array`)  | 95th percentile, use as `p95(iteration_duration)` |
-| `p90`    | ( array`int array`)  | 90th percentile, use as `p90(iteration_duration)` |
-| `p80`    | ( array`int array`)  | 80th percentile, use as `p80(iteration_duration)` |
-| `min`    | ( array`int array`)  | returns minimum element                         |
-| `max`    | ( array`int array`)  | returns maximum element                         |
-| `avg`    | ( array`int array`)  | calculates and returns average                  |
+| `p99`    | ( arr `int array` ) | 99th percentile, use as `p99(iteration_duration)` |
+| `p95`    | ( arr `int array`)  | 95th percentile, use as `p95(iteration_duration)` |
+| `p90`    | ( arr `int array`)  | 90th percentile, use as `p90(iteration_duration)` |
+| `p80`    | ( arr `int array`)  | 80th percentile, use as `p80(iteration_duration)` |
+| `min`    | ( arr `int array`)  | returns minimum element                         |
+| `max`    | ( arr `int array`)  | returns maximum element                         |
+| `avg`    | ( arr `int array`)  | calculates and returns average                  |
 
 ### Examples
 | Expression                        | Description                                               |
