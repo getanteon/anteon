@@ -22,7 +22,9 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -152,11 +154,20 @@ func (e *engine) Init() (err error) {
 
 	e.initReqCountArr()
 
+	var initialCookies []*http.Cookie
+	if e.hammer.CookiesEnabled && len(e.hammer.Cookies) > 0 {
+		initialCookies, err = createInitialCookies(e.hammer.Cookies)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
 		EngineMode:             e.hammer.EngineMode,
+		InitialCookies:         initialCookies,
 	}); err != nil {
 		return
 	}
@@ -460,4 +471,55 @@ var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types
 	}
 
 	return readData, nil
+}
+
+func parseRawCookie(cookie string) []*http.Cookie {
+	header := http.Header{}
+	header.Add("Set-Cookie", cookie)
+	req := http.Response{Header: header}
+	return req.Cookies()
+}
+
+var createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+	initialCookies := make([]*http.Cookie, 0, len(cookies))
+	for _, c := range cookies {
+		var ck *http.Cookie
+		if c.Raw != "" {
+			cookies := parseRawCookie(c.Raw)
+			if len(cookies) == 0 {
+				return nil, fmt.Errorf("cookie could not be parsed, got : %s", c.Raw)
+			}
+			ck = cookies[0]
+		} else {
+			var expires time.Time
+			if c.Expires != "" {
+				var err error
+				expires, err = time.Parse(time.RFC1123, c.Expires)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cookie expiry: %s", err)
+				}
+			}
+
+			ck = &http.Cookie{
+				Name:       c.Name,
+				Value:      c.Value,
+				Path:       c.Path,
+				Domain:     c.Domain,
+				Expires:    expires,
+				RawExpires: c.Expires,
+				MaxAge:     c.MaxAge,
+				Secure:     c.Secure,
+				HttpOnly:   c.HttpOnly,
+				Raw:        c.Raw,
+
+				// below fields not used
+				SameSite: 0,
+				Unparsed: []string{},
+			}
+		}
+
+		initialCookies = append(initialCookies, ck)
+	}
+
+	return initialCookies, nil
 }

@@ -1,9 +1,10 @@
 package util
 
 type Pool[T any] struct {
-	Items   chan T
-	Factory func() T
-	Close   func(T)
+	Items    chan T
+	Factory  func() T
+	Close    func(T)
+	AfterPut func(T)
 }
 
 func (p *Pool[T]) Get() T {
@@ -27,6 +28,9 @@ func (p *Pool[T]) Put(item T) error {
 	// block and the default case will be executed.
 	select {
 	case p.Items <- item:
+		if p.AfterPut != nil {
+			p.AfterPut(item)
+		}
 		return nil
 	default:
 		// pool is full, close passed client

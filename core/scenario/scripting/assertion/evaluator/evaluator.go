@@ -3,9 +3,11 @@ package evaluator
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
 )
@@ -171,7 +173,10 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 						return true, nil // if identifier evaluated, and exists
 					}
 					return false, nil
+				case TIME:
+					return timeF(args[0].(string))
 				case CONTAINS:
+					return contains(args[0].(string), args[1].(string)), nil
 					p1, ok := args[0].(string)
 					if !ok {
 						return false, ArgumentError{
@@ -367,6 +372,15 @@ func evalInfixExpression(
 		return evalIntegerInfixExpression(operator, left.(int64), rightInt)
 	}
 
+	if lTime, lok := left.(time.Time); lok {
+		if rTime, rok := right.(time.Time); rok {
+			return evalTimeInfixExpression(operator, lTime, rTime)
+		}
+		return nil, OperatorError{
+			msg: "time can be only compared with time",
+		}
+	}
+
 	// other types
 
 	if leftType == reflect.String && rightType == reflect.String {
@@ -499,6 +513,24 @@ func evalFloatInfixExpression(operator string,
 	}
 }
 
+func evalTimeInfixExpression(operator string, lTime, rTime time.Time) (interface{}, error) {
+	switch operator {
+	case "==":
+		return lTime == rTime, nil
+	case "!=":
+		return lTime != rTime, nil
+	case "<":
+		return lTime.Before(rTime), nil
+	case ">":
+		return lTime.After(rTime), nil
+	default:
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("unknown operator %s for time.Time", operator),
+			wrappedErr: nil,
+		}
+	}
+}
+
 func evalIntegerInfixExpression(
 	operator string,
 	left, right int64,
@@ -589,6 +621,44 @@ func evalIdentifier(
 			wrappedErr: nil,
 		}
 	}
+	if strings.HasPrefix(ident, "cookies.") {
+		// cookies.cookie_name.field_name
+		// cookies.csrftoken.expires
+		vr := strings.TrimPrefix(ident, "cookies.")
+		words := strings.Split(vr, ".") // e.g. ["csrftoken", "expires"] or ["csrftoken"]
+
+		if len(words) == 1 {
+			name := words[0]
+			if v, ok := env.Cookies[name]; ok {
+				receivedMap[ident] = v
+				return v, nil
+			}
+			return "", NotFoundError{ //
+				source:     fmt.Sprintf("cookie not found %s", name),
+				wrappedErr: nil,
+			}
+		} else if len(words) == 2 {
+			name := words[0]
+			if v, ok := env.Cookies[name]; ok {
+				fieldName := words[1]
+				value, err := evalCookieField(v, fieldName)
+				if err != nil {
+					return "", NotFoundError{ //
+						source:     fmt.Sprintf("cookie field not found %s", fieldName),
+						wrappedErr: err,
+					}
+				}
+				receivedMap[ident] = value
+				return value, nil
+			} else {
+				return "", NotFoundError{ //
+					source:     fmt.Sprintf("cookie not found %s", name),
+					wrappedErr: nil,
+				}
+			}
+		}
+
+	}
 
 	return "", NotFoundError{ //
 		source:     fmt.Sprintf("%s not defined", ident),
@@ -643,6 +713,35 @@ func evalExpressions(
 	}
 
 	return result, nil
+}
+
+func evalCookieField(c *http.Cookie, fieldName string) (interface{}, error) {
+	switch fieldName {
+	case "name":
+		return c.Name, nil
+	case "value":
+		return c.Value, nil
+	case "path":
+		return c.Path, nil
+	case "domain":
+		return c.Domain, nil
+	case "expires":
+		return c.Expires, nil
+	case "rawExpires":
+		return c.RawExpires, nil
+	case "maxAge":
+		return c.MaxAge, nil
+	case "secure":
+		return c.Secure, nil
+	case "httpOnly":
+		return c.HttpOnly, nil
+	case "raw":
+		return c.Raw, nil
+	// case "unparsed":
+	// 	return c.Unparsed, nil
+	default:
+		return nil, fmt.Errorf("unknown field %s", fieldName)
+	}
 }
 
 type NotFoundError struct { // UnWrappable

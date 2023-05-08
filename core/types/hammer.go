@@ -81,6 +81,19 @@ type CsvConf struct {
 	Order         string         `json:"order"`
 }
 
+// TimeRunCount is the data structure to store manual load type data.
+type CustomCookie struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Domain   string `json:"domain"`
+	Path     string `json:"path"`
+	Expires  string `json:"expires"`
+	MaxAge   int    `json:"max_age"`
+	HttpOnly bool   `json:"http_only"`
+	Secure   bool   `json:"secure"`
+	Raw      string `json:"raw"`
+}
+
 // Hammer is like a lighter for the engine.
 // It includes attack metadata and all necessary data to initialize the internal services in the engine.
 type Hammer struct {
@@ -116,8 +129,15 @@ type Hammer struct {
 
 	// Connection reuse
 	EngineMode string
+
 	// Test Data Config
 	TestDataConf map[string]CsvConf
+
+	// Custom Cookies
+	Cookies []CustomCookie
+
+	// Custom Cookies Enabled
+	CookiesEnabled bool
 
 	// Test-wide assertions
 	Assertions map[string]TestAssertionOpt

@@ -26,6 +26,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -1454,6 +1455,89 @@ func TestCaptureHeaderWithRegex(t *testing.T) {
 
 }
 
+func TestCaptureCookie(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+
+	cookieName := "Argentina"
+	var gotCookieVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "BallondorWinner"
+	expectedCookieValue := "messi_10"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		http.SetCookie(w, &http.Cookie{Name: cookieName, Value: expectedCookieValue})
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotCookieVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "cookies", CookieName: &cookieName},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			secondReqInjectedHeaderKey: "{{GOAT}}",
+		},
+	}
+
+	// Act
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
+	if err != nil {
+		t.Errorf("TestCaptureCookie error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureCookie error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureCookie test server has not been called, url path injection failed")
+	}
+
+	if !strings.EqualFold(gotCookieVal, expectedCookieValue) {
+		t.Errorf(
+			"TestCaptureCookie, expected : %s, got: %s",
+			expectedCookieValue, gotCookieVal)
+	}
+
+}
+
 func TestCaptureStringPayloadWithRegex(t *testing.T) {
 	t.Parallel()
 
@@ -1824,6 +1908,75 @@ func TestInvalidCsvEnvs(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("TestInvalidCsvEnvs shoul be errored")
+	}
+}
+
+func TestCreateInitialCookiesReturnsErr(t *testing.T) {
+	t.Parallel()
+
+	// Prepare
+	h := newDummyHammer()
+	h.CookiesEnabled = true
+	h.Cookies = []types.CustomCookie{
+		{Name: "test", Value: "test"},
+	}
+	tmpFunc := createInitialCookies
+	createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+		return nil, errors.New("test error")
+	}
+	defer func() { createInitialCookies = tmpFunc }()
+
+	// Act
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
+	if err != nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err == nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr should be errored")
+	}
+}
+
+func TestCreateInitialCookies(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_init_cookies.json"), config.ConfigTypeJson)
+
+	h, _ := jsonReader.CreateHammer()
+	initCookies, err := createInitialCookies(h.Cookies)
+
+	if err != nil {
+		t.Errorf("TestCreateInitialCookies error occurred: %v", err)
+	}
+
+	rawExpires := "Thu, 16 Mar 2023 09:24:02 GMT"
+	expires, _ := time.Parse(time.RFC1123, rawExpires)
+
+	expectedCookie := http.Cookie{
+		Name:       "platform",
+		Value:      "web",
+		Path:       "/",
+		Domain:     "httpbin.ddosify.com",
+		Expires:    expires,
+		RawExpires: rawExpires,
+		MaxAge:     0,
+		Secure:     false,
+		HttpOnly:   true,
+
+		SameSite: 0,
+		Raw:      "",
+		Unparsed: []string{},
+	}
+
+	if !reflect.DeepEqual(expectedCookie, *initCookies[0]) {
+		t.Errorf("TestCreateInitialCookies got: %v expected: %v", initCookies[0], expectedCookie)
 	}
 }
 

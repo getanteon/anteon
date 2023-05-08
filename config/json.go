@@ -33,6 +33,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
@@ -67,11 +68,12 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath  *string           `json:"json_path"`
-	XPath     *string           `json:"xpath"`
-	RegExp    *RegexCaptureConf `json:"regexp"`
-	From      string            `json:"from"`       // body,header
-	HeaderKey *string           `json:"header_key"` // header key
+	JsonPath   *string           `json:"json_path"`
+	XPath      *string           `json:"xpath"`
+	RegExp     *RegexCaptureConf `json:"regexp"`
+	From       string            `json:"from"` // body,header,cookie
+	CookieName *string           `json:"cookie_name"`
+	HeaderKey  *string           `json:"header_key"` // header key
 }
 
 type step struct {
@@ -158,6 +160,24 @@ type JsonReader struct {
 	Debug        bool                   `json:"debug"`
 	SamplingRate *int                   `json:"sampling_rate"`
 	EngineMode   string                 `json:"engine_mode"`
+	Cookies      CookieConf             `json:"cookie_jar"`
+}
+
+type CookieConf struct {
+	Cookies []CustomCookie `json:"cookies"`
+	Enabled bool           `json:"enabled"`
+}
+
+type CustomCookie struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Domain   string `json:"domain"`
+	Path     string `json:"path"`
+	Expires  string `json:"expires"`
+	MaxAge   int    `json:"max_age"`
+	HttpOnly bool   `json:"http_only"`
+	Secure   bool   `json:"secure"`
+	Raw      string `json:"raw"`
 }
 
 type TestAssertion struct {
@@ -272,6 +292,10 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	if j.Cookies.Enabled && j.EngineMode == types.EngineModeDdosify {
+		return h, fmt.Errorf("cookies are not supported in ddosify engine mode, please use distinct-user or repeated-user mode")
+	}
+
 	var testAssertions map[string]types.TestAssertionOpt
 	if len(j.Assertions) > 0 {
 		testAssertions = make(map[string]types.TestAssertionOpt, 0)
@@ -296,6 +320,8 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SamplingRate:      samplingRate,
 		EngineMode:        j.EngineMode,
 		TestDataConf:      testDataConf,
+		Cookies:           *(*[]types.CustomCookie)(unsafe.Pointer(&j.Cookies.Cookies)),
+		CookiesEnabled:    j.Cookies.Enabled,
 		Assertions:        testAssertions,
 		SingleMode:        types.DefaultSingleMode,
 	}
@@ -338,11 +364,12 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	var capturedEnvs []types.EnvCaptureConf
 	for name, path := range s.CaptureEnv {
 		capConf := types.EnvCaptureConf{
-			JsonPath: path.JsonPath,
-			Xpath:    path.XPath,
-			Name:     name,
-			From:     types.SourceType(path.From),
-			Key:      path.HeaderKey,
+			JsonPath:   path.JsonPath,
+			Xpath:      path.XPath,
+			Name:       name,
+			From:       types.SourceType(path.From),
+			Key:        path.HeaderKey,
+			CookieName: path.CookieName,
 		}
 
 		if path.RegExp != nil {

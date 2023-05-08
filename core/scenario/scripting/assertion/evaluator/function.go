@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/types"
@@ -107,6 +108,14 @@ var contains = func(source string, substr string) bool {
 	return false
 }
 
+var timeF = func(t string) (time.Time, error) {
+	res, err := time.Parse(time.RFC1123, t)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return res, nil
+}
+
 var rangeF = func(x float64, low float64, hi float64) bool {
 	if x >= low && x < hi {
 		return true
@@ -196,6 +205,7 @@ var assertionFuncMap = map[string]struct{}{
 	P95:          {},
 	P90:          {},
 	P80:          {},
+	TIME:         {},
 }
 
 const (
@@ -211,6 +221,7 @@ const (
 	CONTAINS     = "contains"
 	RANGE        = "range"
 	EQUALSONFILE = "equals_on_file"
+	TIME         = "time"
 
 	MIN = "min"
 	MAX = "max"

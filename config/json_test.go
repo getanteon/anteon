@@ -434,14 +434,21 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 	t.Parallel()
 	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_capture_environment.json"), ConfigTypeJson)
 	json_path := "num"
-	expectedEnvsToCapture0 := []types.EnvCaptureConf{{
-		Name:     "NUM",
-		From:     types.Body,
-		JsonPath: &json_path,
-	}}
+	cookie_name := "x"
+	expectedEnvsToCaptureFirstStep := []types.EnvCaptureConf{
+		{
+			Name:     "NUM",
+			From:     types.Body,
+			JsonPath: &json_path,
+		},
+		{
+			Name:       "X_COOKIE",
+			From:       types.Cookie,
+			CookieName: &cookie_name,
+		}}
 
 	regex := "[a-z]+_[0-9]+"
-	expectedEnvsToCapture1 := []types.EnvCaptureConf{{
+	expectedEnvsToCaptureSecondStep := []types.EnvCaptureConf{{
 		Name: "REGEX_MATCH_ENV",
 		From: types.Body,
 		RegExp: &types.RegexCaptureConf{
@@ -457,14 +464,33 @@ func TestCreateHammerCaptureEnvs(t *testing.T) {
 
 	envsToCapture0 := h.Scenario.Steps[0].EnvsToCapture
 
-	if !reflect.DeepEqual(envsToCapture0, expectedEnvsToCapture0) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture0, expectedEnvsToCapture0)
+	var numCapturedEnv, xcookieCaptureEnv types.EnvCaptureConf
+	for i := range envsToCapture0 {
+		if envsToCapture0[i].Name == "NUM" {
+			numCapturedEnv = envsToCapture0[i]
+		} else if envsToCapture0[i].Name == "X_COOKIE" {
+			xcookieCaptureEnv = envsToCapture0[i]
+		}
 	}
 
-	envsToCapture1 := h.Scenario.Steps[1].EnvsToCapture
+	if numCapturedEnv.Name != "NUM" || numCapturedEnv.From != types.Body || *numCapturedEnv.JsonPath != "num" {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", numCapturedEnv, expectedEnvsToCaptureFirstStep[0])
+	}
 
-	if !reflect.DeepEqual(envsToCapture1, expectedEnvsToCapture1) {
-		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", envsToCapture1, expectedEnvsToCapture1)
+	if xcookieCaptureEnv.Name != "X_COOKIE" || xcookieCaptureEnv.From != types.Cookie || *xcookieCaptureEnv.CookieName != "x" {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", xcookieCaptureEnv, expectedEnvsToCaptureFirstStep[1])
+	}
+
+	envsToCaptureSecondStep := h.Scenario.Steps[1].EnvsToCapture
+	var regexMatchEnv types.EnvCaptureConf
+	for i := range envsToCaptureSecondStep {
+		if envsToCaptureSecondStep[i].Name == "REGEX_MATCH_ENV" {
+			regexMatchEnv = envsToCaptureSecondStep[i]
+		}
+	}
+
+	if regexMatchEnv.Name != "REGEX_MATCH_ENV" || regexMatchEnv.From != types.Body || *regexMatchEnv.RegExp.Exp != "[a-z]+_[0-9]+" || regexMatchEnv.RegExp.No != 1 {
+		t.Errorf("TestCreateHammerCaptureEnvs global envs got: %#v expected: %#v", regexMatchEnv, expectedEnvsToCaptureSecondStep[0])
 	}
 }
 
@@ -475,6 +501,16 @@ func TestCreateHammerInvalidTarget(t *testing.T) {
 	_, err := jsonReader.CreateHammer()
 	if err == nil {
 		t.Errorf("TestCreateHammerProtocol error occurred")
+	}
+}
+
+func TestCreateHammerCookiesEnabledValidOnlyOnUserModes(t *testing.T) {
+	t.Parallel()
+	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_invalid_user_mode_for_cookies.json"), ConfigTypeJson)
+
+	_, err := jsonReader.CreateHammer()
+	if err == nil {
+		t.Errorf("TestCreateHammerCookiesEnabledValidOnlyOnUserModes expected error but got nil, cookies enabled only on user modes")
 	}
 }
 

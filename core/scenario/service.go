@@ -70,6 +70,7 @@ type ScenarioOpts struct {
 	IterationCount         int
 	MaxConcurrentIterCount int
 	EngineMode             string
+	InitialCookies         []*http.Cookie
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
@@ -99,16 +100,36 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	if s.engineInUserMode() {
 		// create client pool
 		var initialCount int
-		if s.engineMode == types.EngineModeRepeatedUser {
+		var maxCount int
+		if opts.Debug {
+			// just one client
+			initialCount = 1
+			maxCount = 1
+		} else if s.engineMode == types.EngineModeRepeatedUser {
 			initialCount = opts.MaxConcurrentIterCount
+			maxCount = opts.MaxConcurrentIterCount
 		} else if s.engineMode == types.EngineModeDistinctUser {
 			initialCount = opts.IterationCount
+			maxCount = opts.MaxConcurrentIterCount
 		}
-		s.cPool, err = NewClientPool(initialCount, opts.IterationCount, func() *http.Client { return &http.Client{} }, func(c *http.Client) { c.CloseIdleConnections() })
+		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode, putInitialCookiesInJarFactory(s.engineMode, opts.InitialCookies), func(c *http.Client) { c.CloseIdleConnections() })
 	}
 	// s.cPool will be nil otherwise
 
 	return
+}
+
+func putInitialCookiesInJarFactory(engineMode string, initCookies []*http.Cookie) ClientFactoryMethod {
+	return createClientFactoryMethod(engineMode, func(cj http.CookieJar) {
+		for _, c := range initCookies {
+			var scheme string = "http"
+			if c.Secure {
+				scheme = "https"
+			}
+			url := &url.URL{Host: c.Domain, Scheme: scheme}
+			cj.SetCookies(url, []*http.Cookie{c})
+		}
+	})
 }
 
 // Do executes the scenario for the given proxy.
