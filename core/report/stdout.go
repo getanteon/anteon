@@ -193,49 +193,53 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
-
-			for eKey, eVal := range verboseInfo.Envs {
-				switch eVal.(type) {
-				case map[string]interface{}:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []string:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []float64:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []bool:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				default:
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+			if len(verboseInfo.Envs) > 0 {
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
+				for eKey, eVal := range verboseInfo.Envs {
+					switch eVal.(type) {
+					case map[string]interface{}:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []string:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []float64:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []bool:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					default:
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+					}
 				}
+				fmt.Fprintf(w, "\n")
 			}
-			fmt.Fprintf(w, "\n")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Test Data")))
+			if len(verboseInfo.TestData) > 0 {
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Test Data")))
 
-			for eKey, eVal := range verboseInfo.TestData {
-				switch eVal.(type) {
-				case map[string]interface{}:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []int:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []string:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []float64:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []bool:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				default:
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+				for eKey, eVal := range verboseInfo.TestData {
+					switch eVal.(type) {
+					case map[string]interface{}:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []int:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []string:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []float64:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []bool:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					default:
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+					}
 				}
+				fmt.Fprintf(w, "\n")
 			}
 
 			if verboseInfo.Error != "" && isVerboseInfoRequestEmpty(verboseInfo.Request) {
@@ -244,7 +248,6 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprint(out, b.String())
 				break
 			}
-			fmt.Fprintf(w, "\n")
 			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Request")))
 			fmt.Fprintf(w, "\tTarget: \t%s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "\tMethod: \t%s \n", verboseInfo.Request.Method)
@@ -261,7 +264,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 			if verboseInfo.Error == "" {
 				// response
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
+				fmt.Fprintf(w, "\n%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
