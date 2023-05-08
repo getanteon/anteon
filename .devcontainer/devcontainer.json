@@ -33,7 +33,9 @@
 			"extensions": [
 				"golang.Go",
 				"eamodio.gitlens",
-				"premparihar.gotestexplorer"
+				"premparihar.gotestexplorer",
+				"GitHub.copilot",
+				"GitHub.copilot-labs"
 			]
 		}
 	},

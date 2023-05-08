@@ -379,15 +379,15 @@ func (s *stdout) printDetails() {
 		if v.Fail.AssertionErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nAssertion Error Distribution:")
 			for e, c := range v.Fail.AssertionErrorDist.Conditions {
-				fmt.Fprintf(w, "\tCondition : %s\n", e)
-				fmt.Fprintf(w, "\t\tFail Count : %d\n", c.Count)
-				fmt.Fprintf(w, "\t\tReceived : \n")
+				fmt.Fprintf(w, "\tCondition: %s\n", e)
+				fmt.Fprintf(w, "\t\tFail Count: %d\n", c.Count)
+				fmt.Fprintf(w, "\t\tReceived: \n")
 
 				for ident, values := range c.Received {
 					fmt.Fprintf(w, "\t\t\t %s : %v\n", ident, values)
 				}
 
-				fmt.Fprintf(w, "\t\tReason : %s \n", c.Reason)
+				fmt.Fprintf(w, "\t\tReason: %s \n\n", c.Reason)
 			}
 		}
 
@@ -404,17 +404,15 @@ func (s *stdout) printDetails() {
 		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
 
 	} else if s.result.TestStatus == "failed" {
-		fmt.Fprintf(w, "%s\n", red("Test Status: Failed"))
-
+		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
 		for _, failedRule := range s.result.TestFailedAssertions {
-			fmt.Fprintf(w, "\tRule : %s\n", failedRule.Rule)
-			fmt.Fprintf(w, "\tReceived : \n")
+			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
+			fmt.Fprintf(w, red("Received: \n"))
 
 			for ident, values := range failedRule.ReceivedMap {
-				fmt.Fprintf(w, "\t %s : %v\n", ident, values)
+				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)
 			}
 		}
-
 	}
 
 	w.Flush()
