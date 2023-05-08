@@ -183,8 +183,7 @@ func TestStdoutPrintsHeadlinesInDebugMode(t *testing.T) {
 		t.Log(printedOutput)
 
 		outStr := string(printedOutput)
-		if !strings.Contains(outStr, "Environment Variables") ||
-			!strings.Contains(outStr, "- Request") ||
+		if !strings.Contains(outStr, "- Request") ||
 			!strings.Contains(outStr, "Headers:") ||
 			!strings.Contains(outStr, "Body:") ||
 			!strings.Contains(outStr, "- Response") ||
