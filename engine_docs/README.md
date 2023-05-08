@@ -956,7 +956,7 @@ In `repeated-user` mode Ddosify uses the same cookie jar for all iterations exec
 
 In `distinct-user` mode Ddosify uses a different cookie jar for each iteration, cookies passed through steps in one iteration only.
 
-You can see an example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md).
+You can see an example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-1-cookie-support).
 
 ### Initial / Custom Cookies
 
@@ -965,15 +965,15 @@ You can set initial/custom cookies for your test scenario using `cookie_jar` fie
 
 | Key       | Description                                                                                                     | Example                                                         |
 |-----------|-----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
-| name      | The name of the cookie. This field is used to identify the cookie.                                              | platform                                                        |
-| value     | The value of the cookie. This field contains the data that the cookie stores.                                   | web                                                             |
-| domain    | Domain or subdomain that can access the cookie.                                                                 | httpbin.ddosify.com                                             |
-| path      | Path within the domain that can access the cookie.                                                              | /                                                               |
-| expires   | When the cookie should expire. The date format should be rfc2616.                                               | Thu, 16 Mar 2023 09:24:02 GMT                                   |
-| max_age   | Number of seconds until the cookie expires.                                                                     | 5                                                               |
-| http_only | Whether the cookie should only be accessible through HTTP or HTTPS headers, and not through client-side scripts | true                                                            |
-| secure    | Whether the cookie should only be sent over a secure (HTTPS) connection                                         | true                                                            |
-| raw       | The raw format of the cookie. If it is used, the other keys are discarded.                                      | myCookie=myValue; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/ |
+| `name`      | The name of the cookie. This field is used to identify the cookie.                                              | `platform`                                                        |
+| `value`     | The value of the cookie. This field contains the data that the cookie stores.                                   | `web`                                                             |
+| `domain`    | Domain or subdomain that can access the cookie.                                                                 | `httpbin.ddosify.com`                                             |
+| `path`      | Path within the domain that can access the cookie.                                                              | `/`                                                               |
+| `expires`   | When the cookie should expire. The date format should be rfc2616.                                               | `Thu, 16 Mar 2023 09:24:02 GMT`                                   |
+| `max_age`   | Number of seconds until the cookie expires.                                                                     | `5`                                                               |
+| `http_only` | Whether the cookie should only be accessible through HTTP or HTTPS headers, and not through client-side scripts | `true`                                                            |
+| `secure`    | Whether the cookie should only be sent over a secure (HTTPS) connection                                         | `false`                                                            |
+| `raw`       | The raw format of the cookie. If it is used, the other keys are discarded.                                      | `myCookie=myValue; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/` |
 
 
 ### Cookie Capture
