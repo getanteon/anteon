@@ -17,8 +17,7 @@ Ddosify Engine supports cookies. If the engine mode is `distict-user` or `repeat
             "name": "Get Servers",
             "url": "https://app.servdown.com/servers/",
             "method": "GET",
-            "timeout": 3,
-            "sleep": "1000",
+            "timeout": 10,
             "others": {
             },
             "capture_env": {
@@ -30,8 +29,7 @@ Ddosify Engine supports cookies. If the engine mode is `distict-user` or `repeat
             "name": "Login",
             "url": "https://app.servdown.com/accounts/login/?next=/",
             "method": "POST",
-            "timeout": 3,
-            "sleep": "1000",
+            "timeout": 10,
             "headers": {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
