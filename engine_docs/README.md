@@ -956,11 +956,11 @@ In `repeated-user` mode Ddosify uses the same cookie jar for all iterations exec
 
 In `distinct-user` mode Ddosify uses a different cookie jar for each iteration, cookies passed through steps in one iteration only.
 
-You can see an example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-1-cookie-support).
+You can see an cookie example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-1-cookie-support) file.
 
 ### Initial / Custom Cookies
 
-You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/config_init_cookies.csv).
+You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/config_init_cookies.json).
 
 
 | Key       | Description                                                                                                     | Example                                                         |
@@ -1011,10 +1011,9 @@ Following fields are available for cookie assertion:
 - `httpOnly`: Http only flag of the cookie
 - `rawExpires`: Raw expiration date of the cookie
 
-> `cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")` is a valid assertion expression. It checks if the cookie named `test` has an expiration date before `Thu, 01 Jan 1990 00:00:00 GMT`.
-
-
-> `cookies.test.path == \"/login\"` is another valid assertion expression. It checks if the cookie named `test` has a path value equal to `/login`.
+**Examples:**
+- `cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")` is a valid assertion expression. It checks if the cookie named `test` has an expiration date before `Thu, 01 Jan 1990 00:00:00 GMT`.
+- `cookies.test.path == \"/login\"` is another valid assertion expression. It checks if the cookie named `test` has a path value equal to `/login`.
 
 ## Tutorials / Blog Posts
 
