@@ -29,13 +29,15 @@
 
 ✅ **[Parameterization](#parameterization-dynamic-variables)** - Use dynamic variables just like on Postman.
 
-✅ **[Correlation](#correlation)** -  Extract variables from earlier phases and pass them on to the following ones.
+✅ **[Correlation](#correlation)** - Extract variables from earlier phases and pass them on to the following ones.
 
-✅ **[Test Data](#test-data-set)** -  Import test data from CSV and use it in the scenario.
+✅ **[Test Data](#test-data-set)** - Import test data from CSV and use it in the scenario.
 
-✅ **[Assertion](#assertion)** -  Verify that the response matches your expectations.
+✅ **[Assertion](#assertion)** - Verify that the response matches your expectations.
 
-✅ **[Cookies](#cookies)** -  Pass cookies through steps and set initial cookies if you want.
+✅ **[Success Criteria](#success-criteria-pass--fail)** - Set the success criteria for your test.
+
+✅ **[Cookies](#cookies)** - Pass cookies through steps and set initial cookies if you want.
 
 ✅ **Widely Used Protocols** - Currently supporting *HTTP, HTTPS, HTTP/2*. Other protocols are on the way.
 
@@ -325,7 +327,8 @@ There is an example config file at [config_examples/config.json](/config_example
   | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
 
 - `success_criterias` *optional*
-  Config for test-wide assertion. *abort* and *delay* fields can be used to adjust the abort behaviour in case assertion failure. If abort is true for a rule and rules fails at certain point, engine will decide to abort test immediately if delay is 0 or not given. If delay is given, it will wait for delay seconds and reassert the rule.
+  Config for pass fail logic for the test. *abort* and *delay* fields can be used to adjust the abort behaviour in case of failure. If abort is true for a rule and rules fails at certain point, engine will decide to abort test immediately if delay is 0 or not given. If delay is given, it will wait for delay seconds and reassert the rule.
+
   **Example:** Check *90th percentile* and *fail_count*;
     ```json
     { 
@@ -713,18 +716,19 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `(status_code == 200) \|\| (status_code == 201)`   | same as preceding one |
 | `regexp(body,\"[a-z]+_[0-9]+\",0) == \"messi_10\"`   | checks if matched result from regex is equal to "messi_10" |
 
-## Test-Wide Assertion
+## Success Criteria (Pass / Fail)
 
-Ddosify supports test-wide assertions, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
+Ddosify supports success criteria, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
 
-Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
+Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks the `success_criterias` keyword.
 
-Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Test-Wide Assertion keywords listed below.
+Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-If one of the step assertion fails, the iteration is considered as failed.
+You can see an success criteria example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-2-success-criteria) file.
 
-## Difference Between Test-Wide Assertions and Step Assertions
-Unlike assertions focused on individual steps, which determine the success or failure of a step according to its response, Test-Wide assertions create an abort/continue logic for the entire test, which is based on the accumulated data from all iterations.
+## Difference Between Success Criteria and Step Assertions
+
+Unlike assertions focused on individual steps, which determine the success or failure of a step according to its response, Success Criteria create an abort/continue logic for the entire test, which is based on the accumulated data from all iterations. 
 
 ### Keywords
 
