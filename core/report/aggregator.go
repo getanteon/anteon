@@ -75,8 +75,18 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 					aed.Count++
 					samplingCount[sr.StepID][fa.Rule]++
 					if samplingCount[sr.StepID][fa.Rule] <= samplingRate {
+
 						for ident, value := range fa.Received {
-							aed.Received[ident] = append(aed.Received[ident], value)
+							// do not append if the value is already in the list
+							exists := false
+							for _, v := range aed.Received[ident] {
+								if v == value {
+									exists = true
+								}
+							}
+							if !exists {
+								aed.Received[ident] = append(aed.Received[ident], value)
+							}
 						}
 					}
 				}

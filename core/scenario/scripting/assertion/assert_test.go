@@ -56,7 +56,8 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"status_code": int64(500),
+				"status_code":               int64(500),
+				"in(status_code,[200,201])": false,
 			},
 		},
 		{
@@ -111,7 +112,8 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"json_path(employees.0.name)": "Kursat",
+				"json_path(employees.0.name)":               "Kursat",
+				"equals(json_path(employees.0.name),Kenan)": false,
 			},
 		},
 		{
@@ -150,7 +152,8 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"body": "",
+				"body":               "",
+				"contains(body,xyz)": false,
 			},
 		},
 		{

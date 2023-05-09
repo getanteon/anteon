@@ -384,6 +384,8 @@ func (s *stdout) printDetails() {
 				fmt.Fprintf(w, "\t\tReceived: \n")
 
 				for ident, values := range c.Received {
+					// deduplication
+					values = deduplicate(values)
 					fmt.Fprintf(w, "\t\t\t %s : %v\n", ident, values)
 				}
 
@@ -417,6 +419,20 @@ func (s *stdout) printDetails() {
 
 	w.Flush()
 	fmt.Fprint(out, b.String())
+}
+
+func deduplicate(values []interface{}) []interface{} {
+	seen := make(map[interface{}]bool)
+	result := make([]interface{}, 0)
+
+	for _, v := range values {
+		if _, ok := seen[v]; !ok {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
 
 type duration struct {

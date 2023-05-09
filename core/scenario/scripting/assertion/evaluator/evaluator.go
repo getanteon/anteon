@@ -176,7 +176,6 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case TIME:
 					return timeF(args[0].(string))
 				case CONTAINS:
-					return contains(args[0].(string), args[1].(string)), nil
 					p1, ok := args[0].(string)
 					if !ok {
 						return false, ArgumentError{
@@ -308,7 +307,9 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				}
 
 			}
-			return f()
+			res, err := f()
+			receivedMap[node.String()] = res
+			return res, err
 		}
 	}
 	return nil, nil
