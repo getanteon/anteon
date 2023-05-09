@@ -324,14 +324,14 @@ There is an example config file at [config_examples/config.json](/config_example
   | `skip_first_line`   | Skips first line while reading records from CSV.                                | `bool`    | `false`    | No         |
   | `skip_empty_line`   | Skips empty lines while reading records from CSV.                                | `bool`    | `true`    | No         |
 
-- `assertions` *optional*
+- `success_criterias` *optional*
   Config for test-wide assertion. *abort* and *delay* fields can be used to adjust the abort behaviour in case assertion failure. If abort is true for a rule and rules fails at certain point, engine will decide to abort test immediately if delay is 0 or not given. If delay is given, it will wait for delay seconds and reassert the rule.
   **Example:** Check *90th percentile* and *fail_count*;
     ```json
     { 
      "duration": 10,
      <other_global_configurations>,
-     "assertions": [
+     "success_criterias": [
       {
         "rule" : "p90(iteration_duration) < 220", 
         "abort" : false

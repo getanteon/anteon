@@ -36,7 +36,7 @@
             "skip_empty_line" : true
         }
     },
-    "assertions": [
+    "success_criterias": [
         {
           "rule" : "p90(iteration_duration) < 220", 
           "abort" : false

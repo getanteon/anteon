@@ -150,7 +150,7 @@ type JsonReader struct {
 	IterCount    *int                   `json:"iteration_count"`
 	LoadType     string                 `json:"load_type"`
 	Duration     int                    `json:"duration"`
-	Assertions   []TestAssertion        `json:"assertions"`
+	Assertions   []TestAssertion        `json:"success_criterias"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`

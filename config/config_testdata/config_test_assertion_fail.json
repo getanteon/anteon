@@ -3,7 +3,7 @@
     "load_type": "linear",
     "duration": 10,
     "debug" : false,
-    "assertions": [
+    "success_criterias": [
       {
         "rule" : "false", 
         "abort" : true,
