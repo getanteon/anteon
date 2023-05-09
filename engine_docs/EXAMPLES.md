@@ -2,7 +2,7 @@
 
 ## Example 1: Cookie Support
 
-Ddosify Engine supports cookies. If the engine mode is `distict-user` or `repeated-user` the engine will store the cookies in a cookie jar and use them in the next request. If the engine mode is `ddosify` which is default, the engine will not use the cookies in the cookie jar. You can enable and disable custom / initial cookies with `enabled` key in the `cookie_jar` section of the config file.
+Ddosify Engine supports cookies. If the engine mode is `distict-user` or `repeated-user` the engine will store the cookies in a cookie jar and use them in the next request. If the engine mode is `ddosify` which is default, the engine will not use the cookies in the cookie jar. You can enable and disable custom / initial cookies with `enabled` key in the `cookie_jar` section of the config file. For more: [Cookies](./README.md#cookies).
 
 - Create a Ddosify configuration file called: `config.json`
 ```json
@@ -72,7 +72,7 @@ We also set an initial cookie (`platform`) in the `cookie_jar` section of the co
 
 ## Example 2: Success Criteria
 
-Ddosify engine supports success criteria. You can set a success criteria for the entire test based on server or assertion errors. If the success criteria is not met the engine will stop the test based on `abort` and `delay` keywords. If you set `abort` to `true` the engine will stop the test immediately after `delay` seconds. If you set `abort` to `false` the engine will not stop the test. 
+Ddosify engine supports success criteria. You can set a success criteria for the entire test based on server or assertion errors. If the success criteria is not met the engine will stop the test based on `abort` and `delay` keywords. If you set `abort` to `true` the engine will stop the test immediately after `delay` seconds. If you set `abort` to `false` the engine will not stop the test. For more: [Success Criteria](./README.md#success-criteria-pass--fail).
 
 - Create a Ddosify configuration file called: `config.json`
 ```json
