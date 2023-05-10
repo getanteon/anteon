@@ -491,7 +491,7 @@ func preparePayloadFile(url string) (body string, err error) {
 	}
 
 	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-		return "", fmt.Errorf("request to remote url (%s) failed. Status Code: %d", url, resp.StatusCode)
+		return "", fmt.Errorf("Payload File: request to remote url (%s) failed. Status Code: %d", url, resp.StatusCode)
 	}
 	defer resp.Body.Close()
 	by, _ := io.ReadAll(resp.Body)
