@@ -58,8 +58,20 @@ func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 
 func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
+		s.result.TestStatus = "success"
+		if assertionResultChan != nil {
+			result := <-assertionResultChan
+			if result.Fail {
+				s.result.TestStatus = "failed"
+				s.result.TestFailedAssertions = result.FailedRules
+			}
+		}
 		s.printInDebugMode(input)
-		s.doneChan <- true
+		if s.result.TestStatus == "success" {
+			s.doneChan <- true
+		} else {
+			s.doneChan <- false
+		}
 		return
 	}
 	s.listenAndAggregate(input, assertionResultChan)
@@ -137,7 +149,9 @@ func (s *stdoutJson) cleanSamplingCount(samplingCount map[uint16]map[string]int,
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	stepDebugResults := struct {
-		DebugResults map[uint16]verboseHttpRequestInfo "json:\"steps\""
+		DebugResults         map[uint16]verboseHttpRequestInfo "json:\"steps\""
+		TestStatus           string                            "json:\"test_status\""
+		TestFailedAssertions []assertion.FailedRule            "json:\"failed_criterias,omitempty\""
 	}{
 		DebugResults: map[uint16]verboseHttpRequestInfo{},
 	}
@@ -146,6 +160,13 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo
 		}
+	}
+
+	if s.result.TestStatus == "failed" {
+		stepDebugResults.TestStatus = "failed"
+		stepDebugResults.TestFailedAssertions = s.result.TestFailedAssertions
+	} else {
+		stepDebugResults.TestStatus = "success"
 	}
 
 	printPretty(out, stepDebugResults)

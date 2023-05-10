@@ -64,7 +64,7 @@ var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan bool)
+	s.doneChan = make(chan bool, 1)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -80,8 +80,20 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 
 func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
+		s.result.TestStatus = "success"
+		if assertionResultChan != nil {
+			result := <-assertionResultChan
+			if result.Fail {
+				s.result.TestStatus = "failed"
+				s.result.TestFailedAssertions = result.FailedRules
+			}
+		}
 		s.printInDebugMode(input)
-		s.doneChan <- true
+		if s.result.TestStatus == "success" {
+			s.doneChan <- true
+		} else {
+			s.doneChan <- false
+		}
 		return
 	}
 	go s.realTimePrintStart()
@@ -303,6 +315,26 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			fmt.Fprint(out, b.String())
 		}
 	}
+
+	b := strings.Builder{}
+	w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
+	if s.result.TestStatus == "success" {
+		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
+
+	} else if s.result.TestStatus == "failed" {
+		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
+		for _, failedRule := range s.result.TestFailedAssertions {
+			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
+			fmt.Fprintf(w, red("Received: \n"))
+
+			for ident, values := range failedRule.ReceivedMap {
+				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)
+			}
+		}
+	}
+	fmt.Fprintln(w)
+	fmt.Fprint(out, b.String())
+
 }
 
 func printBody(w io.Writer, contentType string, body interface{}) {

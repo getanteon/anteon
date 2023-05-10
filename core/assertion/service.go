@@ -43,7 +43,7 @@ func (as *DefaultAssertionService) Init(assertions map[string]types.TestAssertio
 	as.assertions = assertions
 	as.abortChan = make(chan struct{})
 	as.doneChan = make(chan struct{})
-	as.resChan = make(chan TestAssertionResult)
+	as.resChan = make(chan TestAssertionResult, 1)
 	totalTime := make([]int64, 0)
 	as.assertEnv = &evaluator.AssertEnv{TotalTime: totalTime}
 	as.abortTick = make(map[string]int)
