@@ -341,12 +341,21 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 			return types.ScenarioStep{}, err
 		}
 	} else if s.PayloadFile != "" {
-		buf, err := ioutil.ReadFile(s.PayloadFile)
-		if err != nil {
-			return types.ScenarioStep{}, err
+		var pUrl *url.URL
+		if pUrl, err = url.ParseRequestURI(s.PayloadFile); err == nil && pUrl.IsAbs() { // url
+			payload, err = preparePayloadFile(s.PayloadFile)
+			if err != nil {
+				return types.ScenarioStep{}, err
+			}
+		} else if _, err = os.Stat(s.PayloadFile); err == nil { // local file path
+			buf, err := ioutil.ReadFile(s.PayloadFile)
+			if err != nil {
+				return types.ScenarioStep{}, err
+			}
+			payload = string(buf)
+		} else {
+			return types.ScenarioStep{}, fmt.Errorf("payload file %s not found", s.PayloadFile)
 		}
-
-		payload = string(buf)
 	} else {
 		payload = s.Payload
 	}
@@ -469,6 +478,24 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 
 	writer.Close()
 	return byteBody.String(), writer.FormDataContentType(), err
+}
+
+func preparePayloadFile(url string) (body string, err error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return "", fmt.Errorf("Payload File: request to remote url (%s) failed. Status Code: %d", url, resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	by, _ := io.ReadAll(resp.Body)
+	return string(by), nil
 }
 
 type RemoteMultipartError struct { // UnWrappable
