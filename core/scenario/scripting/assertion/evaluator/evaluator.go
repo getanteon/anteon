@@ -1,10 +1,13 @@
 package evaluator
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
 )
@@ -26,6 +29,12 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 		return node.GetVal(), nil
 	case *ast.ArrayLiteral:
 		args, err := evalExpressions(node.Elems, env, receivedMap)
+		if err != nil {
+			return nil, err
+		}
+		return args, nil
+	case *ast.ObjectLiteral:
+		args, err := evalObjectExpressions(node.Elems, env, receivedMap)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +80,14 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 
 				switch funcName {
 				case NOT:
-					return not(args[0].(bool)), nil
+					p, ok := args[0].(bool)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "arg of not func must be a bool",
+							wrappedErr: nil,
+						}
+					}
+					return not(p), nil
 				case LESSTHAN:
 					variable, ok := args[0].(int64)
 					if !ok {
@@ -101,22 +117,144 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				case EQUALS:
 					return equals(args[0], args[1])
 				case EQUALSONFILE:
-					return equalsOnFile(args[0], args[1].(string))
+					filepath, ok := args[1].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "filepath must be a string",
+							wrappedErr: nil,
+						}
+					}
+					return equalsOnFile(args[0], filepath)
 				case IN:
-					return in(args[0], args[1].([]interface{}))
+					elems, ok := args[1].([]interface{})
+					if !ok {
+						return false, ArgumentError{
+							msg:        "second arg of in func must be an array",
+							wrappedErr: nil,
+						}
+					}
+					return in(args[0], elems)
 				case JSONPATH:
-					return jsonExtract(env.Body, args[0].(string))
+					jsonpath, ok := args[0].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "jsonpath must be a string",
+							wrappedErr: nil,
+						}
+					}
+					return jsonExtract(env.Body, jsonpath)
 				case XMLPATH:
-					return xmlExtract(env.Body, args[0].(string))
+					xpath, ok := args[0].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "xpath must be a string",
+							wrappedErr: nil,
+						}
+					}
+					return xmlExtract(env.Body, xpath)
 				case REGEXP:
-					return regexExtract(env.Body, args[1].(string), args[2].(int64))
+					regexp, ok := args[1].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "regexp must be a string",
+							wrappedErr: nil,
+						}
+					}
+					matchNo, ok := args[2].(int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "matchNo must be an int64",
+							wrappedErr: nil,
+						}
+					}
+					return regexExtract(env.Body, regexp, matchNo)
 				case EXISTS:
 					if args[0] != nil {
 						return true, nil // if identifier evaluated, and exists
 					}
 					return false, nil
+				case TIME:
+					return timeF(args[0].(string))
 				case CONTAINS:
-					return contains(args[0].(string), args[1].(string)), nil
+					p1, ok := args[0].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "args of contains func must be string",
+							wrappedErr: nil,
+						}
+					}
+					p2, ok := args[1].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "args of contains func must be string",
+							wrappedErr: nil,
+						}
+					}
+					return contains(p1, p2), nil
+				case AVG:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of avg func must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return avg(arr)
+				case MIN:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of min func must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return min(arr)
+				case MAX:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of max func must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return max(arr)
+				// TODO only one func percentile(arr, num) ?
+				case P99:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of percentile funcs must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return percentile(arr, 99)
+				case P95:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of percentile funcs must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return percentile(arr, 95)
+				case P90:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of percentile funcs must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return percentile(arr, 90)
+				case P80:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of percentile funcs must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return percentile(arr, 80)
 				case RANGE:
 					var x, low, high float64
 
@@ -169,7 +307,9 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 				}
 
 			}
-			return f()
+			res, err := f()
+			receivedMap[node.String()] = res
+			return res, err
 		}
 	}
 	return nil, nil
@@ -233,7 +373,50 @@ func evalInfixExpression(
 		return evalIntegerInfixExpression(operator, left.(int64), rightInt)
 	}
 
+	if lTime, lok := left.(time.Time); lok {
+		if rTime, rok := right.(time.Time); rok {
+			return evalTimeInfixExpression(operator, lTime, rTime)
+		}
+		return nil, OperatorError{
+			msg: "time can be only compared with time",
+		}
+	}
+
 	// other types
+
+	if leftType == reflect.String && rightType == reflect.String {
+		// json marshalling is used to compare json strings
+		var lJson, rJson interface{}
+
+		isLJson := json.Unmarshal([]byte(left.(string)), &lJson)
+		isRJson := json.Unmarshal([]byte(right.(string)), &rJson)
+
+		if isLJson == nil && isRJson == nil {
+			return reflect.DeepEqual(lJson, rJson), nil
+		}
+	}
+
+	if leftType == reflect.String && rightType == reflect.Map {
+		var lJson interface{}
+		isLJson := json.Unmarshal([]byte(left.(string)), &lJson)
+
+		if isLJson == nil {
+			rJsonBy, _ := json.Marshal(right)
+			lJsonBy, _ := json.Marshal(lJson)
+			return reflect.DeepEqual(rJsonBy, lJsonBy), nil
+		}
+	}
+	if leftType == reflect.Map && rightType == reflect.String {
+		var rJson interface{}
+		isRJson := json.Unmarshal([]byte(right.(string)), &rJson)
+
+		if isRJson == nil {
+			lJsonBy, _ := json.Marshal(left)
+			rJsonBy, _ := json.Marshal(rJson)
+			return reflect.DeepEqual(lJsonBy, rJsonBy), nil
+		}
+	}
+
 	if operator == "==" {
 		return reflect.DeepEqual(left, right), nil
 	}
@@ -331,6 +514,24 @@ func evalFloatInfixExpression(operator string,
 	}
 }
 
+func evalTimeInfixExpression(operator string, lTime, rTime time.Time) (interface{}, error) {
+	switch operator {
+	case "==":
+		return lTime == rTime, nil
+	case "!=":
+		return lTime != rTime, nil
+	case "<":
+		return lTime.Before(rTime), nil
+	case ">":
+		return lTime.After(rTime), nil
+	default:
+		return 0, OperatorError{
+			msg:        fmt.Sprintf("unknown operator %s for time.Time", operator),
+			wrappedErr: nil,
+		}
+	}
+}
+
 func evalIntegerInfixExpression(
 	operator string,
 	left, right int64,
@@ -383,6 +584,21 @@ func evalIdentifier(
 		receivedMap[ident] = env.Body
 		return env.Body, nil
 	}
+
+	// test-wide identifiers
+	if strings.EqualFold(ident, "fail_count") {
+		receivedMap[ident] = env.FailCount
+		return env.FailCount, nil
+	}
+	if strings.EqualFold(ident, "fail_count_perc") {
+		receivedMap[ident] = env.FailCountPerc
+		return env.FailCountPerc, nil
+	}
+	if strings.EqualFold(ident, "iteration_duration") {
+		receivedMap[ident] = env.TotalTime
+		return env.TotalTime, nil
+	}
+
 	if strings.HasPrefix(ident, "variables.") {
 		vr := strings.TrimPrefix(ident, "variables.")
 		if v, ok := env.Variables[vr]; ok {
@@ -406,6 +622,44 @@ func evalIdentifier(
 			wrappedErr: nil,
 		}
 	}
+	if strings.HasPrefix(ident, "cookies.") {
+		// cookies.cookie_name.field_name
+		// cookies.csrftoken.expires
+		vr := strings.TrimPrefix(ident, "cookies.")
+		words := strings.Split(vr, ".") // e.g. ["csrftoken", "expires"] or ["csrftoken"]
+
+		if len(words) == 1 {
+			name := words[0]
+			if v, ok := env.Cookies[name]; ok {
+				receivedMap[ident] = v
+				return v, nil
+			}
+			return "", NotFoundError{ //
+				source:     fmt.Sprintf("cookie not found %s", name),
+				wrappedErr: nil,
+			}
+		} else if len(words) == 2 {
+			name := words[0]
+			if v, ok := env.Cookies[name]; ok {
+				fieldName := words[1]
+				value, err := evalCookieField(v, fieldName)
+				if err != nil {
+					return "", NotFoundError{ //
+						source:     fmt.Sprintf("cookie field not found %s", fieldName),
+						wrappedErr: err,
+					}
+				}
+				receivedMap[ident] = value
+				return value, nil
+			} else {
+				return "", NotFoundError{ //
+					source:     fmt.Sprintf("cookie not found %s", name),
+					wrappedErr: nil,
+				}
+			}
+		}
+
+	}
 
 	return "", NotFoundError{ //
 		source:     fmt.Sprintf("%s not defined", ident),
@@ -413,12 +667,36 @@ func evalIdentifier(
 	}
 }
 
+func evalObjectExpressions(
+	exps map[string]ast.Expression,
+	env *AssertEnv,
+	receivedMap map[string]interface{},
+) (map[string]interface{}, error) {
+	var result = make(map[string]interface{})
+	for k, e := range exps {
+		evaluated, err := Eval(e, env, receivedMap)
+		if err != nil {
+			return nil, err
+		}
+		switch e.(type) {
+		case *ast.Identifier:
+			receivedMap[e.String()] = evaluated
+		case *ast.CallExpression:
+			receivedMap[e.String()] = evaluated
+		}
+
+		result[k] = evaluated
+	}
+
+	return result, nil
+}
+
 func evalExpressions(
 	exps []ast.Expression,
 	env *AssertEnv,
 	receivedMap map[string]interface{},
 ) ([]interface{}, error) {
-	var result []interface{}
+	var result = make([]interface{}, 0)
 
 	for _, e := range exps {
 		evaluated, err := Eval(e, env, receivedMap)
@@ -436,6 +714,35 @@ func evalExpressions(
 	}
 
 	return result, nil
+}
+
+func evalCookieField(c *http.Cookie, fieldName string) (interface{}, error) {
+	switch fieldName {
+	case "name":
+		return c.Name, nil
+	case "value":
+		return c.Value, nil
+	case "path":
+		return c.Path, nil
+	case "domain":
+		return c.Domain, nil
+	case "expires":
+		return c.Expires, nil
+	case "rawExpires":
+		return c.RawExpires, nil
+	case "maxAge":
+		return c.MaxAge, nil
+	case "secure":
+		return c.Secure, nil
+	case "httpOnly":
+		return c.HttpOnly, nil
+	case "raw":
+		return c.Raw, nil
+	// case "unparsed":
+	// 	return c.Unparsed, nil
+	default:
+		return nil, fmt.Errorf("unknown field %s", fieldName)
+	}
 }
 
 type NotFoundError struct { // UnWrappable

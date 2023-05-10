@@ -33,6 +33,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
@@ -67,11 +68,12 @@ type RegexCaptureConf struct {
 	No  int     `json:"matchNo"`
 }
 type capturePath struct {
-	JsonPath  *string           `json:"json_path"`
-	XPath     *string           `json:"xpath"`
-	RegExp    *RegexCaptureConf `json:"regexp"`
-	From      string            `json:"from"`       // body,header
-	HeaderKey *string           `json:"header_key"` // header key
+	JsonPath   *string           `json:"json_path"`
+	XPath      *string           `json:"xpath"`
+	RegExp     *RegexCaptureConf `json:"regexp"`
+	From       string            `json:"from"` // body,header,cookie
+	CookieName *string           `json:"cookie_name"`
+	HeaderKey  *string           `json:"header_key"` // header key
 }
 
 type step struct {
@@ -148,6 +150,7 @@ type JsonReader struct {
 	IterCount    *int                   `json:"iteration_count"`
 	LoadType     string                 `json:"load_type"`
 	Duration     int                    `json:"duration"`
+	Assertions   []TestAssertion        `json:"success_criterias"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`
@@ -157,6 +160,30 @@ type JsonReader struct {
 	Debug        bool                   `json:"debug"`
 	SamplingRate *int                   `json:"sampling_rate"`
 	EngineMode   string                 `json:"engine_mode"`
+	Cookies      CookieConf             `json:"cookie_jar"`
+}
+
+type CookieConf struct {
+	Cookies []CustomCookie `json:"cookies"`
+	Enabled bool           `json:"enabled"`
+}
+
+type CustomCookie struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Domain   string `json:"domain"`
+	Path     string `json:"path"`
+	Expires  string `json:"expires"`
+	MaxAge   int    `json:"max_age"`
+	HttpOnly bool   `json:"http_only"`
+	Secure   bool   `json:"secure"`
+	Raw      string `json:"raw"`
+}
+
+type TestAssertion struct {
+	Rule  string `json:"rule"`
+	Abort bool   `json:"abort"`
+	Delay int    `json:"delay"`
 }
 
 func (j *JsonReader) UnmarshalJSON(data []byte) error {
@@ -265,6 +292,21 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 	}
 
+	if j.Cookies.Enabled && j.EngineMode == types.EngineModeDdosify {
+		return h, fmt.Errorf("cookies are not supported in ddosify engine mode, please use distinct-user or repeated-user mode")
+	}
+
+	var testAssertions map[string]types.TestAssertionOpt
+	if len(j.Assertions) > 0 {
+		testAssertions = make(map[string]types.TestAssertionOpt, 0)
+	}
+	for _, as := range j.Assertions {
+		testAssertions[as.Rule] = types.TestAssertionOpt{
+			Abort: as.Abort,
+			Delay: as.Delay,
+		}
+	}
+
 	// Hammer
 	h = types.Hammer{
 		IterationCount:    *j.IterCount,
@@ -278,6 +320,10 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SamplingRate:      samplingRate,
 		EngineMode:        j.EngineMode,
 		TestDataConf:      testDataConf,
+		Cookies:           *(*[]types.CustomCookie)(unsafe.Pointer(&j.Cookies.Cookies)),
+		CookiesEnabled:    j.Cookies.Enabled,
+		Assertions:        testAssertions,
+		SingleMode:        types.DefaultSingleMode,
 	}
 	return
 }
@@ -295,12 +341,21 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 			return types.ScenarioStep{}, err
 		}
 	} else if s.PayloadFile != "" {
-		buf, err := ioutil.ReadFile(s.PayloadFile)
-		if err != nil {
-			return types.ScenarioStep{}, err
+		var pUrl *url.URL
+		if pUrl, err = url.ParseRequestURI(s.PayloadFile); err == nil && pUrl.IsAbs() { // url
+			payload, err = preparePayloadFile(s.PayloadFile)
+			if err != nil {
+				return types.ScenarioStep{}, err
+			}
+		} else if _, err = os.Stat(s.PayloadFile); err == nil { // local file path
+			buf, err := ioutil.ReadFile(s.PayloadFile)
+			if err != nil {
+				return types.ScenarioStep{}, err
+			}
+			payload = string(buf)
+		} else {
+			return types.ScenarioStep{}, fmt.Errorf("payload file %s not found", s.PayloadFile)
 		}
-
-		payload = string(buf)
 	} else {
 		payload = s.Payload
 	}
@@ -318,11 +373,12 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 	var capturedEnvs []types.EnvCaptureConf
 	for name, path := range s.CaptureEnv {
 		capConf := types.EnvCaptureConf{
-			JsonPath: path.JsonPath,
-			Xpath:    path.XPath,
-			Name:     name,
-			From:     types.SourceType(path.From),
-			Key:      path.HeaderKey,
+			JsonPath:   path.JsonPath,
+			Xpath:      path.XPath,
+			Name:       name,
+			From:       types.SourceType(path.From),
+			Key:        path.HeaderKey,
+			CookieName: path.CookieName,
 		}
 
 		if path.RegExp != nil {
@@ -422,6 +478,24 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 
 	writer.Close()
 	return byteBody.String(), writer.FormDataContentType(), err
+}
+
+func preparePayloadFile(url string) (body string, err error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return "", fmt.Errorf("Payload File: request to remote url (%s) failed. Status Code: %d", url, resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	by, _ := io.ReadAll(resp.Body)
+	return string(by), nil
 }
 
 type RemoteMultipartError struct { // UnWrappable

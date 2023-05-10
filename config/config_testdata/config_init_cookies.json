@@ -1,0 +1,35 @@
+{
+    "iteration_count": 1555,
+    "load_type": "waved",
+    "duration": 21,
+    "steps": [
+        {
+            "id": 1,
+            "name": "Example Name 1",
+            "url": "https://app.servdown.com/accounts/login/?next=/",
+
+            "method": "GET",
+            "payload": "payload str",
+            "timeout": 3,
+            "sleep": "1000",
+            "others": {
+            }
+        }
+    ],
+    "output": "stdout",
+    "engine_mode": "distinct-user",
+    "cookie_jar":{
+        "enabled" : true,
+        "cookies" :[
+            {
+                "name": "platform",
+                "value": "web",
+                "domain": "httpbin.ddosify.com",
+                "path": "/",
+                "expires": "Thu, 16 Mar 2023 09:24:02 GMT",
+                "http_only": true,
+                "secure": false
+            }
+        ]
+    } 
+}

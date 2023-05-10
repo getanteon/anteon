@@ -43,13 +43,21 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "response_time < 300.5",
+			envs: &evaluator.AssertEnv{
+				ResponseTime: 220,
+			},
+			expected: true,
+		},
+		{
 			input: "in(status_code,[200,201])",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 500,
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"status_code": int64(500),
+				"status_code":               int64(500),
+				"in(status_code,[200,201])": false,
 			},
 		},
 		{
@@ -68,6 +76,13 @@ func TestAssert(t *testing.T) {
 		},
 		{
 			input: "status_code == 200",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 200,
+			},
+			expected: true,
+		},
+		{
+			input: "status_code == \"200\"",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 200,
 			},
@@ -97,7 +112,8 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"json_path(employees.0.name)": "Kursat",
+				"json_path(employees.0.name)":               "Kursat",
+				"equals(json_path(employees.0.name),Kenan)": false,
 			},
 		},
 		{
@@ -136,7 +152,8 @@ func TestAssert(t *testing.T) {
 			},
 			expected: false,
 			received: map[string]interface{}{
-				"body": "",
+				"body":               "",
+				"contains(body,xyz)": false,
 			},
 		},
 		{
@@ -164,6 +181,15 @@ func TestAssert(t *testing.T) {
 			},
 			expected:      false,
 			expectedError: "NotFoundError",
+		},
+		{
+			input: `equals(variables.c,null)`,
+			envs: &evaluator.AssertEnv{
+				Variables: map[string]interface{}{
+					"c": nil,
+				},
+			},
+			expected: true,
 		},
 		{
 			input: `variables.arr != ["Kenan","Faruk","Cakir"]`,
@@ -342,6 +368,13 @@ func TestAssert(t *testing.T) {
 			},
 		},
 		{
+			input:    "equals(body, {\"name\":\"Ar'gentina\",\"num\":25,\"isChampion\":false})",
+			expected: true,
+			envs: &evaluator.AssertEnv{
+				Body: "{\"num\":25,\"name\":\"Ar'gentina\",\"isChampion\":false}",
+			},
+		},
+		{
 			input:    `equals_on_file(body,"./test_files/number.json")`,
 			expected: true,
 			envs: &evaluator.AssertEnv{
@@ -399,6 +432,13 @@ func TestAssert(t *testing.T) {
 			input: "less_than(status_code,201)",
 			envs: &evaluator.AssertEnv{
 				StatusCode: 200,
+			},
+			expected: true,
+		},
+		{
+			input: "greater_than(status_code,201)",
+			envs: &evaluator.AssertEnv{
+				StatusCode: 400,
 			},
 			expected: true,
 		},
@@ -461,6 +501,327 @@ func TestAssert(t *testing.T) {
 			},
 
 			expected: true,
+		},
+		{
+			input: "equals(cookies.test.value, \"value\")",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "exists(cookies.test)",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "exists(cookies.test2)",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			input: "cookies.test.secure",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						Secure: true,
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.rawExpires == \"Thu, 01 Jan 1970 00:00:00 GMT\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:       "test",
+						Value:      "value",
+						Secure:     true,
+						RawExpires: "Thu, 01 Jan 1970 00:00:00 GMT",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.path == \"/login\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:  "test",
+						Value: "value",
+						Path:  "/login",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:       "test",
+						Value:      "value",
+						Secure:     true,
+						RawExpires: "Thu, 01 Jan 1970 00:00:00 GMT",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.httpOnly",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.notexists",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.notexists",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.notexists.value",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:     "test",
+						Value:    "value",
+						HttpOnly: true,
+					},
+				},
+			},
+			expected:      false,
+			expectedError: "NotFoundError",
+		},
+		{
+			input: "cookies.test.maxAge == 100",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						MaxAge: 100,
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "cookies.test.domain == \"ddosify.com\"",
+			envs: &evaluator.AssertEnv{
+				Cookies: map[string]*http.Cookie{
+					"test": {
+						Name:   "test",
+						Value:  "value",
+						Domain: "ddosify.com",
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			input: "p99(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p95(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p90(iteration_duration) == 98",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "p80(iteration_duration) == 89",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "min(iteration_duration) == 34",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "max(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "max(iteration_duration) == 2222",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 2222, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input: "avg(iteration_duration) == 200.6875",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 2222, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
+			input:    "percentile([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input:    "min([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input:    "max([]) == 200.6875",
+			expected: false,
+		},
+		{
+			input: "avg(response_size) == 200.6875",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected: false,
+		},
+		{
+			input: "not(response_size)",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input: "less_than(10, 20.3)",
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         `equals_on_file("abc", [34,60])`, // filepath must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input: "in(response_size,response_size)", // second arg must be array
+			envs: &evaluator.AssertEnv{
+				ResponseSize: int64(23),
+			},
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "json_path(23)", // arg must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "xml_path(23)", // arg must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p99(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p95(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p90(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p80(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:    "p80([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "min([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "max([])", // empty array
+			expected: false,
+		},
+		{
+			input:    "avg([])", // empty interface array, not []int64
+			expected: false,
 		},
 	}
 

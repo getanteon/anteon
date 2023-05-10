@@ -34,6 +34,7 @@ import (
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 	"go.ddosify.com/ddosify/core/util"
 )
@@ -47,7 +48,7 @@ func init() {
 }
 
 type stdout struct {
-	doneChan     chan struct{}
+	doneChan     chan bool
 	result       *Result
 	printTicker  *time.Ticker
 	mu           sync.Mutex
@@ -63,7 +64,7 @@ var red = color.New(color.FgHiRed).SprintFunc()
 var realTimePrintInterval = time.Duration(1500) * time.Millisecond
 
 func (s *stdout) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan struct{})
+	s.doneChan = make(chan bool, 1)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -77,10 +78,22 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdout) Start(input chan *types.ScenarioResult) {
+func (s *stdout) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
+		s.result.TestStatus = "success"
+		if assertionResultChan != nil {
+			result := <-assertionResultChan
+			if result.Fail {
+				s.result.TestStatus = "failed"
+				s.result.TestFailedAssertions = result.FailedRules
+			}
+		}
 		s.printInDebugMode(input)
-		s.doneChan <- struct{}{}
+		if s.result.TestStatus == "success" {
+			s.doneChan <- true
+		} else {
+			s.doneChan <- false
+		}
 		return
 	}
 	go s.realTimePrintStart()
@@ -95,10 +108,24 @@ func (s *stdout) Start(input chan *types.ScenarioResult) {
 		s.mu.Unlock()
 	}
 
+	// listen for assertion result
+	s.result.TestStatus = "success"
+	if assertionResultChan != nil {
+		result := <-assertionResultChan
+		if result.Fail {
+			s.result.TestStatus = "failed"
+			s.result.TestFailedAssertions = result.FailedRules
+		}
+	}
 	s.realTimePrintStop()
 	s.report()
 	stopSampling <- struct{}{}
-	s.doneChan <- struct{}{}
+
+	if s.result.TestStatus == "success" {
+		s.doneChan <- true
+	} else {
+		s.doneChan <- false
+	}
 }
 
 func (s *stdout) cleanSamplingCount(samplingCount map[uint16]map[string]int, stopSampling chan struct{}, samplingRate int) {
@@ -125,7 +152,7 @@ func (s *stdout) report() {
 	s.printDetails()
 }
 
-func (s *stdout) DoneChan() <-chan struct{} {
+func (s *stdout) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
@@ -178,49 +205,53 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
-
-			for eKey, eVal := range verboseInfo.Envs {
-				switch eVal.(type) {
-				case map[string]interface{}:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []string:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []float64:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []bool:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				default:
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+			if len(verboseInfo.Envs) > 0 {
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
+				for eKey, eVal := range verboseInfo.Envs {
+					switch eVal.(type) {
+					case map[string]interface{}:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []string:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []float64:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []bool:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					default:
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+					}
 				}
+				fmt.Fprintf(w, "\n")
 			}
-			fmt.Fprintf(w, "\n")
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Test Data")))
+			if len(verboseInfo.TestData) > 0 {
+				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Test Data")))
 
-			for eKey, eVal := range verboseInfo.TestData {
-				switch eVal.(type) {
-				case map[string]interface{}:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []int:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []string:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []float64:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				case []bool:
-					valPretty, _ := json.Marshal(eVal)
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
-				default:
-					fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+				for eKey, eVal := range verboseInfo.TestData {
+					switch eVal.(type) {
+					case map[string]interface{}:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []int:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []string:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []float64:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					case []bool:
+						valPretty, _ := json.Marshal(eVal)
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), valPretty)
+					default:
+						fmt.Fprintf(w, "\t%s:\t%-5s \n", fmt.Sprint(eKey), fmt.Sprint(eVal))
+					}
 				}
+				fmt.Fprintf(w, "\n")
 			}
 
 			if verboseInfo.Error != "" && isVerboseInfoRequestEmpty(verboseInfo.Request) {
@@ -229,7 +260,6 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprint(out, b.String())
 				break
 			}
-			fmt.Fprintf(w, "\n")
 			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Request")))
 			fmt.Fprintf(w, "\tTarget: \t%s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "\tMethod: \t%s \n", verboseInfo.Request.Method)
@@ -246,7 +276,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 			if verboseInfo.Error == "" {
 				// response
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Response")))
+				fmt.Fprintf(w, "\n%s\n", blue(fmt.Sprintf("- Response")))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -285,6 +315,26 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			fmt.Fprint(out, b.String())
 		}
 	}
+
+	b := strings.Builder{}
+	w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
+	if s.result.TestStatus == "success" {
+		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
+
+	} else if s.result.TestStatus == "failed" {
+		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
+		for _, failedRule := range s.result.TestFailedAssertions {
+			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
+			fmt.Fprintf(w, red("Received: \n"))
+
+			for ident, values := range failedRule.ReceivedMap {
+				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)
+			}
+		}
+	}
+	fmt.Fprintln(w)
+	fmt.Fprint(out, b.String())
+
 }
 
 func printBody(w io.Writer, contentType string, body interface{}) {
@@ -361,15 +411,17 @@ func (s *stdout) printDetails() {
 		if v.Fail.AssertionErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nAssertion Error Distribution:")
 			for e, c := range v.Fail.AssertionErrorDist.Conditions {
-				fmt.Fprintf(w, "\tCondition : %s\n", e)
-				fmt.Fprintf(w, "\t\tFail Count : %d\n", c.Count)
-				fmt.Fprintf(w, "\t\tReceived : \n")
+				fmt.Fprintf(w, "\tCondition: %s\n", e)
+				fmt.Fprintf(w, "\t\tFail Count: %d\n", c.Count)
+				fmt.Fprintf(w, "\t\tReceived: \n")
 
 				for ident, values := range c.Received {
+					// deduplication
+					values = deduplicate(values)
 					fmt.Fprintf(w, "\t\t\t %s : %v\n", ident, values)
 				}
 
-				fmt.Fprintf(w, "\t\tReason : %s \n", c.Reason)
+				fmt.Fprintf(w, "\t\tReason: %s \n\n", c.Reason)
 			}
 		}
 
@@ -382,8 +434,37 @@ func (s *stdout) printDetails() {
 		fmt.Fprintln(w)
 	}
 
+	if s.result.TestStatus == "success" {
+		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
+
+	} else if s.result.TestStatus == "failed" {
+		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
+		for _, failedRule := range s.result.TestFailedAssertions {
+			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
+			fmt.Fprintf(w, red("Received: \n"))
+
+			for ident, values := range failedRule.ReceivedMap {
+				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)
+			}
+		}
+	}
+
 	w.Flush()
 	fmt.Fprint(out, b.String())
+}
+
+func deduplicate(values []interface{}) []interface{} {
+	seen := make(map[interface{}]bool)
+	result := make([]interface{}, 0)
+
+	for _, v := range values {
+		if _, ok := seen[v]; !ok {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
 
 type duration struct {

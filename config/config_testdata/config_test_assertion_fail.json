@@ -1,0 +1,28 @@
+{
+    "iteration_count": 100,
+    "load_type": "linear",
+    "duration": 10,
+    "debug" : false,
+    "success_criterias": [
+      {
+        "rule" : "false", 
+        "abort" : true,
+        "delay" : 1
+      }
+    ],
+    "steps": [
+            {
+              "id": 1,
+              "url": "https://httpbin.ddosify.com/json2",
+              "name": "JSON",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "keep-alive": true,
+                "disable-redirect": true,
+                "disable-compression": false
+              },
+              "timeout": 2
+            }
+    ]
+}

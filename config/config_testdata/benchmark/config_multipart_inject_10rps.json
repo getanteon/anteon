@@ -21,7 +21,7 @@
             "src": "remote",
             "name": "image",
             "type": "file",
-            "value": "https://ddosify-backend-storage.s3.amazonaws.com/media/staging/multipart/vijzOnuqKiOkAWzAFo1wsGpdhk4M1DSGx99MIzPzufs/56_mv_1082778177_1681206249576109599_440.jpg"
+            "value": "https://ddosify-backend-storage.s3.amazonaws.com/media/staging/multipart/tVGNdwRxwB-GvQth9mqKITzq28-suX6R3BzvrSH9rWo/random_image.png"
           },
           {
             "name": "ballot_id",

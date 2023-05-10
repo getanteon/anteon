@@ -81,3 +81,21 @@ func TestExtract_InvalidXml(t *testing.T) {
 		t.Errorf("error expected, got nil")
 	}
 }
+
+func TestCookieName_NotSpecified(t *testing.T) {
+	ce := types.EnvCaptureConf{
+		JsonPath:   nil,
+		Xpath:      nil,
+		RegExp:     &types.RegexCaptureConf{},
+		Name:       "",
+		From:       types.Cookie,
+		Key:        nil,
+		CookieName: nil,
+	}
+
+	_, err := Extract(map[string]*http.Cookie{}, ce)
+
+	if err == nil {
+		t.Errorf("Expected error when cookie key not specified")
+	}
+}

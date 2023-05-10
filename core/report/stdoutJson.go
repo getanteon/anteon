@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"go.ddosify.com/ddosify/core/assertion"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -38,7 +39,7 @@ func init() {
 }
 
 type stdoutJson struct {
-	doneChan     chan struct{}
+	doneChan     chan bool
 	result       *Result
 	debug        bool
 	samplingRate int
@@ -46,7 +47,7 @@ type stdoutJson struct {
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
-	s.doneChan = make(chan struct{})
+	s.doneChan = make(chan bool)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
 	}
@@ -55,15 +56,32 @@ func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 	return
 }
 
-func (s *stdoutJson) Start(input chan *types.ScenarioResult) {
+func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	if s.debug {
+		s.result.TestStatus = "success"
+		if assertionResultChan != nil {
+			result := <-assertionResultChan
+			if result.Fail {
+				s.result.TestStatus = "failed"
+				s.result.TestFailedAssertions = result.FailedRules
+			}
+		}
 		s.printInDebugMode(input)
-		s.doneChan <- struct{}{}
+		if s.result.TestStatus == "success" {
+			s.doneChan <- true
+		} else {
+			s.doneChan <- false
+		}
 		return
 	}
-	s.listenAndAggregate(input)
+	s.listenAndAggregate(input, assertionResultChan)
 	s.report()
-	s.doneChan <- struct{}{}
+
+	if s.result.TestStatus == "success" {
+		s.doneChan <- true
+	} else {
+		s.doneChan <- false
+	}
 }
 
 func (s *stdoutJson) report() {
@@ -85,11 +103,11 @@ func (s *stdoutJson) report() {
 	printJson(j)
 }
 
-func (s *stdoutJson) DoneChan() <-chan struct{} {
+func (s *stdoutJson) DoneChan() <-chan bool {
 	return s.doneChan
 }
 
-func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
+func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assertionResultChan <-chan assertion.TestAssertionResult) {
 	stopSampling := make(chan struct{})
 	samplingCount := make(map[uint16]map[string]int)
 	go s.cleanSamplingCount(samplingCount, stopSampling, s.samplingRate)
@@ -97,6 +115,15 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult) {
 		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
+	}
+	// listen for assertion result, add to json
+	s.result.TestStatus = "success"
+	if assertionResultChan != nil {
+		result := <-assertionResultChan
+		if result.Fail {
+			s.result.TestStatus = "failed"
+			s.result.TestFailedAssertions = result.FailedRules
+		}
 	}
 }
 
@@ -122,7 +149,9 @@ func (s *stdoutJson) cleanSamplingCount(samplingCount map[uint16]map[string]int,
 
 func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 	stepDebugResults := struct {
-		DebugResults map[uint16]verboseHttpRequestInfo "json:\"steps\""
+		DebugResults         map[uint16]verboseHttpRequestInfo "json:\"steps\""
+		TestStatus           string                            "json:\"test_status\""
+		TestFailedAssertions []assertion.FailedRule            "json:\"failed_criterias,omitempty\""
 	}{
 		DebugResults: map[uint16]verboseHttpRequestInfo{},
 	}
@@ -131,6 +160,13 @@ func (s *stdoutJson) printInDebugMode(input chan *types.ScenarioResult) {
 			verboseInfo := ScenarioStepResultToVerboseHttpRequestInfo(sr)
 			stepDebugResults.DebugResults[verboseInfo.StepId] = verboseInfo
 		}
+	}
+
+	if s.result.TestStatus == "failed" {
+		stepDebugResults.TestStatus = "failed"
+		stepDebugResults.TestFailedAssertions = s.result.TestFailedAssertions
+	} else {
+		stepDebugResults.TestStatus = "success"
 	}
 
 	printPretty(out, stepDebugResults)

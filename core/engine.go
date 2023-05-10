@@ -22,10 +22,14 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
+
+	"go.ddosify.com/ddosify/core/assertion"
 
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/report"
@@ -41,61 +45,106 @@ const (
 	// test result status
 	resultDone    = "done"
 	resultStopped = "stopped"
+	resultAborted = "aborted"
 )
 
 type engine struct {
 	hammer types.Hammer
 
 	proxyService    proxy.ProxyService
-	scenarioService *scenario.ScenarioService
 	reportService   report.ReportService
+	scenarioService *scenario.ScenarioService
+
+	// for assertion
+	aborter     assertion.Aborter
+	asserter    assertion.Asserter
+	resListener assertion.ResultListener
 
 	tickCounter int
 	reqCountArr []int
 	wg          sync.WaitGroup
 
-	resultChan chan *types.ScenarioResult
+	resultReportChan chan *types.ScenarioResult
+	resultAssertChan chan *types.ScenarioResult
 
-	ctx context.Context
+	abortChan   <-chan struct{}
+	testSuccess bool
+	ctx         context.Context
+}
+
+type EngineServices struct {
+	Aborter     assertion.Aborter
+	Asserter    assertion.Asserter
+	ResListener assertion.ResultListener
+
+	ProxyServ  proxy.ProxyService
+	ReportServ report.ReportService
+}
+
+var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
+	// Initialize things here and pass interfaces to NewEngine which it depends ?
+	// this piece can change between implementations
+	as := assertion.NewDefaultAssertionService()
+	as.Init(h.Assertions)
+
+	// TODO: remove reflection ?
+	ps, err := proxy.NewProxyService(h.Proxy.Strategy)
+	if err != nil {
+		return nil, err
+	}
+	err = ps.Init(h.Proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: remove reflection ?
+	rs, err := report.NewReportService(h.ReportDestination)
+	if err != nil {
+		return nil, err
+	}
+	if err = rs.Init(h.Debug, h.SamplingRate); err != nil {
+		return nil, err
+	}
+
+	return &EngineServices{
+		// defaultAssertionService as implements all
+		Aborter:     as,
+		Asserter:    as,
+		ResListener: as,
+
+		ProxyServ:  ps,
+		ReportServ: rs,
+	}, nil
 }
 
 // NewEngine is the constructor of the engine.
 // Hammer is used for initializing the engine itself and its' external services.
 // Engine can be stopped by canceling the given ctx.
-func NewEngine(ctx context.Context, h types.Hammer) (e *engine, err error) {
-	err = h.Validate()
-	if err != nil {
-		return
-	}
-
-	ps, err := proxy.NewProxyService(h.Proxy.Strategy)
-	if err != nil {
-		return
-	}
-
-	rs, err := report.NewReportService(h.ReportDestination)
-	if err != nil {
-		return
-	}
-
+func NewEngine(ctx context.Context, h types.Hammer,
+	services *EngineServices) (e *engine, err error) {
 	ss := scenario.NewScenarioService()
 
 	e = &engine{
 		hammer:          h,
 		ctx:             ctx,
-		proxyService:    ps,
+		proxyService:    services.ProxyServ,
 		scenarioService: ss,
-		reportService:   rs,
+		reportService:   services.ReportServ,
+
+		// for assertion
+		aborter:     services.Aborter,
+		resListener: services.ResListener,
+		asserter:    services.Asserter,
 	}
 
 	return
 }
 
+func (e *engine) IsTestFailed() bool {
+	return !e.testSuccess
+}
+
 func (e *engine) Init() (err error) {
-	e.initReqCountArr()
-	if err = e.proxyService.Init(e.hammer.Proxy); err != nil {
-		return
-	}
 	// read test data
 	readData, err := readTestData(e.hammer.TestDataConf)
 	if err != nil {
@@ -103,26 +152,47 @@ func (e *engine) Init() (err error) {
 	}
 	e.hammer.Scenario.Data = readData
 
+	e.initReqCountArr()
+
+	var initialCookies []*http.Cookie
+	if e.hammer.CookiesEnabled && len(e.hammer.Cookies) > 0 {
+		initialCookies, err = createInitialCookies(e.hammer.Cookies)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
 		EngineMode:             e.hammer.EngineMode,
+		InitialCookies:         initialCookies,
 	}); err != nil {
 		return
 	}
 
-	if err = e.reportService.Init(e.hammer.Debug, e.hammer.SamplingRate); err != nil {
-		return
-	}
+	e.abortChan = e.aborter.AbortChan()
 
 	return
 }
 
 func (e *engine) Start() string {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
-	e.resultChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
-	go e.reportService.Start(e.resultChan)
+	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
+
+	var testResultChan <-chan assertion.TestAssertionResult
+	if e.runAssertionsInEngine() {
+		// run test wide assertions in parallel
+		testResultChan = e.asserter.ResultChan()
+	}
+
+	if len(e.hammer.Assertions) > 0 { // test-wide assertions given
+		go e.resListener.Start(e.resultAssertChan)
+	}
+
+	go e.reportService.Start(e.resultReportChan, testResultChan)
 
 	defer func() {
 		ticker.Stop()
@@ -140,6 +210,9 @@ func (e *engine) Start() string {
 		select {
 		case <-e.ctx.Done():
 			return resultStopped
+		case <-e.abortChan:
+			e.testSuccess = false
+			return resultAborted
 		default:
 			mutex.Lock()
 			e.wg.Add(e.reqCountArr[e.tickCounter])
@@ -185,15 +258,30 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
-	e.resultChan <- res
+	e.resultReportChan <- res
+
+	if len(e.hammer.Assertions) > 0 {
+		e.resultAssertChan <- res
+	}
+}
+
+func (e *engine) runAssertionsInEngine() bool {
+	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
 func (e *engine) stop() {
 	e.wg.Wait()
-	close(e.resultChan)
-	<-e.reportService.DoneChan()
+	close(e.resultReportChan)
+	close(e.resultAssertChan)
 	e.proxyService.Done()
 	e.scenarioService.Done()
+
+	if len(e.hammer.Assertions) > 0 { // if results are listened, wait
+		<-e.resListener.DoneChan()
+	}
+
+	e.testSuccess = <-e.reportService.DoneChan()
+
 }
 
 func (e *engine) getMaxConcurrentIterCount() int {
@@ -383,4 +471,55 @@ var readTestData = func(testDataConf map[string]types.CsvConf) (map[string]types
 	}
 
 	return readData, nil
+}
+
+func parseRawCookie(cookie string) []*http.Cookie {
+	header := http.Header{}
+	header.Add("Set-Cookie", cookie)
+	req := http.Response{Header: header}
+	return req.Cookies()
+}
+
+var createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+	initialCookies := make([]*http.Cookie, 0, len(cookies))
+	for _, c := range cookies {
+		var ck *http.Cookie
+		if c.Raw != "" {
+			cookies := parseRawCookie(c.Raw)
+			if len(cookies) == 0 {
+				return nil, fmt.Errorf("cookie could not be parsed, got : %s", c.Raw)
+			}
+			ck = cookies[0]
+		} else {
+			var expires time.Time
+			if c.Expires != "" {
+				var err error
+				expires, err = time.Parse(time.RFC1123, c.Expires)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cookie expiry: %s", err)
+				}
+			}
+
+			ck = &http.Cookie{
+				Name:       c.Name,
+				Value:      c.Value,
+				Path:       c.Path,
+				Domain:     c.Domain,
+				Expires:    expires,
+				RawExpires: c.Expires,
+				MaxAge:     c.MaxAge,
+				Secure:     c.Secure,
+				HttpOnly:   c.HttpOnly,
+				Raw:        c.Raw,
+
+				// below fields not used
+				SameSite: 0,
+				Unparsed: []string{},
+			}
+		}
+
+		initialCookies = append(initialCookies, ck)
+	}
+
+	return initialCookies, nil
 }

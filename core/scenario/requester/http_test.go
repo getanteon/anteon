@@ -26,6 +26,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
 	"net/url"
 	"reflect"
 	"strings"
@@ -429,7 +430,23 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			var proxy *url.URL
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
+
+			tempDurationClose := durationCloseFunc
+
+			durationCloseCalled := false
+			durationCloseFunc = func(d *duration) func() {
+				return func() {
+					tempDurationClose(d)()
+					durationCloseCalled = true
+				}
+			}
+			defer func() { durationCloseFunc = tempDurationClose }()
+
 			res := h.Send(http.DefaultClient, envs)
+
+			if !durationCloseCalled {
+				t.Errorf("Duration close should be called")
+			}
 
 			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
 				t.Errorf("Extracted env should be set empty string on req failure")
@@ -481,5 +498,238 @@ func TestAssertions(t *testing.T) {
 	}
 	if reflect.DeepEqual(res.FailedAssertions[0].Received, "Ronaldo") {
 		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[1].Received)
+	}
+}
+
+func TestTraceResDur_TypicalScenario(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+		go trace.GotFirstResponseByte()
+	}()
+
+	// called by Send method
+	d.setResDur()
+
+	// called by Send method
+	resDur := d.getResDur()
+
+	if resDur == time.Duration(maxDuration) {
+		t.Errorf("resDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceResDur_UnusualScenario(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(100 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	d.setResDur()
+
+	// called by Send method
+	resDur := d.getResDur()
+
+	if resDur == time.Duration(maxDuration) {
+		t.Errorf("resDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+		go trace.GotFirstResponseByte()
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur_2(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(10 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+}
+
+func TestTraceServerProcessDur_3(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+
+		resDurCh:   make(chan time.Duration, 1),
+		resStartCh: make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	// we will simulate the opposite
+	go func() {
+		go trace.GotFirstResponseByte()
+		time.Sleep(10 * time.Millisecond)
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+	}()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur1 := d.getServerProcessDur()
+
+	if serverProcessDur1 == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+
+	serverProcessDur2 := d.getServerProcessDur()
+
+	if serverProcessDur1 != serverProcessDur2 {
+		t.Errorf("serverProcessDur1 and serverProcessDur2 should be equal")
+	}
+}
+
+func TestTraceServerProcessDur_ErrCase(t *testing.T) {
+	var maxDuration int64 = 1<<63 - 1
+	d := &duration{
+		serverProcessDurCh:   make(chan time.Duration, 1),
+		serverProcessStartCh: make(chan time.Time, 1),
+		resDurCh:             make(chan time.Duration, 1),
+		resStartCh:           make(chan time.Time, 1),
+	}
+	trace := newTrace(d, nil, nil)
+
+	// below two is called by different goroutines
+	// typically wroteRequest is called before gotFirstResponseByte
+	go func() {
+		go trace.WroteRequest(httptrace.WroteRequestInfo{})
+		time.Sleep(10 * time.Millisecond)
+
+		// not called in err case
+		// go trace.GotFirstResponseByte()
+	}()
+
+	// called by Send method
+	// channels should be closed, otherwise get calls can block forever
+	durationCloseFunc(d)()
+
+	// called by Send method
+	// this get needs to wait for GotFirstResponseByte
+	serverProcessDur := d.getServerProcessDur()
+
+	if serverProcessDur == time.Duration(maxDuration) {
+		t.Errorf("serverProcessDur should not be %d", maxDuration)
+	}
+}
+
+func TestResponseCookiesSentToAssertions(t *testing.T) {
+	t.Parallel()
+	// Test server
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "Argentina", Value: "Messi"})
+		http.SetCookie(w, &http.Cookie{Name: "Goat", Value: "Messi"})
+
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	passRule := "equals(cookies.Argentina.value,\"Messi\")"
+	failRule := "equals(cookies.Goat.value,\"Ronaldo\")"
+
+	pathFirst := "/json-body"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	s := types.ScenarioStep{
+		ID:         1,
+		Method:     "GET",
+		URL:        server.URL + pathFirst,
+		Assertions: []string{passRule, failRule},
+	}
+
+	ctx := context.TODO()
+	h := &HttpRequester{}
+	h.Init(ctx, s, nil, false, nil)
+
+	res := h.Send(http.DefaultClient, map[string]interface{}{})
+
+	if len(res.FailedAssertions) != 1 {
+		t.Errorf("expected 1 failed assertion, got %d", len(res.FailedAssertions))
+	}
+
+	if !strings.EqualFold(res.FailedAssertions[0].Rule, failRule) {
+		t.Errorf("rule expected %s, got %s", failRule, res.FailedAssertions[0].Rule)
+	}
+
+	if reflect.DeepEqual(res.FailedAssertions[0].Received, "Ronaldo") {
+		t.Errorf("received expected %s, got %v", "Ronaldo", res.FailedAssertions[0].Received)
 	}
 }

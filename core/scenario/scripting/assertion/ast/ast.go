@@ -106,7 +106,30 @@ type ArrayLiteral struct {
 
 func (il *ArrayLiteral) expressionNode()      {}
 func (il *ArrayLiteral) TokenLiteral() string { return il.Token.Literal }
-func (il *ArrayLiteral) String() string       { return il.Token.Literal }
+func (il *ArrayLiteral) String() string {
+	x := []string{}
+	for _, e := range il.Elems {
+		x = append(x, e.String())
+	}
+
+	return "[" + strings.Join(x, ",") + "]"
+}
+
+type ObjectLiteral struct {
+	Token token.Token
+	Elems map[string]Expression
+}
+
+func (il *ObjectLiteral) expressionNode()      {}
+func (il *ObjectLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *ObjectLiteral) String() string {
+	x := []string{}
+	for k, e := range il.Elems {
+		x = append(x, k+":"+e.String())
+	}
+
+	return "{" + strings.Join(x, ",") + "}"
+}
 
 type PrefixExpression struct {
 	Token    token.Token // The prefix token, e.g. !
@@ -156,6 +179,7 @@ type CallExpression struct {
 
 func (ce *CallExpression) expressionNode()      {}
 func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+
 func (ce *CallExpression) String() string {
 	var out bytes.Buffer
 
@@ -166,7 +190,7 @@ func (ce *CallExpression) String() string {
 
 	out.WriteString(ce.Function.String())
 	out.WriteString("(")
-	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(strings.Join(args, ","))
 	out.WriteString(")")
 
 	return out.String()

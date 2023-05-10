@@ -135,7 +135,6 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 				// TODO: find a better solution about utility functions and validation checks
 
 				if strings.HasPrefix(v[2:len(v)-2], "rand(") {
-					fmt.Println(v[7 : len(v)-3])
 					if _, ok := definedEnvs[v[7:len(v)-3]]; ok {
 						continue
 					}
@@ -241,6 +240,7 @@ type SourceType string
 const (
 	Header SourceType = "header"
 	Body   SourceType = "body"
+	Cookie SourceType = "cookies"
 )
 
 type RegexCaptureConf struct {
@@ -249,12 +249,13 @@ type RegexCaptureConf struct {
 }
 
 type EnvCaptureConf struct {
-	JsonPath *string           `json:"json_path"`
-	Xpath    *string           `json:"xpath"`
-	RegExp   *RegexCaptureConf `json:"regexp"`
-	Name     string            `json:"as"`
-	From     SourceType        `json:"from"`
-	Key      *string           `json:"header_key"`
+	JsonPath   *string           `json:"json_path"`
+	Xpath      *string           `json:"xpath"`
+	RegExp     *RegexCaptureConf `json:"regexp"`
+	Name       string            `json:"as"`
+	From       SourceType        `json:"from"`
+	Key        *string           `json:"header_key"`
+	CookieName *string           `json:"cookie_name"`
 }
 
 type CsvData struct {
@@ -326,7 +327,7 @@ func wrapAsScenarioValidationError(err error) ScenarioValidationError {
 }
 
 func validateCaptureConf(conf EnvCaptureConf) error {
-	if !(conf.From == Header || conf.From == Body) {
+	if !(conf.From == Header || conf.From == Body || conf.From == Cookie) {
 		return CaptureConfigError{
 			msg: fmt.Sprintf("invalid \"from\" type in capture env : %s", conf.From),
 		}

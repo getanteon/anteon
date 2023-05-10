@@ -9,7 +9,8 @@
             "url": "http://localhost:8080/hello",
             "method": "GET",
             "capture_env": {
-                "NUM" :{ "from":"body","json_path":"num"}
+                "NUM" :{ "from":"body","json_path":"num"},
+                "X_COOKIE" :{ "from":"cookies","cookie_name":"x"}
             }             
         },
         {

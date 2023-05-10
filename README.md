@@ -15,15 +15,27 @@
     <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&logo=docker&label=docker&sort=semver" alt="ddosify docker image" /></a>
 </p>
 
-## Ddosify Self-Hosted (Distributed, No-code UI)
+## Ddosify Self-Hosted (Distributed, No-code UI): [More →](./selfhosted/README.md)
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
 </p>
 
-## Ddosify Engine (Single node, usage on CLI)
+### Quick Start
+
+```bash
+curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
+```
+
+## Ddosify Engine (Single node, usage on CLI): [More →](./engine_docs/README.md)
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/68e07b5f-22a5-4244-5dc2-9d02bd2c9e00/public" alt="Ddosify - Engine" />
 </p>
+
+### Quick Start
+
+```bash
+docker run -it --rm ddosify/ddosify ddosify -t https://app.servdown.com
+```
 
 ## What is Ddosify?
 Ddosify is a comprehensive performance testing platform, designed specifically to evaluate backend load and latency. It offers three distinct deployment options to cater to various needs: Ddosify Engine, Ddosify Self-Hosted, and Ddosify Cloud.

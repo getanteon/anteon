@@ -26,6 +26,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -65,6 +66,7 @@ func newDummyHammer() types.Hammer {
 				},
 			},
 		},
+		SingleMode: true,
 	}
 }
 
@@ -91,7 +93,10 @@ func TestCreateEngine(t *testing.T) {
 		test := tc
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			e, err := NewEngine(context.TODO(), test.hammer)
+
+			es, err := InitEngineServices(test.hammer)
+
+			// e, err := NewEngine(context.TODO(), test.hammer, es)
 
 			if test.shouldErr {
 				if err == nil {
@@ -102,13 +107,16 @@ func TestCreateEngine(t *testing.T) {
 					t.Errorf("Error occurred %v", err)
 				}
 
-				if e.proxyService == nil {
+				if es.ProxyServ == nil {
 					t.Errorf("Proxy Service should be created")
 				}
-				if e.scenarioService == nil {
-					t.Errorf("Scenario Service should be created")
-				}
-				if e.reportService == nil {
+
+				// TODOr: not an interface ?
+				// if es.scenarioService == nil {
+				// 	t.Errorf("Scenario Service should be created")
+				// }
+
+				if es.ReportServ == nil {
 					t.Errorf("Report Service should be created")
 				}
 			}
@@ -132,7 +140,8 @@ func TestReqCountArrDebugMode(t *testing.T) {
 		test := tc
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			e, err := NewEngine(context.TODO(), test.hammer)
+			es, err := InitEngineServices(test.hammer)
+			e, err := NewEngine(context.TODO(), test.hammer, es)
 			e.Init()
 			if err != nil {
 				t.Errorf("Should have been nil, got %v", err)
@@ -232,8 +241,8 @@ func TestRequestCount(t *testing.T) {
 
 			now = time.Now()
 			timeReqMap = make(map[int]int, 0)
-
-			e, err := NewEngine(context.TODO(), h)
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(context.TODO(), h, es)
 			if err != nil {
 				t.Errorf("TestRequestCount error occurred %v", err)
 			}
@@ -306,7 +315,8 @@ func TestRequestData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -387,7 +397,8 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 		}}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestDataForMultiScenarioStep error occurred %v", err)
 	}
@@ -462,8 +473,8 @@ func TestRequestTimeout(t *testing.T) {
 			h := newDummyHammer()
 			h.Scenario.Steps[0].Timeout = test.timeout
 			h.Scenario.Steps[0].URL = server.URL
-
-			e, err := NewEngine(context.TODO(), h)
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(context.TODO(), h, es)
 			if err != nil {
 				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
@@ -493,9 +504,11 @@ func TestEngineResult(t *testing.T) {
 		name           string
 		cancelCtx      bool
 		expectedStatus string
+		testFailed     bool
 	}{
-		{"CtxCancel", true, "stopped"},
-		{"Normal", false, "done"},
+		{"CtxCancel", true, "stopped", false},
+		{"Normal", false, "done", false},
+		{"Abort", false, "aborted", true},
 	}
 
 	// Act
@@ -517,7 +530,18 @@ func TestEngineResult(t *testing.T) {
 			h.Scenario.Steps[0].URL = server.URL
 
 			ctx, cancel := context.WithCancel(context.Background())
-			e, err := NewEngine(ctx, h)
+
+			if test.name == "Abort" {
+				h.Assertions = map[string]types.TestAssertionOpt{
+					"false": { // rule evaluated to false
+						Abort: true,
+						Delay: 1,
+					},
+				}
+			}
+
+			es, err := InitEngineServices(h)
+			e, err := NewEngine(ctx, h, es)
 			if err != nil {
 				t.Errorf("TestRequestTimeout error occurred %v", err)
 			}
@@ -540,6 +564,10 @@ func TestEngineResult(t *testing.T) {
 			m.Lock()
 			if res != test.expectedStatus {
 				t.Errorf("Expected %v, Found %v", test.expectedStatus, res)
+			}
+			if test.testFailed != e.IsTestFailed() {
+				t.Errorf("Expected %v, Found %v", test.testFailed, e.IsTestFailed())
+
 			}
 			m.Unlock()
 		})
@@ -583,7 +611,8 @@ func TestDynamicData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -699,7 +728,8 @@ func TestGlobalEnvs(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestGlobalAndCapturedVars error occurred %v", err)
 	}
@@ -760,7 +790,8 @@ func TestInjectEnvToBasicAuth(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestInjectEnvToBasicAuth error occurred %v", err)
 	}
@@ -885,7 +916,8 @@ func TestCapturedEnvsFromJsonBody(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCapturedEnvsFromJsonBody error occurred %v", err)
 	}
@@ -972,7 +1004,8 @@ func TestContinueTestOnCaptureError(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestContinueTestOnCaptureError error occurred %v", err)
 	}
@@ -1082,7 +1115,8 @@ func TestCaptureAndInjectEnvironmentsJsonPayload(t *testing.T) {
 	h.Scenario.Steps[1].URL = server.URL + pathSecond
 
 	// run engine
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayload error occurred %v", err)
 	}
@@ -1224,7 +1258,8 @@ func TestCaptureAndInjectEnvironmentsJsonPayloadDynamic(t *testing.T) {
 	h.Scenario.Steps[1].URL = server.URL + pathSecond
 
 	// run engine
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureAndInjectEnvironmentsJsonPayloadDynamic error occurred %v", err)
 	}
@@ -1312,7 +1347,8 @@ func TestEnvInjectToXmlPayload(t *testing.T) {
 	h.Scenario.Steps[0].URL = server.URL + pathFirst
 
 	// run engine
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestInjectXmlPayload error occurred %v", err)
 	}
@@ -1393,7 +1429,8 @@ func TestCaptureHeaderWithRegex(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
 	}
@@ -1414,6 +1451,89 @@ func TestCaptureHeaderWithRegex(t *testing.T) {
 		t.Errorf(
 			"TestCaptureHeaderWithRegex header val could not be set from envs, must be default value, expected : %s, got: %s",
 			expectedHeaderVal, gotHeaderVal)
+	}
+
+}
+
+func TestCaptureCookie(t *testing.T) {
+	t.Parallel()
+
+	// Test server
+	firstRequestCalled := false
+	secondRequestCalled := false
+
+	cookieName := "Argentina"
+	var gotCookieVal string
+	secondReqBody := make(map[string]interface{}, 0)
+	secondReqInjectedHeaderKey := "BallondorWinner"
+	expectedCookieValue := "messi_10"
+
+	firstReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		firstRequestCalled = true
+		http.SetCookie(w, &http.Cookie{Name: cookieName, Value: expectedCookieValue})
+	}
+
+	secondReqHandler := func(w http.ResponseWriter, r *http.Request) {
+		secondRequestCalled = true
+		gotCookieVal = r.Header.Get(secondReqInjectedHeaderKey)
+		bBody, _ := io.ReadAll(r.Body)
+		json.Unmarshal(bBody, &secondReqBody)
+	}
+	pathFirst := "/header-capture"
+	pathSecond := "/passed-captured-vars"
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathFirst, firstReqHandler)
+	mux.HandleFunc(pathSecond, secondReqHandler)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Prepare
+	h := newDummyHammer()
+	h.Scenario.Envs = map[string]interface{}{
+		"FIRST_REQ_URL_PATH": pathFirst,
+	}
+
+	h.Scenario.Steps = make([]types.ScenarioStep, 2)
+	h.Scenario.Steps[0] = types.ScenarioStep{
+		ID:     1,
+		Method: "GET",
+		URL:    server.URL + "{{FIRST_REQ_URL_PATH}}",
+		EnvsToCapture: []types.EnvCaptureConf{
+			{Name: "GOAT", From: "cookies", CookieName: &cookieName},
+		},
+	}
+	h.Scenario.Steps[1] = types.ScenarioStep{
+		ID:     2,
+		Method: "GET",
+		URL:    server.URL + pathSecond,
+		Headers: map[string]string{
+			secondReqInjectedHeaderKey: "{{GOAT}}",
+		},
+	}
+
+	// Act
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
+	if err != nil {
+		t.Errorf("TestCaptureCookie error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err != nil {
+		t.Errorf("TestCaptureCookie error occurred %v", err)
+	}
+
+	e.Start()
+
+	if !firstRequestCalled || !secondRequestCalled {
+		t.Errorf("TestCaptureCookie test server has not been called, url path injection failed")
+	}
+
+	if !strings.EqualFold(gotCookieVal, expectedCookieValue) {
+		t.Errorf(
+			"TestCaptureCookie, expected : %s, got: %s",
+			expectedCookieValue, gotCookieVal)
 	}
 
 }
@@ -1468,7 +1588,8 @@ func TestCaptureStringPayloadWithRegex(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestCaptureHeaderWithRegex error occurred %v", err)
 	}
@@ -1536,7 +1657,8 @@ func TestBothDynamicVarAndEnvVar(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestBothDynamicVarAndEnvVar error occurred %v", err)
 	}
@@ -1595,7 +1717,8 @@ func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestDynamicVarAndEnvVarInSameSection error occurred %v", err)
 	}
@@ -1695,7 +1818,8 @@ func TestLoadRandomInfoFromData(t *testing.T) {
 	}
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestLoadRandomInfoFromData error occurred %v", err)
 	}
@@ -1787,6 +1911,75 @@ func TestInvalidCsvEnvs(t *testing.T) {
 	}
 }
 
+func TestCreateInitialCookiesReturnsErr(t *testing.T) {
+	t.Parallel()
+
+	// Prepare
+	h := newDummyHammer()
+	h.CookiesEnabled = true
+	h.Cookies = []types.CustomCookie{
+		{Name: "test", Value: "test"},
+	}
+	tmpFunc := createInitialCookies
+	createInitialCookies = func(cookies []types.CustomCookie) ([]*http.Cookie, error) {
+		return nil, errors.New("test error")
+	}
+	defer func() { createInitialCookies = tmpFunc }()
+
+	// Act
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
+	if err != nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr error occurred %v", err)
+	}
+
+	err = e.Init()
+	if err == nil {
+		t.Errorf("TestCreateInitialCookiesReturnsErr should be errored")
+	}
+}
+
+func TestCreateInitialCookies(t *testing.T) {
+	readConfigFile := func(path string) []byte {
+		f, _ := os.Open(path)
+
+		byteValue, _ := ioutil.ReadAll(f)
+		return byteValue
+	}
+
+	jsonReader, _ := config.NewConfigReader(readConfigFile("../config/config_testdata/config_init_cookies.json"), config.ConfigTypeJson)
+
+	h, _ := jsonReader.CreateHammer()
+	initCookies, err := createInitialCookies(h.Cookies)
+
+	if err != nil {
+		t.Errorf("TestCreateInitialCookies error occurred: %v", err)
+	}
+
+	rawExpires := "Thu, 16 Mar 2023 09:24:02 GMT"
+	expires, _ := time.Parse(time.RFC1123, rawExpires)
+
+	expectedCookie := http.Cookie{
+		Name:       "platform",
+		Value:      "web",
+		Path:       "/",
+		Domain:     "httpbin.ddosify.com",
+		Expires:    expires,
+		RawExpires: rawExpires,
+		MaxAge:     0,
+		Secure:     false,
+		HttpOnly:   true,
+
+		SameSite: 0,
+		Raw:      "",
+		Unparsed: []string{},
+	}
+
+	if !reflect.DeepEqual(expectedCookie, *initCookies[0]) {
+		t.Errorf("TestCreateInitialCookies got: %v expected: %v", initCookies[0], expectedCookie)
+	}
+}
+
 // The test creates a web server with Certificate auth,
 // then it spawns an Engine and verifies that the auth was successfully passsed.
 func TestTLSMutualAuth(t *testing.T) {
@@ -1837,7 +2030,8 @@ func TestTLSMutualAuth(t *testing.T) {
 	h.Scenario.Steps[0].URL = server.URL
 
 	// Act
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -1908,7 +2102,8 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	h.Scenario.Steps[0].CertPool = nil
 	h.Scenario.Steps[0].Cert = tls.Certificate{}
 
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -1990,7 +2185,8 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	h.Scenario.Steps[0].Cert = certVal
 	h.Scenario.Steps[0].CertPool = poolVal
 
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestRequestData error occurred %v", err)
 	}
@@ -2057,8 +2253,9 @@ func TestEngineModeUserKeepAlive(t *testing.T) {
 	}
 
 	// Act
+	es, err := InitEngineServices(h)
 	h.EngineMode = types.EngineModeRepeatedUser // could have been DistinctUser also
-	e, err := NewEngine(context.TODO(), h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeDistinctUserKeepAlive error occurred %v", err)
 	}
@@ -2134,8 +2331,9 @@ func TestEngineModeUserKeepAliveDifferentHosts(t *testing.T) {
 	}
 
 	// Act
+	es, err := InitEngineServices(h)
 	h.EngineMode = types.EngineModeDistinctUser // could have been RepeatedUser also
-	e, err := NewEngine(context.TODO(), h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
 	}
@@ -2205,7 +2403,8 @@ func TestEngineModeUserKeepAlive_StepsKeepAliveFalse(t *testing.T) {
 
 	// Act
 	h.EngineMode = types.EngineModeDistinctUser
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeUserKeepAliveDifferentHosts error occurred %v", err)
 	}
@@ -2274,7 +2473,8 @@ func TestEngineModeDdosifyKeepAlive(t *testing.T) {
 
 	// Act
 	h.EngineMode = types.EngineModeDdosify
-	e, err := NewEngine(context.TODO(), h)
+	es, err := InitEngineServices(h)
+	e, err := NewEngine(context.TODO(), h, es)
 	if err != nil {
 		t.Errorf("TestEngineModeDdosifyKeepAlive error occurred %v", err)
 	}

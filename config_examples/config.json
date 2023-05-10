@@ -36,6 +36,22 @@
             "skip_empty_line" : true
         }
     },
+    "success_criterias": [
+        {
+          "rule" : "p90(iteration_duration) < 220", 
+          "abort" : false
+        },
+        {
+          "rule" : "fail_count_perc < 0.1", 
+          "abort" : true,
+          "delay" : 1
+        },
+        {
+          "rule" : "fail_count < 100", 
+          "abort" : true,
+          "delay" : 0
+        }
+    ],
     "proxy": "http://proxy_host.com:proxy_port",
     "output": "stdout",
     "steps": [

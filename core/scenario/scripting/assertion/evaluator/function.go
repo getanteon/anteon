@@ -3,9 +3,11 @@ package evaluator
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
 	"go.ddosify.com/ddosify/core/types"
@@ -20,6 +22,64 @@ var greater_than = func(variable int64, limit int64) bool {
 
 var not = func(b bool) bool {
 	return !b
+}
+
+// assumed given array is sorted
+var percentile = func(arr []int64, num int) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on percentile func")
+	}
+
+	index := int(math.Ceil(float64(len(arr)*num)/100)) - 1
+
+	if index < 0 {
+		index = 0
+	}
+
+	return arr[index], nil
+}
+
+var min = func(arr []int64) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on min func")
+	}
+	min := arr[0]
+
+	for _, i := range arr {
+		if min > i {
+			min = i
+		}
+	}
+
+	return min, nil
+}
+
+var max = func(arr []int64) (int64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on max func")
+	}
+	max := arr[0]
+
+	for _, i := range arr {
+		if max < i {
+			max = i
+		}
+	}
+
+	return max, nil
+}
+
+var avg = func(arr []int64) (float64, error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("empty input array on avg func")
+	}
+	var total int64
+
+	for _, i := range arr {
+		total += i
+	}
+
+	return float64(total) / float64(len(arr)), nil
 }
 
 var equals = func(a, b interface{}) (bool, error) {
@@ -46,6 +106,14 @@ var contains = func(source string, substr string) bool {
 		return true
 	}
 	return false
+}
+
+var timeF = func(t string) (time.Time, error) {
+	res, err := time.Parse(time.RFC1123, t)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return res, nil
 }
 
 var rangeF = func(x float64, low float64, hi float64) bool {
@@ -130,6 +198,14 @@ var assertionFuncMap = map[string]struct{}{
 	EXISTS:       {},
 	CONTAINS:     {},
 	RANGE:        {},
+	MIN:          {},
+	MAX:          {},
+	AVG:          {},
+	P99:          {},
+	P95:          {},
+	P90:          {},
+	P80:          {},
+	TIME:         {},
 }
 
 const (
@@ -145,4 +221,13 @@ const (
 	CONTAINS     = "contains"
 	RANGE        = "range"
 	EQUALSONFILE = "equals_on_file"
+	TIME         = "time"
+
+	MIN = "min"
+	MAX = "max"
+	AVG = "avg"
+	P99 = "p99"
+	P95 = "p95"
+	P90 = "p90"
+	P80 = "p80"
 )

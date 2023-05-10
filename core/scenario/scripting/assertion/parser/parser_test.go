@@ -55,7 +55,7 @@ func TestArrayLiteralExpression(t *testing.T) {
 
 	literal, ok := expressionStmt.Expression.(*ast.ArrayLiteral)
 	if !ok {
-		t.Fatalf("exp not *ast.IntegerLiteral. got=%T", expressionStmt.Expression)
+		t.Fatalf("exp not *ast.ArrayLiteral. got=%T", expressionStmt.Expression)
 	}
 
 	if len(literal.Elems) != 4 {
@@ -87,6 +87,49 @@ func TestArrayLiteralExpression(t *testing.T) {
 	if literal.Elems[3].(*ast.ArrayLiteral).Elems[1].(interface{ GetVal() interface{} }).GetVal() != int64(55) {
 		t.Errorf("literal.TokenLiteral not %s. got=%s", "5",
 			literal.TokenLiteral())
+	}
+}
+
+func TestObjectLiteralExpression(t *testing.T) {
+	// input := "[x,10,\"xyz\",[243,55]]"
+	input := `{"name":"John", "age":30, "cars":[ "Honda", "Alfa", "Opel" ]}`
+
+	l := lexer.New(input)
+	p := New(l)
+	expressionStmt := p.ParseExpressionStatement()
+	checkParserErrors(t, p)
+
+	literal, ok := expressionStmt.Expression.(*ast.ObjectLiteral)
+	if !ok {
+		t.Fatalf("exp not *ast.ObjectLiteral. got=%T", expressionStmt.Expression)
+	}
+
+	if len(literal.Elems) != 3 {
+		t.Errorf("len(literal.Elems) not %d. got=%d", 4, len(literal.Elems))
+	}
+
+	// identifier
+	if literal.Elems["name"].TokenLiteral() != "John" {
+		t.Errorf("literal.TokenLiteral[name] not %s. got=%s", "x",
+			literal.Elems["name"].TokenLiteral())
+	}
+
+	if literal.Elems["age"].TokenLiteral() != "30" {
+		t.Errorf("literal.TokenLiteral[age] not %s. got=%s", "x",
+			literal.Elems["age"].TokenLiteral())
+	}
+	array := literal.Elems["cars"].(*ast.ArrayLiteral)
+	if array.Elems[0].String() != "Honda" {
+		t.Errorf("literal.TokenLiteral[0] not %s. got=%s", "x",
+			array.Elems[0].TokenLiteral())
+	}
+	if array.Elems[1].String() != "Alfa" {
+		t.Errorf("literal.TokenLiteral[age] not %s. got=%s", "x",
+			array.Elems[1].TokenLiteral())
+	}
+	if array.Elems[2].String() != "Opel" {
+		t.Errorf("literal.TokenLiteral[age] not %s. got=%s", "x",
+			array.Elems[2].TokenLiteral())
 	}
 }
 
@@ -292,7 +335,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		},
 		{
 			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
-			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+			"add(a,b,1,(2 * 3),(4 + 5),add(6,(7 * 8)))",
 		},
 		{
 			"add(a + b + c * d / f + g)",

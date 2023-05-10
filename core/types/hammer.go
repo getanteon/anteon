@@ -49,10 +49,16 @@ const (
 	DefaultMethod        = http.MethodGet
 	DefaultOutputType    = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 	DefaultSamplingCount = 3
+	DefaultSingleMode    = true
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
 var engineModes = [...]string{EngineModeDdosify, EngineModeDistinctUser, EngineModeRepeatedUser}
+
+type TestAssertionOpt struct {
+	Abort bool
+	Delay int
+}
 
 // TimeRunCount is the data structure to store manual load type data.
 type TimeRunCount []struct {
@@ -73,6 +79,19 @@ type CsvConf struct {
 	SkipEmptyLine bool           `json:"skip_empty_line"`
 	AllowQuota    bool           `json:"allow_quota"`
 	Order         string         `json:"order"`
+}
+
+// TimeRunCount is the data structure to store manual load type data.
+type CustomCookie struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Domain   string `json:"domain"`
+	Path     string `json:"path"`
+	Expires  string `json:"expires"`
+	MaxAge   int    `json:"max_age"`
+	HttpOnly bool   `json:"http_only"`
+	Secure   bool   `json:"secure"`
+	Raw      string `json:"raw"`
 }
 
 // Hammer is like a lighter for the engine.
@@ -110,8 +129,21 @@ type Hammer struct {
 
 	// Connection reuse
 	EngineMode string
+
 	// Test Data Config
 	TestDataConf map[string]CsvConf
+
+	// Custom Cookies
+	Cookies []CustomCookie
+
+	// Custom Cookies Enabled
+	CookiesEnabled bool
+
+	// Test-wide assertions
+	Assertions map[string]TestAssertionOpt
+
+	// Engine runs single
+	SingleMode bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
