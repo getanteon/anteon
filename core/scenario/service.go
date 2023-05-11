@@ -109,8 +109,8 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 			initialCount = opts.MaxConcurrentIterCount
 			maxCount = opts.MaxConcurrentIterCount
 		} else if s.engineMode == types.EngineModeDistinctUser {
-			initialCount = opts.IterationCount
-			maxCount = opts.MaxConcurrentIterCount
+			initialCount = opts.MaxConcurrentIterCount
+			maxCount = opts.IterationCount
 		}
 		s.cPool, err = NewClientPool(initialCount, maxCount, s.engineMode, putInitialCookiesInJarFactory(s.engineMode, opts.InitialCookies), func(c *http.Client) { c.CloseIdleConnections() })
 	}
