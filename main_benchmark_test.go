@@ -47,6 +47,7 @@ type TestType string
 const (
 	Multipart   TestType = "multipart"
 	Correlation TestType = "correlation"
+	Basic       TestType = "basic"
 )
 
 var table = []struct {
@@ -60,19 +61,35 @@ var table = []struct {
 	testType TestType
 }{
 	{
+		name:             "config_distinct_user",
+		path:             "config/config_testdata/benchmark/config_distinct_user.json",
+		cpuTimeThreshold: 0.350,
+		maxMemThreshold:  0.5,
+		avgMemThreshold:  0.35,
+		testType:         Basic,
+	},
+	{
+		name:             "config_repeated_user",
+		path:             "config/config_testdata/benchmark/config_repeated_user.json",
+		cpuTimeThreshold: 0.350,
+		maxMemThreshold:  0.5,
+		avgMemThreshold:  0.35,
+		testType:         Basic,
+	},
+	{
 		name:             "config_correlation_load_1",
 		path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
 		cpuTimeThreshold: 0.350,
-		maxMemThreshold:  1,
-		avgMemThreshold:  1,
+		maxMemThreshold:  0.5,
+		avgMemThreshold:  0.35,
 		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_2",
 		path:             "config/config_testdata/benchmark/config_correlation_load_2.json",
 		cpuTimeThreshold: 2.5,
-		maxMemThreshold:  2,
-		avgMemThreshold:  2,
+		maxMemThreshold:  0.8,
+		avgMemThreshold:  0.7,
 		testType:         Correlation,
 	},
 	{
@@ -80,21 +97,21 @@ var table = []struct {
 		path:             "config/config_testdata/benchmark/config_correlation_load_3.json",
 		cpuTimeThreshold: 15.5,
 		maxMemThreshold:  5,
-		avgMemThreshold:  8,
+		avgMemThreshold:  4,
 		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_4",
 		path:             "config/config_testdata/benchmark/config_correlation_load_4.json",
 		cpuTimeThreshold: 25,
-		maxMemThreshold:  25,
-		avgMemThreshold:  16,
+		maxMemThreshold:  7,
+		avgMemThreshold:  5,
 		testType:         Correlation,
 	},
 	{
 		name:             "config_correlation_load_5",
 		path:             "config/config_testdata/benchmark/config_correlation_load_5.json",
-		cpuTimeThreshold: 70,
+		cpuTimeThreshold: 60,
 		maxMemThreshold:  15,
 		avgMemThreshold:  10,
 		testType:         Correlation,
@@ -134,7 +151,7 @@ var table = []struct {
 	{
 		name:             "config_multipart_inject_1krps",
 		path:             "config/config_testdata/benchmark/config_multipart_inject_1krps.json",
-		cpuTimeThreshold: 240,
+		cpuTimeThreshold: 180,
 		maxMemThreshold:  10,
 		avgMemThreshold:  15,
 		testType:         Multipart,
