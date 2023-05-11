@@ -1,0 +1,25 @@
+{
+    "iteration_count": 100,
+    "engine_mode": "ddosify",
+    "load_type": "linear",
+    "duration": 10,
+    "steps": [
+            {
+              "id": 1,
+              "url": "{{HTTPBIN}}/json",
+              "name": "JSON",
+              "method": "GET",
+              "others": {
+                "h2": false,
+                "disable-redirect": true,
+                "disable-compression": false
+              }         
+            }
+    ],
+    "output": "stdout",
+    "env":{
+        "HTTPBIN" : "https://httpbin.ddosify.com"
+    },
+    "debug" : false,
+    "engine-mode": "distinct-user"
+}

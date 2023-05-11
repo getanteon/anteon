@@ -47,6 +47,7 @@ type TestType string
 const (
 	Multipart   TestType = "multipart"
 	Correlation TestType = "correlation"
+	Basic       TestType = "basic"
 )
 
 var table = []struct {
@@ -59,6 +60,22 @@ var table = []struct {
 
 	testType TestType
 }{
+	{
+		name:             "config_distinct_user",
+		path:             "config/config_testdata/benchmark/config_distinct_user.json",
+		cpuTimeThreshold: 0.350,
+		maxMemThreshold:  1,
+		avgMemThreshold:  1,
+		testType:         Basic,
+	},
+	{
+		name:             "config_repeated_user",
+		path:             "config/config_testdata/benchmark/config_repeated_user.json",
+		cpuTimeThreshold: 0.350,
+		maxMemThreshold:  1,
+		avgMemThreshold:  1,
+		testType:         Basic,
+	},
 	{
 		name:             "config_correlation_load_1",
 		path:             "config/config_testdata/benchmark/config_correlation_load_1.json",
