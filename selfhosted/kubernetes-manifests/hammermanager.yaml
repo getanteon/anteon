@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammermanager
+  name: hammermanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: hammermanager
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: hammermanager
+    spec:
+      containers:
+        - args:
+            - /workspace/start_scripts/start_app.sh
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: env
+          image: ddosify/selfhosted_hammermanager:latest
+          imagePullPolicy: Never
+          name: hammermanager
+          ports:
+            - containerPort: 8001
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammermanager
+  name: hammermanager
+spec:
+  ports:
+    - name: "8001"
+      port: 8001
+      targetPort: 8001
+  selector:
+    io.kompose.service: hammermanager
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammermanager-celery-beat
+  name: hammermanager-celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: hammermanager-celery-beat
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: hammermanager-celery-beat
+    spec:
+      containers:
+        - args:
+            - /workspace/start_scripts/start_celery_beat.sh
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: env
+          image: ddosify/selfhosted_hammermanager:latest
+          imagePullPolicy: Never
+          name: hammermanager-celery-beat
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammermanager-celery-worker
+  name: hammermanager-celery-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: hammermanager-celery-worker
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: hammermanager-celery-worker
+    spec:
+      containers:
+        - args:
+            - /workspace/start_scripts/start_celery_worker.sh
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: env
+          image: ddosify/selfhosted_hammermanager:latest
+          imagePullPolicy: Never
+          name: hammermanager-celery-worker
+          resources: {}
+      restartPolicy: Always
+status: {}

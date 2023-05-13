@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 5yR2qD5zCqqvjwCKKXojnPviQaB87w9JcGweVChXkhWRL
+  DOCKER_INFLUXDB_INIT_PASSWORD: ChangeMe
+  DOCKER_INFLUXDB_INIT_USERNAME: admin
+  POSTGRES_PASSWORD: ChangeMe
+kind: ConfigMap
+metadata:
+  
+  labels:
+    io.kompose.service: backend-env
+  name: env

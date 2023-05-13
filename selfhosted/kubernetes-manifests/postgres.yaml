@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-db-script
+data:
+  init.sql: |
+    CREATE DATABASE backend;
+    CREATE DATABASE hammermanager;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: postgres
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: postgres
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: env
+          image: postgres:13.6
+          name: postgres
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-data
+            - name: scripts
+              mountPath: /docker-entrypoint-initdb.d
+      restartPolicy: Always
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: scripts
+          configMap:
+            name: init-db-script
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: postgres
+  name: postgres
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+  selector:
+    io.kompose.service: postgres
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: postgres-data
+  name: postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+status: {}

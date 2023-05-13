@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: frontend
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: frontend
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: frontend
+    spec:
+      containers:
+        - image: ddosify/selfhosted_frontend:1.0.0
+          name: frontend
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: frontend
+  name: frontend
+spec:
+  ports:
+    - name: "3000"
+      port: 3000
+      targetPort: 3000
+  selector:
+    io.kompose.service: frontend
+status:
+  loadBalancer: {}

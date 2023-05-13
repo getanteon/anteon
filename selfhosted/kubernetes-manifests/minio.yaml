@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: minio
+  name: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: minio
+    spec:
+      containers:
+        - args:
+            - server
+            - /data
+          env:
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_PASSWORD
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_USERNAME
+                  name: env
+            - name: MINIO_ROOT_PASSWORD
+              value: minio_secretkey
+            - name: MINIO_ROOT_USER
+              value: minio_accesskey
+          image: minio/minio:RELEASE.2023-04-13T03-08-07Z
+          name: minio
+          ports:
+            - containerPort: 9000
+          resources: {}
+          volumeMounts:
+            - mountPath: /data
+              name: minio-data
+      restartPolicy: Always
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-data
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: minio
+  name: minio
+spec:
+  ports:
+    - name: "9000"
+      port: 9000
+      targetPort: 9000
+  selector:
+    io.kompose.service: minio
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: minio-data
+  name: minio-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

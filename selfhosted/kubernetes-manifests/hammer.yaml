@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammer
+  name: hammer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: hammer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: hammer
+    spec:
+      containers:
+        - env:
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_PASSWORD
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_USERNAME
+                  name: env
+          image: ddosify/selfhosted_hammer:latest
+          name: hammer
+          imagePullPolicy: Never
+          resources: {}
+          volumeMounts:
+            - mountPath: /root/uuid
+              name: hammer-id
+      restartPolicy: Always
+      volumes:
+        - name: hammer-id
+          persistentVolumeClaim:
+            claimName: hammer-id
+status: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: hammer-id
+  name: hammer-id
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: hammerdebug
+  name: hammerdebug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: hammerdebug
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: hammerdebug
+    spec:
+      containers:
+        - env:
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_PASSWORD
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_USERNAME
+                  name: env
+            - name: IS_DEBUG
+              value: "true"
+          image: ddosify/selfhosted_hammer:latest
+          imagePullPolicy: Never
+          name: hammerdebug
+          resources: {}
+          volumeMounts:
+            - mountPath: /root/uuid
+              name: hammerdebug-id
+      restartPolicy: Always
+      volumes:
+        - name: hammerdebug-id
+          persistentVolumeClaim:
+            claimName: hammerdebug-id
+status: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: hammerdebug-id
+  name: hammerdebug-id
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

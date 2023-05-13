@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  labels:
+    io.kompose.service: backend
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: backend
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: backend
+    spec:
+      containers:
+        - args:
+            - /workspace/start_scripts/start_app_onprem.sh
+          env:
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_PASSWORD
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_USERNAME
+                  name: env
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: env
+          image: ddosify/selfhosted_backend:latest
+          name: backend
+          imagePullPolicy: Never
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: backend
+  name: backend
+spec:
+  ports:
+    - name: "8008"
+      port: 8008
+      targetPort: 8008
+  selector:
+    io.kompose.service: backend
+status:
+  loadBalancer: {}

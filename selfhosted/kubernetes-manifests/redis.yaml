@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: redis
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: redis
+    spec:
+      containers:
+        - image: redis:6.2.6
+          name: redis
+          resources: {}
+          volumeMounts:
+            - mountPath: /data
+              name: redis-data
+      restartPolicy: Always
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-data
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379
+  selector:
+    io.kompose.service: redis
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: redis-data
+  name: redis-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

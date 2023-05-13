@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-influx-script
+data:
+  init.sh: |
+    #!/bin/bash
+
+    set -e
+    influx bucket create -n hammerBucketDetailed -o ddosify
+    influx bucket create -n hammerBucketIteration -o ddosify
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: influxdb
+  name: influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: influxdb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+        kompose.version: 1.28.0 (HEAD)
+      
+      labels:
+        io.kompose.network/selfhosted-ddosify: "true"
+        io.kompose.service: influxdb
+    spec:
+      containers:
+        - env:
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: hammerBucket
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: setup
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: ddosify
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_PASSWORD
+                  name: env
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DOCKER_INFLUXDB_INIT_USERNAME
+                  name: env
+          image: influxdb:2.6.1
+          name: influxdb
+          ports:
+            - containerPort: 8086
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/influxdb
+              name: influxdb-data
+            - name: scripts
+              mountPath: /docker-entrypoint-initdb.d
+      restartPolicy: Always
+      volumes:
+        - name: influxdb-data
+          persistentVolumeClaim:
+            claimName: influxdb-data
+        - name: scripts
+          configMap:
+            name: init-influx-script
+            defaultMode: 0777
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o kubernetes-manifests/
+    kompose.version: 1.28.0 (HEAD)
+  
+  labels:
+    io.kompose.service: influxdb
+  name: influxdb
+spec:
+  ports:
+    - name: "8086"
+      port: 8086
+      targetPort: 8086
+  selector:
+    io.kompose.service: influxdb
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  
+  labels:
+    io.kompose.service: influxdb-data
+  name: influxdb-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
