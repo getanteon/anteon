@@ -16,7 +16,9 @@ This README provides instructions for installing and an overview of the system r
 
 ✅ **Dockerized**: Containerized solution simplifies deployment and reduces dependency management overhead.
 
-✅ **Easy to Deploy**: Automated setup processes using Docker Compose.
+✅ **Helm Chart**: [Helm chart](https://github.com/ddosify/ddosify-helm-charts) for Kubernetes deployments.
+
+✅ **Easy to Deploy**: Automated setup processes using Docker Compose and Helm Charts.
 
 
 ## 🛠 Prerequisites
@@ -43,6 +45,10 @@ Ddosify Self Hosted starts in the background. You can access the dashboard at [h
 ```bash
 curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
 ```
+
+## 🚀 Deploy on Kubernetes
+
+You can deploy Ddosify Self Hosted on Kubernetes using the [Helm chart](https://github.com/ddosify/ddosify-helm-charts).
 
 ## 📖 Manual Installation
 
@@ -124,6 +130,10 @@ docker run --name $NAME -dit \
 ```
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
+
+### **Example 3**: Adding the engine to Kubernetes
+
+You can deploy the engine on Kubernetes using the Helm chart. Please check the [Ddosify Helm chart](https://github.com/ddosify/ddosify-helm-charts#add-new-engine-optional) repository for more information.
 
 ## 🧹 Remove New Engine
 
