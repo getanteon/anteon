@@ -25,7 +25,7 @@ is_port_available 8014
 is_port_available 9901
 is_port_available 6672
 is_port_available 9086
-is_port_available 9900
+is_port_available 8333
 
 # Check if Git is installed
 if ! command -v git >/dev/null 2>&1; then
