@@ -98,7 +98,7 @@ The engine server must connect to the following ports on the `DDOSIFY_SERVICE_AD
 - `9901`: Hammer Manager service. The service server utilizes this port to register the engine.
 - `6672`: RabbitMQ server. The engine server connects to this port to send and receive messages to and from the service server.
 - `9086`: InfluxDB server. The engine server accesses this port to transmit metrics to the backend.
-- `9900`: Object storage server. The engine server uses this port to exchange files with the service server.
+- `8333`: Object storage server. The engine server uses this port to retrieve the object files like CSV and multipart files.
 
 The `NAME` environment variable is used to specify the name of the engine container. You can change this value to whatever you want. It is also used in the [Remove New Engine](#-remove-new-engine) section for removing the engine container.
 
@@ -178,7 +178,7 @@ If you want to start the project again, run the script in the [Quick Start](#%EF
 | `InfluxDB`             | Database that stores metrics collected during testing.                                            |
 | `Postgres`             | Database that preserves load test results.                                                        |
 | `RabbitMQ`             | Message broker enabling communication between Hammer Manager and Hammers.                         |
-| `Minio Object Storage` | Object storage for multipart files and test data (CSV) used in load tests.                        |
+| `SeaweedFS Object Storage` | Object storage for multipart files and test data (CSV) used in load tests.                        |
 | `Nginx`                | Reverse proxy for backend and frontend services.                                                  |
 
 ## 📝 License
