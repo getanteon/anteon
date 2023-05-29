@@ -444,8 +444,8 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 				}
 
 				if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
-					multipartError.wrappedErr = fmt.Errorf("request to remote file returned status code %d", response.StatusCode)
-					multipartError.msg = "Error while getting remote file"
+					multipartError.wrappedErr = fmt.Errorf("Multipart: request to remote url (%s) failed. Status code: %d", part.Value, response.StatusCode)
+					multipartError.msg = "Error while getting remote multipart file"
 					return "", "", multipartError
 				}
 
