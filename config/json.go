@@ -443,6 +443,12 @@ func prepareMultipartPayload(parts []multipartFormData) (body string, contentTyp
 					return "", "", err
 				}
 
+				if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
+					multipartError.wrappedErr = fmt.Errorf("request to remote file returned status code %d", response.StatusCode)
+					multipartError.msg = "Error while getting remote file"
+					return "", "", multipartError
+				}
+
 				_, err = io.Copy(formPart, response.Body)
 				if err != nil {
 					multipartError.wrappedErr = err
