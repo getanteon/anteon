@@ -99,7 +99,7 @@ func TestHtmlComplexExtraction(t *testing.T) {
 			typeof cssVars === "function" && cssVars({onlyLegacy: true});
 		})
 		var trackGeoLocation = false;
-		alert('#@=$*€')
+		alert('#@=$*€');
 		</script>
 	<h1>%s</h1>
 	<p>My first paragraph.</p>
