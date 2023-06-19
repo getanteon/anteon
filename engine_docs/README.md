@@ -680,7 +680,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `not`   | ( param `bool` ) | returns converse of given param |
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
-| `xml_path`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `xml`   | ( xpath `string` ) | extracts from response body using given xml path |
 | `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
 ### Operators
@@ -759,7 +759,7 @@ Unlike assertions focused on individual steps, which determine the success or fa
 | `less_than(fail_count_perc,0.05)` | Fail count percentage should be less than 5%              |
 
 ## Correlation
-Ddosify enables you to capture variables from steps using **json_path**, **xpath**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
+Ddosify enables you to capture variables from steps using **json_path**, **xpath**, **xpath_html**, or **regular expressions**. Later, in the subsequent steps, you can inject both the captured variables and the scenario-scoped global variables.
 
 > **:warning: Points to keep in mind**
 > - You must specify **'header_key'** when capturing from header.
@@ -790,7 +790,7 @@ ddosify -config ddosify_config_correlation.json -debug
 }
 ```
 
-### Capture With XPath
+### Capture With XPath on xml
 ```json
 {
     "steps": [
@@ -802,6 +802,20 @@ ddosify -config ddosify_config_correlation.json -debug
     ]
 }
 ```
+
+### Capture With XPath on html
+```json
+{
+    "steps": [
+        {
+            "capture_env": {
+                "TITLE" :{"from":"body","xpath_html":"//body/h1"},             
+            }         
+        }
+    ]
+}
+```
+
 
 ### Capture With Regular Expressions
 ```json
