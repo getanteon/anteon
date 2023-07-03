@@ -202,6 +202,7 @@ var assertionFuncMap = map[string]struct{}{
 	MAX:          {},
 	AVG:          {},
 	P99:          {},
+	P98:          {},
 	P95:          {},
 	P90:          {},
 	P80:          {},
@@ -227,6 +228,7 @@ const (
 	MAX = "max"
 	AVG = "avg"
 	P99 = "p99"
+	P98 = "p98"
 	P95 = "p95"
 	P90 = "p90"
 	P80 = "p80"
