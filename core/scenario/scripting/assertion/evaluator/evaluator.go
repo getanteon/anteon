@@ -228,6 +228,15 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 						}
 					}
 					return percentile(arr, 99)
+				case P98:
+					arr, ok := args[0].([]int64)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "argument of percentile funcs must be an int64 array",
+							wrappedErr: nil,
+						}
+					}
+					return percentile(arr, 98)
 				case P95:
 					arr, ok := args[0].([]int64)
 					if !ok {

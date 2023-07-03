@@ -681,6 +681,13 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
+			input: "p98(iteration_duration) == 99",
+			envs: &evaluator.AssertEnv{
+				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
+			},
+			expected: true,
+		},
+		{
 			input: "p95(iteration_duration) == 99",
 			envs: &evaluator.AssertEnv{
 				TotalTime: []int64{34, 37, 39, 44, 45, 55, 66, 67, 72, 75, 77, 89, 92, 98, 99},
@@ -789,6 +796,11 @@ func TestAssert(t *testing.T) {
 		},
 		{
 			input:         "p99(23)", // arg must be array
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "p98(23)", // arg must be array
 			expected:      false,
 			expectedError: "ArgumentError",
 		},
