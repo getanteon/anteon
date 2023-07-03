@@ -23,7 +23,6 @@ func (xe htmlExtractor) extractFromByteSlice(source []byte, xPath string) (inter
 		return nil, fmt.Errorf("no match for the xPath_html: %s", xPath)
 	}
 
-	//return foundNode.InnerText(), nil
 	return foundNode.FirstChild.Data, nil
 }
 

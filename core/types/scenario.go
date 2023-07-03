@@ -342,7 +342,7 @@ func validateCaptureConf(conf EnvCaptureConf) error {
 
 	if conf.From == Body && conf.JsonPath == nil && conf.RegExp == nil && conf.Xpath == nil && conf.XpathHtml == nil {
 		return CaptureConfigError{
-			msg: fmt.Sprintf("%s, one of json_path, regexp, xpath key must be specified when extracting from body", conf.Name),
+			msg: fmt.Sprintf("%s, one of json_path, regexp, xpath or xpath_html key must be specified when extracting from body", conf.Name),
 		}
 	}
 
