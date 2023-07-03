@@ -744,6 +744,7 @@ Unlike assertions focused on individual steps, which determine the success or fa
 | Function | Parameters           | Description                                     |
 | ---------- | ---------------------- | ------------------------------------------------- |
 | `p99`    | ( arr `int array` ) | 99th percentile, use as `p99(iteration_duration)` |
+| `p98`    | ( arr `int array` ) | 98th percentile, use as `p98(iteration_duration)` |
 | `p95`    | ( arr `int array`)  | 95th percentile, use as `p95(iteration_duration)` |
 | `p90`    | ( arr `int array`)  | 90th percentile, use as `p90(iteration_duration)` |
 | `p80`    | ( arr `int array`)  | 80th percentile, use as `p80(iteration_duration)` |
