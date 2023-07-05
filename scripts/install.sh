@@ -12,7 +12,7 @@ uname_arch() {
     armv*) arch="armv6" ;;
     armv*) arch="armv6" ;;
   esac
-  if [ "$(uname_os)" == "macos" ]; then
+  if [ "$(uname_os)" == "darwin" ]; then
     arch="all"
   fi
   echo ${arch}
@@ -20,9 +20,6 @@ uname_arch() {
 
 uname_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
-  case $os in
-    darwin) os="macos" ;;
-  esac
   echo "$os"
 }
 
@@ -58,8 +55,8 @@ if [ ! -f $tmpfolder/$GITHUB_REPO ]; then
 fi
 
 binary=$tmpfolder/$GITHUB_REPO
-echo "Installing $GITHUB_REPO to $INSTALL_DIR"
+echo "Installing $GITHUB_REPO to $INSTALL_DIR (sudo access required to write to $INSTALL_DIR)"
 sudo install "$binary" $INSTALL_DIR
 echo "Installed $GITHUB_REPO to $INSTALL_DIR"
-
+echo "Simple usage: ddosify -t https://testserver.ddosify.com"
 rm -rf "${tmpdir}"

@@ -11,4 +11,4 @@ cat<<ddosify
 
 ddosify
 
-printf "Simple usage:${NC} ddosify -t targetsite.com\n\n"
+printf "Simple usage:${NC} ddosify -t https://testserver.ddosify.com\n\n"
