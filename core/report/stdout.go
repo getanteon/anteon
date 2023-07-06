@@ -206,7 +206,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
 			color.Cyan("-------------------------------------")
 			if len(verboseInfo.Envs) > 0 {
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Environment Variables")))
+				fmt.Fprintf(w, "%s\n", blue("- Environment Variables"))
 				for eKey, eVal := range verboseInfo.Envs {
 					switch eVal.(type) {
 					case map[string]interface{}:
@@ -228,7 +228,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\n")
 			}
 			if len(verboseInfo.TestData) > 0 {
-				fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Test Data")))
+				fmt.Fprintf(w, "%s\n", blue("- Test Data"))
 
 				for eKey, eVal := range verboseInfo.TestData {
 					switch eVal.(type) {
@@ -260,7 +260,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprint(out, b.String())
 				break
 			}
-			fmt.Fprintf(w, "%s\n", blue(fmt.Sprintf("- Request")))
+			fmt.Fprintf(w, "%s\n", blue("- Request"))
 			fmt.Fprintf(w, "\tTarget: \t%s \n", verboseInfo.Request.Url)
 			fmt.Fprintf(w, "\tMethod: \t%s \n", verboseInfo.Request.Method)
 
@@ -276,7 +276,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 			if verboseInfo.Error == "" {
 				// response
-				fmt.Fprintf(w, "\n%s\n", blue(fmt.Sprintf("- Response")))
+				fmt.Fprintf(w, "\n%s\n", blue("- Response"))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
@@ -291,14 +291,14 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 			}
 
 			if len(verboseInfo.FailedCaptures) > 0 {
-				fmt.Fprintf(w, "%s\n", yellow(fmt.Sprintf("- Failed Captures")))
+				fmt.Fprintf(w, "%s\n", yellow("- Failed Captures"))
 				for wKey, wVal := range verboseInfo.FailedCaptures {
 					fmt.Fprintf(w, "\t\t%s: \t%s \n", wKey, wVal)
 				}
 			}
 
 			if len(verboseInfo.FailedAssertions) > 0 {
-				fmt.Fprintf(w, "%s", yellow(fmt.Sprintf("- Failed Assertions")))
+				fmt.Fprintf(w, "%s", yellow("- Failed Assertions"))
 				for _, failAssertion := range verboseInfo.FailedAssertions {
 					fmt.Fprintf(w, "\n\t\tRule: %s\n", failAssertion.Rule)
 					prettyReceived, _ := json.MarshalIndent(failAssertion.Received, "\t\t", "\t")
