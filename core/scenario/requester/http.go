@@ -437,7 +437,12 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	if errURL != nil {
 		return nil, errURL
 	}
-	httpReq.Host = httpReq.URL.Host
+
+	// If Host is not given in the header, set it from the original URL
+	// Note that a temporary url used in initRequest
+	if httpReq.Header.Get("Host") == "" {
+		httpReq.Host = httpReq.URL.Host
+	}
 
 	// header
 	if h.containsDynamicField["header"] {
@@ -619,10 +624,13 @@ func (h *HttpRequester) initRequestInstance() (err error) {
 	// Headers
 	header := make(http.Header)
 	for k, v := range h.packet.Headers {
+		header.Set(k, v)
+		// Since we use a temp url, we need to override the request.Host either
+		// it will be app.ddosify.com
+		// or it will be the host from the headers
+		// later on prepareReq, we will override the host if it is set in the headers
 		if strings.EqualFold(k, "Host") {
 			h.request.Host = v
-		} else {
-			header.Set(k, v)
 		}
 	}
 
