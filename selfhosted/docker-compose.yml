@@ -15,7 +15,7 @@ services:
       - ddosify
 
   frontend:
-    image: ddosify/selfhosted_frontend:1.1.2
+    image: ddosify/selfhosted_frontend:1.2.6
     depends_on:
       - backend
     restart: always
@@ -24,7 +24,7 @@ services:
       - ddosify
 
   backend:
-    image: ddosify/selfhosted_backend:1.3.0
+    image: ddosify/selfhosted_backend:1.3.3
     depends_on:
       - postgres
       - influxdb
@@ -41,7 +41,7 @@ services:
   hammermanager:
     ports:
       - "9901:8001"
-    image: ddosify/selfhosted_hammermanager:1.2.0
+    image: ddosify/selfhosted_hammermanager:1.2.2
     depends_on:
       - postgres
       - rabbitmq-job
@@ -55,7 +55,7 @@ services:
     command: /workspace/start_scripts/start_app.sh
 
   hammermanager-celery-worker:
-    image: ddosify/selfhosted_hammermanager:1.2.0
+    image: ddosify/selfhosted_hammermanager:1.2.2
     depends_on:
       - postgres
       - rabbitmq-job
@@ -70,7 +70,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   hammermanager-celery-beat:
-    image: ddosify/selfhosted_hammermanager:1.2.0
+    image: ddosify/selfhosted_hammermanager:1.2.2
     depends_on:
       - postgres
       - rabbitmq-job
@@ -85,7 +85,7 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   hammer:
-    image: ddosify/selfhosted_hammer:1.4.0
+    image: ddosify/selfhosted_hammer:1.4.2
     volumes:
       - hammer_id:/root/uuid
     depends_on:
@@ -101,7 +101,7 @@ services:
     pull_policy: always
 
   hammerdebug:
-    image: ddosify/selfhosted_hammer:1.4.0
+    image: ddosify/selfhosted_hammer:1.4.2
     volumes:
       - hammerdebug_id:/root/uuid
     depends_on:
