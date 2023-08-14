@@ -26,6 +26,8 @@
 curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
 ```
 
+<a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="ddosify aws marketplace deployment" /></a>&nbsp;
+
 ## Ddosify Engine (Single node, usage on CLI): [More →](./engine_docs/README.md)
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/68e07b5f-22a5-4244-5dc2-9d02bd2c9e00/public" alt="Ddosify - Engine" />

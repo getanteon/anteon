@@ -10,6 +10,8 @@
 
 This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
 
+<a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="ddosify aws marketplace deployment" /></a>&nbsp;
+
 ## Effortless Installation
 
 ✅ **Arm64 and Amd64 Support**: Broad architecture compatibility ensures the tool works seamlessly across different systems on both Linux and MacOS.
@@ -19,6 +21,8 @@ This README provides instructions for installing and an overview of the system r
 ✅ **Helm Chart**: [Helm chart](https://github.com/ddosify/ddosify-helm-charts) for Kubernetes deployments.
 
 ✅ **Easy to Deploy**: Automated setup processes using Docker Compose and Helm Charts.
+
+✅ **AWS Marketplace**: [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy) listing for easy deployment on AWS (Amazon Web Services).
 
 
 ## 🛠 Prerequisites
@@ -109,7 +113,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --network selfhosted_ddosify \
     --restart always \
-    ddosify/selfhosted_hammer:1.0.0
+    ddosify/selfhosted_hammer:1.4.2
 ```
 
 ### **Example 2**: Adding the engine to a different server
@@ -126,7 +130,7 @@ docker run --name $NAME -dit \
     --env DDOSIFY_SERVICE_ADDRESS=$DDOSIFY_SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
     --restart always \
-    ddosify/selfhosted_hammer:0.1.0
+    ddosify/selfhosted_hammer:1.4.2
 ```
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
