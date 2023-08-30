@@ -52,7 +52,7 @@ Ddosify Self-Hosted features a web-based user interface, distributed load genera
 Check out the [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) page for more information and usage.
 
 ### ☁️ Ddosify Cloud
-With Ddosify Cloud, anyone can test the performance of backend endpoints, monitor Kubernetes Clusters, and find the bottlenecks in the system. It has a simple/no code UI, insightful charts, service maps, and more features!
+With Ddosify Cloud, anyone can test the performance of backend endpoints, monitor Kubernetes Clusters, and find the bottlenecks in the system. It has a No code UI, insightful charts, service maps, and more features!
 
 Check out [Ddosify Cloud](https://app.ddosify.com/) to instantly find the performance issues on your system.
 
