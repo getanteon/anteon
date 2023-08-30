@@ -1,11 +1,11 @@
 <h1 align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    Distributed, No-code Performance Testing within Your Own Infrastructure
+    "Canva" of Observability
 </h1>
 
 <p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/5ed79d96-aef4-467d-f5d0-e17cc5c3e700/public" alt="Ddosify - Self-Hosted" />
 </p>
 
 This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
@@ -171,6 +171,8 @@ failed to remove network selfhosted_ddosify: Error response from...
 
 If you want to start the project again, run the script in the [Quick Start](#%EF%B8%8F-quick-start-recommended) section again. 
 
+## Enable Kubernetes Monitoring
+To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) as a DaemonSet. Refer to the [Alaz](https://github.com/ddosify/alaz) repository for more information.
 
 ## 🧩 Services Overview
 
