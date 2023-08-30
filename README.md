@@ -33,7 +33,7 @@ Ddosify is a magic wand that instantly spots glitches and guarantees the smooth 
 Ddosify Stack consists of 4 parts. Those are **Ddosify Engine, Ddosify eBPF Agent (Alaz), Ddosify Self-Hosted, and Ddosify Cloud**.
 
 <p align="center"> 
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/50319b9a-b7a1-4656-ce54-4656323f1300/public" alt="Ddosify - Self-Hosted" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/a07803b8-3d96-4af4-3d62-92414ec93a00/public" alt="Ddosify - Self-Hosted" />
 </p>
 
 ### :rocket: Ddosify Engine
