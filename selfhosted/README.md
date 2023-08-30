@@ -171,7 +171,7 @@ failed to remove network selfhosted_ddosify: Error response from...
 
 If you want to start the project again, run the script in the [Quick Start](#%EF%B8%8F-quick-start-recommended) section again. 
 
-## Enable Kubernetes Monitoring
+## Enable Kubernetes Monitoring
 
 To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) as a DaemonSet. Refer to the [Alaz](https://github.com/ddosify/alaz) repository for more information.
 
