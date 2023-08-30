@@ -37,7 +37,7 @@ Ddosify Stack consists of 4 parts. Those are **Ddosify Engine, Ddosify eBPF Agen
 </p>
 
 ### :rocket: Ddosify Engine
-This is the load engine of Ddosify, written in Golang. Ddosify Self-Hosted and Ddosify Cloud use it on load generation. It is fully open-source and can be used on the CLI as a standalone tool. It has ~8K Github Stars. Ddosify Engine is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](https://github.com/ddosify/ddosify#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux, and Windows.
+This is the load engine of Ddosify, written in Golang. Ddosify Self-Hosted and Ddosify Cloud use it on load generation. It is fully open-source and can be used on the CLI as a standalone tool. Ddosify Engine is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](https://github.com/ddosify/ddosify#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux, and Windows.
 
 Check out the [Engine Docs](https://github.com/ddosify/ddosify/tree/master/engine_docs) page for more information and usage.
 
