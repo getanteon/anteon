@@ -1040,6 +1040,32 @@ Following fields are available for cookie assertion:
 - Select Open
 - Close the opened terminal
 
+### OS Limit - Too Many Open Files
+
+If you create large load tests, you may encounter the following errors:
+
+```
+Server Error Distribution (Count:Reason):
+  199      :Get "https://example.ddosify.com": dial tcp 188.114.96.3:443: socket: too many open files
+  159      :Get "https://example.ddosify.com": dial tcp 188.114.97.3:443: socket: too many open files
+```
+
+This is because the OS limits the number of open files. You can check the current limit by running `ulimit -n` command. You can increase this limit to 50000 by running the following command on both Linux and macOS.
+
+```bash
+ulimit -n 50000
+```
+
+But this will only increase the limit for the current session. To increase the limit permanently, you can change the shell configuration file. For example, if you are using bash, you can add the following lines to `~/.bashrc` file. If you are using zsh, you can add the following lines to `~/.zshrc` file.
+
+```bash
+# For .bashrc
+echo "ulimit -n 50000" >> ~/.bashrc
+
+# For .zshrc
+echo "ulimit -n 50000" >> ~/.zshrc
+```
+
 ## Communication
 
 You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else.
