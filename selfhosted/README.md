@@ -24,6 +24,7 @@ This README provides instructions for installing and an overview of the system r
 
 ✅ **AWS Marketplace**: [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy) listing for easy deployment on AWS (Amazon Web Services).
 
+✅ **Kubernetes Monitoring**: With the help of [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) you can monitor your Kubernetes Cluster, create Service Map and get metrics from your Kubernetes nodes.
 
 ## 🛠 Prerequisites
 
@@ -187,6 +188,7 @@ To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Ala
 | `RabbitMQ`             | Message broker enabling communication between Hammer Manager and Hammers.                         |
 | `SeaweedFS Object Storage` | Object storage for multipart files and test data (CSV) used in load tests.                        |
 | `Nginx`                | Reverse proxy for backend and frontend services.                                                  |
+| `Prometheus`          | Collects the Kubernetes Monitoring metrics from the Backend service.                                          |
 
 ## 📝 License
 
