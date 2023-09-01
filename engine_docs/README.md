@@ -1,7 +1,7 @@
 <h1 align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    Ddosify - High-performance load testing tool
+    Ddosify Engine - High-performance load testing tool
 </h1>
 
 <p align="center">
@@ -1039,6 +1039,32 @@ Following fields are available for cookie assertion:
 - Right click `ddosify` and select Open
 - Select Open
 - Close the opened terminal
+
+### OS Limit - Too Many Open Files
+
+If you create large load tests, you may encounter the following errors:
+
+```
+Server Error Distribution (Count:Reason):
+  199      :Get "https://example.ddosify.com": dial tcp 188.114.96.3:443: socket: too many open files
+  159      :Get "https://example.ddosify.com": dial tcp 188.114.97.3:443: socket: too many open files
+```
+
+This is because the OS limits the number of open files. You can check the current limit by running `ulimit -n` command. You can increase this limit to 50000 by running the following command on both Linux and macOS.
+
+```bash
+ulimit -n 50000
+```
+
+But this will only increase the limit for the current session. To increase the limit permanently, you can change the shell configuration file. For example, if you are using bash, you can add the following lines to `~/.bashrc` file. If you are using zsh, you can add the following lines to `~/.zshrc` file.
+
+```bash
+# For .bashrc
+echo "ulimit -n 50000" >> ~/.bashrc
+
+# For .zshrc
+echo "ulimit -n 50000" >> ~/.zshrc
+```
 
 ## Communication
 
