@@ -82,10 +82,10 @@ The Metric Dashboard provides a straightforward way to observe Node Metrics. <a 
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/e736b581-7269-4ec4-9d77-7d375a5e3a00/public" alt="Ddosify - Metrics Dashboard Feature" />
 </p>
 
-#### ✅  Find Bottleneck 
+#### ✅  Find Bottlenecks 
 Start a load test and monitor your system all within the same UI. 
 <p align="left">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/32697752-ba0c-4c7b-8f59-f34095d6ef00/public" alt="Ddosify - Find Bottleneck Feature" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/32697752-ba0c-4c7b-8f59-f34095d6ef00/public" alt="Ddosify - Find Bottlenecks Feature" />
 </p>
 
 ## Load Testing Features
