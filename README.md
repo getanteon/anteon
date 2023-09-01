@@ -1,7 +1,7 @@
 <h1 align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    Distributed Performance Testing Platform
+    "Canva" of Observability 
 </h1>
 
 <p align="center">
@@ -15,9 +15,8 @@
     <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&logo=docker&label=docker&sort=semver" alt="ddosify docker image" /></a>
 </p>
 
-## Ddosify Self-Hosted (Distributed, No-code UI): [More →](./selfhosted/README.md)
 <p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/5ed79d96-aef4-467d-f5d0-e17cc5c3e700/public" alt="Ddosify - Self-Hosted" />
 </p>
 
 ### Quick Start
@@ -28,44 +27,56 @@ curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/in
 
 <a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="ddosify aws marketplace deployment" /></a>&nbsp;
 
-## Ddosify Engine (Single node, usage on CLI): [More →](./engine_docs/README.md)
-<p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/68e07b5f-22a5-4244-5dc2-9d02bd2c9e00/public" alt="Ddosify - Engine" />
+## What is Ddosify?
+Ddosify is a magic wand that instantly spots glitches and guarantees the smooth performance of your infrastructure and application while saving you time and money. Ddosify Platform includes Performance Testing and Kubernetes Observability capabilities. It uniquely integrates these two parts and effortlessly spots the performance issues.
+
+Ddosify Stack consists of 4 parts. Those are **Ddosify Engine, Ddosify eBPF Agent (Alaz), Ddosify Self-Hosted, and Ddosify Cloud**.
+
+<p align="center"> 
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/a07803b8-3d96-4af4-3d62-92414ec93a00/public" alt="Ddosify - Self-Hosted" />
 </p>
 
-### Quick Start
-
-```bash
-docker run -it --rm ddosify/ddosify ddosify -t https://app.servdown.com
-```
-
-## What is Ddosify?
-Ddosify is a comprehensive performance testing platform, designed specifically to evaluate backend load and latency. It offers three distinct deployment options to cater to various needs: Ddosify Engine, Ddosify Self-Hosted, and Ddosify Cloud.
-
 ### :rocket: Ddosify Engine
-This is the load engine of Ddosify, written in Golang. It is fully open-source and can be used on the CLI. Ddosify Engine is available via Docker, Docker Extension, Homebrew Tap, and downloadable pre-compiled binaries from the releases page for macOS, Linux, and Windows.
+This is the load engine of Ddosify, written in Golang. Ddosify Self-Hosted and Ddosify Cloud use it on load generation. It is fully open-source and can be used on the CLI as a standalone tool. Ddosify Engine is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](https://github.com/ddosify/ddosify#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux, and Windows.
 
 Check out the [Engine Docs](https://github.com/ddosify/ddosify/tree/master/engine_docs) page for more information and usage.
 
+### 🐝 Ddosify eBPF Agent (Alaz)
+[Alaz](https://github.com/ddosify/alaz) is an open-source Ddosify eBPF agent that can inspect and collect Kubernetes (K8s) service traffic without the need for code instrumentation, sidecars, or service restarts. Alaz is deployed as a DaemonSet on your Kubernetes cluster. It collects metrics and sends them to Ddosify Cloud or Ddosify Self-Hosted. It also embeds prometheus node-exporter inside. So that you will have visibility on your cluster nodes also.
+
+Check out the [Alaz](https://github.com/ddosify/alaz) repository for more information and usage.
+
 ### 🏠 Ddosify Self-Hosted
-In contrast to the Engine version, Ddosify Self-Hosted features a web-based user interface and distributed load generation capabilities. While it shares many of the same functionalities as Ddosify Cloud, the Self-Hosted version is designed to be deployed within your own infrastructure for enhanced control and customization. And it's completely Free!
+Ddosify Self-Hosted features a web-based user interface, distributed load generation, and Kubernetes Monitoring capabilities. While it shares many of the same functionalities as Ddosify Cloud, the Self-Hosted version is designed to be deployed within your own infrastructure for enhanced control and customization. There are two versions of it, **Community Edition (CE)** and **Enterprise Edition (EE)**. You can see the differences in the below comparison table.
 
 Check out the [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) page for more information and usage.
 
 ### ☁️ Ddosify Cloud
-Ddosify Cloud enables users to assess backend endpoints' performance through load and latency testing, offering a user-friendly interface, comprehensive charts, extensive geographic targeting options, and additional features for an improved testing experience.
+With Ddosify Cloud, anyone can test the performance of backend endpoints, monitor Kubernetes Clusters, and find the bottlenecks in the system. It has a No code UI, insightful charts, service maps, and more features!
 
-Check out [Ddosify Cloud](https://ddosify.com) to start effortless testing.
+Check out [Ddosify Cloud](https://app.ddosify.com/) to instantly find the performance issues on your system.
 
-### ☁️ Ddosify Cloud vs 🏠 Ddosify Self-Hosted  vs :rocket: Ddosify Engine
+### ☁️ Ddosify Cloud vs 🏠 Ddosify Self-Hosted EE  vs 🏡 Ddosify Self-Hosted CE
 <p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/7d6b9778-1367-426e-b6e9-5fc8f0d34200/public" alt="Ddosify versus" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/b539346a-171d-4acd-e57e-482947c10300/public" alt="Ddosify versus" />
+
+*CE: Community Edition, EE: Enterprise Edition*
 </p>
 
+## Observability Features
+#### ✅  Service Map
+Easily get insights about what is going on in your cluster. <a href="https://docs.ddosify.com/cloud/observability/service-map" target="_blank">More →</a>
+<p align="left">
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/891d68ac-554f-4828-a0fe-25ce935d1100/public" alt="Ddosify - Parametrization Feature" />
+</p>
 
+#### ✅  Metrics Dashboard
+The Metric Dashboard provides a straightforward way to observe Node Metrics. <a href="https://docs.ddosify.com/cloud/observability/metrics" target="_blank">More →</a>
+<p align="left">
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/e736b581-7269-4ec4-9d77-7d375a5e3a00/public" alt="Ddosify - Parametrization Feature" />
+</p>
 
-## Features
-
+## Load Testing Features
 #### ✅  Parametrization
 Use built-in random data generators. <a href="https://docs.ddosify.com/concepts/parameterization" target="_blank">More →</a>
 <p align="left">
@@ -114,7 +125,7 @@ Import Postman collections with ease and transform them into load testing scenar
 
 This repository includes the source code for the Ddosify Engine. You can access Docker Images for the Ddosify Engine and Self Hosted on <a href="https://hub.docker.com/u/ddosify" target="_blank">Docker Hub</a>.
 
-The [Engine Docs](https://github.com/ddosify/ddosify/tree/master/engine_docs) folder provides information on the installation, usage, and features of the Ddosify Engine. The [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. To learn about the usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://docs.ddosify.com/concepts/test-suite).
+The [Engine Docs](https://github.com/ddosify/ddosify/tree/master/engine_docs) folder provides information on the installation, usage, and features of the Ddosify Engine. The [Self-Hosted](https://github.com/ddosify/ddosify/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. [Ddosify eBPF agent (Alaz)](https://github.com/ddosify/alaz) has its own repository. To learn about the usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://docs.ddosify.com/concepts/test-suite).
 
 ## Communication
 
