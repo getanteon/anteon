@@ -178,6 +178,18 @@ services:
     volumes:
       - seaweedfs_data:/data
 
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    ports:
+      - "9090:9090"
+    command: --config.file=/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.console.libraries=/usr/share/prometheus/console_libraries --web.console.templates=/usr/share/prometheus/consoles --storage.tsdb.retention=10d
+    volumes:
+      - ./init_scripts/prometheus/prometheus.yml:/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - ddosify
+    restart: always
+
 volumes:
   postgres_data:
   influxdb_data:
@@ -185,6 +197,7 @@ volumes:
   seaweedfs_data:
   hammer_id:
   hammerdebug_id:
+  prometheus_data:
 
 networks:
   ddosify:
