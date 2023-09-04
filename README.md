@@ -33,7 +33,7 @@ Ddosify is a magic wand that instantly spots glitches and guarantees the smooth 
 Ddosify Stack consists of 4 parts. Those are **Ddosify Engine, Ddosify eBPF Agent (Alaz), Ddosify Self-Hosted, and Ddosify Cloud**.
 
 <p align="center"> 
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/a07803b8-3d96-4af4-3d62-92414ec93a00/public" alt="Ddosify - Self-Hosted" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/3f995c37-10fb-4b37-c74f-db1685d0df00/public" alt="Ddosify Stack" />
 </p>
 
 ### :rocket: Ddosify Engine
@@ -67,13 +67,25 @@ Check out [Ddosify Cloud](https://app.ddosify.com/) to instantly find the perfor
 #### ✅  Service Map
 Easily get insights about what is going on in your cluster. <a href="https://docs.ddosify.com/cloud/observability/service-map" target="_blank">More →</a>
 <p align="left">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/891d68ac-554f-4828-a0fe-25ce935d1100/public" alt="Ddosify - Parametrization Feature" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/891d68ac-554f-4828-a0fe-25ce935d1100/public" alt="Ddosify - Service Map Feature" />
+</p>
+
+#### ✅  Detailed Insights
+Inspect incoming, outgoing traffic, SQL queries, and more. <a href="https://docs.ddosify.com/cloud/observability/service-map" target="_blank">More →</a>
+<p align="left">
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/38760abe-8090-47b9-23e6-4cfb2db17000/public" alt="Ddosify - Detailed Insights Feature" />
 </p>
 
 #### ✅  Metrics Dashboard
 The Metric Dashboard provides a straightforward way to observe Node Metrics. <a href="https://docs.ddosify.com/cloud/observability/metrics" target="_blank">More →</a>
 <p align="left">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/e736b581-7269-4ec4-9d77-7d375a5e3a00/public" alt="Ddosify - Parametrization Feature" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/e736b581-7269-4ec4-9d77-7d375a5e3a00/public" alt="Ddosify - Metrics Dashboard Feature" />
+</p>
+
+#### ✅  Find Bottlenecks 
+Start a load test and monitor your system all within the same UI. 
+<p align="left">
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/32697752-ba0c-4c7b-8f59-f34095d6ef00/public" alt="Ddosify - Find Bottlenecks Feature" />
 </p>
 
 ## Load Testing Features
