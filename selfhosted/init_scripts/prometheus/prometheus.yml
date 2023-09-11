@@ -1,6 +1,6 @@
 global:
-  scrape_interval: 5s
-  evaluation_interval: 5s
+  scrape_interval: 10s
+  evaluation_interval: 10s
 
 alerting:
   alertmanagers:
