@@ -15,7 +15,7 @@ services:
       - ddosify
 
   frontend:
-    image: ddosify/selfhosted_frontend:2.0.0
+    image: ddosify/selfhosted_frontend:2.2.0
     depends_on:
       - backend
     restart: always
@@ -24,7 +24,7 @@ services:
       - ddosify
 
   backend:
-    image: ddosify/selfhosted_backend:2.0.0
+    image: ddosify/selfhosted_backend:2.2.1
     depends_on:
       - postgres
       - influxdb
@@ -37,6 +37,40 @@ services:
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
+
+  backend-celery-worker:
+    image: ddosify/selfhosted_backend:2.2.1
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - seaweedfs
+      - backend
+      - rabbitmq-celery-backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  backend-celery-beat:
+    image: ddosify/selfhosted_backend:2.2.1
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - seaweedfs
+      - backend
+      - rabbitmq-celery-backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_beat.sh
 
   hammermanager:
     ports:
@@ -134,6 +168,12 @@ services:
       - ddosify
     restart: always
 
+  rabbitmq-celery-backend:
+    image: "rabbitmq:3.9.4"
+    networks:
+      - ddosify
+    restart: always
+
   rabbitmq-job:
     ports:
       - "6672:5672"
@@ -168,7 +208,7 @@ services:
     restart: always
 
   seaweedfs:
-    image: chrislusf/seaweedfs:3.51
+    image: chrislusf/seaweedfs:3.56
     ports:
       - "8333:8333"
     command: 'server -s3 -dir="/data"'
