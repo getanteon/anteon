@@ -15,7 +15,7 @@ services:
       - ddosify
 
   frontend:
-    image: ddosify/selfhosted_frontend:2.3.1
+    image: ddosify/selfhosted_frontend:2.3.2
     depends_on:
       - backend
     restart: always
