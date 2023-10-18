@@ -1,8 +1,9 @@
-<h1 align="center">
+<div align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    "Canva" of Observability
-</h1>
+</div>
+
+<h1 align="center">Ddosify Self Hosted: "Canva" of Observability</h1>
 
 <p align="center">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/5ed79d96-aef4-467d-f5d0-e17cc5c3e700/public" alt="Ddosify - Self-Hosted" />
