@@ -28,6 +28,7 @@ curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/in
 <p align="center">
     <a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" height="40" alt="Available on aws marketplace" /></a>&nbsp;
 </p>
+
 ## What is Ddosify?
 Ddosify is a magic wand that instantly spots glitches and guarantees the smooth performance of your infrastructure and application while saving you time and money. Ddosify Platform includes Performance Testing and Kubernetes Observability capabilities. It uniquely integrates these two parts and effortlessly spots the performance issues.
 
