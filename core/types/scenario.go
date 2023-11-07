@@ -86,7 +86,7 @@ func (s *Scenario) validate() error {
 
 	// add global envs
 	for key := range s.Envs {
-		if !envVarNameRegexp.Match([]byte(key)) { // not a valid env definition
+		if !envVarNameRegexp.MatchString(key) { // not a valid env definition
 			return fmt.Errorf("env key is not valid: %s", key)
 		}
 		definedEnvs[key] = struct{}{} // exist
@@ -98,7 +98,7 @@ func (s *Scenario) validate() error {
 			return fmt.Errorf("csv key can not have dot in it: %s", key)
 		}
 		for _, s := range splitted {
-			if !envVarNameRegexp.Match([]byte(s)) { // not a valid env definition
+			if !envVarNameRegexp.MatchString(s) { // not a valid env definition
 				return fmt.Errorf("csv key is not valid: %s", key)
 			}
 		}
@@ -112,7 +112,7 @@ func (s *Scenario) validate() error {
 
 		// enrich Envs map with captured envs from each step
 		for _, ce := range st.EnvsToCapture {
-			if !envVarNameRegexp.Match([]byte(ce.Name)) { // not a valid env definition
+			if !envVarNameRegexp.MatchString(ce.Name) { // not a valid env definition
 				return fmt.Errorf("captured env key is not valid: %s", ce.Name)
 			}
 			definedEnvs[ce.Name] = struct{}{}
