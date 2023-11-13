@@ -681,6 +681,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
 | `xml`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `html_path`   | ( html `string` ) | extracts from response body using given html path |
 | `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
 ### Operators
