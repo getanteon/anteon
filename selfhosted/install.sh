@@ -40,9 +40,11 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # Check if Docker Compose is installed
-if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
-  echo "❌ Docker Compose not found. Please install Docker Compose and try again."
-  exit 1
+if ! command -v docker-compose >/dev/null 2>&1; then
+  if ! docker compose version >/dev/null 2>&1; then
+    echo "❌ Docker Compose not found. Please install Docker Compose and try again."
+    exit 1
+  fi
 fi
 
 # Check if Docker is running
@@ -59,12 +61,9 @@ REPO_DIR="$HOME/.ddosify"
 if [ -d "$REPO_DIR" ]; then
   echo "🔄 Repository already exists at $REPO_DIR - Attempting to update..."
   cd "$REPO_DIR"
-  git checkout master >/dev/null 2>&1
+  git checkout master
   cd "$REPO_DIR/selfhosted"
-  git pull >/dev/null 2>&1
-
-  # Check for errors during pull
-  if [ $? -ne 0 ]; then
+  git pull 2>&1 || {
     read -p "⚠️ Error updating repository. Clean and update? [Y/n]: " answer
     answer=${answer:-Y}
     if [[ $answer =~ ^[Yy]$ ]]; then
@@ -72,7 +71,7 @@ if [ -d "$REPO_DIR" ]; then
       git clean -fd >/dev/null 2>&1
       git pull >/dev/null 2>&1
     fi
-  fi
+  }
 else
   # Clone the repository
   echo "📦 Cloning repository to $REPO_DIR directory..."

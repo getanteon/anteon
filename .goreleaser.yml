@@ -31,13 +31,7 @@ builds:
         goarch: arm
         goarm: 5
 archives:
-  - replacements:
-      darwin: macos
-      linux: linux
-      windows: windows
-      386: 386
-      amd64: amd64
-    format_overrides:
+  - format_overrides:
       - goos: windows
         format: zip
     files:

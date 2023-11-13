@@ -1,14 +1,17 @@
-<h1 align="center">
+<div align="center">
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
-    Distributed, No-code Performance Testing within Your Own Infrastructure
-</h1>
+</div>
+
+<h1 align="center">Ddosify Self Hosted: "Canva" of Observability</h1>
 
 <p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/c6f26a7b-b878-4af7-774e-b0d65935df00/public" alt="Ddosify - Self-Hosted" />
+<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/5ed79d96-aef4-467d-f5d0-e17cc5c3e700/public" alt="Ddosify - Self-Hosted" />
 </p>
 
 This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
+
+<a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="ddosify aws marketplace deployment" /></a>&nbsp;
 
 ## Effortless Installation
 
@@ -20,6 +23,9 @@ This README provides instructions for installing and an overview of the system r
 
 ✅ **Easy to Deploy**: Automated setup processes using Docker Compose and Helm Charts.
 
+✅ **AWS Marketplace**: [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy) listing for easy deployment on AWS (Amazon Web Services).
+
+✅ **Kubernetes Monitoring**: With the help of [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) you can monitor your Kubernetes Cluster, create Service Map and get metrics from your Kubernetes nodes.
 
 ## 🛠 Prerequisites
 
@@ -109,7 +115,7 @@ NAME=ddosify_hammer_1
 docker run --name $NAME -dit \
     --network selfhosted_ddosify \
     --restart always \
-    ddosify/selfhosted_hammer:1.0.0
+    ddosify/selfhosted_hammer:1.4.2
 ```
 
 ### **Example 2**: Adding the engine to a different server
@@ -126,7 +132,7 @@ docker run --name $NAME -dit \
     --env DDOSIFY_SERVICE_ADDRESS=$DDOSIFY_SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
     --restart always \
-    ddosify/selfhosted_hammer:0.1.0
+    ddosify/selfhosted_hammer:1.4.2
 ```
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
@@ -167,6 +173,9 @@ failed to remove network selfhosted_ddosify: Error response from...
 
 If you want to start the project again, run the script in the [Quick Start](#%EF%B8%8F-quick-start-recommended) section again. 
 
+## Enable Kubernetes Monitoring
+
+To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) as a DaemonSet. Refer to the [Alaz](https://github.com/ddosify/alaz) repository for more information.
 
 ## 🧩 Services Overview
 
@@ -180,6 +189,7 @@ If you want to start the project again, run the script in the [Quick Start](#%EF
 | `RabbitMQ`             | Message broker enabling communication between Hammer Manager and Hammers.                         |
 | `SeaweedFS Object Storage` | Object storage for multipart files and test data (CSV) used in load tests.                        |
 | `Nginx`                | Reverse proxy for backend and frontend services.                                                  |
+| `Prometheus`          | Collects the Kubernetes Monitoring metrics from the Backend service.                                          |
 
 ## 📝 License
 
