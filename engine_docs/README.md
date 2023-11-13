@@ -680,7 +680,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `not`   | ( param `bool` ) | returns converse of given param |
 | `range`   | ( param `int`, low `int`,high `int` ) | returns param is in range of [low,high): low is included, high is not included. |
 | `json_path`   | ( json_path `string`) | extracts from response body using given json path |
-| `xml`   | ( xpath `string` ) | extracts from response body using given xml path |
+| `xpath`   | ( xpath `string` ) | extracts from response body using given xml path |
 | `html_path`   | ( html `string` ) | extracts from response body using given html path |
 | `regexp` | ( param `any`, regexp `string`, matchNo `int` ) | extracts from given value in the first parameter using given regular expression |
 
@@ -707,6 +707,7 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 | `status_code != 500`   | same as preceding one|
 | `equals(json_path(\"employees.0.name\"),\"Name\")`   | checks if json extracted value is equal to "Name"|
 | `equals(xpath(\"//item/title\"),\"ABC\")`   | checks if xml extracted value is equal to "ABC" |
+| `equals(html_path(\"//body/h1\"),\"ABC\")`   | checks if html extracted value is equal to "ABC" |
 | `equals(variables.x,100)`   | checks if `x` variable coming from global or captured variables is equal to 100|
 | `equals(variables.x,variables.y)`   | checks if variables `x` and `y` are equal to each other |
 | `equals_on_file(body,\"file.json\")`   | reads from file.json and compares response body with read file |
