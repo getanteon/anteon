@@ -266,6 +266,7 @@ func TestInitRequest(t *testing.T) {
 	expectedWithHeaders.Header.Set("Header1", "Value1")
 	expectedWithHeaders.Header.Set("Header2", "Value2")
 	expectedWithHeaders.Header.Set("User-Agent", "Firefox")
+	expectedWithHeaders.Header.Set("Host", "test.com")
 	expectedWithHeaders.Host = "test.com"
 	expectedWithHeaders.SetBasicAuth(sWithHeaders.Auth.Username, sWithHeaders.Auth.Password)
 
