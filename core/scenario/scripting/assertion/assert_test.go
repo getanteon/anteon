@@ -488,7 +488,7 @@ func TestAssert(t *testing.T) {
 			expected: true,
 		},
 		{
-			input: `equals(xml_path("//item/title"),"ABC")`,
+			input: `equals(xpath("//item/title"),"ABC")`,
 			envs: &evaluator.AssertEnv{
 				Body: `<?xml version="1.0" encoding="UTF-8" ?>
 		<rss version="2.0">
@@ -498,6 +498,19 @@ func TestAssert(t *testing.T) {
 		  </item>
 		</channel>
 		</rss>`,
+			},
+
+			expected: true,
+		},
+		{
+			input: `equals(html_path("//body/h1"),"ABC")`,
+			envs: &evaluator.AssertEnv{
+				Body: `<!DOCTYPE html>
+				<html>
+				<body>
+				<h1>ABC</h1>
+				</body>
+				</html>`,
 			},
 
 			expected: true,
@@ -790,7 +803,12 @@ func TestAssert(t *testing.T) {
 			expectedError: "ArgumentError",
 		},
 		{
-			input:         "xml_path(23)", // arg must be string
+			input:         "xpath(23)", // arg must be string
+			expected:      false,
+			expectedError: "ArgumentError",
+		},
+		{
+			input:         "html_path(23)", // arg must be string
 			expected:      false,
 			expectedError: "ArgumentError",
 		},

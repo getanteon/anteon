@@ -70,6 +70,7 @@ type RegexCaptureConf struct {
 type capturePath struct {
 	JsonPath   *string           `json:"json_path"`
 	XPath      *string           `json:"xpath"`
+	XpathHtml  *string           `json:"xpath_html"`
 	RegExp     *RegexCaptureConf `json:"regexp"`
 	From       string            `json:"from"` // body,header,cookie
 	CookieName *string           `json:"cookie_name"`
@@ -375,6 +376,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		capConf := types.EnvCaptureConf{
 			JsonPath:   path.JsonPath,
 			Xpath:      path.XPath,
+			XpathHtml:  path.XpathHtml,
 			Name:       name,
 			From:       types.SourceType(path.From),
 			Key:        path.HeaderKey,

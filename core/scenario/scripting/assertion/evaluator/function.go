@@ -133,6 +133,11 @@ var xmlExtract = func(source interface{}, xPath string) (interface{}, error) {
 	return val, err
 }
 
+var htmlExtract = func(source interface{}, xPath string) (interface{}, error) {
+	val, err := extraction.ExtractFromHtml(source, xPath)
+	return val, err
+}
+
 var regexExtract = func(source interface{}, xPath string, matchNo int64) (interface{}, error) {
 	val, err := extraction.ExtractWithRegex(source, types.RegexCaptureConf{
 		Exp: &xPath,
@@ -194,6 +199,7 @@ var assertionFuncMap = map[string]struct{}{
 	IN:           {},
 	JSONPATH:     {},
 	XMLPATH:      {},
+	HTMLPATH:     {},
 	REGEXP:       {},
 	EXISTS:       {},
 	CONTAINS:     {},
@@ -216,7 +222,8 @@ const (
 	EQUALS       = "equals"
 	IN           = "in"
 	JSONPATH     = "json_path"
-	XMLPATH      = "xml_path"
+	XMLPATH      = "xpath"
+	HTMLPATH     = "html_path"
 	REGEXP       = "regexp"
 	EXISTS       = "exists"
 	CONTAINS     = "contains"

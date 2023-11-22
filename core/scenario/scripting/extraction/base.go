@@ -49,6 +49,8 @@ func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err 
 			val, err = ExtractWithRegex(source, *ce.RegExp)
 		} else if ce.Xpath != nil {
 			val, err = ExtractFromXml(source, *ce.Xpath)
+		} else if ce.XpathHtml != nil {
+			val, err = ExtractFromHtml(source, *ce.XpathHtml)
 		}
 	case types.Cookie:
 		cookies := source.(map[string]*http.Cookie)
@@ -101,6 +103,18 @@ func ExtractFromJson(source interface{}, jsonPath string) (interface{}, error) {
 
 func ExtractFromXml(source interface{}, xPath string) (interface{}, error) {
 	xe := xmlExtractor{}
+	switch s := source.(type) {
+	case []byte: // from response body
+		return xe.extractFromByteSlice(s, xPath)
+	case string: // from response header
+		return xe.extractFromString(s, xPath)
+	default:
+		return "", fmt.Errorf("Unsupported type for extraction source")
+	}
+}
+
+func ExtractFromHtml(source interface{}, xPath string) (interface{}, error) {
+	xe := htmlExtractor{}
 	switch s := source.(type) {
 	case []byte: // from response body
 		return xe.extractFromByteSlice(s, xPath)
