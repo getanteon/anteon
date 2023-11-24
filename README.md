@@ -65,7 +65,7 @@ Ddosify Stack consists of 4 parts:
 - [Ddosify Engine](#rocket-ddosify-engine)
 - [Ddosify eBPF Agent (Alaz)](#-ddosify-ebpf-agent-alaz)
 - [Ddosify Self-Hosted](#-ddosify-self-hosted)
-- [Ddosify Cloud](#-ddosify-cloud)
+- [Ddosify Cloud](#%EF%B8%8F-ddosify-cloud)
 
 
 <p align="center"> 
