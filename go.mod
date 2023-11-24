@@ -17,9 +17,10 @@ require (
 )
 
 require (
-	github.com/antchfx/xpath v1.2.1 // indirect
+	github.com/antchfx/htmlquery v1.3.0
+	github.com/antchfx/xpath v1.2.3 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/jaswdr/faker v1.10.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect

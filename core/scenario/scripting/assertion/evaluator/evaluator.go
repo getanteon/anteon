@@ -152,6 +152,15 @@ func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (in
 						}
 					}
 					return xmlExtract(env.Body, xpath)
+				case HTMLPATH:
+					html, ok := args[0].(string)
+					if !ok {
+						return false, ArgumentError{
+							msg:        "htmlpath must be a string",
+							wrappedErr: nil,
+						}
+					}
+					return htmlExtract(env.Body, html)
 				case REGEXP:
 					regexp, ok := args[1].(string)
 					if !ok {
