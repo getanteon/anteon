@@ -22,7 +22,7 @@
 </p>
 
 <h2 align="center">
-    <a href="https://demo.ddosify.com/" target="_blank">Demo</a> •
+    <a href="https://demo.ddosify.com/" target="_blank">Live Demo</a> •
     <a href="https://docs.ddosify.com/" target="_blank">Documentation</a> •
     <a href="https://docs.ddosify.com/ddosify/deployment" target="_blank">Deployment</a> •
     <a href="https://docs.ddosify.com/ddosify/deployment" target="_blank">Discord</a>
