@@ -121,7 +121,7 @@ Check out [Ddosify Cloud](https://app.ddosify.com/) to find the performance issu
 ## Kubernetes Monitoring Features
 
 #### ✅ Service Map
-Easily get insights about what is going on in your cluster. You do not change your code or add sidecars. <a href="https://docs.ddosify.com/ddosify/kubernetes-monitoring/service-map" target="_blank">More →</a>
+Easily get insights about what is going on in your cluster. You do not have to change your code or add sidecars anymore. <a href="https://docs.ddosify.com/ddosify/kubernetes-monitoring/service-map" target="_blank">More →</a>
 <p align="left">
 <img src="assets/ddosify_service_map_detail.png" alt="Ddosify - Service Map Feature" />
 </p>
@@ -141,53 +141,57 @@ The Metric Dashboard provides a straightforward way to observe Node Metrics. Ddo
 
 #### ✅  Find Bottlenecks 
 Start a load test and monitor your system all within the same UI. You do not need to correlate the load test results with the monitoring data and switch between different tools.
+
+You will see the outgoing requests, response times and status codes on the load test **Summary** tab. 
 <p align="left">
 <img src="assets/ddosify_load_test.png" alt="Ddosify - Find Bottlenecks Feature" />
 </p>
+
+You will see the incoming requests to your K8s cluster, service-to-service traffic, RPS, latencies, SQL queries, and more on the **Monitoring** tab. So you can easily correlate the load test results with the monitoring data without switching between different tools.
 <p align="left">
 <img src="assets/ddosify_load_test_monitoring.png" alt="Ddosify - Find Bottlenecks Feature" />
 </p>
 
 ## Performance Testing Features
 #### ✅  Parametrization
-Use built-in random data generators. <a href="https://docs.ddosify.com/concepts/parameterization" target="_blank">More →</a>
+Use built-in random data generators. <a href="https://docs.ddosify.com/ddosify/performance-testing/parametrization" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/4dc3f294-6319-4c2b-a56b-c359276d5e00/public" alt="Ddosify - Parametrization Feature" />
 </p>
 
 
 #### ✅  CSV Data Import
-Import test data from CSV and use it in the scenario. <a href="https://docs.ddosify.com/concepts/test-data-import" target="_blank">More →</a>
+Import test data from CSV and use it in the scenario. <a href="https://docs.ddosify.com/ddosify/performance-testing/test-data-import" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/6c769b68-e046-440d-137c-b20dd3518300/public" alt="Ddosify - Test Data Feature" />
 </p>
 
 #### ✅  Environments
-Store constant values as environment variables. <a href="https://docs.ddosify.com/concepts/environment-variables" target="_blank">More →</a>
+Store constant values as environment variables. <a href="https://docs.ddosify.com/ddosify/performance-testing/environment-variables" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/78c45dca-03de-4cbf-0edc-fb2b8a2e6600/public" alt="Ddosify - Environment Feature" />
 </p>
 
 #### ✅  Correlation
-Extract variables from earlier phases and pass them on to the following ones. <a href="https://docs.ddosify.com/concepts/correlation" target="_blank">More →</a>
+Extract variables from earlier phases and pass them on to the following ones. <a href="https://docs.ddosify.com/ddosify/performance-testing/correlation" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/7ac98b0f-043b-494f-3c17-7a5436e81400/public" alt="Ddosify - Correlation Feature" />
 </p>
 
 #### ✅  Assertion
-Verify that the response matches your expectations. <a href="https://docs.ddosify.com/concepts/assertion" target="_blank">More →</a>
+Verify that the response matches your expectations. <a href="https://docs.ddosify.com/ddosify/performance-testing/assertion" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/f2f0df70-8e2b-4308-ca6a-4259274d0400/public" alt="Ddosify - Assertion Feature" />
 </p>
 
 #### ✅  Debugging
-Analyze request and response data before starting the load test. <a href="https://docs.ddosify.com/concepts/debugging" target="_blank">More →</a>
+Analyze request and response data before starting the load test. <a href="https://docs.ddosify.com/ddosify/performance-testing/debugging" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/82322e21-2e3a-4284-9643-1c8dacda2400/public" alt="Ddosify - Debugging Feature" />
 </p>
 
 #### ✅  Postman Import
-Import Postman collections with ease and transform them into load testing scenarios. <a href="https://docs.ddosify.com/concepts/postman-import" target="_blank">More →</a>
+Import Postman collections with ease and transform them into load testing scenarios. <a href="https://docs.ddosify.com/ddosify/performance-testing/postman-import" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/873bf1e3-07a0-427c-8f32-0791d1728900/public" alt="Ddosify - Postman Import Feature" />
 </p>
