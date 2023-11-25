@@ -3,10 +3,11 @@
     <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Ddosify Self Hosted: "Canva" of Observability</h1>
+<h1 align="center">Ddosify Self Hosted: Effortless Kubernetes Monitoring and Performance Testing</h1>
 
 <p align="center">
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/5ed79d96-aef4-467d-f5d0-e17cc5c3e700/public" alt="Ddosify - Self-Hosted" />
+<img src="../assets/ddosify_service_map_filtered.png" alt="Ddosify Kubernetes Monitoring Service Map" />
+<i>Ddosify detects high latency service calls on your K8s cluster. So you can easily find the root service causing the problem.</i>
 </p>
 
 This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
