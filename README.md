@@ -23,7 +23,7 @@
     <a href="https://demo.ddosify.com/" target="_blank">Live Demo</a> •
     <a href="https://docs.ddosify.com/" target="_blank">Documentation</a> •
     <a href="https://docs.ddosify.com/ddosify/deployment" target="_blank">Deployment</a> •
-    <a href="https://docs.ddosify.com/ddosify/deployment" target="_blank">Discord</a>
+    <a href="https://discord.gg/9KdnrSUZQg" target="_blank">Discord</a>
 </h2>
 
 ## What is Ddosify?
