@@ -207,42 +207,42 @@ backend:
 <details>
   <summary>Here is the example of data that we collect:</summary>
 
-    ```json
-    {
-        "k8s": {
-            "pod_count": 12,
-            "service_count": 3,
-            "daemonset_count": 1,
-            "namespace_count": 4,
-            "deployment_count": 2,
-            "node_count_active": 1,
-            "node_count_passive": 5
-        },
-        "metrics": {
-            "cpu_count": 16,
-            "total_ram_bytes": 16664440832,
-            "total_root_filesystem_bytes": 730759454720
-        },
-        "alaz_info": {
-            "ebpf": true,
-            "metrics": true
-        },
-        "cluster_info": {
-            "name": "test-cluster",
-            "alaz_version": "v0.3.4",
-            "instance_names": [
-                "test-instance"
-            ],
-            "cluster_details": {
-                "k8s_version": "v1.28.4+k3s2",
-                "cloud_provider": "AWS",
-                "kernel_versions": [
-                    "6.2.0-39-generic"
-                ]
-            }
+```json
+{
+    "k8s": {
+        "pod_count": 12,
+        "service_count": 3,
+        "daemonset_count": 1,
+        "namespace_count": 4,
+        "deployment_count": 2,
+        "node_count_active": 1,
+        "node_count_passive": 5
+    },
+    "metrics": {
+        "cpu_count": 16,
+        "total_ram_bytes": 16664440832,
+        "total_root_filesystem_bytes": 730759454720
+    },
+    "alaz_info": {
+        "ebpf": true,
+        "metrics": true
+    },
+    "cluster_info": {
+        "name": "test-cluster",
+        "alaz_version": "v0.3.4",
+        "instance_names": [
+            "test-instance"
+        ],
+        "cluster_details": {
+            "k8s_version": "v1.28.4+k3s2",
+            "cloud_provider": "AWS",
+            "kernel_versions": [
+                "6.2.0-39-generic"
+            ]
         }
     }
-    ```
+}
+```
 </details>
 
 
