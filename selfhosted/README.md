@@ -204,6 +204,8 @@ backend:
     ...
 ```
 
+### Example Data
+
 <details>
   <summary>Here is the example of data that we collect:</summary>
 
