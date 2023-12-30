@@ -192,6 +192,61 @@ To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Ala
 | `Nginx`                | Reverse proxy for backend and frontend services.                                                  |
 | `Prometheus`          | Collects the Kubernetes Monitoring metrics from the Backend service.                                          |
 
+## Telemetry Data
+
+Ddosify Self Hosted collects anonymous usage data to help us improve the product. You can disable this feature by setting the `ANONYMOUS_TELEMETRY_ENABLED` environment variable to `False` of the `backend` service in the [docker-compose.yml](./docker-compose.yml) file.
+
+```yaml
+backend:
+    ...
+    environment:
+      - ANONYMOUS_TELEMETRY_ENABLED: "False"
+    ...
+```
+
+<details>
+  <summary>Here is the example of data that we collect:</summary>
+
+    ```json
+    {
+        "k8s": {
+            "pod_count": 12,
+            "service_count": 3,
+            "daemonset_count": 1,
+            "namespace_count": 4,
+            "deployment_count": 2,
+            "node_count_active": 1,
+            "node_count_passive": 5
+        },
+        "metrics": {
+            "cpu_count": 16,
+            "total_ram_bytes": 16664440832,
+            "total_root_filesystem_bytes": 730759454720
+        },
+        "alaz_info": {
+            "ebpf": true,
+            "metrics": true
+        },
+        "cluster_info": {
+            "name": "test-cluster",
+            "alaz_version": "v0.3.4",
+            "instance_names": [
+                "test-instance"
+            ],
+            "cluster_details": {
+                "k8s_version": "v1.28.4+k3s2",
+                "cloud_provider": "AWS",
+                "kernel_versions": [
+                    "6.2.0-39-generic"
+                ]
+            }
+        }
+    }
+    ```
+</details>
+
+
+
 ## 📝 License
 
 Ddosify Self Hosted is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
