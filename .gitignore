@@ -21,4 +21,5 @@ dist/
 ddosify
 .vscode
 .idea/
+.DS_Store
 

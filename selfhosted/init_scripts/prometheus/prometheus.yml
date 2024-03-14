@@ -13,4 +13,4 @@ scrape_configs:
   - job_name: "backend"
     metrics_path: '/alaz/metrics/scrape'
     static_configs:
-      - targets: ["backend:8008"]
+      - targets: ["alaz-backend:8008"]

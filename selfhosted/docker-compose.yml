@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   nginx:
-    image: nginx:1.25.3-alpine
+    image: nginx:1.25.4-alpine
     ports:
       - '8014:80'
     volumes:
@@ -15,7 +15,7 @@ services:
       - ddosify
 
   frontend:
-    image: ddosify/selfhosted_frontend:2.5.2
+    image: ddosify/selfhosted_frontend:latest
     depends_on:
       - backend
     restart: always
@@ -24,7 +24,7 @@ services:
       - ddosify
 
   backend:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:latest
     depends_on:
       - postgres
       - influxdb
@@ -39,7 +39,7 @@ services:
     command: /workspace/start_scripts/start_app_onprem.sh
 
   backend-celery-worker:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:latest
     depends_on:
       - postgres
       - influxdb
@@ -56,7 +56,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   backend-celery-beat:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:latest
     depends_on:
       - postgres
       - influxdb
@@ -64,6 +64,55 @@ services:
       - seaweedfs
       - backend
       - rabbitmq-celery-backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_beat.sh
+
+  alaz-backend:
+    image: ddosify/selfhosted_alaz_backend:latest
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_app_onprem.sh
+
+  alaz-backend-celery-worker:
+    image: ddosify/selfhosted_alaz_backend:latest
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - alaz-backend
+      - rabbitmq-celery-backend
+      - backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  alaz-backend-celery-beat:
+    image: ddosify/selfhosted_alaz_backend:latest
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - alaz-backend
+      - rabbitmq-celery-backend
+      - backend
     env_file:
       - .env
     networks:
@@ -169,6 +218,12 @@ services:
     restart: always
 
   rabbitmq-celery-backend:
+    image: "rabbitmq:3.9.4"
+    networks:
+      - ddosify
+    restart: always
+
+  rabbitmq-celery-alaz-backend:
     image: "rabbitmq:3.9.4"
     networks:
       - ddosify
