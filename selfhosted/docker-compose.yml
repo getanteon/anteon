@@ -212,19 +212,19 @@ services:
     restart: always
 
   rabbitmq-celery:
-    image: "rabbitmq:3.9.4"
+    image: "rabbitmq:3.13.0"
     networks:
       - ddosify
     restart: always
 
   rabbitmq-celery-backend:
-    image: "rabbitmq:3.9.4"
+    image: "rabbitmq:3.13.0"
     networks:
       - ddosify
     restart: always
 
   rabbitmq-celery-alaz-backend:
-    image: "rabbitmq:3.9.4"
+    image: "rabbitmq:3.13.0"
     networks:
       - ddosify
     restart: always
@@ -232,7 +232,7 @@ services:
   rabbitmq-job:
     ports:
       - "6672:5672"
-    image: "rabbitmq:3.9.4"
+    image: "rabbitmq:3.13.0"
     networks:
       - ddosify
     restart: always
@@ -255,7 +255,7 @@ services:
     restart: always
 
   redis:
-    image: "redis:6.2.6"
+    image: "redis:7.2.4"
     volumes:
       - redis_data:/data
     networks:
