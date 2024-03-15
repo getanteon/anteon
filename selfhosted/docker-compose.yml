@@ -87,7 +87,24 @@ services:
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
 
-  alaz-backend-celery-worker:
+  alaz-backend-celery-worker-1:
+    image: ddosify/selfhosted_alaz_backend:latest
+    depends_on:
+      - postgres
+      - influxdb
+      - redis
+      - alaz-backend
+      - rabbitmq-celery-backend
+      - backend
+    env_file:
+      - .env
+    networks:
+      - ddosify
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  alaz-backend-celery-worker-2:
     image: ddosify/selfhosted_alaz_backend:latest
     depends_on:
       - postgres
