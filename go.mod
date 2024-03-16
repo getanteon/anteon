@@ -8,7 +8,7 @@ require (
 	github.com/ddosify/go-faker v0.1.1
 	github.com/enescakir/emoji v1.0.0
 	github.com/fatih/color v1.13.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/mattn/go-colorable v0.1.12
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/tidwall/gjson v1.14.4
