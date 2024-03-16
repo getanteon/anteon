@@ -5,7 +5,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/ddosify main.go
 
 
-FROM alpine:3.15.4
+FROM alpine:3.19.1
 ENV ENV="/root/.ashrc"
 WORKDIR /root
 RUN apk --no-cache add ca-certificates
