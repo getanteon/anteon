@@ -41,7 +41,7 @@ This README provides instructions for installing and an overview of the system r
 - **Memory**: 8 GB RAM or more
 - **Storage**: At least 5 GB of available hard drive space (preferably SSD for faster load times)
 
-## ⚡️ Quick Start (Recommended)
+## ⚡️ Quick Start (docker compose)
 
 You can quickly deploy Ddosify Self Hosted by running the following command. This script clones the Ddosify repository to your `$HOME/.ddosify` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
 

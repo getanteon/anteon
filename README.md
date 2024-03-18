@@ -95,12 +95,16 @@ Check out our [Github Page](https://github.com/ddosify/ddosify/tree/master/selfh
 
 #### Quick Start
 
+(1) Deploy using Docker Compose:
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
 ```
 <p align="center">
     <a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" height="40" alt="Available on aws marketplace" /></a>&nbsp;
 </p>
+
+(2) You can deploy Ddosify Self Hosted on Kubernetes using the [Helm chart](https://github.com/ddosify/ddosify-helm-charts).
 
 ### ☁️ Ddosify Cloud
 
