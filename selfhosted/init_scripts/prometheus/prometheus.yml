@@ -11,6 +11,9 @@ rule_files:
 
 scrape_configs:
   - job_name: "backend"
-    metrics_path: '/alaz/metrics/scrape'
+    metrics_path: '/metrics/scrape'
     static_configs:
-      - targets: ["backend:8008"]
+      - targets: ["alaz-backend:8008"]
+    basic_auth:
+        username: alaz-backend
+        password: jRTyHAbUHYE37hRBgEz
