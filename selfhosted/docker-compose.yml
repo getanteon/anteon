@@ -28,7 +28,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
     env_file:
       - .env
@@ -43,7 +43,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
       - backend
       - rabbitmq-celery-backend
@@ -60,7 +60,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
       - backend
       - rabbitmq-celery-backend
@@ -77,7 +77,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - backend
     env_file:
       - .env
@@ -92,7 +92,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-alaz-backend
       - alaz-backend
       - rabbitmq-celery-backend
       - backend
@@ -109,7 +109,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-alaz-backend
       - alaz-backend
       - rabbitmq-celery-backend
       - backend
@@ -126,7 +126,7 @@ services:
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-alaz-backend
       - alaz-backend
       - rabbitmq-celery-backend
       - backend
@@ -273,10 +273,18 @@ services:
       - ddosify
     restart: always
 
-  redis:
+  redis-backend:
     image: "redis:7.2.4"
     volumes:
-      - redis_data:/data
+      - redis_backend_data:/data
+    networks:
+      - ddosify
+    restart: always
+
+  redis-alaz-backend:
+    image: "redis:7.2.4"
+    volumes:
+      - redis_alaz_backend_data:/data
     networks:
       - ddosify
     restart: always
@@ -307,7 +315,8 @@ services:
 volumes:
   postgres_data:
   influxdb_data:
-  redis_data:
+  redis_backend_data:
+  redis_alaz_backend_data:
   seaweedfs_data:
   hammer_id:
   hammerdebug_id:
