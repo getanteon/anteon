@@ -24,7 +24,7 @@ services:
       - ddosify
 
   backend:
-    image: ddosify/selfhosted_backend:2.6.10
+    image: ddosify/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -39,7 +39,7 @@ services:
     command: /workspace/start_scripts/start_app_onprem.sh
 
   backend-celery-worker:
-    image: ddosify/selfhosted_backend:2.6.10
+    image: ddosify/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -56,7 +56,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   backend-celery-beat:
-    image: ddosify/selfhosted_backend:2.6.10
+    image: ddosify/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -218,7 +218,7 @@ services:
     pull_policy: always
 
   postgres:
-    image: "postgres:13.6"
+    image: "postgres:13.6-alpine"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_scripts/postgres:/docker-entrypoint-initdb.d
@@ -229,19 +229,19 @@ services:
     restart: always
 
   rabbitmq-celery:
-    image: "rabbitmq:3.13.0"
+    image: "rabbitmq:3.13.0-alpine"
     networks:
       - ddosify
     restart: always
 
   rabbitmq-celery-backend:
-    image: "rabbitmq:3.13.0"
+    image: "rabbitmq:3.13.0-alpine"
     networks:
       - ddosify
     restart: always
 
   rabbitmq-celery-alaz-backend:
-    image: "rabbitmq:3.13.0"
+    image: "rabbitmq:3.13.0-alpine"
     networks:
       - ddosify
     restart: always
@@ -249,7 +249,7 @@ services:
   rabbitmq-job:
     ports:
       - "6672:5672"
-    image: "rabbitmq:3.13.0"
+    image: "rabbitmq:3.13.0-alpine"
     networks:
       - ddosify
     restart: always
@@ -257,7 +257,7 @@ services:
   influxdb:
     ports:
       - "9086:8086"
-    image: "influxdb:2.6.1"
+    image: "influxdb:2.6.1-alpine"
     volumes:
       - influxdb_data:/var/lib/influxdb
       - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
@@ -272,7 +272,7 @@ services:
     restart: always
 
   redis-backend:
-    image: "redis:7.2.4"
+    image: "redis:7.2.4-alpine"
     volumes:
       - redis_backend_data:/data
     networks:
@@ -280,7 +280,7 @@ services:
     restart: always
 
   redis-alaz-backend:
-    image: "redis:7.2.4"
+    image: "redis:7.2.4-alpine"
     volumes:
       - redis_alaz_backend_data:/data
     networks:
@@ -288,7 +288,7 @@ services:
     restart: always
 
   seaweedfs:
-    image: chrislusf/seaweedfs:3.56
+    image: chrislusf/seaweedfs:3.64
     ports:
       - "8333:8333"
     command: 'server -s3 -dir="/data"'
