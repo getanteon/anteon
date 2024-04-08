@@ -3,7 +3,7 @@ module go.ddosify.com/ddosify
 go 1.18
 
 require (
-	github.com/antchfx/xmlquery v1.3.13
+	github.com/antchfx/xmlquery v1.4.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/ddosify/go-faker v0.1.1
 	github.com/enescakir/emoji v1.0.0
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/antchfx/htmlquery v1.3.0
-	github.com/antchfx/xpath v1.2.3 // indirect
+	github.com/antchfx/xpath v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/jaswdr/faker v1.10.2 // indirect
