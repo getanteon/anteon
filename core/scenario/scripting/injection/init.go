@@ -165,7 +165,7 @@ func init() {
 		"randomLoremLines":      dataFaker.RandomLoremLines,
 
 		/*
-		 * Spesific to us.
+		 * Specific to us.
 		 */
 		"randomFloat":  dataFaker.RandomFloat,
 		"randomString": dataFaker.RandomString,
