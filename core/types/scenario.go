@@ -225,7 +225,7 @@ type ScenarioStep struct {
 	// Sleep duration after running the step. Can be a time range like "300-500" or an exact duration like "350" in ms
 	Sleep string
 
-	// Protocol spesific request parameters. For ex: DisableRedirects:true for Http requests
+	// Protocol specific request parameters. For ex: DisableRedirects:true for Http requests
 	Custom map[string]interface{}
 
 	// Envs to capture from response of this step

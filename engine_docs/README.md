@@ -70,14 +70,14 @@ brew install ddosify/tap/ddosify
 
 ```bash
 # For Redhat based (Fedora, CentOS, RHEL, etc.)
-rpm -i https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.rpm
+rpm -i https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.rpm
 
 # For Debian based (Ubuntu, Linux Mint, etc.)
-wget https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.deb
+wget https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.deb
 dpkg -i ddosify_amd64.deb
 
 # For Alpine
-wget https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.apk
+wget https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.apk
 apk add --allow-untrusted ddosify_amd64.apk
 
 # For Arch Linux
@@ -89,7 +89,7 @@ makepkg -sri
 pkg install ddosify
 ```
 
-### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/latest)
+### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/tag/v1.0.6)
 
 - Download *.zip file for your architecture. For example download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
 - Unzip `ddosify_x.x.x_windows_amd64.zip`
