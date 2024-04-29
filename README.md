@@ -67,7 +67,7 @@ Anteon Stack consists of 4 parts:
 
 
 <p align="center"> 
-<img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/3f995c37-10fb-4b37-c74f-db1685d0df00/public" alt="Anteon Stack" />
+<img src="assets/anteon_stack.jpg" alt="Anteon Stack" />
 </p>
 
 ### Anteon Engine

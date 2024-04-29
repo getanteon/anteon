@@ -185,7 +185,7 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   hammer:
-    image: anteon/selfhosted_hammer:1.4.2
+    image: anteon/selfhosted_hammer:1.4.3
     volumes:
       - hammer_id:/root/uuid
     depends_on:
@@ -201,7 +201,7 @@ services:
     pull_policy: always
 
   hammerdebug:
-    image: anteon/selfhosted_hammer:1.4.2
+    image: anteon/selfhosted_hammer:1.4.3
     volumes:
       - hammerdebug_id:/root/uuid
     depends_on:
