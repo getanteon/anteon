@@ -83,7 +83,7 @@ var defaultClose = func(c *http.Client) {
 	c.CloseIdleConnections()
 }
 
-// createFactoryMethod returns a Factory function based on the engine mode.
+// createClientFactoryMethod returns a Factory function based on the engine mode.
 func createClientFactoryMethod(mode string, opts ...func(http.CookieJar)) ClientFactoryMethod {
 	if mode == types.EngineModeRepeatedUser {
 		return func() *http.Client {
