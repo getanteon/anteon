@@ -67,7 +67,7 @@ Anteon Stack consists of 4 parts:
 
 
 <p align="center"> 
-<img src="assets/anteon_stack.jpg" alt="Anteon Stack" />
+<img src="assets/anteon_stack.png" alt="Anteon Stack" />
 </p>
 
 ### Anteon Load Engine (Ddosify)
