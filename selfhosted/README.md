@@ -1,18 +1,18 @@
 <div align="center">
-    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
-    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
+    <img src="../assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
+    <img src="../assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Ddosify Self Hosted: Effortless Kubernetes Monitoring and Performance Testing</h1>
+<h1 align="center">Anteon Self Hosted (formerly Ddosify): Effortless Kubernetes Monitoring and Performance Testing</h1>
 
 <p align="center">
-<img src="../assets/ddosify_service_map_filtered.png" alt="Ddosify Kubernetes Monitoring Service Map" />
-<i>Ddosify detects high latency service calls on your K8s cluster. So you can easily find the root service causing the problem.</i>
+<img src="../assets/anteon_service_map_filtered.png" alt="Anteon Kubernetes Monitoring Service Map" />
+<i>Anteon (formerly Ddosify) detects high latency service calls on your K8s cluster. So you can easily find the root service causing the problem.</i>
 </p>
 
-This README provides instructions for installing and an overview of the system requirements for Ddosify Self-Hosted. For further information on its features, please refer to the ["What is Ddosify"](https://github.com/ddosify/ddosify/#what-is-ddosify) section in the main README, or consult the complete [documentation](https://docs.ddosify.com/concepts/test-suite).
+This README provides instructions for installing and an overview of the system requirements for Anteon Self-Hosted. For further information on its features, please refer to the ["What is Anteon"](https://github.com/getanteon/anteon/#what-is-anteon) section in the main README, or consult the complete [documentation](https://getanteon.com/docs/performance-testing/test-suite/).
 
-<a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="ddosify aws marketplace deployment" /></a>&nbsp;
+<a href="https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy" target="_blank"><img src="https://img.shields.io/badge/Available_on_aws_marketplace-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="Anteon aws marketplace deployment" /></a>&nbsp;
 
 ## Effortless Installation
 
@@ -20,13 +20,13 @@ This README provides instructions for installing and an overview of the system r
 
 ✅ **Dockerized**: Containerized solution simplifies deployment and reduces dependency management overhead.
 
-✅ **Helm Chart**: [Helm chart](https://github.com/ddosify/ddosify-helm-charts) for Kubernetes deployments.
+✅ **Helm Chart**: [Helm chart](https://github.com/getanteon/anteon-helm-charts) for Kubernetes deployments.
 
 ✅ **Easy to Deploy**: Automated setup processes using Docker Compose and Helm Charts.
 
 ✅ **AWS Marketplace**: [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-mwvnujtgjedjy) listing for easy deployment on AWS (Amazon Web Services).
 
-✅ **Kubernetes Monitoring**: With the help of [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) you can monitor your Kubernetes Cluster, create Service Map and get metrics from your Kubernetes nodes.
+✅ **Kubernetes Monitoring**: With the help of [Anteon eBPF Agent (Alaz)](https://github.com/getanteon/alaz) you can monitor your Kubernetes Cluster, create Service Map and get metrics from your Kubernetes nodes.
 
 ## 🛠 Prerequisites
 
@@ -43,27 +43,27 @@ This README provides instructions for installing and an overview of the system r
 
 ## ⚡️ Quick Start (docker compose)
 
-You can quickly deploy Ddosify Self Hosted by running the following command. This script clones the Ddosify repository to your `$HOME/.ddosify` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
+You can quickly deploy Anteon Self Hosted by running the following command. This script clones the Anteon repository to your `$HOME/.anteon` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
 
 Only Linux and MacOS are supported at the moment. Windows is not supported.
 
-Ddosify Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Stop/Start the Services](#-stopstart-the-services) section.
+Anteon Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Stop/Start the Services](#-stopstart-the-services) section.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ddosify/ddosify/master/selfhosted/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/getanteon/anteon/master/selfhosted/install.sh | bash
 ```
 
 ## 🚀 Deploy on Kubernetes
 
-You can deploy Ddosify Self Hosted on Kubernetes using the [Helm chart](https://github.com/ddosify/ddosify-helm-charts).
+You can deploy Anteon Self Hosted on Kubernetes using the [Helm chart](https://github.com/getanteon/anteon-helm-charts).
 
 ## 📖 Manual Installation
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/ddosify/ddosify.git
-cd ddosify/selfhosted
+git clone https://github.com/getanteon/anteon.git
+cd anteon/selfhosted
 ```
 
 ### 2. Update the environment variables (optional)
@@ -92,15 +92,15 @@ docker-compose logs
 
 ## 🔧 Add New Engine
 
-The [Ddosify Engine](https://github.com/ddosify/ddosify) is responsible for generating load to the target URL. You can add multiple engines to scale your load testing capabilities. 
+The [Anteon Engine](https://github.com/getanteon/anteon) is responsible for generating load to the target URL. You can add multiple engines to scale your load testing capabilities. 
 
-The Ddosify Self Hosted includes a default engine out of the box. To integrate additional engines, simply run a Docker container for each new engine. These engine containers will automatically register with the service and become available for use. Before adding new engines, ensure that you have enabled the distributed mode by clicking the `Unlock the Distributed Mode` button in the dashboard.
+The Anteon Self Hosted includes a default engine out of the box. To integrate additional engines, simply run a Docker container for each new engine. These engine containers will automatically register with the service and become available for use. Before adding new engines, ensure that you have enabled the distributed mode by clicking the `Unlock the Distributed Mode` button in the dashboard.
 
 In case you have modified the default values like InfluxDB password in the `.env` file, utilize the `--env` flag in the docker run command to establish the necessary environment variables.
 
-Make sure the new engine server can access the service server. Use the `DDOSIFY_SERVICE_ADDRESS` environment variable to specify the service server address where the [install.sh](install.sh) script was executed.
+Make sure the new engine server can access the service server. Use the `SERVICE_ADDRESS` environment variable to specify the service server address where the [install.sh](install.sh) script was executed.
 
-The engine server must connect to the following ports on the `DDOSIFY_SERVICE_ADDRESS`:
+The engine server must connect to the following ports on the `SERVICE_ADDRESS`:
 
 - `9901`: Hammer Manager service. The service server utilizes this port to register the engine.
 - `6672`: RabbitMQ server. The engine server connects to this port to send and receive messages to and from the service server.
@@ -112,71 +112,71 @@ The `NAME` environment variable is used to specify the name of the engine contai
 ### **Example 1**: Adding the engine to the same server
 
 ```bash
-NAME=ddosify_hammer_1
+NAME=anteon_hammer_1
 docker run --name $NAME -dit \
-    --network selfhosted_ddosify \
+    --network anteon \
     --restart always \
-    ddosify/selfhosted_hammer:1.4.2
+    anteon/selfhosted_hammer:1.4.3
 ```
 
 ### **Example 2**: Adding the engine to a different server
 
-Set `DDOSIFY_SERVICE_ADDRESS` to the IP address of the service server. Set `IP_ADDRESS` to the IP address of the engine server.
+Set `SERVICE_ADDRESS` to the IP address of the service server. Set `IP_ADDRESS` to the IP address of the engine server.
 
 ```bash
 # Make sure to set the following environment variables
-DDOSIFY_SERVICE_ADDRESS=SERVICE_IP
+SERVICE_ADDRESS=SERVICE_IP
 IP_ADDRESS=ENGINE_IP
-NAME=ddosify_hammer_1
+NAME=anteon_hammer_1
 
 docker run --name $NAME -dit \
-    --env DDOSIFY_SERVICE_ADDRESS=$DDOSIFY_SERVICE_ADDRESS \
+    --env SERVICE_ADDRESS=$SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
     --restart always \
-    ddosify/selfhosted_hammer:1.4.2
+    anteon/selfhosted_hammer:1.4.3
 ```
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
 
 ### **Example 3**: Adding the engine to Kubernetes
 
-You can deploy the engine on Kubernetes using the Helm chart. Please check the [Ddosify Helm chart](https://github.com/ddosify/ddosify-helm-charts#add-new-engine-optional) repository for more information.
+You can deploy the engine on Kubernetes using the Helm chart. Please check the [Anteon Helm chart](https://github.com/getanteon/anteon-helm-charts#add-new-engine-optional) repository for more information.
 
 ## 🧹 Remove New Engine
 
-If you added new engines, you can remove them by running the following command. Change the docker container name `ddosify_hammer_1` to the name of the engine you added.
+If you added new engines, you can remove them by running the following command. Change the docker container name `anteon_hammer_1` to the name of the engine you added.
 
 ```bash
-docker rm -f ddosify_hammer_1
+docker rm -f anteon_hammer_1
 ```
 
 ## 🛑 Stop/Start the Services
 
-If you installed the project using the [install.sh](./install.sh) script, you must first change the directory to the `$HOME/.ddosify` directory before running the commands below.
+If you installed the project using the [install.sh](./install.sh) script, you must first change the directory to the `$HOME/.anteon` directory before running the commands below.
 
 ```bash
-cd $HOME/.ddosify/selfhosted
+cd $HOME/.anteon/selfhosted
 docker compose down
 ```
 
-If you want to remove the complete data like databases in docker volumes, you can run the following command. ⚠️ Warning: This will remove all the data for Ddosify Self Hosted.
+If you want to remove the complete data like databases in docker volumes, you can run the following command. ⚠️ Warning: This will remove all the data for Anteon Self Hosted.
 
 ```bash
-cd $HOME/.ddosify/selfhosted
+cd $HOME/.anteon/selfhosted
 docker compose down --volumes
 ```
 
-You may encounter the following error when running the `docker compose down` command if you did not [remove the engine](#-remove-new-engine) containers. This is completely fine. The network `selfhosted_ddosify` is not removed from docker. If you do not want to see this error, you can [remove the engine](#-remove-new-engine) containers first then run the `docker compose down` command again.
+You may encounter the following error when running the `docker compose down` command if you did not [remove the engine](#-remove-new-engine) containers. This is completely fine. The network `anteon` is not removed from docker. If you do not want to see this error, you can [remove the engine](#-remove-new-engine) containers first then run the `docker compose down` command again.
 
 ```text
-failed to remove network selfhosted_ddosify: Error response from...
+failed to remove network anteon: Error response from...
 ```
 
 If you want to start the project again, run the script in the [Quick Start](#%EF%B8%8F-quick-start-recommended) section again. 
 
 ## Enable Kubernetes Monitoring
 
-To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Alaz)](https://github.com/ddosify/alaz) as a DaemonSet. Refer to the [Alaz](https://github.com/ddosify/alaz) repository for more information.
+To monitor your Kubernetes Cluster, you need to run the [Anteon eBPF Agent (Alaz)](https://github.com/getanteon/alaz) as a DaemonSet. Refer to the [Alaz](https://github.com/getanteon/alaz) repository for more information.
 
 ## 🧩 Services Overview
 
@@ -195,7 +195,7 @@ To monitor your Kubernetes Cluster, you need to run the [Ddosify eBPF Agent (Ala
 
 ## Telemetry Data
 
-Ddosify Self Hosted collects anonymous usage data to help us improve the product. You can disable this feature by setting the `ANONYMOUS_TELEMETRY_ENABLED` environment variable to `False` of the `backend` service in the [docker-compose.yml](./docker-compose.yml) file.
+Anteon Self Hosted collects anonymous usage data to help us improve the product. You can disable this feature by setting the `ANONYMOUS_TELEMETRY_ENABLED` environment variable to `False` of the `backend` service in the [docker-compose.yml](./docker-compose.yml) file.
 
 ```yaml
 backend:
@@ -252,4 +252,4 @@ backend:
 
 ## 📝 License
 
-Ddosify Self Hosted is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
+Anteon Self Hosted is licensed under the AGPLv3: https://www.gnu.org/licenses/agpl-3.0.html
