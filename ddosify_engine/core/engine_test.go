@@ -342,11 +342,11 @@ func TestRequestData(t *testing.T) {
 	}
 
 	if header1 != "Test1Value" {
-		t.Errorf("invalid header1 receieved: %s", header1)
+		t.Errorf("invalid header1 received: %s", header1)
 	}
 
 	if header2 != "Test2Value" {
-		t.Errorf("invalid header2 receieved: %s", header2)
+		t.Errorf("invalid header2 received: %s", header2)
 	}
 
 	if body != "Body content" {
@@ -414,27 +414,27 @@ func TestRequestDataForMultiScenarioStep(t *testing.T) {
 	expected := []string{"/api_get", "/api_post"}
 	if !reflect.DeepEqual(uri, expected) {
 		t.Logf("%#v - %#v", uri, expected)
-		t.Errorf("invalid uri receieved: %#v expected %#v", uri, expected)
+		t.Errorf("invalid uri received: %#v expected %#v", uri, expected)
 	}
 
 	expected = []string{"HTTP/1.1", "HTTP/1.1"}
 	if !reflect.DeepEqual(protocol, expected) {
-		t.Errorf("invalid protocol receieved: %#v expected %#v", protocol, expected)
+		t.Errorf("invalid protocol received: %#v expected %#v", protocol, expected)
 	}
 
 	expected = []string{"GET", "POST"}
 	if !reflect.DeepEqual(method, expected) {
-		t.Errorf("invalid method receieved: %#v expected %#v", method, expected)
+		t.Errorf("invalid method received: %#v expected %#v", method, expected)
 	}
 
 	expected = []string{"h1", "h2"}
 	if !reflect.DeepEqual(header, expected) {
-		t.Errorf("invalid header receieved: %#v expected %#v", header, expected)
+		t.Errorf("invalid header received: %#v expected %#v", header, expected)
 	}
 
 	expected = []string{"Body 1", "Body 2"}
 	if !reflect.DeepEqual(body, expected) {
-		t.Errorf("invalid body receieved: %#v expected %#v", body, expected)
+		t.Errorf("invalid body received: %#v expected %#v", body, expected)
 	}
 }
 
@@ -1907,7 +1907,7 @@ func TestInvalidCsvEnvs(t *testing.T) {
 	err := h.Validate()
 
 	if err == nil {
-		t.Errorf("TestInvalidCsvEnvs shoul be errored")
+		t.Errorf("TestInvalidCsvEnvs should be errored")
 	}
 }
 
