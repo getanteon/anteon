@@ -3,7 +3,7 @@
     <img src="assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Effortless Kubernetes Monitoring and Performance Testing</h1>
+<h1 align="center">Kickstart Kubernetes Monitoring in 1 min - Free up time for DevOps and Coding</h1>
 
 <p align="center">
     <a href="https://github.com/getanteon/anteon/releases" target="_blank"><img src="https://img.shields.io/github/v/release/getanteon/anteon?style=for-the-badge&logo=github&color=orange" alt="anteon latest version" /></a>&nbsp;
