@@ -12,19 +12,19 @@ services:
       - backend
     restart: always
     networks:
-      - ddosify
+      - anteon
 
   frontend:
-    image: ddosify/selfhosted_frontend:2.7.4
+    image: anteon/selfhosted_frontend:2.7.4
     depends_on:
       - backend
     restart: always
     pull_policy: always
     networks:
-      - ddosify
+      - anteon
 
   backend:
-    image: ddosify/selfhosted_backend:2.6.11
+    image: anteon/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -33,13 +33,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
 
   backend-celery-worker:
-    image: ddosify/selfhosted_backend:2.6.11
+    image: anteon/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -50,13 +50,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   backend-celery-beat:
-    image: ddosify/selfhosted_backend:2.6.11
+    image: anteon/selfhosted_backend:2.6.11
     depends_on:
       - postgres
       - influxdb
@@ -67,13 +67,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
 
   alaz-backend:
-    image: ddosify/selfhosted_alaz_backend:1.0.6
+    image: anteon/selfhosted_alaz_backend:1.0.6
     depends_on:
       - postgres
       - influxdb
@@ -82,13 +82,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
 
   alaz-backend-celery-worker-1:
-    image: ddosify/selfhosted_alaz_backend:1.0.6
+    image: anteon/selfhosted_alaz_backend:1.0.6
     depends_on:
       - postgres
       - influxdb
@@ -99,13 +99,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-worker-2:
-    image: ddosify/selfhosted_alaz_backend:1.0.6
+    image: anteon/selfhosted_alaz_backend:1.0.6
     depends_on:
       - postgres
       - influxdb
@@ -116,13 +116,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-beat:
-    image: ddosify/selfhosted_alaz_backend:1.0.6
+    image: anteon/selfhosted_alaz_backend:1.0.6
     depends_on:
       - postgres
       - influxdb
@@ -133,7 +133,7 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
@@ -141,7 +141,7 @@ services:
   hammermanager:
     ports:
       - "9901:8001"
-    image: ddosify/selfhosted_hammermanager:1.2.4
+    image: anteon/selfhosted_hammermanager:1.2.4
     depends_on:
       - postgres
       - rabbitmq-job
@@ -149,13 +149,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app.sh
 
   hammermanager-celery-worker:
-    image: ddosify/selfhosted_hammermanager:1.2.4
+    image: anteon/selfhosted_hammermanager:1.2.4
     depends_on:
       - postgres
       - rabbitmq-job
@@ -164,13 +164,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   hammermanager-celery-beat:
-    image: ddosify/selfhosted_hammermanager:1.2.4
+    image: anteon/selfhosted_hammermanager:1.2.4
     depends_on:
       - postgres
       - rabbitmq-job
@@ -179,13 +179,13 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
 
   hammer:
-    image: ddosify/selfhosted_hammer:1.4.2
+    image: anteon/selfhosted_hammer:1.4.3
     volumes:
       - hammer_id:/root/uuid
     depends_on:
@@ -196,12 +196,12 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
 
   hammerdebug:
-    image: ddosify/selfhosted_hammer:1.4.2
+    image: anteon/selfhosted_hammer:1.4.3
     volumes:
       - hammerdebug_id:/root/uuid
     depends_on:
@@ -213,7 +213,7 @@ services:
     environment:
       - IS_DEBUG=true
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
 
@@ -225,25 +225,25 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   rabbitmq-celery:
     image: "rabbitmq:3.13.0-alpine"
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   rabbitmq-celery-backend:
     image: "rabbitmq:3.13.0-alpine"
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   rabbitmq-celery-alaz-backend:
     image: "rabbitmq:3.13.0-alpine"
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   rabbitmq-job:
@@ -251,7 +251,7 @@ services:
       - "6672:5672"
     image: "rabbitmq:3.13.0-alpine"
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   influxdb:
@@ -263,12 +263,12 @@ services:
       - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_ORG=ddosify
+      - DOCKER_INFLUXDB_INIT_ORG=anteon
       - DOCKER_INFLUXDB_INIT_BUCKET=hammerBucket
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   redis-backend:
@@ -276,7 +276,7 @@ services:
     volumes:
       - redis_backend_data:/data
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   redis-alaz-backend:
@@ -284,7 +284,7 @@ services:
     volumes:
       - redis_alaz_backend_data:/data
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   seaweedfs:
@@ -293,7 +293,7 @@ services:
       - "8333:8333"
     command: 'server -s3 -dir="/data"'
     networks:
-      - ddosify
+      - anteon
     restart: always
     volumes:
       - seaweedfs_data:/data
@@ -307,7 +307,7 @@ services:
       - ./init_scripts/prometheus/prometheus.yml:/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
-      - ddosify
+      - anteon
     restart: always
 
 volumes:
@@ -321,4 +321,4 @@ volumes:
   prometheus_data:
 
 networks:
-  ddosify:
+  anteon:
