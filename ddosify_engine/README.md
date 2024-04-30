@@ -6,7 +6,6 @@
 <h1 align="center">Ddosify: High-performance load testing tool</h1>
 
 <p align="center">
-    <a href="https://github.com/getanteon/anteon/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/ddosify/ddosify/test.yml?branch=master&style=for-the-badge&logo=github" alt="ddosify build result" /></a>&nbsp;
     <a href="https://pkg.go.dev/go.ddosify.com/ddosify" target="_blank"><img src="https://img.shields.io/github/go-mod/go-version/ddosify/ddosify?style=for-the-badge&logo=go" alt="golang version" /></a>&nbsp;
     <a href="https://app.codecov.io/gh/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/codecov/c/github/ddosify/ddosify?style=for-the-badge&logo=codecov" alt="go coverage" /></a>&nbsp;
     <a href="https://goreportcard.com/report/github.com/getanteon/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/getanteon/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;

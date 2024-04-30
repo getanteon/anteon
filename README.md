@@ -7,7 +7,6 @@
 
 <p align="center">
     <a href="https://github.com/getanteon/anteon/releases" target="_blank"><img src="https://img.shields.io/github/v/release/getanteon/anteon?style=for-the-badge&logo=github&color=orange" alt="anteon latest version" /></a>&nbsp;
-    <a href="https://github.com/getanteon/anteon/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/getanteon/anteon/test.yml?branch=master&style=for-the-badge&logo=github" alt="Anteon build result" /></a>&nbsp;
     <a href="https://github.com/getanteon/anteon/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="Anteon license" /></a>
     <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="Anteon discord server" /></a>
     <a href="https://landscape.cncf.io/?item=observability-and-analysis--observability--anteon" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
