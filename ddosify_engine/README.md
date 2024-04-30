@@ -729,7 +729,7 @@ Users can specify the required percentile of response times and failure counts i
 
 Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-You can see an success criteria example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/engine_docs/EXAMPLES.md#example-2-success-criteria) file.
+You can see an success criteria example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-2-success-criteria) file.
 
 ## Difference Between Success Criteria and Step Assertions
 
