@@ -3,10 +3,9 @@
     <img src="../assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Ddosify Engine: High-performance load testing tool</h1>
+<h1 align="center">Ddosify: High-performance load testing tool</h1>
 
 <p align="center">
-    <a href="https://github.com/getanteon/anteon/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/ddosify/ddosify/test.yml?branch=master&style=for-the-badge&logo=github" alt="ddosify build result" /></a>&nbsp;
     <a href="https://pkg.go.dev/go.ddosify.com/ddosify" target="_blank"><img src="https://img.shields.io/github/go-mod/go-version/ddosify/ddosify?style=for-the-badge&logo=go" alt="golang version" /></a>&nbsp;
     <a href="https://app.codecov.io/gh/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/codecov/c/github/ddosify/ddosify?style=for-the-badge&logo=codecov" alt="go coverage" /></a>&nbsp;
     <a href="https://goreportcard.com/report/github.com/getanteon/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/getanteon/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;
@@ -44,7 +43,7 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/r/anteon/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/latest) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/getanteon/anteon/blob/master/completions/README.md).
+`ddosify` is available via [Docker](https://hub.docker.com/r/anteon/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 
 ### Docker
 
@@ -102,7 +101,7 @@ pkg install ddosify
 ### Using the convenience script (macOS and Linux)
 
 - The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
-- The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, amd64) to download the appropriate binary from the [releases page](https://github.com/getanteon/anteon/releases/latest).
+- The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, amd64) to download the appropriate binary from the [releases page](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 - By default, the script installs the latest version of `ddosify`.
 - If you have problems, check [common issues](#common-issues)
 - Required packages: `curl` and `sudo`
@@ -249,7 +248,7 @@ Usage;
     ddosify -config <json_config_path>
 
 
-There is an example config file at [config_examples/config.json](/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
+There is an example config file at [config_examples/config.json](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
 
 - `iteration_count` *optional*
 
@@ -299,7 +298,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `data` *optional*
   Config for loading test data from a CSV file.
-  [CSV data](https://github.com/getanteon/anteon/tree/master/config/config_testdata/test.csv) used in below config.
+  [CSV data](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config/config_testdata/test.csv) used in below config.
     ```json
     "data":{
         "info": {
@@ -725,11 +724,11 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 Ddosify supports success criteria, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
 
-Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/getanteon/anteon/blob/master/config_examples/config.json) to see how it looks the `success_criterias` keyword.
+Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json) to see how it looks the `success_criterias` keyword.
 
 Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-You can see an success criteria example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/engine_docs/EXAMPLES.md#example-2-success-criteria) file.
+You can see an success criteria example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-2-success-criteria) file.
 
 ## Difference Between Success Criteria and Step Assertions
 
@@ -982,11 +981,11 @@ In `repeated-user` mode Ddosify uses the same cookie jar for all iterations exec
 
 In `distinct-user` mode Ddosify uses a different cookie jar for each iteration, cookies passed through steps in one iteration only.
 
-You can see an cookie example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/engine_docs/EXAMPLES.md#example-1-cookie-support) file.
+You can see an cookie example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-1-cookie-support) file.
 
 ### Initial / Custom Cookies
 
-You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/getanteon/anteon/tree/master/config/config_testdata/config_init_cookies.json).
+You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config/config_testdata/config_init_cookies.json).
 
 
 | Key       | Description                                                                                                     | Example                                                         |

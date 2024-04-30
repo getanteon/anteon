@@ -3,11 +3,10 @@
     <img src="assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Effortless Kubernetes Monitoring and Performance Testing</h1>
+<h1 align="center">Kickstart Kubernetes Monitoring in 1 min - Free up time for DevOps and Coding</h1>
 
 <p align="center">
     <a href="https://github.com/getanteon/anteon/releases" target="_blank"><img src="https://img.shields.io/github/v/release/getanteon/anteon?style=for-the-badge&logo=github&color=orange" alt="anteon latest version" /></a>&nbsp;
-    <a href="https://github.com/getanteon/anteon/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/getanteon/anteon/test.yml?branch=master&style=for-the-badge&logo=github" alt="Anteon build result" /></a>&nbsp;
     <a href="https://github.com/getanteon/anteon/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="Anteon license" /></a>
     <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="Anteon discord server" /></a>
     <a href="https://landscape.cncf.io/?item=observability-and-analysis--observability--anteon" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
@@ -46,7 +45,7 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 
 ### 🔨 Performance Testing
 
-- **Multi-Location Based:** Generate load/performance tests from over 25 countries worldwide. Its available on [Anteon Cloud](https://app.getanteon.com/).
+- **Multi-Location Based:** Generate load/performance tests from over 25 countries worldwide. Its available on [Anteon Cloud](https://getanteon.com/).
 - **Easy Scenario Builder:** Create test scenarios easily without writing any code.
 - **Seamless Integration with Kubernetes Monitoring:** Performance testing is natively integrated with Kubernetes monitoring for a unified experience.
 - **Postman Integration:** Import tests directly from Postman, making it convenient for those already using Postman for API development and testing.
@@ -60,21 +59,21 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 
 Anteon Stack consists of 4 parts:
 
-- [Anteon Engine](#anteon-engine)
+- [Anteon Load Engine (Ddosify)](#anteon-load-engine-ddosify)
 - [Anteon eBPF Agent (Alaz)](#anteon-ebpf-agent-alaz)
 - [Anteon Self-Hosted](#anteon-self-hosted)
 - [Anteon Cloud](#anteon-cloud)
 
 
 <p align="center"> 
-<img src="assets/anteon_stack.jpg" alt="Anteon Stack" />
+<img src="assets/anteon_stack.png" alt="Anteon Stack" />
 </p>
 
-### Anteon Engine
+### Anteon Load Engine (Ddosify)
 
-[Anteon Engine](https://github.com/getanteon/anteon) is the load engine, written in Golang. It's a CLI load-testing tool. Anteon Self-Hosted and Anteon Cloud use it under the hood for load generation. It is fully open-source and can be used on the CLI as a standalone tool. It has ~8K Github Stars. Anteon Engine is available via [Docker](https://hub.docker.com/r/getanteon/anteon), [Docker Extension](https://hub.docker.com/extensions/getanteon/anteon-docker-extension), [Homebrew Tap](https://github.com/getanteon/anteon#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/latest) for macOS, Linux, and Windows.
+[Ddosify](https://github.com/getanteon/anteon/tree/master/ddosify_engine) is the load engine, written in Golang. It's a CLI load-testing tool. Anteon Self-Hosted and Anteon Cloud use it under the hood for load generation. It is fully open-source and can be used on the CLI as a standalone tool. It has ~8K Github Stars. Ddosify is available via [Docker](https://hub.docker.com/r/getanteon/anteon), [Docker Extension](https://hub.docker.com/extensions/getanteon/anteon-docker-extension), [Homebrew Tap](https://github.com/getanteon/anteon/tree/master/ddosify_engine#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux, and Windows.
 
-Check out the [Engine Docs](https://github.com/getanteon/anteon/tree/master/engine_docs) page for more information and usage.
+Check out the [Ddosify Docs](https://github.com/getanteon/anteon/tree/master/ddosify_engine) page for more information and usage.
 
 ### Anteon eBPF Agent (Alaz)
 [Alaz](https://github.com/getanteon/alaz) is an open-source Anteon eBPF agent that can inspect and collect Kubernetes (K8s) service traffic without the need for code instrumentation, sidecars, or service restarts. Alaz is deployed as a DaemonSet on your Kubernetes cluster. It collects metrics and sends them to Anteon Cloud or Anteon Self-Hosted. It is also Prometheus compatible, so that you can use it as a standalone tool.
@@ -108,8 +107,6 @@ curl -sSL https://raw.githubusercontent.com/getanteon/anteon/master/selfhosted/i
 [Anteon Cloud](https://app.getanteon.com/) features a SaaS, web-based user interface, multi-location-based **Performance Testing**, and **Kubernetes Monitoring**. Anyone can test the performance of backend endpoints, monitor Kubernetes Clusters, and find the bottlenecks in the system. It has a simple/no code UI, insightful charts, service maps, and more features. 
 
 With Anteon Cloud, you can generate traffic to your endpoints from 25+ countries without code or scripting. 
-
-With [Latency Testing](https://getanteon.com/docs/latency-testing), you can test the latency of your endpoints from 60+ cities worldwide.
 
 Check out [Anteon Cloud](https://app.getanteon.com/) to find the performance issues on your system instantly.
 
@@ -206,9 +203,9 @@ Import Postman collections with ease and transform them into load testing scenar
 
 ## About This Repository
 
-This repository includes the source code for the Anteon Engine. You can access Docker Images for the Anteon Engine and Self Hosted on <a href="https://hub.docker.com/u/getanteon" target="_blank">Docker Hub</a>. Since Anteon is a Verified Publisher on Docker Hub, you do not have any pull limits.
+This repository includes the source code for the Anteon Load Engine(Ddosify). You can access Docker Images for the Anteon Engine and Self Hosted on <a href="https://hub.docker.com/u/getanteon" target="_blank">Docker Hub</a>. Since Anteon is a Verified Publisher on Docker Hub, you do not have any pull limits.
 
-The [Engine Docs](https://github.com/getanteon/anteon/tree/master/engine_docs) folder provides information on the installation, usage, and features of the Anteon Engine. The [Self-Hosted](https://github.com/getanteon/anteon/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. [Anteon eBPF agent (Alaz)](https://github.com/getanteon/alaz) has its own repository. 
+The [Ddosify Docs](https://github.com/getanteon/anteon/tree/master/ddosify_engine) folder provides information on the installation, usage, and features of the Anteon Load Engine (Ddosify). The [Self-Hosted](https://github.com/getanteon/anteon/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. [Anteon eBPF agent (Alaz)](https://github.com/getanteon/alaz) has its own repository. 
 
 To learn about the **Performance Testing** usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://getanteon.com/docs/performance-testing/test-suite). For the **Kubernetes Monitoring** usage, please refer to the [this documentation](https://getanteon.com/docs/kubernetes-monitoring).
 
