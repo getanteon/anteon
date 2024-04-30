@@ -60,7 +60,7 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 
 Anteon Stack consists of 4 parts:
 
-- [Anteon Load Engine (Ddosify)](#anteon-engine)
+- [Anteon Load Engine (Ddosify)](#anteon-load-engine-ddosify)
 - [Anteon eBPF Agent (Alaz)](#anteon-ebpf-agent-alaz)
 - [Anteon Self-Hosted](#anteon-self-hosted)
 - [Anteon Cloud](#anteon-cloud)
