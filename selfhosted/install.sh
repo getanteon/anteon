@@ -92,7 +92,7 @@ $COMPOSE_COMMAND -f "$REPO_DIR/selfhosted/docker-compose.yml" up -d
 docker pull busybox:1.34.1 >/dev/null 2>&1
 echo ""
 echo "⏳ Waiting for services to be ready..."
-docker run --rm --network anteon busybox:1.34.1 /bin/sh -c "until nc -z nginx 80 && nc -z backend 8008 && nc -z hammermanager 8001 && nc -z rabbitmq-celery 5672 && nc -z rabbitmq-job 5672 && nc -z postgres 5432 && nc -z influxdb 8086 && nc -z seaweedfs 8333; do sleep 5; done"
+docker run --rm --network selfhosted_anteon busybox:1.34.1 /bin/sh -c "until nc -z nginx 80 && nc -z backend 8008 && nc -z hammermanager 8001 && nc -z rabbitmq-celery 5672 && nc -z rabbitmq-job 5672 && nc -z postgres 5432 && nc -z influxdb 8086 && nc -z seaweedfs 8333; do sleep 5; done"
 echo "✅ Anteon Self Hosted installation complete!"
 echo "📁 Installation directory: $REPO_DIR/selfhosted"
 echo "🔥 To remove Anteon Self Hosted, run: cd $REPO_DIR/selfhosted && $COMPOSE_COMMAND down"
