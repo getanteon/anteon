@@ -116,7 +116,7 @@ NAME=anteon_hammer_1
 docker run --name $NAME -dit \
     --network anteon \
     --restart always \
-    anteon/selfhosted_hammer:1.4.3
+    ddosify/selfhosted_hammer:1.4.3
 ```
 
 ### **Example 2**: Adding the engine to a different server
@@ -133,7 +133,7 @@ docker run --name $NAME -dit \
     --env SERVICE_ADDRESS=$SERVICE_ADDRESS \
     --env IP_ADDRESS=$IP_ADDRESS \
     --restart always \
-    anteon/selfhosted_hammer:1.4.3
+    ddosify/selfhosted_hammer:1.4.3
 ```
 
 You should see `mq_waiting_new_job` log in the engine container logs. This means that the engine is waiting for a job from the service server. After the engine is added, you can see it in the Engines page in the dashboard.
