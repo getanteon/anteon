@@ -267,7 +267,7 @@ services:
       - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_ORG=anteon
+      - DOCKER_INFLUXDB_INIT_ORG=ddosify
       - DOCKER_INFLUXDB_INIT_BUCKET=hammerBucket
     env_file:
       - .env
