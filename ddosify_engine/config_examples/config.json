@@ -57,7 +57,7 @@
     "steps": [
         {
             "id": 1,
-            "url": "https://test_site1.com/endpoint_1",
+            "url": "https://getanteon.com/endpoint_1",
             "method": "POST",
             "headers": {
                 "Content-Type": "application/xml",
@@ -102,7 +102,7 @@
         },
         {
             "id": 3,
-            "url": "https://test_site1.com/endpoint_3",
+            "url": "https://getanteon.com/endpoint_3",
             "method": "POST",
             "payload_multipart": [
                 {
