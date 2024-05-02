@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   nginx:
-    image: nginx:1.25.4-alpine
+    image: nginx:1.25.5-alpine
     ports:
       - '8014:80'
     volumes:
@@ -15,7 +15,7 @@ services:
       - anteon
 
   frontend:
-    image: ddosify/selfhosted_frontend:3.0.2
+    image: ddosify/selfhosted_frontend:3.0.3
     depends_on:
       - backend
     restart: always
@@ -24,7 +24,7 @@ services:
       - anteon
 
   backend:
-    image: ddosify/selfhosted_backend:3.0.0
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
@@ -41,14 +41,14 @@ services:
       - '8008:8008'
 
   backend-celery-worker:
-    image: ddosify/selfhosted_backend:3.0.0
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
       - redis-backend
       - seaweedfs
       - backend
-      - rabbitmq-celery-backend
+      - rabbitmq
     env_file:
       - .env
     networks:
@@ -58,14 +58,14 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   backend-celery-beat:
-    image: ddosify/selfhosted_backend:3.0.0
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
       - redis-backend
       - seaweedfs
       - backend
-      - rabbitmq-celery-backend
+      - rabbitmq
     env_file:
       - .env
     networks:
@@ -75,7 +75,7 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   alaz-backend:
-    image: ddosify/selfhosted_alaz_backend:2.0.0
+    image: ddosify/selfhosted_alaz_backend:2.0.1
     depends_on:
       - postgres
       - influxdb
@@ -92,13 +92,13 @@ services:
       - '8009:8008'
 
   alaz-backend-celery-worker-1:
-    image: ddosify/selfhosted_alaz_backend:2.0.0
+    image: ddosify/selfhosted_alaz_backend:2.0.1
     depends_on:
       - postgres
       - influxdb
       - redis-alaz-backend
       - alaz-backend
-      - rabbitmq-celery-backend
+      - rabbitmq
       - backend
     env_file:
       - .env
@@ -109,13 +109,13 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-worker-2:
-    image: ddosify/selfhosted_alaz_backend:2.0.0
+    image: ddosify/selfhosted_alaz_backend:2.0.1
     depends_on:
       - postgres
       - influxdb
       - redis-alaz-backend
       - alaz-backend
-      - rabbitmq-celery-backend
+      - rabbitmq
       - backend
     env_file:
       - .env
@@ -126,13 +126,13 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-beat:
-    image: ddosify/selfhosted_alaz_backend:2.0.0
+    image: ddosify/selfhosted_alaz_backend:2.0.1
     depends_on:
       - postgres
       - influxdb
       - redis-alaz-backend
       - alaz-backend
-      - rabbitmq-celery-backend
+      - rabbitmq
       - backend
     env_file:
       - .env
@@ -145,11 +145,10 @@ services:
   hammermanager:
     ports:
       - "9901:8001"
-    image: ddosify/selfhosted_hammermanager:2.0.0
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
     env_file:
       - .env
     networks:
@@ -159,11 +158,10 @@ services:
     command: /workspace/start_scripts/start_app.sh
 
   hammermanager-celery-worker:
-    image: ddosify/selfhosted_hammermanager:2.0.0
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
       - hammermanager
     env_file:
       - .env
@@ -174,11 +172,10 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   hammermanager-celery-beat:
-    image: ddosify/selfhosted_hammermanager:2.0.0
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
       - hammermanager
     env_file:
       - .env
@@ -189,11 +186,11 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   hammer:
-    image: ddosify/selfhosted_hammer:1.4.3
+    image: ddosify/selfhosted_hammer:2.0.0
     volumes:
       - hammer_id:/root/uuid
     depends_on:
-      - rabbitmq-job
+      - rabbitmq
       - influxdb
       - hammermanager
       - seaweedfs
@@ -205,11 +202,11 @@ services:
     pull_policy: always
 
   hammerdebug:
-    image: ddosify/selfhosted_hammer:1.4.3
+    image: ddosify/selfhosted_hammer:2.0.0
     volumes:
       - hammerdebug_id:/root/uuid
     depends_on:
-      - rabbitmq-job
+      - rabbitmq
       - influxdb
       - hammermanager
     env_file:
@@ -222,7 +219,7 @@ services:
     pull_policy: always
 
   postgres:
-    image: "postgres:13.6-alpine"
+    image: "postgres:16.2-alpine"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_scripts/postgres:/docker-entrypoint-initdb.d
@@ -232,28 +229,10 @@ services:
       - anteon
     restart: always
 
-  rabbitmq-celery:
-    image: "rabbitmq:3.13.0-alpine"
-    networks:
-      - anteon
-    restart: always
-
-  rabbitmq-celery-backend:
-    image: "rabbitmq:3.13.0-alpine"
-    networks:
-      - anteon
-    restart: always
-
-  rabbitmq-celery-alaz-backend:
-    image: "rabbitmq:3.13.0-alpine"
-    networks:
-      - anteon
-    restart: always
-
-  rabbitmq-job:
+  rabbitmq:
     ports:
       - "6672:5672"
-    image: "rabbitmq:3.13.0-alpine"
+    image: "rabbitmq:3.13.1-alpine"
     networks:
       - anteon
     restart: always
