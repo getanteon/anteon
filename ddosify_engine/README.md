@@ -43,7 +43,7 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/r/anteon/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
+`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 
 ### Docker
 
