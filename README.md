@@ -71,7 +71,7 @@ Anteon Stack consists of 4 parts:
 
 ### Anteon Load Engine (Ddosify)
 
-[Ddosify](https://github.com/getanteon/anteon/tree/master/ddosify_engine) is the load engine, written in Golang. It's a CLI load-testing tool. Anteon Self-Hosted and Anteon Cloud use it under the hood for load generation. It is fully open-source and can be used on the CLI as a standalone tool. It has ~8K Github Stars. Ddosify is available via [Docker](https://hub.docker.com/r/getanteon/anteon), [Docker Extension](https://hub.docker.com/extensions/getanteon/anteon-docker-extension), [Homebrew Tap](https://github.com/getanteon/anteon/tree/master/ddosify_engine#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux, and Windows.
+[Ddosify](https://github.com/getanteon/anteon/tree/master/ddosify_engine) is the load engine, written in Golang. It's a CLI load-testing tool. Anteon Self-Hosted and Anteon Cloud use it under the hood for load generation. It is fully open-source and can be used on the CLI as a standalone tool. It has ~8K Github Stars. Ddosify is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/getanteon/anteon-docker-extension), [Homebrew Tap](https://github.com/getanteon/anteon/tree/master/ddosify_engine#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux, and Windows.
 
 Check out the [Ddosify Docs](https://github.com/getanteon/anteon/tree/master/ddosify_engine) page for more information and usage.
 
