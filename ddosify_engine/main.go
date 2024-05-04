@@ -117,6 +117,7 @@ var createHammerFromConfigFile = func(debug bool) (h types.Hammer, err error) {
 	if err != nil {
 		return
 	}
+	defer f.Close()
 
 	byteValue, err := ioutil.ReadAll(f)
 	if err != nil {
