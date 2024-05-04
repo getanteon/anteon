@@ -203,7 +203,7 @@ Import Postman collections with ease and transform them into load testing scenar
 
 ## About This Repository
 
-This repository includes the source code for the Anteon Load Engine(Ddosify). You can access Docker Images for the Anteon Engine and Self Hosted on <a href="https://hub.docker.com/u/getanteon" target="_blank">Docker Hub</a>. Since Anteon is a Verified Publisher on Docker Hub, you do not have any pull limits.
+This repository includes the source code for the Anteon Load Engine(Ddosify). You can access Docker Images for the Anteon Engine and Self Hosted on <a href="https://hub.docker.com/u/ddosify" target="_blank">Docker Hub</a>. Since Anteon is a Verified Publisher on Docker Hub, you do not have any pull limits.
 
 The [Ddosify Docs](https://github.com/getanteon/anteon/tree/master/ddosify_engine) folder provides information on the installation, usage, and features of the Anteon Load Engine (Ddosify). The [Self-Hosted](https://github.com/getanteon/anteon/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. [Anteon eBPF agent (Alaz)](https://github.com/getanteon/alaz) has its own repository. 
 
