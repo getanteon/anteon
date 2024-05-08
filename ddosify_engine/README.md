@@ -148,7 +148,7 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
     `ddosify -t https://getanteon.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'`
 
-   Ddosify sends a total of *100* *GET* requests to *https://getanteon.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization).
+   Ddosify sends a total of *100* *GET* requests to *https://getanteon.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
 
 6. ### Correlation (Captured Variables)
 
@@ -558,7 +558,7 @@ There is an example config file at [config_examples/config.json](https://github.
 
 Just like the Postman, Ddosify supports parameterization (dynamic variables) on *URL*, *headers*, *payload (body)* and *basic authentication*. Actually, we support all the random methods Postman supports. If you use `{{$randomVariable}}` on Postman you can use it as `{{_randomVariable}}` on Ddosify. Just change `$` to `_` and you will be fine. To simulate a realistic load test on your system, Ddosify can send every request with dynamic variables.
 
-The full list of dynamic variables can be found in the [Ddosify Docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization).
+The full list of dynamic variables can be found in the [Ddosify Docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
 
 ### Parameterization on URL
 

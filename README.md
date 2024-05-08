@@ -120,19 +120,19 @@ Check out [Anteon Cloud](https://app.getanteon.com/) to find the performance iss
 ## Kubernetes Monitoring Features
 
 #### ✅ Service Map
-Easily get insights about what is going on in your cluster. You do not have to change your code or add sidecars anymore. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map" target="_blank">More →</a>
+Easily get insights about what is going on in your cluster. You do not have to change your code or add sidecars anymore. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map/" target="_blank">More →</a>
 <p align="left">
 <img src="assets/anteon_service_map_detail.png" alt="Anteon - Service Map Feature" />
 </p>
 
 #### ✅  Detailed Insights
-Inspect incoming, outgoing traffic, SQL queries, golden signals, HTTP 5xx status codes, Top Latencies and RPS, and more. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map" target="_blank">More →</a>
+Inspect incoming, outgoing traffic, SQL queries, golden signals, HTTP 5xx status codes, Top Latencies and RPS, and more. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map/" target="_blank">More →</a>
 <p align="left">
 <img src="assets/anteon_service_summary.png" alt="Anteon - Detailed Insights Feature" />
 </p>
 
 #### ✅  Metrics Dashboard
-The Metric Dashboard provides a straightforward way to observe Node Metrics. Anteon observes CPU, Memory, Disk, and Network usage of your nodes. You can also create alerts on these metrics. <a href="https://getanteon.com/docs/kubernetes-monitoring/metrics" target="_blank">More →</a>
+The Metric Dashboard provides a straightforward way to observe Node Metrics. Anteon observes CPU, Memory, Disk, and Network usage of your nodes. You can also create alerts on these metrics. <a href="https://getanteon.com/docs/kubernetes-monitoring/metrics/" target="_blank">More →</a>
 
 <p align="left">
 <img src="assets/anteon_metrics_detailed.png" alt="Anteon - Metrics Dashboard Feature" />
@@ -153,49 +153,49 @@ You will see the incoming requests to your K8s cluster, service-to-service traff
 
 #### ✅ Distributed Tracing
 
-Anteon automatically collects traces from your Kubernetes cluster and generates context propagation without changing a single line of code. <a href="https://getanteon.com/docs/kubernetes-monitoring/distributed-tracing" target="_blank">More →</a>
+Anteon automatically collects traces from your Kubernetes cluster and generates context propagation without changing a single line of code. <a href="https://getanteon.com/docs/kubernetes-monitoring/distributed-tracing/" target="_blank">More →</a>
 
 
 ## Performance Testing Features
 #### ✅  Parametrization
-Use built-in random data generators. <a href="https://getanteon.com/docs/performance-testing/parametrization" target="_blank">More →</a>
+Use built-in random data generators. <a href="https://getanteon.com/docs/performance-testing/parametrization/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/4dc3f294-6319-4c2b-a56b-c359276d5e00/public" alt="Anteon - Parametrization Feature" />
 </p>
 
 
 #### ✅  CSV Data Import
-Import test data from CSV and use it in the scenario. <a href="https://getanteon.com/docs/performance-testing/test-data-import" target="_blank">More →</a>
+Import test data from CSV and use it in the scenario. <a href="https://getanteon.com/docs/performance-testing/test-data-import/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/6c769b68-e046-440d-137c-b20dd3518300/public" alt="Anteon - Test Data Feature" />
 </p>
 
 #### ✅  Environments
-Store constant values as environment variables. <a href="https://getanteon.com/docs/performance-testing/environment-variables" target="_blank">More →</a>
+Store constant values as environment variables. <a href="https://getanteon.com/docs/performance-testing/environment-variables/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/78c45dca-03de-4cbf-0edc-fb2b8a2e6600/public" alt="Anteon - Environment Feature" />
 </p>
 
 #### ✅  Correlation
-Extract variables from earlier phases and pass them on to the following ones. <a href="https://getanteon.com/docs/performance-testing/correlation" target="_blank">More →</a>
+Extract variables from earlier phases and pass them on to the following ones. <a href="https://getanteon.com/docs/performance-testing/correlation/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/7ac98b0f-043b-494f-3c17-7a5436e81400/public" alt="Anteon - Correlation Feature" />
 </p>
 
 #### ✅  Assertion
-Verify that the response matches your expectations. <a href="https://getanteon.com/docs/performance-testing/assertion" target="_blank">More →</a>
+Verify that the response matches your expectations. <a href="https://getanteon.com/docs/performance-testing/assertion/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/f2f0df70-8e2b-4308-ca6a-4259274d0400/public" alt="Anteon - Assertion Feature" />
 </p>
 
 #### ✅  Debugging
-Analyze request and response data before starting the load test. <a href="https://getanteon.com/docs/performance-testing/debugging" target="_blank">More →</a>
+Analyze request and response data before starting the load test. <a href="https://getanteon.com/docs/performance-testing/debugging/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/82322e21-2e3a-4284-9643-1c8dacda2400/public" alt="Anteon - Debugging Feature" />
 </p>
 
 #### ✅  Postman Import
-Import Postman collections with ease and transform them into load testing scenarios. <a href="https://getanteon.com/docs/performance-testing/postman-import" target="_blank">More →</a>
+Import Postman collections with ease and transform them into load testing scenarios. <a href="https://getanteon.com/docs/performance-testing/postman-import/" target="_blank">More →</a>
 <p align="left">
 <img src="https://imagedelivery.net/jnIqn6NB1gbMLXIvlYKo5A/873bf1e3-07a0-427c-8f32-0791d1728900/public" alt="Anteon - Postman Import Feature" />
 </p>
@@ -207,7 +207,7 @@ This repository includes the source code for the Anteon Load Engine(Ddosify). Yo
 
 The [Ddosify Docs](https://github.com/getanteon/anteon/tree/master/ddosify_engine) folder provides information on the installation, usage, and features of the Anteon Load Engine (Ddosify). The [Self-Hosted](https://github.com/getanteon/anteon/tree/master/selfhosted) folder contains installation instructions for the Self-Hosted version. [Anteon eBPF agent (Alaz)](https://github.com/getanteon/alaz) has its own repository. 
 
-To learn about the **Performance Testing** usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://getanteon.com/docs/performance-testing/test-suite). For the **Kubernetes Monitoring** usage, please refer to the [this documentation](https://getanteon.com/docs/kubernetes-monitoring).
+To learn about the **Performance Testing** usage of both Self-Hosted and Cloud versions, please refer to the [this documentation](https://getanteon.com/docs/performance-testing/test-suite/). For the **Kubernetes Monitoring** usage, please refer to the [this documentation](https://getanteon.com/docs/kubernetes-monitoring/).
 
 ## Communication
 
