@@ -1,12 +1,12 @@
 <div align="center">
-    <img src="../assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
-    <img src="../assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
 <h1 align="center">Anteon Self Hosted (formerly Ddosify): Effortless Kubernetes Monitoring and Performance Testing</h1>
 
 <p align="center">
-<img src="../assets/anteon_service_map_filtered.png" alt="Anteon Kubernetes Monitoring Service Map" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_service_map_filtered.png" alt="Anteon Kubernetes Monitoring Service Map" />
 <i>Anteon (formerly Ddosify) detects high latency service calls on your K8s cluster. So you can easily find the root service causing the problem.</i>
 </p>
 
@@ -30,7 +30,7 @@ This README provides instructions for installing and an overview of the system r
 
 ## 🛠 Prerequisites
 
-- [Git](https://git-scm.com/)
+- [Git](https://git-scm.com)
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/) (`docker-compose` or `docker compose`)
 

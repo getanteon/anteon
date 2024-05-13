@@ -80,4 +80,4 @@ We believe that a strong community is key to the success of the Ddosify. You can
 - Participating in discussions on GitHub [issues](https://github.com/ddosify/ddosify/issues) and [pull requests](https://github.com/ddosify/ddosify/pulls), providing feedback, suggestions, or sharing your experiences with the tool.
 - Promoting the Ddosify by writing blog posts, creating video tutorials, or sharing the project on social media.
 
-You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else. We're happy to help you out! 
+You can join our [Discord Server](https://discord.com/invite/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else. We're happy to help you out! 

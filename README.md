@@ -1,6 +1,6 @@
 <div align="center">
-    <img src="assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
-    <img src="assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
+    <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
 <h1 align="center">Kickstart Kubernetes Monitoring in 1 min - Free up time for DevOps and Coding</h1>
@@ -8,19 +8,19 @@
 <p align="center">
     <a href="https://github.com/getanteon/anteon/releases" target="_blank"><img src="https://img.shields.io/github/v/release/getanteon/anteon?style=for-the-badge&logo=github&color=orange" alt="anteon latest version" /></a>&nbsp;
     <a href="https://github.com/getanteon/anteon/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="Anteon license" /></a>
-    <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="Anteon discord server" /></a>
+    <a href="https://discord.com/invite/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="Anteon discord server" /></a>
     <a href="https://landscape.cncf.io/?item=observability-and-analysis--observability--anteon" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
 </p>
 
 <p align="center">
-<img src="assets/anteon_service_map.png" alt="Anteon Kubernetes Monitoring Service Map" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_service_map.png" alt="Anteon Kubernetes Monitoring Service Map" />
 <i>Anteon automatically generates Service Map of your K8s cluster without code instrumentation or sidecars. So you can easily find the bottlenecks in your system. Red lines indicate the high latency between services.</i>
 </p>
 
 <h2 align="center">
     <a href="https://demo.getanteon.com/" target="_blank">Live Demo</a> •
     <a href="https://getanteon.com/docs" target="_blank">Documentation</a> •
-    <a href="https://discord.gg/9KdnrSUZQg" target="_blank">Discord</a>
+    <a href="https://discord.com/invite/9KdnrSUZQg" target="_blank">Discord</a>
 </h2>
 
 ## What is Anteon (formerly Ddosify)?
@@ -39,7 +39,7 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 - **Distributed Tracing:** Anteon automatically collects traces from your Kubernetes cluster and generates context propagation without changing a single line of code.
 
 <p align="center">
-<img src="assets/anteon_metrics.png" alt="Anteon Kubernetes Monitoring Metrics" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_metrics.png" alt="Anteon Kubernetes Monitoring Metrics" />
 <i>Anteon tracks and displays live data on your cluster instances CPU, memory, disk, and network usage.</i>
 </p>
 
@@ -51,7 +51,7 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 - **Postman Integration:** Import tests directly from Postman, making it convenient for those already using Postman for API development and testing.
 
 <p align="center">
-<img src="assets/anteon_performance_testing.png" alt="Anteon Kubernetes Monitoring Metrics" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_performance_testing.png" alt="Anteon Kubernetes Monitoring Metrics" />
 <i>Anteon Performance Testing generates load from worldwide with no-code scenario builder.</i>
 </p>
 
@@ -66,7 +66,7 @@ Anteon Stack consists of 4 parts:
 
 
 <p align="center"> 
-<img src="assets/anteon_stack.png" alt="Anteon Stack" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_stack.png" alt="Anteon Stack" />
 </p>
 
 ### Anteon Load Engine (Ddosify)
@@ -112,7 +112,7 @@ Check out [Anteon Cloud](https://app.getanteon.com/) to find the performance iss
 
 ### Comparison of Anteon Cloud, Self-Hosted EE, Self-Hosted CE
 <p align="center">
-<img src="assets/anteon_comparison.jpg" alt="Anteon versus" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_comparison.jpg" alt="Anteon versus" />
 
 *CE: Community Edition, EE: Enterprise Edition*
 </p>
@@ -122,20 +122,20 @@ Check out [Anteon Cloud](https://app.getanteon.com/) to find the performance iss
 #### ✅ Service Map
 Easily get insights about what is going on in your cluster. You do not have to change your code or add sidecars anymore. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map/" target="_blank">More →</a>
 <p align="left">
-<img src="assets/anteon_service_map_detail.png" alt="Anteon - Service Map Feature" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_service_map_detail.png" alt="Anteon - Service Map Feature" />
 </p>
 
 #### ✅  Detailed Insights
 Inspect incoming, outgoing traffic, SQL queries, golden signals, HTTP 5xx status codes, Top Latencies and RPS, and more. <a href="https://getanteon.com/docs/kubernetes-monitoring/service-map/" target="_blank">More →</a>
 <p align="left">
-<img src="assets/anteon_service_summary.png" alt="Anteon - Detailed Insights Feature" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_service_summary.png" alt="Anteon - Detailed Insights Feature" />
 </p>
 
 #### ✅  Metrics Dashboard
 The Metric Dashboard provides a straightforward way to observe Node Metrics. Anteon observes CPU, Memory, Disk, and Network usage of your nodes. You can also create alerts on these metrics. <a href="https://getanteon.com/docs/kubernetes-monitoring/metrics/" target="_blank">More →</a>
 
 <p align="left">
-<img src="assets/anteon_metrics_detailed.png" alt="Anteon - Metrics Dashboard Feature" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_metrics_detailed.png" alt="Anteon - Metrics Dashboard Feature" />
 </p>
 
 #### ✅  Find Bottlenecks 
@@ -143,12 +143,12 @@ Start a load test and monitor your system all within the same UI. You do not nee
 
 You will see the outgoing requests, response times and status codes on the load test **Summary** tab. 
 <p align="left">
-<img src="assets/anteon_load_test.png" alt="Anteon - Find Bottlenecks Feature" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_load_test.png" alt="Anteon - Find Bottlenecks Feature" />
 </p>
 
 You will see the incoming requests to your K8s cluster, service-to-service traffic, RPS, latencies, SQL queries, and more on the **Monitoring** tab. So you can easily correlate the load test results with the monitoring data without switching between different tools.
 <p align="left">
-<img src="assets/anteon_load_test_monitoring.png" alt="Anteon - Find Bottlenecks Feature" />
+<img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_load_test_monitoring.png" alt="Anteon - Find Bottlenecks Feature" />
 </p>
 
 #### ✅ Distributed Tracing
@@ -211,7 +211,7 @@ To learn about the **Performance Testing** usage of both Self-Hosted and Cloud v
 
 ## Communication
 
-You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else. 
+You can join our [Discord Server](https://discord.com/invite/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else. 
 
 ## Disclaimer
 
