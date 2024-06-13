@@ -140,7 +140,7 @@ You should see `mq_waiting_new_job` log in the engine container logs. This means
 
 ### **Example 3**: Adding the engine to Kubernetes
 
-You can deploy the engine on Kubernetes using the Helm chart. Please check the [Anteon Helm chart](https://github.com/getanteon/anteon-helm-charts#add-new-engine-optional) repository for more information.
+You can deploy the engine on Kubernetes using the Helm chart. Please check the [Anteon Helm chart](https://github.com/getanteon/anteon-helm-charts/tree/master/charts/anteon#add-new-engine-optional) repository for more information.
 
 ## 🧹 Remove New Engine
 
