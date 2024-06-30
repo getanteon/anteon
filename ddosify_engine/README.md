@@ -47,7 +47,7 @@
 ### Docker
 
 ```bash
-docker run -it --rm anteon/ddosify
+docker run -it --rm ddosify/ddosify
 ```
 
 ### Docker Extension
