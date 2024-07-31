@@ -41,11 +41,15 @@ This README provides instructions for installing and an overview of the system r
 - **Memory**: 8 GB RAM or more
 - **Storage**: At least 5 GB of available hard drive space (preferably SSD for faster load times)
 
-## ⚡️ Quick Start (docker compose)
+> [!NOTE]
+> Only Linux and MacOS are supported at the moment. Windows is not supported.
 
-You can quickly deploy Anteon Self Hosted by running the following command. This script clones the Anteon repository to your `$HOME/.anteon` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section.
+## Deploy with Docker Compose
 
-Only Linux and MacOS are supported at the moment. Windows is not supported.
+You can quickly deploy Anteon Self Hosted by running the following command. This script clones the Anteon repository to your `$HOME/.anteon` directory, and deploys the services using Docker Compose. Please check the [install.sh](./install.sh) file to see what it does. You can also run the commands manually by following the [Manual Installation](#-manual-installation) section. 
+
+> [!WARNING]
+> Since Docker Compose deploys all the services on the same server, it is recommended to deploy Anteon Self-hosted on a Kubernetes cluster with our [Helm chart](https://github.com/getanteon/anteon-helm-charts).
 
 Anteon Self Hosted starts in the background. You can access the dashboard at [http://localhost:8014](http://localhost:8014). The system is started always on boot if Docker is started. You can stop the system in the [Stop/Start the Services](#-stopstart-the-services) section.
 
@@ -53,7 +57,7 @@ Anteon Self Hosted starts in the background. You can access the dashboard at [ht
 curl -sSL https://raw.githubusercontent.com/getanteon/anteon/master/selfhosted/install.sh | bash
 ```
 
-## 🚀 Deploy on Kubernetes
+## Deploy on Kubernetes (Recommended)
 
 You can deploy Anteon Self Hosted on Kubernetes using the [Helm chart](https://github.com/getanteon/anteon-helm-charts).
 
