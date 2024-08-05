@@ -36,7 +36,6 @@ Anteon (formerly Ddosify) is an [open-source](https://github.com/getanteon/anteo
 - **Ease of Use:** You don't need to change any code, restart services, or add extra components (like sidecars) to get these insights, thanks to the [eBPF based agent (Alaz)](https://github.com/getanteon/alaz).
 - **Alerts for Anomalies:** If something unusual, like a sudden increase in CPU usage, happens in your Kubernetes (K8s) cluster, Anteon immediately sends alerts to your Slack.
 - **Seamless Integration with Performance Testing:** Performance testing is natively integrated with Kubernetes monitoring for a unified experience.
-- **Distributed Tracing:** Anteon automatically collects traces from your Kubernetes cluster and generates context propagation without changing a single line of code.
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_metrics.png" alt="Anteon Kubernetes Monitoring Metrics" />
@@ -150,10 +149,6 @@ You will see the incoming requests to your K8s cluster, service-to-service traff
 <p align="left">
 <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_load_test_monitoring.png" alt="Anteon - Find Bottlenecks Feature" />
 </p>
-
-#### ✅ Distributed Tracing
-
-Anteon automatically collects traces from your Kubernetes cluster and generates context propagation without changing a single line of code. <a href="https://getanteon.com/docs/kubernetes-monitoring/distributed-tracing/" target="_blank">More →</a>
 
 
 ## Performance Testing Features
