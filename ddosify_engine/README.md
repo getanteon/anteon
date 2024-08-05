@@ -931,7 +931,7 @@ On array-like captured variables or environment vars, the **rand( )** function c
 ## Test Data Set
 Ddosify enables you to load test data from **CSV** files. Later, in your scenario, you can inject variables that you tagged.
 
-We are using this [CSV data](https://github.com/getanteon/anteon/tree/master/config/config_testdata/test.csv) in below config.
+We are using this [CSV data](https://github.com/getanteon/anteon/tree/master/ddosify_engine/config/config_testdata/test.csv) in below config.
 
 
 ```json
