@@ -83,7 +83,7 @@ pkg install ddosify
 
 ### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/tag/v1.0.6)
 
-- Download *.zip file for your architecture. For example download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
+- Download *.zip file for your architecture. For example, download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
 - Unzip `ddosify_x.x.x_windows_amd64.zip`
 - Open Powershell or CMD (Command Prompt) and change directory to unzipped folder: `ddosify_x.x.x_windows_amd64`
 - Run ddosify:
@@ -136,7 +136,7 @@ This section aims to show you how to use Ddosify without deep dive into its deta
 
     `ddosify -config config_examples/config.json`
 
-    Ddosify first sends *HTTP/2 POST* request to *https://getanteon.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port*  and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://getanteon.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
+    Ddosify first sends *HTTP/2 POST* request to *https://getanteon.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port* and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://getanteon.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
 5. ### Load test with Dynamic Variables (Parameterization)
 
