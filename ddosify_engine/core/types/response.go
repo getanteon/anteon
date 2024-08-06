@@ -84,7 +84,7 @@ type ScenarioStepResult struct {
 	// Response Body
 	RespBody []byte
 
-	// Protocol spesific metrics. For ex: DNSLookupDuration: 1s for HTTP
+	// Protocol specific metrics. For ex: DNSLookupDuration: 1s for HTTP
 	Custom map[string]interface{}
 
 	// Usable envs in this step

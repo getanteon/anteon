@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   nginx:
-    image: nginx:1.25.3-alpine
+    image: nginx:1.25.5-alpine
     ports:
       - '8014:80'
     volumes:
@@ -12,62 +12,132 @@ services:
       - backend
     restart: always
     networks:
-      - ddosify
+      - anteon
 
   frontend:
-    image: ddosify/selfhosted_frontend:2.5.2
+    image: ddosify/selfhosted_frontend:3.0.3
     depends_on:
       - backend
     restart: always
     pull_policy: always
     networks:
-      - ddosify
+      - anteon
 
   backend:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app_onprem.sh
+    ports:
+      - '8008:8008'
 
   backend-celery-worker:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
       - backend
-      - rabbitmq-celery-backend
+      - rabbitmq
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   backend-celery-beat:
-    image: ddosify/selfhosted_backend:2.4.4
+    image: ddosify/selfhosted_backend:3.0.1
     depends_on:
       - postgres
       - influxdb
-      - redis
+      - redis-backend
       - seaweedfs
       - backend
-      - rabbitmq-celery-backend
+      - rabbitmq
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_beat.sh
+
+  alaz-backend:
+    image: ddosify/selfhosted_alaz_backend:2.0.2
+    depends_on:
+      - postgres
+      - influxdb
+      - redis-backend
+      - backend
+    env_file:
+      - .env
+    networks:
+      - anteon
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_app_onprem.sh
+    ports:
+      - '8009:8008'
+
+  alaz-backend-celery-worker-1:
+    image: ddosify/selfhosted_alaz_backend:2.0.2
+    depends_on:
+      - postgres
+      - influxdb
+      - redis-alaz-backend
+      - alaz-backend
+      - rabbitmq
+      - backend
+    env_file:
+      - .env
+    networks:
+      - anteon
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  alaz-backend-celery-worker-2:
+    image: ddosify/selfhosted_alaz_backend:2.0.2
+    depends_on:
+      - postgres
+      - influxdb
+      - redis-alaz-backend
+      - alaz-backend
+      - rabbitmq
+      - backend
+    env_file:
+      - .env
+    networks:
+      - anteon
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_celery_worker.sh
+
+  alaz-backend-celery-beat:
+    image: ddosify/selfhosted_alaz_backend:2.0.2
+    depends_on:
+      - postgres
+      - influxdb
+      - redis-alaz-backend
+      - alaz-backend
+      - rabbitmq
+      - backend
+    env_file:
+      - .env
+    networks:
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
@@ -75,71 +145,68 @@ services:
   hammermanager:
     ports:
       - "9901:8001"
-    image: ddosify/selfhosted_hammermanager:1.2.3
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_app.sh
 
   hammermanager-celery-worker:
-    image: ddosify/selfhosted_hammermanager:1.2.3
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
       - hammermanager
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_worker.sh
 
   hammermanager-celery-beat:
-    image: ddosify/selfhosted_hammermanager:1.2.3
+    image: ddosify/selfhosted_hammermanager:2.0.1
     depends_on:
       - postgres
-      - rabbitmq-job
-      - rabbitmq-celery
+      - rabbitmq
       - hammermanager
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
 
   hammer:
-    image: ddosify/selfhosted_hammer:1.4.2
+    image: ddosify/selfhosted_hammer:2.0.0
     volumes:
       - hammer_id:/root/uuid
     depends_on:
-      - rabbitmq-job
+      - rabbitmq
       - influxdb
       - hammermanager
       - seaweedfs
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
 
   hammerdebug:
-    image: ddosify/selfhosted_hammer:1.4.2
+    image: ddosify/selfhosted_hammer:2.0.0
     volumes:
       - hammerdebug_id:/root/uuid
     depends_on:
-      - rabbitmq-job
+      - rabbitmq
       - influxdb
       - hammermanager
     env_file:
@@ -147,45 +214,33 @@ services:
     environment:
       - IS_DEBUG=true
     networks:
-      - ddosify
+      - anteon
     restart: always
     pull_policy: always
 
   postgres:
-    image: "postgres:13.6"
+    image: "postgres:16.2-alpine"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_scripts/postgres:/docker-entrypoint-initdb.d
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
 
-  rabbitmq-celery:
-    image: "rabbitmq:3.9.4"
-    networks:
-      - ddosify
-    restart: always
-
-  rabbitmq-celery-backend:
-    image: "rabbitmq:3.9.4"
-    networks:
-      - ddosify
-    restart: always
-
-  rabbitmq-job:
+  rabbitmq:
     ports:
       - "6672:5672"
-    image: "rabbitmq:3.9.4"
+    image: "rabbitmq:3.13.1-alpine"
     networks:
-      - ddosify
+      - anteon
     restart: always
 
   influxdb:
     ports:
       - "9086:8086"
-    image: "influxdb:2.6.1"
+    image: "influxdb:2.6.1-alpine"
     volumes:
       - influxdb_data:/var/lib/influxdb
       - ./init_scripts/influxdb:/docker-entrypoint-initdb.d
@@ -196,24 +251,32 @@ services:
     env_file:
       - .env
     networks:
-      - ddosify
+      - anteon
     restart: always
 
-  redis:
-    image: "redis:6.2.6"
+  redis-backend:
+    image: "redis:7.2.4-alpine"
     volumes:
-      - redis_data:/data
+      - redis_backend_data:/data
     networks:
-      - ddosify
+      - anteon
+    restart: always
+
+  redis-alaz-backend:
+    image: "redis:7.2.4-alpine"
+    volumes:
+      - redis_alaz_backend_data:/data
+    networks:
+      - anteon
     restart: always
 
   seaweedfs:
-    image: chrislusf/seaweedfs:3.56
+    image: chrislusf/seaweedfs:3.64
     ports:
       - "8333:8333"
     command: 'server -s3 -dir="/data"'
     networks:
-      - ddosify
+      - anteon
     restart: always
     volumes:
       - seaweedfs_data:/data
@@ -227,17 +290,18 @@ services:
       - ./init_scripts/prometheus/prometheus.yml:/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
-      - ddosify
+      - anteon
     restart: always
 
 volumes:
   postgres_data:
   influxdb_data:
-  redis_data:
+  redis_backend_data:
+  redis_alaz_backend_data:
   seaweedfs_data:
   hammer_id:
   hammerdebug_id:
   prometheus_data:
 
 networks:
-  ddosify:
+  anteon:

@@ -1,24 +1,22 @@
 <div align="center">
-    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-db.svg#gh-dark-mode-only" alt="Ddosify logo dark" width="336px" /><br />
-    <img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-logo-wb.svg#gh-light-mode-only" alt="Ddosify logo light" width="336px" /><br />
+    <img src="../assets/anteon-logo-db.svg#gh-dark-mode-only" alt="Anteon logo dark" width="336px" /><br />
+    <img src="../assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h1 align="center">Ddosify Engine: High-performance load testing tool</h1>
+<h1 align="center">Ddosify: High-performance load testing tool</h1>
 
 <p align="center">
-    <a href="https://github.com/ddosify/ddosify/releases" target="_blank"><img src="https://img.shields.io/github/v/release/ddosify/ddosify?style=for-the-badge&logo=github&color=orange" alt="ddosify latest version" /></a>&nbsp;
-    <a href="https://github.com/ddosify/ddosify/actions/workflows/test.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/ddosify/ddosify/test.yml?branch=master&style=for-the-badge&logo=github" alt="ddosify build result" /></a>&nbsp;
     <a href="https://pkg.go.dev/go.ddosify.com/ddosify" target="_blank"><img src="https://img.shields.io/github/go-mod/go-version/ddosify/ddosify?style=for-the-badge&logo=go" alt="golang version" /></a>&nbsp;
     <a href="https://app.codecov.io/gh/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/codecov/c/github/ddosify/ddosify?style=for-the-badge&logo=codecov" alt="go coverage" /></a>&nbsp;
-    <a href="https://goreportcard.com/report/github.com/ddosify/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/ddosify/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;
-    <a href="https://github.com/ddosify/ddosify/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
+    <a href="https://goreportcard.com/report/github.com/getanteon/ddosify" target="_blank"><img src="https://goreportcard.com/badge/github.com/getanteon/ddosify?style=for-the-badge&logo=go" alt="go report" /></a>&nbsp;
+    <a href="https://github.com/getanteon/anteon/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/badge/LICENSE-AGPL--3.0-orange?style=for-the-badge&logo=none" alt="ddosify license" /></a>
     <a href="https://discord.gg/9KdnrSUZQg" target="_blank"><img src="https://img.shields.io/discord/898523141788287017?style=for-the-badge&logo=discord&label=DISCORD" alt="ddosify discord server" /></a>
     <a href="https://hub.docker.com/r/ddosify/ddosify" target="_blank"><img src="https://img.shields.io/docker/v/ddosify/ddosify?style=for-the-badge&logo=docker&label=docker&sort=semver" alt="ddosify docker image" /></a>
 </p>
 
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/ddosify/ddosify/master/assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start" />
+<img src="../assets/ddosify-quick-start.gif" alt="Ddosify - High-performance load testing tool quick start" />
 </p>
 
 
@@ -45,12 +43,12 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/ddosify/ddosify/releases/latest) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/ddosify/ddosify/blob/master/completions/README.md).
+`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux and Windows. For auto-completion, see: [Ddosify Completions](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 
 ### Docker
 
 ```bash
-docker run -it --rm ddosify/ddosify
+docker run -it --rm anteon/ddosify
 ```
 
 ### Docker Extension
@@ -70,14 +68,14 @@ brew install ddosify/tap/ddosify
 
 ```bash
 # For Redhat based (Fedora, CentOS, RHEL, etc.)
-rpm -i https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.rpm
+rpm -i https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.rpm
 
 # For Debian based (Ubuntu, Linux Mint, etc.)
-wget https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.deb
+wget https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.deb
 dpkg -i ddosify_amd64.deb
 
 # For Alpine
-wget https://github.com/ddosify/ddosify/releases/latest/download/ddosify_amd64.apk
+wget https://github.com/ddosify/ddosify/releases/download/v1.0.6/ddosify_amd64.apk
 apk add --allow-untrusted ddosify_amd64.apk
 
 # For Arch Linux
@@ -89,7 +87,7 @@ makepkg -sri
 pkg install ddosify
 ```
 
-### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/latest)
+### Windows exe from the [releases page](https://github.com/ddosify/ddosify/releases/tag/v1.0.6)
 
 - Download *.zip file for your architecture. For example, download ddosify version vx.x.x with amd64 architecture: ddosify_x.x.x.zip_windows_amd64
 - Unzip `ddosify_x.x.x_windows_amd64.zip`
@@ -97,19 +95,19 @@ pkg install ddosify
 - Run ddosify:
 
 ```bash
-.\ddosify.exe -t http://target_site.com
+.\ddosify.exe -t https://getanteon.com
 ```
 
 ### Using the convenience script (macOS and Linux)
 
 - The script requires root or sudo privileges to move ddosify binary to `/usr/local/bin`.
-- The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, amd64) to download the appropriate binary from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
+- The script attempts to detect your operating system (macOS or Linux) and architecture (arm64, x86, amd64) to download the appropriate binary from the [releases page](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 - By default, the script installs the latest version of `ddosify`.
 - If you have problems, check [common issues](#common-issues)
 - Required packages: `curl` and `sudo`
 
 ```bash
-curl -sSfL https://raw.githubusercontent.com/ddosify/ddosify/master/scripts/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/getanteon/anteon/master/scripts/install.sh | sh
 ```
 
 ### Go install from source (macOS, FreeBSD, Linux, Windows)
@@ -124,42 +122,45 @@ go install -v go.ddosify.com/ddosify@latest
 This section aims to show you how to use Ddosify without deep dive into its details easily.
 
 1. ### Simple load test
-
-   	ddosify -t http://target_site.com
+    `ddosify -t https://getanteon.com`
 
    The above command runs a load test with the default value that is 100 requests in 10 seconds.
 
 2. ### Using some of the features
 
-   	ddosify -t http://target_site.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80
+   	`ddosify -t https://getanteon.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80`
 
-   Ddosify sends a total of *1000* *PUT* requests to *https://target_site.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
+   Ddosify sends a total of *1000* *PUT* requests to *https://getanteon.com* over proxy *http://proxy_server.com:80* in *20* seconds with a timeout of *7* seconds per request.
 
 3. ### Usage for CI/CD pipelines (JSON output)
 
-    	ddosify -t http://target_site.com -o stdout-json | jq .avg_duration
+    `ddosify -t https://getanteon.com -o stdout-json | jq .avg_duration`
 
    Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic.
 
 4. ### Scenario based load test
 
-   	ddosify -config config_examples/config.json
-   Ddosify first sends *HTTP/2 POST* request to *https://test_site1.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port* and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://test_site1.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
+    `ddosify -config config_examples/config.json`
+
+    Ddosify first sends *HTTP/2 POST* request to *https://getanteon.com/endpoint_1* using basic auth credentials *test_user:12345* over proxy *http://proxy_host.com:proxy_port* and with a timeout of *3* seconds. Once the response is received, HTTPS GET request will be sent to *https://getanteon.com/endpoint_2* along with the payload included in *config_examples/payload.txt* file with a timeout of 2 seconds. This flow will be repeated *20* times in *5* seconds and response will be written to *stdout*.
 
 5. ### Load test with Dynamic Variables (Parameterization)
 
-    	ddosify -t http://target_site.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'
-   Ddosify sends a total of *100* *GET* requests to *https://target_site.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
+    `ddosify -t https://getanteon.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'`
+
+   Ddosify sends a total of *100* *GET* requests to *https://getanteon.com/{{_randomInt}}* in *10* seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in *URL*, *headers*, *payload (body)* and *basic authentication*. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization).
 
 6. ### Correlation (Captured Variables)
 
-    	ddosify -config ddosify_config_correlation.json
-   Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation).
+    `ddosify -config ddosify_config_correlation.json`
+
+    Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [correlation-config-example](#Correlation).
 
 7. ### Test Data
 
-    	ddosify -config ddosify_data_csv.json
-   Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [test-data-example](#test-data-set).
+    `ddosify -config ddosify_data_csv.json`
+
+    Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests *url*, *headers* and *payload(body)*. The example config can be found in [test-data-example](#test-data-set).
 ## Details
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
@@ -171,7 +172,7 @@ ddosify [FLAG]
 
 | Flag | Description                  | Type     | Default | Required?  |
 | ------ | -------------------------------------------------------- | ------   | ------- | ---------  |
-| `-t`   | Target website URL. Example: https://ddosify.com         | `string` | - | Yes        |
+| `-t`   | Target website URL. Example: https://getanteon.com         | `string` | - | Yes        |
 | `-n`   | Total iteration count                                      | `int`    | `100`   | No         |
 | `-d`   | Test duration in seconds.                                | `int`    | `10`    | No         |
 | `-m`   | Request method. Available methods for HTTP(s) are *GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS* | `string`    | `GET`    | No  |
@@ -193,35 +194,35 @@ ddosify [FLAG]
 #### Linear
 
 ```bash
-ddosify -t http://target_site.com -l linear
+ddosify -t https://getanteon.com -l linear
 ```
 
 Result:
 
-![linear load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/linear.gif)
+![linear load](https://raw.githubusercontent.com/getanteon/anteon/master/assets/linear.gif)
 
 *Note:* If the iteration count is too low for the given duration, the test might be finished earlier than you expect.
 
 #### Incremental
 
 ```bash
-ddosify -t http://target_site.com -l incremental
+ddosify -t https://getanteon.com -l incremental
 ```
 
 Result:
 
-![incremental load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/incremental.gif)
+![incremental load](https://raw.githubusercontent.com/getanteon/anteon/master/assets/incremental.gif)
 
 
 #### Waved
 
 ```bash
-ddosify -t http://target_site.com -l waved
+ddosify -t https://getanteon.com -l waved
 ```
 
 Result:
 
-![waved load](https://raw.githubusercontent.com/ddosify/ddosify/master/assets/waved.gif)
+![waved load](https://raw.githubusercontent.com/getanteon/anteon/master/assets/waved.gif)
 
 
 ### Config File
@@ -247,7 +248,7 @@ Usage;
     ddosify -config <json_config_path>
 
 
-There is an example config file at [config_examples/config.json](/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
+There is an example config file at [config_examples/config.json](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
 
 - `iteration_count` *optional*
 
@@ -297,7 +298,7 @@ There is an example config file at [config_examples/config.json](/config_example
 
 - `data` *optional*
   Config for loading test data from a CSV file.
-  [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) used in below config.
+  [CSV data](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config/config_testdata/test.csv) used in below config.
     ```json
     "data":{
         "info": {
@@ -453,7 +454,7 @@ There is an example config file at [config_examples/config.json](/config_example
             },
             {
                 "name": "[field-name]",
-                "value": "http://test.com/test.png",
+                "value": "http://getanteon.com/test.png",
                 "type": "file",
                 "src": "remote"
             }
@@ -474,7 +475,7 @@ There is an example config file at [config_examples/config.json](/config_example
         "steps": [
             {
                 "id": 1,
-                "url": "http://target.com/endpoint1",
+                "url": "http://getanteon.com/endpoint1",
                 "capture_env": {
                      "NUM" :{"from":"body","json_path":"num"},
                 }
@@ -489,7 +490,7 @@ There is an example config file at [config_examples/config.json](/config_example
        "steps": [
            {
                "id": 1,
-               "url": "http://target.com/endpoint1",
+               "url": "http://getanteon.com/endpoint1",
                "assertion": [
                    "equals(status_code,200)",
                    "in(headers.content-length,[2000,3000])"
@@ -507,12 +508,12 @@ There is an example config file at [config_examples/config.json](/config_example
         "steps": [
             {
                 "id": 1,
-                "url": "http://target.com/endpoint1",
+                "url": "http://getanteon.com/endpoint1",
                 "sleep": "1000"
             },
             {
                 "id": 2,
-                "url": "http://target.com/endpoint2",
+                "url": "http://getanteon.com/endpoint2",
             }
         ]
         ```
@@ -522,12 +523,12 @@ There is an example config file at [config_examples/config.json](/config_example
         "steps": [
             {
                 "id": 1,
-                "url": "http://target.com/endpoint1",
+                "url": "http://getanteon.com/endpoint1",
                 "sleep": "300-500"
             },
             {
                 "id": 2,
-                "url": "http://target.com/endpoint2",
+                "url": "http://getanteon.com/endpoint2",
             }
         ]
         ```
@@ -557,14 +558,14 @@ There is an example config file at [config_examples/config.json](/config_example
 
 Just like the Postman, Ddosify supports parameterization (dynamic variables) on *URL*, *headers*, *payload (body)* and *basic authentication*. Actually, we support all the random methods Postman supports. If you use `{{$randomVariable}}` on Postman you can use it as `{{_randomVariable}}` on Ddosify. Just change `$` to `_` and you will be fine. To simulate a realistic load test on your system, Ddosify can send every request with dynamic variables.
 
-The full list of dynamic variables can be found in the [Ddosify Docs](https://docs.ddosify.com/extra/dynamic-variables-parameterization).
+The full list of dynamic variables can be found in the [Ddosify Docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization).
 
 ### Parameterization on URL
 
 Ddosify sends *100* GET requests in *10* seconds with random string `key` parameter. This approach can be also used in cache bypass.
 
 ```bash
-ddosify -t http://target_site.com/?key={{_randomString}} -d 10 -n 100
+ddosify -t https://getanteon.com/?key={{_randomString}} -d 10 -n 100
 ```
 
 ### Parameterization on Headers
@@ -572,7 +573,7 @@ ddosify -t http://target_site.com/?key={{_randomString}} -d 10 -n 100
 Ddosify sends *100* GET requests in *10* seconds with random `Transaction-Type` and `Country` headers.
 
 ```bash
-ddosify -t http://target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
+ddosify -t https://getanteon.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
 ```
 
 ### Parameterization on Payload (Body)
@@ -580,7 +581,7 @@ ddosify -t http://target_site.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTr
 Ddosify sends *100* GET requests in *10* seconds with random `latitude` and `longitude` values in body.
 
 ```bash
-ddosify -t http://target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
+ddosify -t https://getanteon.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
 ```
 
 ### Parameterization on Basic Authentication
@@ -588,7 +589,7 @@ ddosify -t http://target_site.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitu
 Ddosify sends *100* GET requests in *10* seconds with random `username` and `password` with basic authentication.
 
 ```bash
-ddosify -t http://target_site.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
+ddosify -t https://getanteon.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
 ```
 
 ### Parameterization on Config File
@@ -607,7 +608,7 @@ ddosify -config ddosify_config_dynamic.json
     "steps": [
         {
             "id": 1,
-            "url": "https://test_site1.com/?key={{_randomString}}",
+            "url": "https://getanteon.com/?key={{_randomString}}",
             "method": "POST",
             "headers": {
                 "User-Key": "{{_randomInt}}"
@@ -622,7 +623,7 @@ ddosify -config ddosify_config_dynamic.json
 In addition, you can also use operating system environment variables. To access these variables, simply add the `$` prefix followed by the variable name wrapped in double curly braces. The syntax for this is `{{$OS_ENV_VARIABLE}}` within the **config file**. For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, and `Basic Authentication`. Here is an example of using operating system environment variables in the config file. `TARGET_SITE` operating system environment variable is used in `URL` and `USER` environment variable is used in `Headers`.
 
 ```bash
-export TARGET_SITE="https://test_site1.com"
+export TARGET_SITE="https://getanteon.com"
 ddosify -config ddosify_config_os_env.json
 ```
 
@@ -648,7 +649,7 @@ ddosify -config ddosify_config_os_env.json
 
 At default, Ddosify marks the step result as successful if it sends the request and receives the response without any network error happening. Status code or body type (or content) does not have any effect on success/failure criteria. But this may not be a good test result for your use case and you may want to create your success/fail logic. That's where you can use Assertions.
 
-Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers`, and `variables`. You can use the `assertion` parameter on the config file to check if the response matches the given condition per step. If the condition is not met, Ddosify will fail the step. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks.
+Ddosify supports assertion on `status code`, `response body`, `response size`, `response time`, `headers`, and `variables`. You can use the `assertion` parameter on the config file to check if the response matches the given condition per step. If the condition is not met, Ddosify will fail the step. Check the [example config](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json) to see how it looks.
 
 As shown in the related table the first 5 keywords store different data related to the response. The last keyword `variables` stores the current state of environment variables for the Step. You can use [Functions](#functions) or [Operators](#operators) to build conditional expressions based on these keywords.
 
@@ -723,11 +724,11 @@ If Ddosify can't receive the response for a request, that step is marked as Fail
 
 Ddosify supports success criteria, allowing users to verify the success of their load tests based on response times and failure counts of iterations. With this feature, users can assert the percentile of response times and the failure counts of all the iterations in a test.
 
-Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/ddosify/ddosify/blob/master/config_examples/config.json) to see how it looks the `success_criterias` keyword.
+Users can specify the required percentile of response times and failure counts in the configuration file, and the engine will compare the actual response times and failure counts to these values throughout the test continuously. According to users configuration test can be aborted or continue running until end. Check the [example config](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json) to see how it looks the `success_criterias` keyword.
 
 Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-You can see an success criteria example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-2-success-criteria) file.
+You can see an success criteria example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-2-success-criteria) file.
 
 ## Difference Between Success Criteria and Step Assertions
 
@@ -936,7 +937,7 @@ On array-like captured variables or environment vars, the **rand( )** function c
 ## Test Data Set
 Ddosify enables you to load test data from **CSV** files. Later, in your scenario, you can inject variables that you tagged.
 
-We are using this [CSV data](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/test.csv) in below config.
+We are using this [CSV data](https://github.com/getanteon/anteon/tree/master/config/config_testdata/test.csv) in below config.
 
 
 ```json
@@ -980,18 +981,18 @@ In `repeated-user` mode Ddosify uses the same cookie jar for all iterations exec
 
 In `distinct-user` mode Ddosify uses a different cookie jar for each iteration, cookies passed through steps in one iteration only.
 
-You can see an cookie example in [EXAMPLES](https://github.com/ddosify/ddosify/blob/master/engine_docs/EXAMPLES.md#example-1-cookie-support) file.
+You can see an cookie example in [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-1-cookie-support) file.
 
 ### Initial / Custom Cookies
 
-You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/ddosify/ddosify/tree/master/config/config_testdata/config_init_cookies.json).
+You can set initial/custom cookies for your test scenario using `cookie_jar` field in the config file. You can enable/disable custom cookies with `enabled` key. Check the [example config](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config/config_testdata/config_init_cookies.json).
 
 
 | Key       | Description                                                                                                     | Example                                                         |
 |-----------|-----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | `name`      | The name of the cookie. This field is used to identify the cookie.                                              | `platform`                                                        |
 | `value`     | The value of the cookie. This field contains the data that the cookie stores.                                   | `web`                                                             |
-| `domain`    | Domain or subdomain that can access the cookie.                                                                 | `httpbin.ddosify.com`                                             |
+| `domain`    | Domain or subdomain that can access the cookie.                                                                 | `app.getanteon.com`                                             |
 | `path`      | Path within the domain that can access the cookie.                                                              | `/`                                                               |
 | `expires`   | When the cookie should expire. The date format should be rfc2616.                                               | `Thu, 16 Mar 2023 09:24:02 GMT`                                   |
 | `max_age`   | Number of seconds until the cookie expires.                                                                     | `5`                                                               |
@@ -1041,8 +1042,8 @@ Following fields are available for cookie assertion:
 
 ## Tutorials / Blog Posts
 
-* [Testing the Performance of User Authentication Flow](https://ddosify.com/blog/testing-the-performance-of-user-authentication-flow#introduction)
-* [Load Testing a Fintech API with CSV Test Data Import](https://ddosify.com/blog/load-testing-a-fintech-exchange-api-with-csv-test-data-import)
+* [Testing the Performance of User Authentication Flow](https://getanteon.com/blog/testing-the-performance-of-user-authentication-flow)
+* [Load Testing a Fintech API with CSV Test Data Import](https://getanteon.com/blog/load-testing-a-fintech-exchange-api-with-csv-test-data-import)
 
 ## Common Issues
 
@@ -1063,8 +1064,8 @@ If you create large load tests, you may encounter the following errors:
 
 ```
 Server Error Distribution (Count:Reason):
-  199      :Get "https://example.ddosify.com": dial tcp 188.114.96.3:443: socket: too many open files
-  159      :Get "https://example.ddosify.com": dial tcp 188.114.97.3:443: socket: too many open files
+  199      :Get "https://getanteon.com": dial tcp 188.114.96.3:443: socket: too many open files
+  159      :Get "https://getanteon.com": dial tcp 188.114.97.3:443: socket: too many open files
 ```
 
 This is because the OS limits the number of open files. You can check the current limit by running `ulimit -n` command. You can increase this limit to 50000 by running the following command on both Linux and macOS.
@@ -1089,7 +1090,7 @@ You can join our [Discord Server](https://discord.gg/9KdnrSUZQg) for issues, fea
 
 ## More
 
-This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Ddosify Cloud](https://ddosify.com)
+This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Anteon Cloud](https://getanteon.com)
 
 ## Disclaimer
 
