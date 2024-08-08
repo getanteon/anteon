@@ -25,10 +25,10 @@ jobs:
     - name: Test
       run: cd ddosify_engine && go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./... && go tool cover -func coverage.txt
   
-    - uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: coverage.txt
-        name: codecov-ddosify # optional
-        fail_ci_if_error: true # optional (default = false)
-        verbose: true # optional (default = false)
+    - name: Upload reports to codecov
+      run: |
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov -t ${CODECOV_TOKEN} -f coverage.txt
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
