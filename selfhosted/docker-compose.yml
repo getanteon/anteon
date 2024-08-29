@@ -15,7 +15,7 @@ services:
       - anteon
 
   frontend:
-    image: ddosify/selfhosted_frontend:4.1.2
+    image: ddosify/selfhosted_frontend:4.1.4
     depends_on:
       - backend
     restart: always
@@ -75,7 +75,7 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   alaz-backend:
-    image: ddosify/selfhosted_alaz_backend:2.3.7
+    image: ddosify/selfhosted_alaz_backend:2.3.11
     depends_on:
       - postgres
       - influxdb
@@ -92,7 +92,7 @@ services:
       - '8009:8008'
 
   alaz-backend-celery-worker-1:
-    image: ddosify/selfhosted_alaz_backend:2.3.7
+    image: ddosify/selfhosted_alaz_backend:2.3.11
     depends_on:
       - postgres
       - influxdb
@@ -109,7 +109,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-worker-2:
-    image: ddosify/selfhosted_alaz_backend:2.3.7
+    image: ddosify/selfhosted_alaz_backend:2.3.11
     depends_on:
       - postgres
       - influxdb
@@ -126,7 +126,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-beat:
-    image: ddosify/selfhosted_alaz_backend:2.3.7
+    image: ddosify/selfhosted_alaz_backend:2.3.11
     depends_on:
       - postgres
       - influxdb
@@ -141,6 +141,23 @@ services:
     restart: always
     pull_policy: always
     command: /workspace/start_scripts/start_celery_beat.sh
+
+  alaz-backend-request-writer:
+    image: ddosify/selfhosted_alaz_backend:2.3.11
+    depends_on:
+      - postgres
+      - influxdb
+      - redis-alaz-backend
+      - alaz-backend
+      - rabbitmq
+      - backend
+    env_file:
+      - .env
+    networks:
+      - anteon
+    restart: always
+    pull_policy: always
+    command: /workspace/start_scripts/start_request_writer.sh
 
   hammermanager:
     ports:
