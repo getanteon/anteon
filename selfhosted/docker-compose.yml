@@ -75,7 +75,7 @@ services:
     command: /workspace/start_scripts/start_celery_beat.sh
 
   alaz-backend:
-    image: ddosify/selfhosted_alaz_backend:2.3.6
+    image: ddosify/selfhosted_alaz_backend:2.3.7
     depends_on:
       - postgres
       - influxdb
@@ -92,7 +92,7 @@ services:
       - '8009:8008'
 
   alaz-backend-celery-worker-1:
-    image: ddosify/selfhosted_alaz_backend:2.3.6
+    image: ddosify/selfhosted_alaz_backend:2.3.7
     depends_on:
       - postgres
       - influxdb
@@ -109,7 +109,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-worker-2:
-    image: ddosify/selfhosted_alaz_backend:2.3.6
+    image: ddosify/selfhosted_alaz_backend:2.3.7
     depends_on:
       - postgres
       - influxdb
@@ -126,7 +126,7 @@ services:
     command: /workspace/start_scripts/start_celery_worker.sh
 
   alaz-backend-celery-beat:
-    image: ddosify/selfhosted_alaz_backend:2.3.6
+    image: ddosify/selfhosted_alaz_backend:2.3.7
     depends_on:
       - postgres
       - influxdb
