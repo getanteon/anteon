@@ -15,7 +15,7 @@ services:
       - anteon
 
   frontend:
-    image: ddosify/selfhosted_frontend:4.1.4
+    image: ddosify/selfhosted_frontend:4.1.5
     depends_on:
       - backend
     restart: always
