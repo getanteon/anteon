@@ -87,7 +87,10 @@
 
 </details>
 
-## Features
+- [📥 Installation](https://getanteon.com/docs/ddosify/installation/)
+- [🚀 Quickstart Guide](https://getanteon.com/docs/ddosify/quickstart/)
+- [⚙️ Configuration](https://getanteon.com/docs/ddosify/configuration/)
+- [✨ Examples](https://getanteon.com/docs/ddosify/examples/)
 
 - ✅ **[Scenario-Based](#config-file)** - Create your flow in a JSON file. Without a line of code!
 
