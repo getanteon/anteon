@@ -61,7 +61,12 @@
 - [🔎 Kubernetes Monitoring](https://getanteon.com/docs/kubernetes-monitoring/)
 - [🔨 Performance Testing](https://getanteon.com/docs/performance-testing/)
 
-## ✨ About This Repository
+## ✨ Ask Anteon Guru
+If you don’t want to get lost in the documentation, you can ask [Anteon Guru](https://gurubase.io/g/anteon) directly. It's an Anteon-focused AI that uses information from the Anteon Website and Anteon GitHub Repository to answer your questions.
+
+<a href="https://gurubase.io/g/anteon" target="_blank"><img alt="Anteon Guru" src="https://img.shields.io/badge/Anteon%20Guru-F40003?style=for-the-badge&label=ASK&color=%23F40003"></a>
+
+## ℹ️ About This Repository
 
 This repository includes the source code for the Anteon Load Engine (Ddosify). You can access Docker Images for the Anteon Engine and Self Hosted on <a href="https://hub.docker.com/u/ddosify" target="_blank">Docker Hub</a>. Since Anteon is a Verified Publisher on Docker Hub, there isn't any pull limits.
 
