@@ -30,7 +30,7 @@
                     "3":{"tag":"payload", "type":"json"},
                     "4":{"tag":"age", "type":"int"}
                   },
-            "allow_quota" : true,
+            "allow_quote" : true,
             "order": "random",
             "skip_first_line" : true,
             "skip_empty_line" : true

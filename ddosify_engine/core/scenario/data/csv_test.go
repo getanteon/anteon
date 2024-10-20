@@ -20,7 +20,7 @@ func TestValidateCsvConf(t *testing.T) {
 		SkipFirstLine: false,
 		Vars:          map[string]types.Tag{},
 		SkipEmptyLine: false,
-		AllowQuota:    false,
+		AllowQuote:    false,
 		Order:         "",
 	}
 
@@ -46,7 +46,7 @@ func TestReadCsv_RemoteErr(t *testing.T) {
 			"6": {Tag: "boolField", Type: "bool"},
 		},
 		SkipEmptyLine: true,
-		AllowQuota:    true,
+		AllowQuote:    true,
 		Order:         "sequential",
 	}
 
@@ -104,7 +104,7 @@ func TestReadCsvFromRemote(t *testing.T) {
 			"6": {Tag: "boolField", Type: "bool"},
 		},
 		SkipEmptyLine: true,
-		AllowQuota:    true,
+		AllowQuote:    true,
 		Order:         "sequential",
 	}
 
@@ -135,7 +135,7 @@ func TestReadCsv(t *testing.T) {
 			"6": {Tag: "boolField", Type: "bool"},
 		},
 		SkipEmptyLine: true,
-		AllowQuota:    true,
+		AllowQuote:    true,
 		Order:         "sequential",
 	}
 
@@ -205,7 +205,7 @@ var table = []struct {
 				"6": {Tag: "boolField", Type: "bool"},
 			},
 			SkipEmptyLine: true,
-			AllowQuota:    true,
+			AllowQuote:    true,
 			Order:         "sequential",
 		},
 	},

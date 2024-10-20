@@ -338,7 +338,7 @@ func TestHammerAccessingNotDefinedCsvEnvs(t *testing.T) {
 			},
 		},
 		SkipEmptyLine: false,
-		AllowQuota:    false,
+		AllowQuote:    false,
 		Order:         "",
 	}
 

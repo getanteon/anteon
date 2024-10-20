@@ -130,7 +130,7 @@ type CsvConf struct {
 	SkipFirstLine bool           `json:"skip_first_line"`
 	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
 	SkipEmptyLine bool           `json:"skip_empty_line"`
-	AllowQuota    bool           `json:"allow_quota"`
+	AllowQuote    bool           `json:"allow_quote"`
 	Order         string         `json:"order"`
 }
 
@@ -138,7 +138,7 @@ func (c *CsvConf) UnmarshalJSON(data []byte) error {
 	// default values
 	c.SkipEmptyLine = true
 	c.SkipFirstLine = false
-	c.AllowQuota = false
+	c.AllowQuote = false
 	c.Delimiter = ","
 	c.Order = "random"
 
@@ -288,7 +288,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 			SkipFirstLine: val.SkipFirstLine,
 			Vars:          vars,
 			SkipEmptyLine: val.SkipEmptyLine,
-			AllowQuota:    val.AllowQuota,
+			AllowQuote:    val.AllowQuote,
 			Order:         val.Order,
 		}
 	}

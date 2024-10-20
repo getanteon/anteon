@@ -77,7 +77,7 @@ type CsvConf struct {
 	SkipFirstLine bool           `json:"skip_first_line"`
 	Vars          map[string]Tag `json:"vars"` // "0":"name", "1":"city","2":"team"
 	SkipEmptyLine bool           `json:"skip_empty_line"`
-	AllowQuota    bool           `json:"allow_quota"`
+	AllowQuote    bool           `json:"allow_quote"`
 	Order         string         `json:"order"`
 }
 

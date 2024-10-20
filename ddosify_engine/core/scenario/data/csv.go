@@ -75,7 +75,7 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	csvReader := csv.NewReader(reader)
 	csvReader.Comma = []rune(conf.Delimiter)[0]
 	csvReader.TrimLeadingSpace = true
-	csvReader.LazyQuotes = conf.AllowQuota
+	csvReader.LazyQuotes = conf.AllowQuote
 
 	data, err := csvReader.ReadAll()
 	if err != nil {
