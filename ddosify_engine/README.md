@@ -403,7 +403,7 @@ There is an example config file at [config_examples/config.json](https://github.
                   "3":{"tag":"payload", "type":"json"},
                   "4":{"tag":"age", "type":"int"}
                   },
-          "allow_quota" : true,
+          "allow_quote" : true,
           "order": "sequential",
           "skip_first_line" : true,
           "skip_empty_line" : true
@@ -416,7 +416,7 @@ There is an example config file at [config_examples/config.json](https://github.
   | `path`            | Local path or remote url for your CSV file                                                                                                                                                | `string` | -        | Yes       |
   | `delimiter`       | Delimiter for reading CSV                                                                                                                                                                 | `string` | `,`      | No        |
   | `vars`            | Tag columns using column index as key, use `type` field if you want to cast a column to a specific type, default is `string`, can be one of the following: `json`, `int`, `float`,`bool`. | `map`    | -        | Yes       |
-  | `allow_quota`     | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field                                                                              | `bool`   | `false`  | No        |
+  | `allow_quote`     | If set to true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field                                                                              | `bool`   | `false`  | No        |
   | `order`           | Order of reading records from CSV. Can be `random` or `sequential`                                                                                                                        | `string` | `random` | No        |
   | `skip_first_line` | Skips first line while reading records from CSV.                                                                                                                                          | `bool`   | `false`  | No        |
   | `skip_empty_line` | Skips empty lines while reading records from CSV.                                                                                                                                         | `bool`   | `true`   | No        |
@@ -1088,7 +1088,7 @@ We are using this [CSV data](https://github.com/getanteon/anteon/tree/master/ddo
                   "3":{"tag":"payload", "type":"json"},
                   "4":{"tag":"age", "type":"int"}
                 },
-          "allow_quota" : true,
+          "allow_quote" : true,
           "order": "random",
           "skip_first_line" : true
       }
