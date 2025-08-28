@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check the links
-        uses: lycheeverse/lychee-action@v1
+        uses: lycheeverse/lychee-action@v2.0.2
         with:
           args: --max-concurrency 1 -v *.md **/*.md
           fail: true
