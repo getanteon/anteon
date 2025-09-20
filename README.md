@@ -44,7 +44,7 @@
 
 ### 🔨 Performance Testing
 
-- **Multi-Location Based:** Generate load/performance tests from over 25 countries worldwide. Its available on [Anteon Cloud](https://getanteon.com/).
+- **Multi-Location Based:** Generate load/performance tests from over 25 countries worldwide.
 - **Easy Scenario Builder:** Create test scenarios easily without writing any code.
 - **Seamless Integration with Kubernetes Monitoring:** Performance testing is natively integrated with Kubernetes monitoring for a unified experience.
 - **Postman Integration:** Import tests directly from Postman, making it convenient for those already using Postman for API development and testing.

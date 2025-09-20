@@ -1222,10 +1222,6 @@ See our [Contribution Guide](../CONTRIBUTING.md) and please follow the [Code of 
 
 You can join our [Discord Server](https://discord.com/invite/9KdnrSUZQg) for issues, feature requests, feedbacks or anything else.
 
-## More
-
-This repository includes the single-node version of the Ddosify Loader. For distributed and Geo-targeted Load Testing you can use [Anteon Cloud](https://getanteon.com)
-
 ## Disclaimer
 
 Ddosify is created for testing the performance of web applications. Users must be the owner of the target system. Using it for harmful purposes is extremely forbidden. Ddosify team & company is not responsible for its’ usages and consequences.
