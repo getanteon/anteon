@@ -3,7 +3,7 @@
     <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon-logo-wb.svg#gh-light-mode-only" alt="Anteon logo light" width="336px" /><br />
 </div>
 
-<h3 align="center">Kickstart Kubernetes Monitoring in 1 min - Free up time for DevOps and Coding</h3>
+<h2 align="center">eBPF-powered Kubernetes Monitoring and Performance Testing</h2>
 
 <p align="center">
     <img src="https://raw.githubusercontent.com/getanteon/anteon/master/assets/anteon_service_map.png" alt="Anteon Kubernetes Monitoring Service Map" />
