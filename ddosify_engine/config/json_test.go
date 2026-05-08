@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"reflect"
@@ -343,11 +344,49 @@ func TestCreateHammerPayload(t *testing.T) {
 
 func TestCreateHammerMultipartPayload(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_multipart_payload.json"), ConfigTypeJson)
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("<svg></svg>"))
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	conf := fmt.Sprintf(`{
+	    "steps": [
+	        {
+	            "id": 1,
+	            "url": "https://app.servdown.com/accounts/login/?next=/",
+	            "method": "GET",
+	            "payload_multipart": [
+	                {
+	                    "name": "example-name-1",
+	                    "value": "config_testdata/test_img.svg",
+	                    "type": "file"
+	                },
+	                {
+	                    "name": "example-name-2",
+	                    "value": "%s",
+	                    "type": "file",
+	                    "src": "remote"
+	                },
+	                {
+	                    "name": "example-name-3",
+	                    "value": "text-field-value"
+	                },
+	                {
+	                    "name": "example-name-4",
+	                    "value": "123123",
+	                    "type": "text"
+	                }
+	            ]
+	        }
+	    ]
+	}`, server.URL)
+
+	jsonReader, _ := NewConfigReader([]byte(conf), ConfigTypeJson)
 
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
-		t.Errorf("TestCreateHammerMultipartPayload error occurred: %v", err)
+		t.Fatalf("TestCreateHammerMultipartPayload error occurred: %v", err)
 	}
 	steps := h.Scenario.Steps
 

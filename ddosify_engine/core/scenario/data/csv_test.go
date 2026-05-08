@@ -34,8 +34,12 @@ func TestValidateCsvConf(t *testing.T) {
 
 func TestReadCsv_RemoteErr(t *testing.T) {
 	t.Parallel()
+	server := httptest.NewServer(http.NotFoundHandler())
+	path := server.URL + "/csv"
+	server.Close()
+
 	conf := types.CsvConf{
-		Path:          "https://invalidurl.com/csv",
+		Path:          path,
 		Delimiter:     ";",
 		SkipFirstLine: true,
 		Vars: map[string]types.Tag{
