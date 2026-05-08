@@ -166,50 +166,21 @@ func TestSetCookiesSecure(t *testing.T) {
 
 	secureCookieName := "https-cookie"
 	secureCookieVal := "secure-cookie"
-
-	var httpServerGotCookie *http.Cookie
-	reqHandler := func(w http.ResponseWriter, r *http.Request) {
-		httpServerGotCookie, _ = r.Cookie(secureCookieName)
-	}
-
-	var httpsServerGotCookie *http.Cookie
-	secureReqHandler := func(w http.ResponseWriter, r *http.Request) {
-		httpsServerGotCookie, _ = r.Cookie(secureCookieName)
-	}
-
-	path := "/default"
-	mux := http.NewServeMux()
-	mux.HandleFunc(path, reqHandler)
-
-	host := httptest.NewServer(mux)
-	defer host.Close()
-
-	pathSecure := "/secure"
-	muxHttps := http.NewServeMux()
-	muxHttps.HandleFunc(pathSecure, secureReqHandler)
-
-	secureHost := httptest.NewTLSServer(muxHttps)
-	defer secureHost.Close()
-
-	c := secureHost.Client()
-	c.Jar, _ = cookiejar.New(nil)
+	secureURL, _ := url.Parse("https://example.com")
+	insecureURL, _ := url.Parse("http://example.com")
+	jar, _ := cookiejar.New(nil)
 
 	secureCookie := http.Cookie{Name: secureCookieName, Value: secureCookieVal, Secure: true}
-	// set cookies
-	url, _ := url.Parse(secureHost.URL)
-	c.Jar.SetCookies(url, []*http.Cookie{&secureCookie})
-
-	c.Get(host.URL + path)
-	c.Get(secureHost.URL + pathSecure)
+	jar.SetCookies(secureURL, []*http.Cookie{&secureCookie})
 
 	// expect secure cookie to be sent only to secure host
-
-	if httpServerGotCookie != nil {
-		t.Errorf("TestSetCookiesSecure, expected no cookie to be sent to http host, got %s", httpServerGotCookie.Value)
+	if cookies := jar.Cookies(insecureURL); len(cookies) > 0 {
+		t.Errorf("TestSetCookiesSecure, expected no cookie to be sent to http host, got %s", cookies[0].Value)
 	}
 
-	if httpsServerGotCookie == nil || httpsServerGotCookie.Value != secureCookieVal {
-		t.Errorf("TestSetCookiesSecure, expected cookie to be sent to https host, got %s", httpsServerGotCookie.Value)
+	cookies := jar.Cookies(secureURL)
+	if len(cookies) == 0 || cookies[0].Value != secureCookieVal {
+		t.Errorf("TestSetCookiesSecure, expected cookie to be sent to https host, got %v", cookies)
 	}
 }
 
