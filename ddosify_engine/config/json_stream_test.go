@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestCreateHammerStream(t *testing.T) {

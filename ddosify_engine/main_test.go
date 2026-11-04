@@ -32,8 +32,8 @@ import (
 	"strings"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 var tempRun func(h types.Hammer)

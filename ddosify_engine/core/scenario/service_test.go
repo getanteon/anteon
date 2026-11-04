@@ -22,6 +22,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -29,9 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/requester"
-	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/scenario/requester"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/injection"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 type MockHttpRequester struct {
@@ -50,7 +51,7 @@ type MockHttpRequester struct {
 func (m *MockHttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAddr *url.URL, debug bool, ei *injection.EnvironmentInjector) (err error) {
 	m.InitCalled = true
 	if m.FailInit {
-		return fmt.Errorf(m.FailInitMsg)
+		return errors.New(m.FailInitMsg)
 	}
 	return
 }

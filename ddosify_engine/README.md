@@ -205,7 +205,7 @@ curl -sSfL https://raw.githubusercontent.com/getanteon/anteon/master/scripts/ins
 _Minimum supported Go version is 1.18_
 
 ```bash
-go install -v go.ddosify.com/ddosify@latest
+go install -v go.ddosify.com/ddosify/v2@latest
 ```
 
 ## Quick Start

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/v2/core/types/regex"
 )
 
 func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {

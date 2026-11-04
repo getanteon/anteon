@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/lexer"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/token"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/ast"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/lexer"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/token"
 )
 
 // precedences

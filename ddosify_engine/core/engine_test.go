@@ -42,10 +42,10 @@ import (
 	"time"
 
 	"github.com/ddosify/go-faker/faker"
-	"go.ddosify.com/ddosify/config"
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/report"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/config"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/report"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 //TODO: Engine stop channel close order test

@@ -25,8 +25,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // Constants for Hammer field values

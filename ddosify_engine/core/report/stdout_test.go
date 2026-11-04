@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 //TODO:move aggregator.go related tests cases to aggregator_test.go

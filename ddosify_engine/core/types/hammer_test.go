@@ -24,7 +24,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/proxy"
 )
 
 func newDummyHammer() Hammer {

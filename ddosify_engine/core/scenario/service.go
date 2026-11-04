@@ -33,11 +33,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/requester"
-	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
-	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/types/regex"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/scenario/requester"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/injection"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/types/regex"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.

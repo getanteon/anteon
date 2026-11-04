@@ -35,7 +35,7 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 const (

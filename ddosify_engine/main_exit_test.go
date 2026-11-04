@@ -29,7 +29,7 @@ import (
 	"syscall"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestExitStatusOnTestFail(t *testing.T) {

@@ -29,13 +29,13 @@ import (
 	"sync"
 	"time"
 
-	"go.ddosify.com/ddosify/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/assertion"
 
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/report"
-	"go.ddosify.com/ddosify/core/scenario"
-	"go.ddosify.com/ddosify/core/scenario/data"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/report"
+	"go.ddosify.com/ddosify/v2/core/scenario"
+	"go.ddosify.com/ddosify/v2/core/scenario/data"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 const (

@@ -32,7 +32,7 @@ import (
 	"strings"
 
 	validator "github.com/asaskevich/govalidator"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // Constants for Scenario field values

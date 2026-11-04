@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func validateConf(conf types.CsvConf) error {

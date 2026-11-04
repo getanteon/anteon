@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 // If the user agent receives a new cookie with the same cookie-name,

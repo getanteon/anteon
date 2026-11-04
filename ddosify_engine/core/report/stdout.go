@@ -34,9 +34,9 @@ import (
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
-	"go.ddosify.com/ddosify/core/assertion"
-	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 const OutputTypeStdout = "stdout"
@@ -336,7 +336,7 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
 		for _, failedRule := range s.result.TestFailedAssertions {
 			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
-			fmt.Fprintf(w, red("Received: \n"))
+			fmt.Fprint(w, red("Received: \n"))
 
 			for ident, values := range failedRule.ReceivedMap {
 				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)
@@ -458,7 +458,7 @@ func (s *stdout) printDetails() {
 		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
 		for _, failedRule := range s.result.TestFailedAssertions {
 			fmt.Fprintf(w, red("\nRule: %s\n"), failedRule.Rule)
-			fmt.Fprintf(w, red("Received: \n"))
+			fmt.Fprint(w, red("Received: \n"))
 
 			for ident, values := range failedRule.ReceivedMap {
 				fmt.Fprintf(w, red("\t%s: %v\n"), ident, values)

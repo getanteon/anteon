@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/assertion"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestCreateEvenDistArr(t *testing.T) {

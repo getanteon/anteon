@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestValidateCsvConf(t *testing.T) {

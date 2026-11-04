@@ -34,10 +34,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"go.ddosify.com/ddosify/config"
-	"go.ddosify.com/ddosify/core"
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/config"
+	"go.ddosify.com/ddosify/v2/core"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 //TODO: what about -preview flag? Users can see how many requests will be sent per second with the given parameters.

@@ -26,7 +26,7 @@ import (
 	"sort"
 	"time"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 // Samples kept per metric for its percentiles; a uniform reservoir sample beyond this.

@@ -37,9 +37,9 @@ import (
 	"testing"
 	"time"
 
+	"cmp"
 	"github.com/shirou/gopsutil/v3/cpu"
 	gopsProc "github.com/shirou/gopsutil/v3/process"
-	"golang.org/x/exp/constraints"
 )
 
 type TestType string
@@ -318,7 +318,7 @@ func BenchmarkEngines(t *testing.B) {
 	}
 }
 
-func max[T constraints.Ordered](s []T) T {
+func max[T cmp.Ordered](s []T) T {
 	if len(s) == 0 {
 		var zero T
 		return zero
@@ -332,7 +332,7 @@ func max[T constraints.Ordered](s []T) T {
 	return m
 }
 
-func sum[T constraints.Ordered](s []T) T {
+func sum[T cmp.Ordered](s []T) T {
 	if len(s) == 0 {
 		var zero T
 		return zero

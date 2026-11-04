@@ -37,12 +37,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
-	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
-	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
-	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/evaluator"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/extraction"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/injection"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/types/regex"
 	"golang.org/x/net/http2"
 )
 

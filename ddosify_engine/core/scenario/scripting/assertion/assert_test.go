@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/evaluator"
 )
 
 func TestAssert(t *testing.T) {

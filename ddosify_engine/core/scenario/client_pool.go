@@ -6,8 +6,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // Factory is a function to create new connections.

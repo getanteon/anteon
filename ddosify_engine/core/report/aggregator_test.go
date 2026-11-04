@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestStart(t *testing.T) {
