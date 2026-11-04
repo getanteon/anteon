@@ -58,7 +58,7 @@ func TestOutcomeOf(t *testing.T) {
 	}
 	for i, c := range cases {
 		sr := c.sr
-		if got := outcomeOf(&sr); got != c.want {
+		if got := OutcomeOf(&sr); got != c.want {
 			t.Errorf("case %d: expected %s, got %s", i, c.want, got)
 		}
 	}

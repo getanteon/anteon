@@ -105,6 +105,10 @@ func (s *stdoutJson) report() {
 	printJson(j)
 }
 
+func (s *stdoutJson) Result() *Result {
+	return s.result
+}
+
 func (s *stdoutJson) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

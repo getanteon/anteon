@@ -166,6 +166,9 @@ type StreamResult struct {
 
 	Bytes         int64
 	BodyTruncated bool
+
+	// Metrics hooks.StreamObserver implementations returned, such as "output_tokens"
+	Extra map[string]float64
 }
 
 // Clean tells whether the stream ended with the done marker or a close between events.
@@ -180,11 +183,17 @@ type SLO struct {
 	FirstTokenMs int64 `json:"first_token_ms,omitempty"`
 	TotalMs      int64 `json:"total_ms,omitempty"`
 	MaxGapMs     int64 `json:"max_gap_ms,omitempty"`
+
+	// The test fails, exit code 3, when the goodput is below this percentage
+	GoodputPerc float64 `json:"goodput_perc,omitempty"`
 }
 
 func (s *SLO) validate() error {
 	if s.TTFBMs < 0 || s.FirstEventMs < 0 || s.FirstTokenMs < 0 || s.TotalMs < 0 || s.MaxGapMs < 0 {
 		return fmt.Errorf("slo thresholds can not be negative")
+	}
+	if s.GoodputPerc < 0 || s.GoodputPerc > 100 {
+		return fmt.Errorf("slo goodput_perc must be between 0 and 100")
 	}
 	return nil
 }

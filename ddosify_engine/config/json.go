@@ -35,6 +35,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"go.ddosify.com/ddosify/v2/core/hooks"
 	"go.ddosify.com/ddosify/v2/core/proxy"
 	"go.ddosify.com/ddosify/v2/core/types"
 )
@@ -252,6 +253,11 @@ func (j *JsonReader) UnmarshalJSON(data []byte) error {
 func (j *JsonReader) Init(jsonByte []byte) (err error) {
 	if !json.Valid(jsonByte) {
 		err = fmt.Errorf("provided json is invalid")
+		return
+	}
+
+	jsonByte, err = hooks.ApplyPresets(jsonByte, nil)
+	if err != nil {
 		return
 	}
 

@@ -154,6 +154,10 @@ func (s *stdout) report() {
 	s.printDetails()
 }
 
+func (s *stdout) Result() *Result {
+	return s.result
+}
+
 func (s *stdout) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

@@ -21,6 +21,9 @@
 package report
 
 import (
+	"fmt"
+
+	"go.ddosify.com/ddosify/v2/core/assertion"
 	"math"
 	"math/rand"
 	"sort"
@@ -48,6 +51,12 @@ const (
 // SLOSetter is implemented by the report services that compute goodput.
 type SLOSetter interface {
 	SetSLO(slo *types.SLO)
+}
+
+// ResultProvider is implemented by the report services that keep the aggregated result.
+// Result is complete once DoneChan has delivered.
+type ResultProvider interface {
+	Result() *Result
 }
 
 type sampler struct {
@@ -149,6 +158,9 @@ type StreamSummary struct {
 	GapP50          *Dist            `json:"gap_p50_ms,omitempty"`
 	GapP95          *Dist            `json:"gap_p95_ms,omitempty"`
 	Events          *Dist            `json:"events,omitempty"`
+
+	// Metrics stream observers returned, such as "output_tokens"
+	Extra map[string]*Dist `json:"extra,omitempty"`
 }
 
 type streamAgg struct {
@@ -156,6 +168,7 @@ type streamAgg struct {
 	ends                                        map[string]int64
 	ttfb, firstEvent, firstToken, total         sampler
 	gapMax, gapP50, gapP95, events              sampler
+	extra                                       map[string]*sampler
 }
 
 func (a *streamAgg) add(r *types.StreamResult) {
@@ -186,13 +199,32 @@ func (a *streamAgg) add(r *types.StreamResult) {
 		a.gapP95.add(ms(r.GapP95))
 	}
 	a.events.add(float64(r.Events))
+	for k, v := range r.Extra {
+		if a.extra == nil {
+			a.extra = make(map[string]*sampler)
+		}
+		s, ok := a.extra[k]
+		if !ok {
+			s = &sampler{}
+			a.extra[k] = s
+		}
+		s.add(v)
+	}
 }
 
 func (a *streamAgg) summary() *StreamSummary {
 	if a == nil || a.count == 0 {
 		return nil
 	}
+	var extra map[string]*Dist
+	for k, s := range a.extra {
+		if extra == nil {
+			extra = make(map[string]*Dist)
+		}
+		extra[k] = s.dist()
+	}
 	return &StreamSummary{
+		Extra:           extra,
 		Count:           a.count,
 		Ends:            a.ends,
 		ErrorEvents:     a.errorEvents,
@@ -259,7 +291,8 @@ func newExtended() *extended {
 	return &extended{steps: make(map[uint16]*stepExt), stages: make(map[int]*stageAgg)}
 }
 
-func outcomeOf(sr *types.ScenarioStepResult) string {
+// OutcomeOf classifies one step result as one of the Outcome* keys.
+func OutcomeOf(sr *types.ScenarioStepResult) string {
 	if sr.Err.Type != "" {
 		switch {
 		case sr.Err.Reason == types.ReasonConnTimeout || sr.Err.Reason == types.ReasonReadTimeout:
@@ -310,7 +343,7 @@ func (x *extended) add(scr *types.ScenarioResult) {
 		if sr.Stream != nil {
 			x.active = true
 		}
-		outcome := outcomeOf(sr)
+		outcome := OutcomeOf(sr)
 		if outcome != OutcomeOK || len(sr.FailedAssertions) > 0 {
 			ok = false
 		}
@@ -392,6 +425,13 @@ func (x *extended) finalize(r *Result) {
 	}
 	if x.slo != nil {
 		r.Goodput = &Goodput{SLO: *x.slo, Iterations: x.iterations, Good: x.good, Perc: perc(x.good, x.iterations)}
+		if x.slo.GoodputPerc > 0 && r.Goodput.Perc < x.slo.GoodputPerc {
+			r.TestStatus = "failed"
+			r.TestFailedAssertions = append(r.TestFailedAssertions, assertion.FailedRule{
+				Rule:        fmt.Sprintf("goodput_perc >= %g", x.slo.GoodputPerc),
+				ReceivedMap: map[string]interface{}{"goodput_perc": r.Goodput.Perc},
+			})
+		}
 	}
 	if len(x.stages) > 0 {
 		idx := make([]int, 0, len(x.stages))

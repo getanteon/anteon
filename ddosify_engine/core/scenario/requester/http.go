@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/v2/core/hooks"
 	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/v2/core/scenario/scripting/extraction"
@@ -244,6 +245,17 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
+	if hooks.HasRequestHooks() {
+		if err := hooks.RunRequestHooks(&h.packet, httpReq, usableVars); err != nil {
+			return &types.ScenarioStepResult{
+				StepID:    h.packet.ID,
+				StepName:  h.packet.Name,
+				RequestID: uuid.New(),
+				Err:       types.RequestError{Type: types.ErrorInvalidRequest, Reason: err.Error()},
+			}
+		}
+	}
+
 	if httpReq.Body != nil {
 		if int64(len(h.packet.Payload)) > 300000 {
 			// Don't store req bodies bigger than 300KB
@@ -276,9 +288,13 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		needBody := h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0
 		// read resp body conditionally
 		if conf := h.streamConf(httpRes); conf != nil {
-			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody)
+			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody,
+				hooks.StreamObserversFor(&h.packet)...)
 			streamResult = read.result
 			respBody = read.body
+			for k, v := range read.vars {
+				extractedVars[k] = v
+			}
 			if read.err != nil {
 				requestErr = streamErrType(read.err)
 			}

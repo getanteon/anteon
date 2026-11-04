@@ -31,6 +31,7 @@ import (
 
 	"go.ddosify.com/ddosify/v2/core/assertion"
 
+	"go.ddosify.com/ddosify/v2/core/live"
 	"go.ddosify.com/ddosify/v2/core/proxy"
 	"go.ddosify.com/ddosify/v2/core/report"
 	"go.ddosify.com/ddosify/v2/core/scenario"
@@ -65,7 +66,10 @@ type engine struct {
 
 	// manual_load stages by tick, set only when a stage is named or a warm-up
 	stages []tickStage
-	wg     sync.WaitGroup
+
+	observers []live.Observer
+	collector *live.Collector
+	wg        sync.WaitGroup
 
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
@@ -82,6 +86,9 @@ type EngineServices struct {
 
 	ProxyServ  proxy.ProxyService
 	ReportServ report.ReportService
+
+	// Observers get the live snapshots and the final report; the CLI sets them
+	Observers []live.Observer
 }
 
 var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
@@ -141,6 +148,7 @@ func NewEngine(ctx context.Context, h types.Hammer,
 		aborter:     services.Aborter,
 		resListener: services.ResListener,
 		asserter:    services.Asserter,
+		observers:   services.Observers,
 	}
 
 	return
@@ -180,10 +188,33 @@ func (e *engine) Init() (err error) {
 
 	e.abortChan = e.aborter.AbortChan()
 
+	if len(e.observers) > 0 {
+		e.collector = live.NewCollector(e.plan(), e.hammer.SLO, e.observers)
+	}
 	return
 }
 
-func (e *engine) Start() string {
+func (e *engine) plan() live.Plan {
+	tickDur := time.Duration(tickerInterval) * time.Millisecond
+	p := live.Plan{
+		Duration:   time.Duration(len(e.reqCountArr)) * tickDur,
+		Iterations: arraySum(e.reqCountArr),
+		LoadType:   e.hammer.LoadType,
+		EngineMode: e.hammer.EngineMode,
+		Schedule:   append([]int(nil), e.reqCountArr...),
+	}
+	for _, ts := range e.stages {
+		p.Stages = append(p.Stages, live.Stage{Index: ts.stage.Index, Name: ts.stage.Name, Warmup: ts.stage.Warmup,
+			Start: time.Duration(ts.start) * tickDur, End: time.Duration(ts.end) * tickDur,
+			Iterations: arraySum(e.reqCountArr[ts.start:ts.end])})
+	}
+	for _, s := range e.hammer.Scenario.Steps {
+		p.Steps = append(p.Steps, live.StepInfo{ID: s.ID, Name: s.Name, Method: s.Method, URL: s.URL, Streamed: s.Stream != nil})
+	}
+	return p
+}
+
+func (e *engine) Start() (status string) {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
@@ -200,9 +231,13 @@ func (e *engine) Start() string {
 
 	go e.reportService.Start(e.resultReportChan, testResultChan)
 
+	if e.collector != nil {
+		e.collector.Start()
+	}
+
 	defer func() {
 		ticker.Stop()
-		e.stop()
+		e.stop(status)
 	}()
 
 	e.tickCounter = 0
@@ -276,6 +311,9 @@ func (e *engine) initStages() {
 }
 
 func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) {
+	if e.collector != nil {
+		e.collector.IterationStarted()
+	}
 	var res *types.ScenarioResult
 	var err *types.RequestError
 
@@ -291,6 +329,9 @@ func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) 
 
 		if err != nil && err.Type == types.ErrorIntented {
 			// Don't report intentionally created errors. Like canceled requests.
+			if e.collector != nil {
+				e.collector.IterationDone(nil, stage, 0)
+			}
 			return
 		}
 		break
@@ -301,6 +342,9 @@ func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) 
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	if stage != nil {
 		res.Others["loadStage"] = *stage
+	}
+	if e.collector != nil {
+		e.collector.IterationDone(res, stage, time.Since(scenarioStartTime))
 	}
 	e.resultReportChan <- res
 
@@ -313,7 +357,7 @@ func (e *engine) runAssertionsInEngine() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
-func (e *engine) stop() {
+func (e *engine) stop(status string) {
 	e.wg.Wait()
 	close(e.resultReportChan)
 	close(e.resultAssertChan)
@@ -325,6 +369,14 @@ func (e *engine) stop() {
 	}
 
 	e.testSuccess = <-e.reportService.DoneChan()
+
+	if e.collector != nil {
+		var result *report.Result
+		if rp, ok := e.reportService.(report.ResultProvider); ok {
+			result = rp.Result()
+		}
+		e.collector.Finish(status, e.testSuccess, result)
+	}
 
 }
 

@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
+	"go.ddosify.com/ddosify/v2/core/hooks"
 	"go.ddosify.com/ddosify/v2/core/types"
 )
 
@@ -313,11 +314,13 @@ type streamRead struct {
 	result *types.StreamResult
 	body   []byte
 	err    error // a read error that is not the end of the stream
+	vars   map[string]interface{}
 }
 
 // readSSE reads body as server-sent events until the done marker, EOF or an error.
 // sentAt is when the request was sent and firstByteAt when the first response byte came.
-func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt, firstByteAt time.Time, keepBody bool) streamRead {
+func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt, firstByteAt time.Time, keepBody bool,
+	observers ...hooks.StreamObserver) streamRead {
 	res := &types.StreamResult{}
 	if !firstByteAt.IsZero() {
 		res.TTFB = firstByteAt.Sub(sentAt)
@@ -339,6 +342,9 @@ func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt
 		if conf.Done != "" && ev.Data == conf.Done {
 			done = true
 			return
+		}
+		for _, o := range observers {
+			o.Event(now.Sub(sentAt), ev.Event, []byte(ev.Data))
 		}
 		res.Events++
 		if !res.HasFirstEvent {
@@ -383,6 +389,21 @@ func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt
 	gaps.fill(res)
 
 	out := streamRead{result: res}
+	for _, o := range observers {
+		metrics, vars := o.End(res)
+		for k, v := range metrics {
+			if res.Extra == nil {
+				res.Extra = make(map[string]float64)
+			}
+			res.Extra[k] = v
+		}
+		for k, v := range vars {
+			if out.vars == nil {
+				out.vars = make(map[string]interface{})
+			}
+			out.vars[k] = v
+		}
+	}
 	if kept != nil {
 		out.body = kept.buf.Bytes()
 		res.BodyTruncated = kept.truncated
