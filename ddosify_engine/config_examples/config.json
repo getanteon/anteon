@@ -12,7 +12,9 @@
         {"duration": 7, "count": 20}
     ],
     "load_spread": "even", // "front" (default) or "even": start a stage's iterations at even intervals
-    "slo": {"ttfb_ms": 2000, "first_event_ms": 5000, "first_token_ms": 10000, "total_ms": 30000, "max_gap_ms": 15000}, // goodput thresholds for streamed steps
+    "slo": {"ttfb_ms": 2000, "first_event_ms": 5000, "first_token_ms": 10000, "total_ms": 30000, "max_gap_ms": 15000, "goodput_perc": 95}, // goodput thresholds for streamed steps; below goodput_perc the test fails, exit 3
+    "insecure": false, // true skips TLS certificate verification, for a self-signed certificate
+    "presets": [], // names of presets a feature package registered, applied before the config is read
     "env" : {
         "HTTPBIN" : "https://httpbin.ddosify.com",
         "LOCAL" : "http://localhost:8084",
