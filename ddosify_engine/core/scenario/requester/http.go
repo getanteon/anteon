@@ -346,7 +346,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 			_, failedAssertions = h.applyAssertions(&evaluator.AssertEnv{
 				StatusCode:   int64(httpRes.StatusCode),
 				ResponseSize: int64(len(respBody)),
-				ResponseTime: durations.totalDuration().Milliseconds(), // in ms
+				ResponseTime: responseTime(durations, streamResult).Milliseconds(), // in ms
 				Body:         string(respBody),
 				Headers:      httpRes.Header,
 				Variables:    concatEnvs(envs, extractedVars),
@@ -406,7 +406,28 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		res.Custom["ddResponseTime"] = ddResTime
 	}
 
+	// A streamed step lasts until its stream ends: Response Read then runs from the headers to the
+	// last event, and Total is the stream's.
+	if streamResult != nil {
+		res.Duration = streamResult.Total
+		before := durations.getDNSDur() + durations.getConnDur() + durations.getReqDur() + durations.getServerProcessDur()
+		if tls, ok := res.Custom["tlsDuration"].(time.Duration); ok {
+			before += tls
+		}
+		if read := streamResult.Total - before; read > 0 {
+			res.Custom["resDuration"] = read
+		}
+	}
+
 	return
+}
+
+// responseTime is what assertions see as response_time: through the stream's end for a stream.
+func responseTime(d *duration, st *types.StreamResult) time.Duration {
+	if st != nil {
+		return st.Total
+	}
+	return d.totalDuration()
 }
 
 // autoStreamConf reads a text/event-stream response of a step that has no stream config.

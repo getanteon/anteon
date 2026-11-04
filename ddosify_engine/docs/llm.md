@@ -1,6 +1,6 @@
 # LLM Load Testing
 
-Ddosify measures an LLM endpoint the way the serving benchmarks do ([vLLM `bench serve`](https://docs.vllm.ai/en/latest/benchmarking/cli/), [NVIDIA AIPerf](https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html), [GuideLLM](https://github.com/vllm-project/guidellm)), while keeping what it already does well: an open arrival rate, multi-step scenarios, captures, test data and stages. Two ways in:
+Ddosify measures an LLM endpoint the way the serving benchmarks do ([vLLM `bench serve`](https://docs.vllm.ai/en/latest/benchmarking/cli/), [NVIDIA AIPerf](https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html), [GuideLLM](https://github.com/vllm-project/guidellm)), with latency and token percentiles over the successful requests only, as they aggregate them, while keeping what it already does well: an open arrival rate, multi-step scenarios, captures, test data and stages. Two ways in:
 
 - **The OpenAI preset**: a URL, a key and a dataset, for any OpenAI compatible chat completions server (vLLM, SGLang, LiteLLM, TGI, llama.cpp, OpenAI).
 - **Any SSE API**: an `llm` block on a streamed step, for an application API such as an AI SDK chat endpoint.
@@ -25,7 +25,7 @@ Every streamed answer is counted from the first source that is available:
 | --- | --- |
 | First content | Time to the first event that carried output text, reasoning included. AIPerf's TTFT ignores empty first responses the same way |
 | TPOT | (last content event - first content event) / (output tokens - 1), per request, then its percentiles. As vLLM and AIPerf define it; the trailing usage chunk and `[DONE]` are left out |
-| ITL | The time between consecutive content events, every request pooled, as `vllm bench serve` reports it. With one token per chunk it is the inter-token latency; tokens sharing a chunk add no gap |
+| ITL | The time between consecutive content events, every successful request pooled, as `vllm bench serve` reports it. With one token per chunk it is the inter-token latency; tokens sharing a chunk add no gap |
 | Tokens/s/request | Output tokens / time to the last content event, AIPerf's per user TPS |
 | Output throughput | All output tokens / (last answer's end - first request's send), warm-up excluded, AIPerf's system TPS |
 | Input tokens | The server's usage, or the tokenizer on the prompt text (the chat template is not added, so it is a little low) |

@@ -99,6 +99,13 @@ func TestStreamAgainstRealServer(t *testing.T) {
 	if res.RespBody != nil {
 		t.Error("no assertion, capture or debug: the body should not be kept")
 	}
+	// the step lasts as long as its stream, not until its headers
+	if res.Duration != st.Total {
+		t.Errorf("a streamed step's duration is the stream's total %v, got %v", st.Total, res.Duration)
+	}
+	if read, _ := res.Custom["resDuration"].(time.Duration); read < 500*ms {
+		t.Errorf("response read runs from the headers to the last event, got %v", read)
+	}
 }
 
 func TestStreamDetectedWithoutConfig(t *testing.T) {

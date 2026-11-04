@@ -51,6 +51,11 @@ jobs:
         id: previous
         run: echo "tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${GITHUB_REF_NAME}^")" >> "$GITHUB_OUTPUT"
 
+      # Builds the licence, completions and man pages with go run, before any token is in reach
+      - name: Release assets
+        working-directory: ddosify_engine
+        run: scripts/release-assets.sh
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
@@ -59,7 +64,9 @@ jobs:
           workdir: ddosify_engine
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          # the job's token creates the release; the PAT only pushes the formula to the tap
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAP_GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
           GORELEASER_PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
 

@@ -58,3 +58,31 @@ jobs:
 
       - name: Test with the race detector
         run: go test -race ./...
+
+  tokenizer:
+    name: Tokenizer reference counts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ddosify_engine
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ddosify_engine/go.mod
+          cache-dependency-path: ddosify_engine/go.sum
+
+      # pinned revisions and sha256 in core/llm/tokenizer/testdata/tokenizers.txt
+      - name: Fetch the reference tokenizers
+        run: scripts/fetch-tokenizers.sh "$RUNNER_TEMP/tokenizers"
+
+      - name: Compare with Hugging Face tokenizers
+        env:
+          DDOSIFY_TOKENIZERS_DIR: ${{ runner.temp }}/tokenizers
+        run: |
+          go test -count=1 -run TestReferenceCounts -v ./core/llm/tokenizer | tee "$RUNNER_TEMP/tokenizer.log"
+          grep -q -- '--- PASS: TestReferenceCounts' "$RUNNER_TEMP/tokenizer.log"
+          ! grep -q -- '--- SKIP' "$RUNNER_TEMP/tokenizer.log"

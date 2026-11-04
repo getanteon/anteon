@@ -1,16 +1,8 @@
 version: 2
 
 project_name: ddosify
-before:
-  hooks:
-    - go mod verify
-    - rm -rf build
-    - mkdir -p build/completions build/manpages
-    - cp ../LICENSE build/LICENSE
-    - sh -c "go run . completion bash > build/completions/ddosify.bash"
-    - sh -c "go run . completion zsh > build/completions/_ddosify"
-    - sh -c "go run . completion fish > build/completions/ddosify.fish"
-    - go run . docs man --dir build/manpages
+# No hooks: scripts/release-assets.sh builds build/ (licence, completions, man pages) first,
+# so goreleaser runs no go run while it holds the release tokens.
 builds:
   - env:
       - CGO_ENABLED=0
@@ -88,6 +80,7 @@ brews:
   - repository:
       owner: getanteon
       name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     directory: Formula
     homepage:  https://ddosify.com
     description: High-performance load testing tool, written in Golang.
