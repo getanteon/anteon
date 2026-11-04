@@ -3,6 +3,7 @@ package htmlreport
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -337,5 +338,56 @@ func TestAxisNum(t *testing.T) {
 		if got := axisNum(c.v, c.step); got != c.want {
 			t.Errorf("axisNum(%v, %v) = %q, want %q", c.v, c.step, got, c.want)
 		}
+	}
+}
+
+func TestChartGapWhereNoSamples(t *testing.T) {
+	rec := NewRecorder(0)
+	for i := 0; i < 9; i++ {
+		l := live.Latency{Count: int64(i + 1), P50: 1000, P90: 1100, P99: 1200}
+		if i == 4 {
+			l = live.Latency{} // a stage just began and nothing has finished in it
+		}
+		rec.Add(live.Snapshot{Elapsed: time.Duration(i) * time.Second, E2E: l, TTFT: l})
+	}
+	rep := FromResult(nil, Config{}, rec)
+	var e2e *chart
+	charts := buildCharts(rep, "ITL")
+	for i := range charts {
+		if charts[i].ID == "e2e" {
+			e2e = &charts[i]
+		}
+	}
+	if e2e == nil {
+		t.Fatal("no E2E chart")
+	}
+	path := regexp.MustCompile(`<path class="line s0"[^>]* d="([^"]*)"`).FindStringSubmatch(string(e2e.SVG))
+	if path == nil {
+		t.Fatal("no p50 path")
+	}
+	if n := strings.Count(path[1], "M"); n != 2 {
+		t.Errorf("p50 path has %d segments, want a break where there were no samples: %s", n, path[1])
+	}
+	if strings.Contains(path[1], fmt.Sprintf(" %.1f", float64(padT+plotH))) {
+		t.Errorf("a point drawn at zero: %s", path[1])
+	}
+	var data struct {
+		S []struct{ V []float64 }
+	}
+	if err := json.Unmarshal([]byte(e2e.Data), &data); err != nil {
+		t.Fatal(err)
+	}
+	if data.S[0].V[4] != -1 {
+		t.Errorf("hover data for the empty snapshot is %v, want the no-value marker", data.S[0].V[4])
+	}
+}
+
+func TestRequestsCardSaysPerIteration(t *testing.T) {
+	doc := render(t)
+	if !strings.Contains(doc, ">Requests<") || !strings.Contains(doc, "2 per iteration, warm-up excluded") {
+		t.Error("the requests card does not say it counts both steps")
+	}
+	if strings.Contains(doc, "Step results") {
+		t.Error("the old label is still there")
 	}
 }

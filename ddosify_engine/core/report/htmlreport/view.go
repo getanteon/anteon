@@ -246,11 +246,15 @@ func buildView(r Report) pageView {
 	}
 
 	v.Outcomes = outcomeRows(r.Outcomes)
-	var iterations int64
+	var requests int64
 	for _, o := range v.Outcomes {
-		iterations += o.rawCount
+		requests += o.rawCount
 	}
-	v.Cards = append(v.Cards, card{Label: "Step results", Value: fmtInt(iterations), Note: "warm-up excluded"})
+	reqNote := "warm-up excluded"
+	if n := len(r.Steps); n > 1 {
+		reqNote = fmt.Sprintf("%d per iteration, warm-up excluded", n)
+	}
+	v.Cards = append(v.Cards, card{Label: "Requests", Value: fmtInt(requests), Note: reqNote})
 	for _, o := range v.Outcomes[1:3] {
 		v.Cards = append(v.Cards, card{Label: o.Label, Value: o.Count, Note: o.Perc + " of results", Alarm: o.Alarm})
 	}
@@ -367,9 +371,9 @@ func buildCharts(r Report, itlName string) []chart {
 		}
 	}
 	charts := []chart{
-		buildChart("ttft", "Time to first token", "ms", "Percentiles over the samples so far, at each snapshot.", ts, ttft, marks, 0),
+		buildChart("ttft", "Time to first token", "ms", "Percentiles of the successful requests so far in the stage running at each snapshot; a gap is a snapshot with none yet.", ts, ttft, marks, 0),
 		buildChart("itl", itlName, "ms", "Time between tokens, or between SSE events when tokens are not counted.", ts, itl, marks, 0),
-		buildChart("e2e", "End to end", "ms", "From the request to the end of the stream.", ts, e2e, marks, 0),
+		buildChart("e2e", "End to end", "ms", "Iteration wall time, all steps, of the iterations that succeeded.", ts, e2e, marks, 0),
 		buildChart("rps", "Arrival rate", "/s", "Iterations started a second: the plan and what was reached.", ts,
 			[]series{{Name: "target", Dash: dashLong, vals: target}, {Name: "achieved", Dash: dashSolid, vals: achieved}}, marks, 0),
 		buildChart("inflight", "In flight", "", "Requests started and not yet ended.", ts,
