@@ -315,9 +315,18 @@ type streamRead struct {
 	err    error // a read error that is not the end of the stream
 }
 
+// eventObserver sees each event's data at its time from the send; the llm package counts tokens with it.
+type eventObserver interface {
+	Event(data string, at time.Duration)
+}
+
 // readSSE reads body as server-sent events until the done marker, EOF or an error.
 // sentAt is when the request was sent and firstByteAt when the first response byte came.
 func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt, firstByteAt time.Time, keepBody bool) streamRead {
+	return readSSEObserved(ctx, body, conf, sentAt, firstByteAt, keepBody, nil)
+}
+
+func readSSEObserved(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt, firstByteAt time.Time, keepBody bool, obs eventObserver) streamRead {
 	res := &types.StreamResult{}
 	if !firstByteAt.IsZero() {
 		res.TTFB = firstByteAt.Sub(sentAt)
@@ -354,6 +363,9 @@ func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt
 		}
 		if !conf.Error.IsZero() && matchEvent(&conf.Error, ev) {
 			res.ErrorEvents++
+		}
+		if obs != nil {
+			obs.Event(ev.Data, now.Sub(sentAt))
 		}
 	}, func() {
 		res.Comments++

@@ -67,6 +67,9 @@ type engine struct {
 	stages []tickStage
 	wg     sync.WaitGroup
 
+	// when the ticker started; tick c is meant to start iterations at startedAt + (c+1) intervals
+	startedAt time.Time
+
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
 
@@ -206,6 +209,7 @@ func (e *engine) Start() string {
 	}()
 
 	e.tickCounter = 0
+	e.startedAt = time.Now()
 	e.wg = sync.WaitGroup{}
 	var mutex = &sync.Mutex{}
 	for range ticker.C {
@@ -232,10 +236,11 @@ func (e *engine) Start() string {
 
 func (e *engine) runWorkers(c int) {
 	stage := e.stageOf(c)
+	intended := e.startedAt.Add(time.Duration(c+1) * tickerInterval * time.Millisecond)
 	for i := 1; i <= e.reqCountArr[c]; i++ {
 		scenarioStartTime := time.Now()
 		go func(t time.Time) {
-			e.runWorker(t, stage)
+			e.runWorker(t, stage, intended)
 			e.wg.Done()
 		}(scenarioStartTime)
 	}
@@ -275,7 +280,7 @@ func (e *engine) initStages() {
 	}
 }
 
-func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) {
+func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage, intended time.Time) {
 	var res *types.ScenarioResult
 	var err *types.RequestError
 
@@ -301,6 +306,9 @@ func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) 
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	if stage != nil {
 		res.Others["loadStage"] = *stage
+	}
+	if !e.startedAt.IsZero() {
+		res.Others[types.OthersIntendedStart] = intended
 	}
 	e.resultReportChan <- res
 

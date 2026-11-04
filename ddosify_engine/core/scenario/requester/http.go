@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.ddosify.com/ddosify/core/llm"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
 	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
 	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
@@ -58,6 +59,7 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
+	llm                  *llm.Step
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -94,6 +96,12 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 			return
 		}
 		if err = h.packet.Stream.Error.Compile(); err != nil {
+			return
+		}
+	}
+
+	if h.packet.LLM != nil {
+		if h.llm, err = llm.NewStep(h.packet.LLM); err != nil {
 			return
 		}
 	}
@@ -244,6 +252,14 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
+	var llmPrep *llm.Prepared
+	if h.llm != nil {
+		if llmPrep, err = h.prepareLLM(httpReq, envs, extractedVars); err != nil {
+			return &types.ScenarioStepResult{StepID: h.packet.ID, StepName: h.packet.Name, RequestID: uuid.New(),
+				Err: types.RequestError{Type: types.ErrorInvalidRequest, Reason: fmt.Sprintf("Could not prepare req, %s", err.Error())}}
+		}
+	}
+
 	if httpReq.Body != nil {
 		if int64(len(h.packet.Payload)) > 300000 {
 			// Don't store req bodies bigger than 300KB
@@ -276,8 +292,11 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		needBody := h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0
 		// read resp body conditionally
 		if conf := h.streamConf(httpRes); conf != nil {
-			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody)
+			read := readSSEObserved(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody, observerOf(llmPrep))
 			streamResult = read.result
+			if llmPrep != nil {
+				streamResult.LLM = llmPrep.Observer.Finish(sentAt)
+			}
 			respBody = read.body
 			if read.err != nil {
 				requestErr = streamErrType(read.err)
@@ -292,6 +311,11 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
+			}
+		}
+		if llmPrep != nil {
+			for k, v := range llmPrep.Observer.Vars() {
+				extractedVars[k] = v
 			}
 		}
 
