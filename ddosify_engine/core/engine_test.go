@@ -1741,7 +1741,7 @@ func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
 }
 
 func TestLoadRandomInfoFromData(t *testing.T) {
-	t.Parallel()
+	// not parallel: it replaces a package level function the other tests call
 
 	// Test server
 	requestCalled := false
@@ -1912,7 +1912,7 @@ func TestInvalidCsvEnvs(t *testing.T) {
 }
 
 func TestCreateInitialCookiesReturnsErr(t *testing.T) {
-	t.Parallel()
+	// not parallel: it replaces a package level function the other tests call
 
 	// Prepare
 	h := newDummyHammer()

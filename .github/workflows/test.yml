@@ -40,3 +40,21 @@ jobs:
 
       - name: Test
         run: go test -parallel 1 -short ./...
+
+  race:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ddosify_engine
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ddosify_engine/go.mod
+          cache-dependency-path: ddosify_engine/go.sum
+
+      - name: Test with the race detector
+        run: go test -race ./...

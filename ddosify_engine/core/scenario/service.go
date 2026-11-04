@@ -155,8 +155,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	// inject dynamic variables beforehand for each iteration
 	injectDynamicVars(s.ei, envs)
 	// pass a row from data for each iteration
-	s.enrichEnvFromData(envs)
-	atomic.AddInt64(&s.iterIndex, 1)
+	s.enrichEnvFromData(envs, atomic.AddInt64(&s.iterIndex, 1)-1)
 
 	var client *http.Client
 	if s.engineInUserMode() {
@@ -208,7 +207,7 @@ func (s *ScenarioService) engineInUserMode() bool {
 	return false
 }
 
-func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
+func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}, iterIndex int64) {
 	var row map[string]interface{}
 	sb := strings.Builder{}
 	for key, csvData := range s.scenario.Data {
@@ -216,7 +215,7 @@ func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
 		if csvData.Random {
 			row = csvData.Rows[rand.Intn(lenRows)]
 		} else {
-			row = csvData.Rows[s.iterIndex%int64(lenRows)]
+			row = csvData.Rows[iterIndex%int64(lenRows)]
 		}
 
 		for tag, v := range row {

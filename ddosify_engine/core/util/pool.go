@@ -24,13 +24,16 @@ func (p *Pool[T]) Put(item T) error {
 		return nil
 	}
 
+	// AfterPut runs while the caller still owns the item: once it is in the channel, another
+	// goroutine may Get it.
+	if p.AfterPut != nil {
+		p.AfterPut(item)
+	}
+
 	// put the resource back into the pool. If the pool is full, this will
 	// block and the default case will be executed.
 	select {
 	case p.Items <- item:
-		if p.AfterPut != nil {
-			p.AfterPut(item)
-		}
 		return nil
 	default:
 		// pool is full, close passed client

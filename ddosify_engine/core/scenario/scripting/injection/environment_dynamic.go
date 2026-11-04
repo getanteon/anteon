@@ -44,9 +44,10 @@ func (ei *EnvironmentInjector) getFakeData(key string) (interface{}, error) {
 		return nil, fmt.Errorf("%s is not a valid dynamic variable", key)
 	}
 
+	// one faker serves every injector, and its rand.Rand is not safe for concurrent use
 	preventRaceOnRandomFunc := func(fakeFunc interface{}) interface{} {
-		ei.mu.Lock()
-		defer ei.mu.Unlock()
+		fakerMu.Lock()
+		defer fakerMu.Unlock()
 		return reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
 	}
 
