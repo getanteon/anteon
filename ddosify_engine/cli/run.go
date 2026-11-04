@@ -206,9 +206,10 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 		return usageErr(err)
 	}
 	h.Drain = o.drain
-	if h.Insecure {
-		fmt.Fprintln(s.Err, "Warning: TLS certificates are not verified (--insecure).")
-	}
+	// While a TUI owns the terminal nothing else may write to it: stderr is held and printed after.
+	errw := &heldWriter{w: s.Err}
+	s.Err = errw
+	defer errw.release()
 
 	// The first interrupt (CTRL+C, SIGTERM or an observer's Stop) ends the schedule and lets the
 	// iterations in flight finish for --drain; the second cuts them.
@@ -255,7 +256,15 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 	if ownsTerminal {
 		stdout = &held
 	}
-	report.SetOutputs(stdout, s.Err, !ownsTerminal && isTerminal(s.Err))
+	if ownsTerminal {
+		errw.hold()
+	}
+	if h.Insecure {
+		fmt.Fprintln(s.Err, "Warning: TLS certificates are not verified (--insecure).")
+	}
+	report.SetOutputs(stdout, s.Err, !ownsTerminal && isTerminal(errw.w))
+	report.SetBanners(!ownsTerminal)
+	report.SetWidth(terminalWidth(s.Out))
 
 	es, err := core.InitEngineServices(h)
 	if err != nil {
@@ -274,6 +283,7 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 	status := engine.Start()
 
 	if ownsTerminal {
+		errw.release()
 		io.Copy(s.Out, &held)
 	}
 	for _, obs := range observers {

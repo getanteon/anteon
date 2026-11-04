@@ -87,8 +87,8 @@ func WriteSchedule(w io.Writer, s *ScheduleSummary) {
 	if s == nil {
 		return
 	}
-	fmt.Fprintf(w, "Scheduling lag (ms):\tp50 %.2f, p99 %.2f, max %.2f over %d iterations; %d started over 100ms late\n",
-		s.Lag.P50, s.Lag.P99, s.Lag.Max, s.Iterations, s.Late)
+	fmt.Fprintf(w, "Scheduling lag (ms):\tp50 %.2f, p99 %.2f, max %.2f over %d iterations\n", s.Lag.P50, s.Lag.P99, s.Lag.Max, s.Iterations)
+	fmt.Fprintf(w, "Started over 100ms late:\t%d\n", s.Late)
 	if s.Saturated {
 		fmt.Fprintf(w, "WARNING: the client could not keep the schedule (p99 lag %.0fms): the arrival rate was lower than asked and latencies leave the wait out. Use a bigger machine or fewer iterations.\n", s.Lag.P99)
 	}

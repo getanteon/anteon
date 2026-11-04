@@ -283,3 +283,23 @@ func TestHammerFromFlags(t *testing.T) {
 		t.Error("a cert without a key is an error")
 	}
 }
+
+func TestSingleDashLongFlagHint(t *testing.T) {
+	cases := map[string][]string{
+		"--config":    {"run", "-config", "demo.json"},
+		"--html":      {"run", "-html", "r.html", "https://example.com"},
+		"--cert-path": {"run", "-cert_path", "c.pem", "https://example.com"},
+	}
+	for want, args := range cases {
+		code, _, stderr := run(t, args...)
+		if code != ExitUsage {
+			t.Errorf("%v: exit %d", args, code)
+		}
+		if !strings.Contains(stderr, "Did you mean "+want+"?") {
+			t.Errorf("%v: no hint for %s in %q", args, want, stderr)
+		}
+	}
+	if _, _, stderr := run(t, "run", "-b", "-config", "-zz", "https://example.com"); strings.Contains(stderr, "Did you mean") {
+		t.Errorf("a hint for a flag that does not exist: %q", stderr)
+	}
+}

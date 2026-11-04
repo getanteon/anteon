@@ -28,11 +28,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // Exit codes
@@ -89,6 +92,15 @@ func Main(args []string, info BuildInfo, s Streams) int {
 			return ExitUsage
 		}
 	}
+	if len(args) > 0 {
+		if sub, _, err := root.Find(args[:1]); err == nil && sub != root {
+			if msg := singleDashLongFlag(sub, args[1:]); msg != "" {
+				fmt.Fprintln(s.Err, "Error:", msg)
+				fmt.Fprintf(s.Err, "Run '%s --help' for the flags.\n", sub.CommandPath())
+				return ExitUsage
+			}
+		}
+	}
 	root.SetArgs(args)
 	cmd, err := root.ExecuteC()
 	if err == nil {
@@ -106,6 +118,9 @@ func Main(args []string, info BuildInfo, s Streams) int {
 	path := root.CommandPath()
 	if cmd != nil {
 		path = cmd.CommandPath()
+		if hint := flagHint(cmd, err); hint != "" {
+			fmt.Fprintln(s.Err, hint)
+		}
 	}
 	fmt.Fprintf(s.Err, "Run '%s --help' for usage.\n", path)
 	return ExitUsage
@@ -210,4 +225,65 @@ func useColor(noColorFlag bool, w io.Writer) bool {
 
 func setColor(enabled bool) {
 	color.NoColor = !enabled
+}
+
+var singleDashLong = regexp.MustCompile(`unknown shorthand flag: '.' in -([A-Za-z][A-Za-z0-9_-]+)`)
+
+// flagHint suggests the double-dash spelling when a long flag was given with one dash, as v1 took it.
+func flagHint(cmd *cobra.Command, err error) string {
+	m := singleDashLong.FindStringSubmatch(err.Error())
+	if m == nil {
+		return ""
+	}
+	for _, name := range []string{m[1], strings.ReplaceAll(m[1], "_", "-")} {
+		if cmd.Flags().Lookup(name) != nil || cmd.InheritedFlags().Lookup(name) != nil {
+			return fmt.Sprintf("Did you mean --%s? Long flags take two dashes.", name)
+		}
+	}
+	return ""
+}
+
+// singleDashLongFlag finds a long flag written with one dash, such as -config, which pflag would
+// otherwise read as shorthands with a value (-c onfig, or -H tml for -html), and says how to write it.
+func singleDashLongFlag(cmd *cobra.Command, args []string) string {
+	takesValue := func(a string) bool {
+		if strings.Contains(a, "=") || !strings.HasPrefix(a, "-") {
+			return false
+		}
+		var f *pflag.Flag
+		if strings.HasPrefix(a, "--") {
+			f = cmd.Flags().Lookup(a[2:])
+		} else if len(a) == 2 {
+			f = cmd.Flags().ShorthandLookup(a[1:])
+		}
+		return f != nil && f.Value.Type() != "bool"
+	}
+	for i, a := range args {
+		if a == "--" {
+			return ""
+		}
+		if len(a) < 3 || a[0] != '-' || a[1] == '-' || (i > 0 && takesValue(args[i-1])) {
+			continue
+		}
+		name, _, _ := strings.Cut(a[1:], "=")
+		for _, n := range []string{name, strings.ReplaceAll(name, "_", "-")} {
+			if len(n) > 1 && (cmd.Flags().Lookup(n) != nil || cmd.InheritedFlags().Lookup(n) != nil) {
+				return fmt.Sprintf("%s has one dash; long flags take two. Did you mean --%s?", a, n)
+			}
+		}
+	}
+	return ""
+}
+
+// terminalWidth is w's width in columns, or 0 when w is not a terminal.
+func terminalWidth(w interface{}) int {
+	f, ok := w.(interface{ Fd() uintptr })
+	if !ok || !isTerminal(w) {
+		return 0
+	}
+	width, _, err := term.GetSize(f.Fd())
+	if err != nil {
+		return 0
+	}
+	return width
 }

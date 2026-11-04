@@ -30,6 +30,7 @@ import (
 	"sync"
 	"text/tabwriter"
 	"time"
+	"unicode/utf8"
 
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
@@ -51,6 +52,13 @@ var progress = true
 // showProgress false prints no live progress lines, for a pipe or while a TUI owns the terminal.
 func SetOutputs(stdout, stderr io.Writer, showProgress bool) {
 	out, errOut, progress = stdout, stderr, showProgress
+}
+
+var banners = true
+
+// SetBanners turns the "Initializing..." banner off, for while a TUI owns the terminal.
+func SetBanners(on bool) {
+	banners = on
 }
 
 var cyan = color.New(color.FgCyan).SprintFunc()
@@ -85,7 +93,9 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	s.debug = debug
 	s.samplingRate = samplingRate
 
-	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s  Initializing... \n", emoji.Gear)))
+	if banners {
+		fmt.Fprint(errOut, cyan(fmt.Sprintf("%s  Initializing... \n", emoji.Gear)))
+	}
 	if s.debug {
 		fmt.Fprint(errOut, cyan(fmt.Sprintf("%s Running in debug mode, 1 iteration will be played... \n", emoji.Bug)))
 	}
@@ -583,38 +593,166 @@ func printGoodput(w io.Writer, g *Goodput) {
 	if g == nil {
 		return
 	}
-	fmt.Fprintf(w, "\nGoodput (warm-up excluded):\t%d / %d iterations (%.1f%%), SLO: %s\n", g.Good, g.Iterations, g.Perc, sloText(g.SLO))
+	fmt.Fprintf(w, "\nGoodput (warm-up excluded):\t%d / %d iterations (%.1f%%)\n", g.Good, g.Iterations, g.Perc)
+	fmt.Fprintf(w, "SLO: %s\n", sloText(g.SLO))
+}
+
+type stageCol struct {
+	head  string
+	left  bool
+	cells []string
+}
+
+// stageBlocks prints each stage as two lines of "name value" pairs, for a terminal too narrow for the table.
+func stageBlocks(cols []*stageCol, rows int) []string {
+	var out []string
+	for r := 0; r < rows; r++ {
+		var first, second []string
+		for i, c := range cols {
+			switch {
+			case i == 0:
+				continue
+			case i == 1:
+				first = append(first, fmt.Sprintf("%s %s", cols[0].cells[r], c.cells[r]))
+			case strings.HasPrefix(c.head, "TTFT") || strings.HasPrefix(c.head, "Total") || c.head == "p95":
+				second = append(second, c.head+" "+c.cells[r])
+			default:
+				first = append(first, c.head+" "+c.cells[r])
+			}
+		}
+		out = append(out, "  "+strings.Join(first, "  "), "     "+strings.Join(second, "  "))
+	}
+	return out
+}
+
+// stageTableWidth is the widest the stage table may be: it is written with spaces, never tabs,
+// and the columns for other 5xx, timeouts and network or cut streams fold into one when it would not fit.
+const stageTableWidth = 100
+
+// tableWidth is stageTableWidth, or the terminal's width when that is narrower.
+var tableWidth = stageTableWidth
+
+// SetWidth tells the report how wide the terminal is; 0 leaves it at 100 columns.
+func SetWidth(w int) {
+	tableWidth = stageTableWidth
+	if w > 0 && w < stageTableWidth {
+		tableWidth = w
+	}
 }
 
 func printStages(w io.Writer, stages []*StageSummary, withGoodput bool) {
 	if len(stages) == 0 {
 		return
 	}
+	ms := func(d *Dist, p50 bool) string {
+		if d == nil || d.Count == 0 {
+			return "-"
+		}
+		if p50 {
+			return fmt.Sprintf("%.0f", d.P50)
+		}
+		return fmt.Sprintf("%.0f", d.P95)
+	}
+	build := func(folded bool) []*stageCol {
+		cols := []*stageCol{{head: "#"}, {head: "Stage", left: true}, {head: "Iter"}, {head: "OK"}}
+		if withGoodput {
+			cols = append(cols, &stageCol{head: "Good%"})
+		}
+		cols = append(cols, &stageCol{head: "429"}, &stageCol{head: "503"})
+		if folded {
+			cols = append(cols, &stageCol{head: "Other"})
+		} else {
+			cols = append(cols, &stageCol{head: "5xx"}, &stageCol{head: "Timeout"}, &stageCol{head: "Net/Cut"})
+		}
+		cols = append(cols, &stageCol{head: "TTFT p50"}, &stageCol{head: "p95"}, &stageCol{head: "Total p50"}, &stageCol{head: "p95"})
+		for _, st := range stages {
+			name := st.Name
+			if name == "" {
+				name = fmt.Sprintf("stage %d", st.Index+1)
+			}
+			if st.Warmup && !strings.Contains(strings.ToLower(name), "warm") {
+				name += " (warm-up)"
+			}
+			if r := []rune(name); len(r) > 20 {
+				name = string(r[:19]) + "~"
+			}
+			o := st.Outcomes
+			row := []string{fmt.Sprint(st.Index + 1), name, fmt.Sprint(st.Iterations), fmt.Sprint(st.OK)}
+			if withGoodput {
+				good := "-"
+				if st.GoodputPerc != nil {
+					good = fmt.Sprintf("%.1f", *st.GoodputPerc)
+				}
+				row = append(row, good)
+			}
+			row = append(row, fmt.Sprint(o[OutcomeRateLimited]), fmt.Sprint(o[OutcomeUnavailable]))
+			other := o[OutcomeNetworkError] + o[OutcomeStreamCut]
+			if folded {
+				row = append(row, fmt.Sprint(o[OutcomeServerError]+o[OutcomeTimeout]+other))
+			} else {
+				row = append(row, fmt.Sprint(o[OutcomeServerError]), fmt.Sprint(o[OutcomeTimeout]), fmt.Sprint(other))
+			}
+			var ft, tot *Dist
+			if st.Stream != nil {
+				ft, tot = st.Stream.FirstToken, st.Stream.Total
+			}
+			row = append(row, ms(ft, true), ms(ft, false), ms(tot, true), ms(tot, false))
+			for i, c := range row {
+				cols[i].cells = append(cols[i].cells, c)
+			}
+		}
+		return cols
+	}
+	const indent, gap = "  ", "  "
+	render := func(cols []*stageCol) []string {
+		widths := make([]int, len(cols))
+		for i, c := range cols {
+			widths[i] = utf8.RuneCountInString(c.head)
+			for _, v := range c.cells {
+				widths[i] = max(widths[i], utf8.RuneCountInString(v))
+			}
+		}
+		line := func(cell func(*stageCol) string) string {
+			var b strings.Builder
+			b.WriteString(indent)
+			for i, c := range cols {
+				if i > 0 {
+					b.WriteString(gap)
+				}
+				v := cell(c)
+				pad := strings.Repeat(" ", widths[i]-utf8.RuneCountInString(v))
+				if c.left {
+					b.WriteString(v + pad)
+				} else {
+					b.WriteString(pad + v)
+				}
+			}
+			return strings.TrimRight(b.String(), " ")
+		}
+		lines := []string{line(func(c *stageCol) string { return c.head })}
+		for r := range stages {
+			lines = append(lines, line(func(c *stageCol) string { return c.cells[r] }))
+		}
+		return lines
+	}
+	fits := func(lines []string) bool {
+		for _, l := range lines {
+			if utf8.RuneCountInString(l) > tableWidth {
+				return false
+			}
+		}
+		return true
+	}
+	lines := render(build(false))
+	if !fits(lines) {
+		lines = render(build(true))
+	}
+	if !fits(lines) {
+		lines = stageBlocks(build(true), len(stages))
+	}
 	fmt.Fprintln(w, "\nStages:")
-	fmt.Fprintln(w, "  #\tName\tIter\tOK\tGood%\t429\t503\t5xx\tTimeout\tNet/Cut\tFirstTok p50\tp95\tTotal p50\tp95")
-	for _, st := range stages {
-		name := st.Name
-		if name == "" {
-			name = fmt.Sprintf("stage %d", st.Index+1)
-		}
-		if st.Warmup {
-			name += " (warm-up)"
-		}
-		good := "-"
-		if withGoodput && st.GoodputPerc != nil {
-			good = fmt.Sprintf("%.1f", *st.GoodputPerc)
-		}
-		ftP50, ftP95, totP50, totP95 := "-", "-", "-", "-"
-		if st.Stream != nil && st.Stream.FirstToken != nil {
-			ftP50, ftP95 = fmt.Sprintf("%.0f", st.Stream.FirstToken.P50), fmt.Sprintf("%.0f", st.Stream.FirstToken.P95)
-		}
-		if st.Stream != nil && st.Stream.Total != nil {
-			totP50, totP95 = fmt.Sprintf("%.0f", st.Stream.Total.P50), fmt.Sprintf("%.0f", st.Stream.Total.P95)
-		}
-		o := st.Outcomes
-		fmt.Fprintf(w, "  %d\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n", st.Index+1, name, st.Iterations, st.OK, good,
-			o[OutcomeRateLimited], o[OutcomeUnavailable], o[OutcomeServerError], o[OutcomeTimeout],
-			o[OutcomeNetworkError]+o[OutcomeStreamCut], ftP50, ftP95, totP50, totP95)
+	for _, l := range lines {
+		fmt.Fprintln(w, l)
 	}
 }
 

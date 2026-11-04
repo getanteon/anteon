@@ -338,5 +338,8 @@ func WriteSystem(w io.Writer, s *Summary, sched *ScheduleSummary) {
 			fmt.Fprintf(w, "Output throughput in chunks:\t%.1f chunks/s, %d chunks over %.1fs (not tokens)\n", c.SystemPerSec, c.Total, c.WindowSeconds)
 		}
 	}
+	if sched != nil {
+		fmt.Fprintln(w) // its own column block, so the long throughput label does not push it past 80 columns
+	}
 	WriteSchedule(w, sched)
 }
