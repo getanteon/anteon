@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta name="referrer" content="no-referrer">
+<title>{{.R.Title}}</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #e3e3e3; --card: #fafafa;
+  --s0: #5b3fd6; --s1: #c2410c; --s2: #0f766e; --alarm: #b91c1c; --alarm-bg: #fdecec;
+  --bar: #5b3fd6; --grid: #ececec;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111113; --fg: #ececec; --muted: #9a9a9a; --line: #2c2c30; --card: #18181b;
+    --s0: #a593ff; --s1: #fb923c; --s2: #2dd4bf; --alarm: #f87171; --alarm-bg: #3a1616;
+    --bar: #a593ff; --grid: #232327;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 36px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 15px; margin: 20px 0 6px; }
+.muted { color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.card { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 10px 12px; }
+.card .label { color: var(--muted); font-size: 12px; }
+.card .value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.card .note { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.alarm { color: var(--alarm); }
+.card.alarm { border-color: var(--alarm); background: var(--alarm-bg); }
+.mark::before { content: "! "; font-weight: 700; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child, td.name, th.name { text-align: left; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.name { overflow-wrap: anywhere; white-space: normal; }
+.bar { height: 10px; background: var(--grid); border-radius: 3px; min-width: 120px; }
+.bar > span { display: block; height: 100%; background: var(--bar); border-radius: 3px; }
+.bar.alarm > span { background: var(--alarm); }
+.chart-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 6px; margin: 12px 0; background: var(--card); }
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend svg { vertical-align: middle; }
+.readout { font-size: 12px; min-height: 18px; font-variant-numeric: tabular-nums; }
+svg.chart { width: 100%; height: auto; display: block; }
+svg .grid { stroke: var(--grid); stroke-width: 1; }
+svg .tick { fill: var(--muted); font-size: 11px; }
+svg .stage { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
+svg .stagelabel { fill: var(--muted); font-size: 10px; }
+svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+svg .s0 { stroke: var(--s0); } svg .s1 { stroke: var(--s1); } svg .s2 { stroke: var(--s2); }
+svg .cursor { stroke: var(--fg); stroke-width: 1; opacity: .4; }
+dl.config { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+dl.config dt { color: var(--muted); }
+dl.config dd { margin: 0; }
+footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>{{.R.Title}}</h1>
+  <div class="muted">Generated {{.Generated}}. Duration {{.Duration}}. Status: <span class="{{if .StatusAlarm}}alarm mark{{end}}">{{.StatusText}}</span>.</div>
+  <div class="cards">
+    {{- range .Cards}}
+    <div class="card{{if .Alarm}} alarm{{end}}"><div class="label">{{.Label}}</div><div class="value{{if .Alarm}} mark{{end}}">{{.Value}}</div><div class="note">{{.Note}}</div></div>
+    {{- end}}
+  </div>
+</header>
+
+<section id="goodput">
+  <h2>Goodput</h2>
+  {{- if .R.Goodput}}
+  <p><strong>{{.GoodputText}}</strong> of {{.R.Goodput.Iterations}} iterations met the SLO, warm-up excluded. An iteration counts when every step succeeded, no assertion failed and every stream ended cleanly within every threshold.</p>
+  {{- else}}
+  <p class="muted">No SLO was set, so goodput was not computed.</p>
+  {{- end}}
+  {{- if .SLOText}}
+  <p>Thresholds: {{range $i, $t := .SLOText}}{{if $i}}, {{end}}{{$t}}{{end}}.</p>
+  {{- end}}
+</section>
+
+<section id="outcomes">
+  <h2>Outcomes</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">Outcome</th><th>Count</th><th>Share</th><th class="name">&nbsp;</th></tr></thead>
+    <tbody>
+    {{- range .Outcomes}}
+      <tr><td class="name{{if .Alarm}} alarm mark{{end}}">{{.Label}}</td><td>{{.Count}}</td><td>{{.Perc}}</td><td class="name"><div class="bar{{if .Alarm}} alarm{{end}}"><span style="width: {{.Width}}"></span></div></td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+</section>
+
+{{- if .Charts}}
+<section id="charts">
+  <h2>Over time</h2>
+  <p class="muted">Dashed vertical lines mark where each stage (S1, S2, ...) began. Lines differ by dash as well as colour. Hover for values.</p>
+  {{- range .Charts}}
+  <div class="chart-box" id="chart-{{.ID}}" data-series="{{.Data}}">
+    <div class="chart-head">
+      <h3>{{.Title}}{{if .Unit}} <span class="muted">({{.Unit}})</span>{{end}}</h3>
+      <div class="legend">{{range $i, $s := .Legend}}<span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" class="line s{{$i}}" stroke-width="2"{{if $s.Dash}} stroke-dasharray="{{$s.Dash}}"{{end}}/></svg> {{$s.Name}}</span>{{end}}</div>
+    </div>
+    <div class="muted" style="font-size:12px">{{.Note}}</div>
+    {{.SVG}}
+    <div class="readout muted" aria-live="polite"></div>
+  </div>
+  {{- end}}
+</section>
+{{- end}}
+
+{{- if .Stages}}
+<section id="stages">
+  <h2>Stages</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th class="name">Stage</th><th>Iterations</th><th>OK</th><th>Goodput</th><th>429</th><th>503</th><th>Other 5xx</th><th>Timeout</th><th>Network</th><th>Cut</th><th>TTFT p50</th><th>TTFT p95</th><th>E2E p50</th><th>E2E p95</th></tr></thead>
+    <tbody>
+    {{- range .Stages}}
+      <tr><td>{{.Index}}</td><td class="name">{{.Name}}{{if .WarmupNote}} <span class="muted">(warm-up)</span>{{end}}</td><td>{{.Iterations}}</td><td>{{.OK}}</td><td>{{.Goodput}}</td><td class="{{if .Has429}}alarm mark{{end}}">{{.R429}}</td><td class="{{if .Has503}}alarm mark{{end}}">{{.R503}}</td><td>{{.R5xx}}</td><td>{{.Timeout}}</td><td>{{.Network}}</td><td>{{.Cut}}</td><td>{{.FTp50}}</td><td>{{.FTp95}}</td><td>{{.Totp50}}</td><td>{{.Totp95}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  <p class="muted">Times in milliseconds. A warm-up stage is left out of the whole test's figures.</p>
+</section>
+{{- end}}
+
+{{- if .Steps}}
+<section id="steps">
+  <h2>Steps</h2>
+  {{- range .Steps}}
+  <h3>{{.ID}}. {{.Name}}</h3>
+  <p class="muted">{{.Success}} succeeded, {{.Failed}} failed.</p>
+  {{- if .Metrics}}
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">Metric (ms)</th><th>Count</th><th>p50</th><th>p90</th><th>p95</th><th>p99</th><th>Max</th><th>Mean</th></tr></thead>
+    <tbody>
+    {{- range .Metrics}}
+      <tr><td class="name">{{.Name}}</td><td>{{.Count}}</td><td>{{.P50}}</td><td>{{.P90}}</td><td>{{.P95}}</td><td>{{.P99}}</td><td>{{.Max}}</td><td>{{.Mean}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+  {{- if .Outcomes}}
+  <p>{{range $i, $o := .Outcomes}}{{if $o.Nonzero}}<span class="{{if $o.Alarm}}alarm mark{{end}}">{{$o.Label}} {{$o.Count}}</span>&emsp;{{end}}{{end}}</p>
+  {{- end}}
+  {{- end}}
+</section>
+{{- end}}
+
+<section id="config">
+  <h2>Configuration</h2>
+  <p class="muted">The shape of the load only. Addresses, headers, bodies, credentials and test data are not in this file.</p>
+  <dl class="config">
+    {{- with .R.Config}}
+    {{- if .LoadType}}<dt>Load type</dt><dd>{{.LoadType}}</dd>{{end}}
+    {{- if .LoadSpread}}<dt>Load spread</dt><dd>{{.LoadSpread}}</dd>{{end}}
+    {{- if .Iterations}}<dt>Iterations</dt><dd>{{.Iterations}}</dd>{{end}}
+    {{- if .DurationS}}<dt>Duration</dt><dd>{{.DurationS}} s</dd>{{end}}
+    {{- end}}
+    {{- if .SLOText}}<dt>SLO</dt><dd>{{range $i, $t := .SLOText}}{{if $i}}, {{end}}{{$t}}{{end}}</dd>{{end}}
+  </dl>
+  {{- if .R.Config.Stages}}
+  <h3>Planned stages</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th class="name">Name</th><th>Duration (s)</th><th>Iterations</th><th>Warm-up</th></tr></thead>
+    <tbody>
+    {{- range $i, $s := .R.Config.Stages}}
+      <tr><td>{{inc $i}}</td><td class="name">{{$s.Name}}</td><td>{{$s.DurationS}}</td><td>{{$s.Count}}</td><td>{{if $s.Warmup}}yes{{else}}no{{end}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+  {{- if .R.Config.Steps}}
+  <h3>Steps</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th class="name">Name</th><th>Stream</th><th>Timeout (s)</th></tr></thead>
+    <tbody>
+    {{- range .R.Config.Steps}}
+      <tr><td>{{.ID}}</td><td class="name">{{.Name}}</td><td>{{if .Stream}}yes{{else}}no{{end}}</td><td>{{if .TimeoutS}}{{.TimeoutS}}{{else}}-{{end}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+</section>
+
+<footer>Written by Ddosify. This file is self-contained and loads nothing from the network.</footer>
+</main>
+<script>
+(function () {
+  function fmt(v) {
+    if (v < 0) return "-";
+    return v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString("en-US");
+  }
+  function clock(s) {
+    s = Math.round(s);
+    var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60;
+    var mm = (h ? String(m).padStart(2, "0") : String(m));
+    return (h ? h + ":" : "") + mm + ":" + String(x).padStart(2, "0");
+  }
+  document.querySelectorAll(".chart-box[data-series]").forEach(function (box) {
+    var d;
+    try { d = JSON.parse(box.getAttribute("data-series")); } catch (e) { return; }
+    var svg = box.querySelector("svg"), cur = svg.querySelector(".cursor"), out = box.querySelector(".readout");
+    if (!d.t.length) return;
+    svg.addEventListener("mousemove", function (ev) {
+      var r = svg.getBoundingClientRect();
+      var vx = (ev.clientX - r.left) / r.width * svg.viewBox.baseVal.width;
+      var t = (vx - d.l) / d.w * d.tmax, lo = 0, hi = d.t.length - 1;
+      while (lo < hi) { var mid = (lo + hi) >> 1; if (d.t[mid] < t) lo = mid + 1; else hi = mid; }
+      if (lo > 0 && Math.abs(d.t[lo - 1] - t) < Math.abs(d.t[lo] - t)) lo--;
+      var x = d.l + d.t[lo] / d.tmax * d.w;
+      cur.setAttribute("x1", x); cur.setAttribute("x2", x); cur.setAttribute("visibility", "visible");
+      out.textContent = clock(d.t[lo]) + "   " + d.s.map(function (s) { return s.n + " " + fmt(s.v[lo]) + (d.u ? " " + d.u : ""); }).join("   ");
+    });
+    svg.addEventListener("mouseleave", function () { cur.setAttribute("visibility", "hidden"); out.textContent = ""; });
+  });
+})();
+</script>
+</body>
+</html>
