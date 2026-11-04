@@ -26,6 +26,7 @@ import (
 	"sort"
 	"time"
 
+	"go.ddosify.com/ddosify/core/llm"
 	"go.ddosify.com/ddosify/core/types"
 )
 
@@ -149,6 +150,7 @@ type StreamSummary struct {
 	GapP50          *Dist            `json:"gap_p50_ms,omitempty"`
 	GapP95          *Dist            `json:"gap_p95_ms,omitempty"`
 	Events          *Dist            `json:"events,omitempty"`
+	LLM             *llm.Summary     `json:"llm,omitempty"`
 }
 
 type streamAgg struct {
@@ -156,6 +158,7 @@ type streamAgg struct {
 	ends                                        map[string]int64
 	ttfb, firstEvent, firstToken, total         sampler
 	gapMax, gapP50, gapP95, events              sampler
+	llm                                         llm.Agg
 }
 
 func (a *streamAgg) add(r *types.StreamResult) {
@@ -186,6 +189,7 @@ func (a *streamAgg) add(r *types.StreamResult) {
 		a.gapP95.add(ms(r.GapP95))
 	}
 	a.events.add(float64(r.Events))
+	a.llm.Add(r.LLM)
 }
 
 func (a *streamAgg) summary() *StreamSummary {
@@ -206,6 +210,7 @@ func (a *streamAgg) summary() *StreamSummary {
 		GapP50:          a.gapP50.dist(),
 		GapP95:          a.gapP95.dist(),
 		Events:          a.events.dist(),
+		LLM:             a.llm.Summary(),
 	}
 }
 
@@ -253,6 +258,8 @@ type extended struct {
 	stages     map[int]*stageAgg
 	iterations int64
 	good       int64
+	llmAll     llm.Agg
+	sched      llm.ScheduleAgg
 }
 
 func newExtended() *extended {
@@ -337,6 +344,7 @@ func (x *extended) add(scr *types.ScenarioResult) {
 		se.outcomes[outcome]++
 		if sr.Stream != nil {
 			se.stream.add(sr.Stream)
+			x.llmAll.Add(sr.Stream.LLM)
 		}
 	}
 	good = good && ok
@@ -355,6 +363,7 @@ func (x *extended) add(scr *types.ScenarioResult) {
 			return
 		}
 	}
+	x.sched.Add(scr)
 	x.iterations++
 	if good {
 		x.good++
@@ -390,6 +399,8 @@ func (x *extended) finalize(r *Result) {
 		step.Outcomes = se.outcomes
 		step.Stream = se.stream.summary()
 	}
+	r.LLM = x.llmAll.Summary()
+	r.Schedule = x.sched.Summary()
 	if x.slo != nil {
 		r.Goodput = &Goodput{SLO: *x.slo, Iterations: x.iterations, Good: x.good, Perc: perc(x.good, x.iterations)}
 	}
