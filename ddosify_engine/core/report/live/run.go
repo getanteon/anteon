@@ -177,6 +177,12 @@ func RunTUI(ctx context.Context, snaps <-chan Snapshot, o Options) (Result, erro
 	if o.NoColor {
 		opts = append(opts, tea.WithColorProfile(colorprofile.Ascii))
 	}
+	// Bubble Tea reads the setting from the input terminal; the output is usually the same device.
+	for _, f := range []any{o.In, o.Out} {
+		if IsTerminal(f) {
+			defer expandTabs(f.(interface{ Fd() uintptr }).Fd())()
+		}
+	}
 	_, err := tea.NewProgram(m, opts...).Run()
 
 	res := Result{Mode: ModeTUI, Stopped: m.Stopping(), Forced: m.Forced()}
