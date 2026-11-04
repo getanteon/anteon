@@ -10,25 +10,28 @@ on:
       - master
       - develop
 
-jobs:
+permissions:
+  contents: read
 
+jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.18.x
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ddosify_engine/go.mod
+          cache-dependency-path: ddosify_engine/go.sum
 
-    - name: Test
-      run: cd ddosify_engine && go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./... && go tool cover -func coverage.txt
-  
-    - name: Upload reports to codecov
-      run: |
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
-        ./codecov -t ${CODECOV_TOKEN} -f coverage.txt
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Test
+        working-directory: ddosify_engine
+        run: go test -coverpkg=./... -coverprofile=coverage.txt -parallel 1 -covermode=atomic -short ./... && go tool cover -func coverage.txt
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ddosify_engine/coverage.txt
+          token: ${{ secrets.CODECOV_TOKEN }}

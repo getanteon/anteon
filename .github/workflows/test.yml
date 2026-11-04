@@ -10,24 +10,33 @@ on:
       - master
       - develop
 
-jobs:
+permissions:
+  contents: read
 
+jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.18.x, 1.19.x]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ddosify_engine
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ddosify_engine/go.mod
+          cache-dependency-path: ddosify_engine/go.sum
 
-    - name: Build
-      run: cd ddosify_engine && go build -race ./...
+      - name: Vet
+        run: go vet ./...
 
-    - name: Test
-      run: cd ddosify_engine && go test -parallel 1 -short ./...
+      - name: Build
+        run: go build -race ./...
+
+      - name: Test
+        run: go test -parallel 1 -short ./...
