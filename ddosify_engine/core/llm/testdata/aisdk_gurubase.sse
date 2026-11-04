@@ -1,0 +1,24 @@
+data: {"type":"start","messageId":"4f7c","messageMetadata":{"chatId":"b6Q0","runId":"4f7c","createdAt":"2026-09-11T09:12:05.002Z"}}
+
+data: {"type":"data-tool-status","id":"step-understand-start","data":{"id":"understand","step":"understand","phase":"start"},"transient":true}
+
+data: {"type":"source-document","sourceId":"p1","mediaType":"text/plain","title":"Retail credit limits","providerMetadata":{"gurubase":{"excerpt":"5,000 lira"}}}
+
+data: {"type":"text-start","id":"t1"}
+
+data: {"type":"text-delta","id":"t1","delta":"The standard retail "}
+
+data: {"type":"text-delta","id":"t1","delta":"overdraft limit is "}
+
+data: {"type":"text-delta","id":"t1","delta":"5,000 lira [p1]."}
+
+data: {"type":"text-end","id":"t1"}
+
+data: {"type":"data-citation","id":"citation-p1","data":{"marker":"p1","verified":true}}
+
+data: {"type":"message-metadata","messageMetadata":{"status":"ok"}}
+
+data: {"type":"finish","messageMetadata":{"status":"ok","finishedAt":"2026-09-11T09:12:13.122Z","durationMs":8120,"usage":{"inputTokens":6210,"outputTokens":412}}}
+
+data: [DONE]
+
