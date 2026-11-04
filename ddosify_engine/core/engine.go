@@ -244,6 +244,9 @@ func (e *engine) Start() (status string) {
 		go e.resListener.Start(e.resultAssertChan)
 	}
 
+	if dp, ok := e.reportService.(report.DeferredPrinter); ok && e.collector != nil {
+		dp.DeferPrint()
+	}
 	go e.reportService.Start(e.resultReportChan, testResultChan)
 
 	if e.collector != nil {
@@ -439,6 +442,9 @@ func (e *engine) stop(status string) string {
 			result = rp.Result()
 		}
 		e.collector.Finish(status, e.testSuccess, result)
+		if dp, ok := e.reportService.(report.DeferredPrinter); ok {
+			dp.PrintReport()
+		}
 	}
 	return status
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -150,5 +151,34 @@ func TestNothingElseWritesWhileATUIOwnsTheTerminal(t *testing.T) {
 	code, _, plainErr := run(t, "run", srv.URL, "-n", "1", "-d", "1", "--ui", "plain")
 	if code != ExitOK || !strings.Contains(plainErr, "Initializing") {
 		t.Errorf("plain mode lost its banner: %d %q", code, plainErr)
+	}
+}
+
+// progressLine writes a progress line on every update and on Finish, as the ndjson view does.
+type progressLine struct{ w io.Writer }
+
+func (p *progressLine) Start(live.Plan)      {}
+func (p *progressLine) Update(live.Snapshot) { fmt.Fprintln(p.w, `{"type":"progress"}`) }
+func (p *progressLine) Finish(live.Final)    { fmt.Fprintln(p.w, `{"type":"progress"}`) }
+
+// A pod's log is stdout and stderr in one stream: the JSON report has to be its last line.
+func TestJSONReportIsTheLastLineAfterProgress(t *testing.T) {
+	c := &counter{}
+	srv := countingServer(t, c)
+	log := &syncBuf{}
+	live.Register("test-progress", func(o live.Options) (live.Observer, error) { return &progressLine{w: o.Stderr}, nil })
+	defer live.Register("test-progress", nil)
+	code := Main([]string{"run", srv.URL, "-n", "2", "-d", "1", "--json", "--ui", "plain", "--observer", "test-progress"},
+		BuildInfo{Version: "test"}, Streams{In: strings.NewReader(""), Out: log, Err: log})
+	if code != ExitOK {
+		t.Fatalf("exit %d: %s", code, log.String())
+	}
+	lines := strings.Split(strings.TrimSpace(log.String()), "\n")
+	last := lines[len(lines)-1]
+	if !strings.HasPrefix(last, `{"type":"report"`) {
+		t.Errorf("the last line is not the report: %q", last)
+	}
+	if !strings.Contains(log.String(), `{"type":"progress"}`) {
+		t.Errorf("no progress line was written")
 	}
 }

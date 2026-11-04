@@ -297,6 +297,12 @@ type stepExt struct {
 // It reports only once a stream, an SLO or a stage tag is seen, so other tests' output does not change.
 // RunStatusSetter is implemented by the report services that print how the run ended.
 // The engine calls it before it closes the results channel.
+// DeferredPrinter is a report that can wait to be printed until the live view has written its last line.
+type DeferredPrinter interface {
+	DeferPrint()
+	PrintReport()
+}
+
 type RunStatusSetter interface {
 	SetRunStatus(status string)
 }

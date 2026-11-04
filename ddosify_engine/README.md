@@ -296,7 +296,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-T`, `--timeout` | Request timeout in seconds; for a stream it covers the whole stream | `5` |
 | `-P`, `--proxy` | Proxy, `http://user:pass@proxy_host.com:port` | - |
 | `-o`, `--output` | `stdout` or `stdout-json` | `stdout` |
-| `--json` | The report as JSON on stdout, the same as `-o stdout-json` | `false` |
+| `--json` | The report as JSON on stdout, the same as `-o stdout-json`: one line with `"type": "report"`, written after the last `"type": "progress"` line of the live view (on stderr), so a log that holds both streams, such as a Kubernetes pod's, ends with it | `false` |
 | `--debug` | Runs one iteration and prints every request and response | `false` |
 | `--cert-path`, `--cert-key-path` | Client certificate and key files | - |
 | `--insecure` | Does not verify the target's TLS certificate. Off by default: certificates are verified | `false` |

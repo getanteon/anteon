@@ -44,6 +44,10 @@ type stdoutJson struct {
 	debug        bool
 	samplingRate int
 	mu           sync.Mutex
+	// Set by the engine when live progress is written: the report then waits for PrintReport, so
+	// it is the last line, after the final progress snapshot.
+	deferPrint bool
+	final      []byte
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
@@ -102,7 +106,22 @@ func (s *stdoutJson) report() {
 	}
 
 	j, _ := json.Marshal(s.result)
+	if s.deferPrint {
+		s.final = j
+		return
+	}
 	printJson(j)
+}
+
+// DeferPrint holds the report until PrintReport.
+func (s *stdoutJson) DeferPrint() { s.deferPrint = true }
+
+// PrintReport writes a held report, once.
+func (s *stdoutJson) PrintReport() {
+	if s.final != nil {
+		printJson(s.final)
+		s.final = nil
+	}
 }
 
 func (s *stdoutJson) Result() *Result {
@@ -198,10 +217,13 @@ type Report Result
 
 func (r Result) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		SuccesPerc int `json:"success_perc"`
-		FailPerc   int `json:"fail_perc"`
+		// "report", beside the live view's "progress" lines when both share one stream (a pod's log).
+		Type       string `json:"type"`
+		SuccesPerc int    `json:"success_perc"`
+		FailPerc   int    `json:"fail_perc"`
 		Report
 	}{
+		Type:       "report",
 		SuccesPerc: r.successPercentage(),
 		FailPerc:   r.failedPercentage(),
 		Report:     Report(r),

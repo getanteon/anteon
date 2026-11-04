@@ -205,6 +205,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 	}
 
 	expectedOutputByte := []byte(`{
+		"type": "report",
 		"success_perc": 81,
 		"fail_perc": 19,
 		"test_status": "success",
