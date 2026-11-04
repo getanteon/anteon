@@ -1,3 +1,5 @@
+version: 2
+
 project_name: ddosify
 before:
   hooks:
@@ -33,7 +35,7 @@ builds:
 archives:
   - format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - README.md
       - LICENSE*
@@ -44,7 +46,7 @@ universal_binaries:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Tag }}-next"
+  version_template: "{{ incpatch .Tag }}-next"
 changelog:
   sort: asc
   use: github
@@ -57,10 +59,10 @@ changelog:
       - go mod tidy
 
 brews:
-  - tap:
-      owner: ddosify
+  - repository:
+      owner: getanteon
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage:  https://ddosify.com
     description: High-performance load testing tool, written in Golang.
     license: AGPL-3.0-only
