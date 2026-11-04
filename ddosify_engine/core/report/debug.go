@@ -21,6 +21,38 @@ type verboseResponse struct {
 	Headers      map[string]string `json:"headers"`
 	Body         interface{}       `json:"body"`
 	ResponseTime int64             `json:"response_time"` // in milliseconds
+	Stream       *verboseStream    `json:"stream,omitempty"`
+}
+
+// verboseStream is a streamed response's metrics, in milliseconds.
+type verboseStream struct {
+	TTFB          float64 `json:"ttfb_ms"`
+	FirstEvent    float64 `json:"first_event_ms"`
+	FirstToken    float64 `json:"first_token_ms"`
+	HasFirstToken bool    `json:"has_first_token"`
+	Total         float64 `json:"total_ms"`
+	Events        int     `json:"events"`
+	Comments      int     `json:"comments"`
+	ErrorEvents   int     `json:"error_events"`
+	GapMax        float64 `json:"gap_max_ms"`
+	GapP50        float64 `json:"gap_p50_ms"`
+	GapP95        float64 `json:"gap_p95_ms"`
+	End           string  `json:"end"`
+	EndReason     string  `json:"end_reason,omitempty"`
+	Bytes         int64   `json:"bytes"`
+	BodyTruncated bool    `json:"body_truncated"`
+}
+
+func toVerboseStream(r *types.StreamResult) *verboseStream {
+	if r == nil {
+		return nil
+	}
+	return &verboseStream{
+		TTFB: round1(ms(r.TTFB)), FirstEvent: round1(ms(r.FirstEvent)), FirstToken: round1(ms(r.FirstToken)),
+		HasFirstToken: r.HasFirstToken, Total: round1(ms(r.Total)), Events: r.Events, Comments: r.Comments,
+		ErrorEvents: r.ErrorEvents, GapMax: round1(ms(r.GapMax)), GapP50: round1(ms(r.GapP50)),
+		GapP95: round1(ms(r.GapP95)), End: r.End, EndReason: r.EndReason, Bytes: r.Bytes, BodyTruncated: r.BodyTruncated,
+	}
 }
 
 type verboseHttpRequestInfo struct {
@@ -72,6 +104,7 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			Headers:      responseHeaders,
 			Body:         responseBody,
 			ResponseTime: sr.Duration.Milliseconds(),
+			Stream:       toVerboseStream(sr.Stream),
 		}
 	}
 

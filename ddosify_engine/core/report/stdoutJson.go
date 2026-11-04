@@ -50,6 +50,7 @@ func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
 	s.doneChan = make(chan bool)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
+		ext:         newExtended(),
 	}
 	s.debug = debug
 	s.samplingRate = samplingRate
@@ -85,6 +86,7 @@ func (s *stdoutJson) Start(input chan *types.ScenarioResult, assertionResultChan
 }
 
 func (s *stdoutJson) report() {
+	s.result.ext.finalize(s.result)
 	p := 1e3
 
 	s.result.AvgDuration = float32(math.Round(float64(s.result.AvgDuration)*p) / p)
@@ -101,6 +103,10 @@ func (s *stdoutJson) report() {
 
 	j, _ := json.Marshal(s.result)
 	printJson(j)
+}
+
+func (s *stdoutJson) SetSLO(slo *types.SLO) {
+	s.result.ext.slo = slo
 }
 
 func (s *stdoutJson) DoneChan() <-chan bool {

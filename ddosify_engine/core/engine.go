@@ -62,7 +62,10 @@ type engine struct {
 
 	tickCounter int
 	reqCountArr []int
-	wg          sync.WaitGroup
+
+	// manual_load stages by tick, set only when a stage is named or a warm-up
+	stages []tickStage
+	wg     sync.WaitGroup
 
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
@@ -104,6 +107,9 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 	}
 	if err = rs.Init(h.Debug, h.SamplingRate); err != nil {
 		return nil, err
+	}
+	if ss, ok := rs.(report.SLOSetter); ok && h.SLO != nil {
+		ss.SetSLO(h.SLO)
 	}
 
 	return &EngineServices{
@@ -225,16 +231,51 @@ func (e *engine) Start() string {
 }
 
 func (e *engine) runWorkers(c int) {
+	stage := e.stageOf(c)
 	for i := 1; i <= e.reqCountArr[c]; i++ {
 		scenarioStartTime := time.Now()
 		go func(t time.Time) {
-			e.runWorker(t)
+			e.runWorker(t, stage)
 			e.wg.Done()
 		}(scenarioStartTime)
 	}
 }
 
-func (e *engine) runWorker(scenarioStartTime time.Time) {
+type tickStage struct {
+	start, end int // ticks, end not inclusive
+	stage      types.LoadStage
+}
+
+func (e *engine) stageOf(tick int) *types.LoadStage {
+	for i := range e.stages {
+		if tick >= e.stages[i].start && tick < e.stages[i].end {
+			return &e.stages[i].stage
+		}
+	}
+	return nil
+}
+
+func (e *engine) initStages() {
+	tagged := false
+	for _, t := range e.hammer.TimeRunCountMap {
+		if t.Name != "" || t.Warmup {
+			tagged = true
+		}
+	}
+	if !tagged || e.hammer.Debug {
+		return
+	}
+	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
+	start := 0
+	for i, t := range e.hammer.TimeRunCountMap {
+		end := start + t.Duration*tickPerSecond
+		e.stages = append(e.stages, tickStage{start: start, end: end,
+			stage: types.LoadStage{Index: i, Name: t.Name, Warmup: t.Warmup}})
+		start = end
+	}
+}
+
+func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage) {
 	var res *types.ScenarioResult
 	var err *types.RequestError
 
@@ -258,6 +299,9 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 	res.Others = make(map[string]interface{})
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
+	if stage != nil {
+		res.Others["loadStage"] = *stage
+	}
 	e.resultReportChan <- res
 
 	if len(e.hammer.Assertions) > 0 {
@@ -304,6 +348,7 @@ func (e *engine) initReqCountArr() {
 
 	if e.hammer.TimeRunCountMap != nil {
 		e.createManualReqCountArr()
+		e.initStages()
 	} else {
 		switch e.hammer.LoadType {
 		case types.LoadTypeLinear:
@@ -316,10 +361,20 @@ func (e *engine) initReqCountArr() {
 	}
 }
 
+func (e *engine) evenSpread() bool {
+	return e.hammer.LoadSpread == types.LoadSpreadEven
+}
+
 func (e *engine) createManualReqCountArr() {
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	stepStartIndex := 0
 	for _, t := range e.hammer.TimeRunCountMap {
+		if e.evenSpread() {
+			end := stepStartIndex + t.Duration*tickPerSecond
+			createEvenDistArr(t.Count, e.reqCountArr[stepStartIndex:end])
+			stepStartIndex = end
+			continue
+		}
 		steps := make([]int, t.Duration)
 		createLinearDistArr(t.Count, steps)
 
@@ -334,6 +389,10 @@ func (e *engine) createManualReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
+	if e.evenSpread() {
+		createEvenDistArr(e.hammer.IterationCount, e.reqCountArr)
+		return
+	}
 	steps := make([]int, e.hammer.TestDuration)
 	createLinearDistArr(e.hammer.IterationCount, steps)
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
@@ -352,7 +411,7 @@ func (e *engine) createIncrementalReqCountArr() {
 		tickArrStartIndex := i * tickPerSecond
 		tickArrEndIndex := tickArrStartIndex + tickPerSecond
 		segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
-		createLinearDistArr(steps[i], segment)
+		e.spreadInSecond(steps[i], segment)
 	}
 }
 
@@ -380,9 +439,31 @@ func (e *engine) createWavedReqCountArr() {
 		for j := range steps {
 			tickArrEndIndex := tickArrStartIndex + tickPerSecond
 			segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
-			createLinearDistArr(steps[j], segment)
+			e.spreadInSecond(steps[j], segment)
 			tickArrStartIndex += tickPerSecond
 		}
+	}
+}
+
+func (e *engine) spreadInSecond(count int, ticks []int) {
+	if e.evenSpread() {
+		createEvenDistArr(count, ticks)
+		return
+	}
+	createLinearDistArr(count, ticks)
+}
+
+// createEvenDistArr puts count iterations at even intervals over arr, the first one at arr[0].
+// 30 over 3000 ticks is one every 100 ticks, where createLinearDistArr fills the first 30.
+func createEvenDistArr(count int, arr []int) {
+	n := int64(len(arr))
+	if n == 0 {
+		return
+	}
+	c := int64(count)
+	ceilDiv := func(a, b int64) int64 { return (a + b - 1) / b }
+	for i := int64(0); i < n; i++ {
+		arr[i] = int(ceilDiv((i+1)*c, n) - ceilDiv(i*c, n))
 	}
 }
 

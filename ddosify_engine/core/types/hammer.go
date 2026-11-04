@@ -64,6 +64,8 @@ type TestAssertionOpt struct {
 type TimeRunCount []struct {
 	Duration int
 	Count    int
+	Name     string
+	Warmup   bool
 }
 
 type Tag struct {
@@ -144,6 +146,12 @@ type Hammer struct {
 
 	// Engine runs single
 	SingleMode bool
+
+	// How iterations are spread inside a second or a manual_load stage: LoadSpreadFront (default) or LoadSpreadEven
+	LoadSpread string
+
+	// Thresholds an iteration's streams have to meet to count as goodput
+	SLO *SLO
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
@@ -170,6 +178,16 @@ func (h *Hammer) Validate() error {
 			if t.Duration < 1 {
 				return fmt.Errorf("duration in manual_load should be greater than 0")
 			}
+		}
+	}
+
+	if h.LoadSpread != "" && h.LoadSpread != LoadSpreadFront && h.LoadSpread != LoadSpreadEven {
+		return fmt.Errorf("unsupported load_spread: %s, supported: %s, %s", h.LoadSpread, LoadSpreadFront, LoadSpreadEven)
+	}
+
+	if h.SLO != nil {
+		if err := h.SLO.validate(); err != nil {
+			return err
 		}
 	}
 

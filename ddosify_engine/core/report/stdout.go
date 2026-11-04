@@ -67,6 +67,7 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	s.doneChan = make(chan bool, 1)
 	s.result = &Result{
 		StepResults: make(map[uint16]*ScenarioStepResultSummary),
+		ext:         newExtended(),
 	}
 	s.debug = debug
 	s.samplingRate = samplingRate
@@ -149,7 +150,12 @@ func (s *stdout) cleanSamplingCount(samplingCount map[uint16]map[string]int, sto
 }
 
 func (s *stdout) report() {
+	s.result.ext.finalize(s.result)
 	s.printDetails()
+}
+
+func (s *stdout) SetSLO(slo *types.SLO) {
+	s.result.ext.slo = slo
 }
 
 func (s *stdout) DoneChan() <-chan bool {
@@ -279,6 +285,11 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 				fmt.Fprintf(w, "\n%s\n", blue("- Response"))
 				fmt.Fprintf(w, "\tStatusCode:\t%-5d \n", verboseInfo.Response.StatusCode)
 				fmt.Fprintf(w, "\tResponseTime:\t%-5d(ms) \n", verboseInfo.Response.ResponseTime)
+				if st := verboseInfo.Response.Stream; st != nil {
+					fmt.Fprintf(w, "\tStream:\tend %s, %d events, %d comments, %d error events, %d bytes\n", st.End, st.Events, st.Comments, st.ErrorEvents, st.Bytes)
+					fmt.Fprintf(w, "\t\tTTFB %.1fms, first event %.1fms, first token %.1fms, total %.1fms\n", st.TTFB, st.FirstEvent, st.FirstToken, st.Total)
+					fmt.Fprintf(w, "\t\tgap max %.1fms, p50 %.1fms, p95 %.1fms\n", st.GapMax, st.GapP50, st.GapP95)
+				}
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
 				for hKey, hVal := range verboseInfo.Response.Headers {
 					fmt.Fprintf(w, "\t\t%s:\t%-5s \n", hKey, hVal)
@@ -408,6 +419,9 @@ func (s *stdout) printDetails() {
 			}
 		}
 
+		printOutcomes(w, v.Outcomes)
+		printStream(w, v.Stream)
+
 		if v.Fail.AssertionErrorDist.Count > 0 {
 			fmt.Fprintln(w, "\nAssertion Error Distribution:")
 			for e, c := range v.Fail.AssertionErrorDist.Conditions {
@@ -434,6 +448,9 @@ func (s *stdout) printDetails() {
 		fmt.Fprintln(w)
 	}
 
+	printGoodput(w, s.result.Goodput)
+	printStages(w, s.result.Stages, s.result.Goodput != nil)
+
 	if s.result.TestStatus == "success" {
 		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
 
@@ -451,6 +468,121 @@ func (s *stdout) printDetails() {
 
 	w.Flush()
 	fmt.Fprint(out, b.String())
+}
+
+var outcomeOrder = []string{OutcomeOK, OutcomeRateLimited, OutcomeUnavailable, OutcomeServerError,
+	OutcomeClientError, OutcomeTimeout, OutcomeNetworkError, OutcomeStreamCut, OutcomeStreamError}
+
+var outcomeLabel = map[string]string{
+	OutcomeOK:           "OK",
+	OutcomeRateLimited:  "429 Rate Limited",
+	OutcomeUnavailable:  "503 Unavailable",
+	OutcomeServerError:  "Other 5xx",
+	OutcomeClientError:  "Other 4xx",
+	OutcomeTimeout:      "Timeout",
+	OutcomeNetworkError: "Network Error",
+	OutcomeStreamCut:    "Stream Cut",
+	OutcomeStreamError:  "Error Event In Stream",
+}
+
+func printOutcomes(w io.Writer, outcomes map[string]int64) {
+	if len(outcomes) == 0 {
+		return
+	}
+	fmt.Fprintln(w, "\nOutcomes (warm-up excluded):")
+	for _, k := range outcomeOrder {
+		if c, ok := outcomes[k]; ok {
+			fmt.Fprintf(w, "  %s\t:%d\n", outcomeLabel[k], c)
+		}
+	}
+}
+
+func printDistRow(w io.Writer, name string, d *Dist) {
+	if d == nil {
+		return
+	}
+	fmt.Fprintf(w, "  %s\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%d\n", name, d.P50, d.P90, d.P95, d.P99, d.Max, d.Mean, d.Count)
+}
+
+func printStream(w io.Writer, st *StreamSummary) {
+	if st == nil {
+		return
+	}
+	fmt.Fprintf(w, "\nStream (warm-up excluded): %d streams, ends: done %d, closed %d, cut %d, timeout %d; error events in %d; no first token in %d\n",
+		st.Count, st.Ends[types.StreamEndDone], st.Ends[types.StreamEndClosed], st.Ends[types.StreamEndCut],
+		st.Ends[types.StreamEndTimeout], st.ErrorEvents, st.NoFirstToken)
+	fmt.Fprintln(w, "  (ms)\tp50\tp90\tp95\tp99\tmax\tmean\tcount")
+	printDistRow(w, "TTFB", st.TTFB)
+	printDistRow(w, "First Event", st.FirstEvent)
+	printDistRow(w, "First Token", st.FirstToken)
+	printDistRow(w, "Total", st.Total)
+	printDistRow(w, "Max Gap", st.GapMax)
+	printDistRow(w, "Gap p50", st.GapP50)
+	printDistRow(w, "Gap p95", st.GapP95)
+	if st.Events != nil {
+		fmt.Fprintf(w, "  %s\t%.0f\t%.0f\t%.0f\t%.0f\t%.0f\t%.1f\t%d\n", "Events", st.Events.P50, st.Events.P90,
+			st.Events.P95, st.Events.P99, st.Events.Max, st.Events.Mean, st.Events.Count)
+	}
+	if st.TruncatedBodies > 0 {
+		fmt.Fprintf(w, "  Bodies cut at max_body_bytes: %d\n", st.TruncatedBodies)
+	}
+}
+
+func sloText(slo types.SLO) string {
+	parts := make([]string, 0)
+	add := func(name string, v int64) {
+		if v > 0 {
+			parts = append(parts, fmt.Sprintf("%s <= %dms", name, v))
+		}
+	}
+	add("ttfb", slo.TTFBMs)
+	add("first event", slo.FirstEventMs)
+	add("first token", slo.FirstTokenMs)
+	add("total", slo.TotalMs)
+	add("max gap", slo.MaxGapMs)
+	if len(parts) == 0 {
+		return "every step succeeds"
+	}
+	return strings.Join(parts, ", ")
+}
+
+func printGoodput(w io.Writer, g *Goodput) {
+	if g == nil {
+		return
+	}
+	fmt.Fprintf(w, "\nGoodput (warm-up excluded):\t%d / %d iterations (%.1f%%), SLO: %s\n", g.Good, g.Iterations, g.Perc, sloText(g.SLO))
+}
+
+func printStages(w io.Writer, stages []*StageSummary, withGoodput bool) {
+	if len(stages) == 0 {
+		return
+	}
+	fmt.Fprintln(w, "\nStages:")
+	fmt.Fprintln(w, "  #\tName\tIter\tOK\tGood%\t429\t503\t5xx\tTimeout\tNet/Cut\tFirstTok p50\tp95\tTotal p50\tp95")
+	for _, st := range stages {
+		name := st.Name
+		if name == "" {
+			name = fmt.Sprintf("stage %d", st.Index+1)
+		}
+		if st.Warmup {
+			name += " (warm-up)"
+		}
+		good := "-"
+		if withGoodput && st.GoodputPerc != nil {
+			good = fmt.Sprintf("%.1f", *st.GoodputPerc)
+		}
+		ftP50, ftP95, totP50, totP95 := "-", "-", "-", "-"
+		if st.Stream != nil && st.Stream.FirstToken != nil {
+			ftP50, ftP95 = fmt.Sprintf("%.0f", st.Stream.FirstToken.P50), fmt.Sprintf("%.0f", st.Stream.FirstToken.P95)
+		}
+		if st.Stream != nil && st.Stream.Total != nil {
+			totP50, totP95 = fmt.Sprintf("%.0f", st.Stream.Total.P50), fmt.Sprintf("%.0f", st.Stream.Total.P95)
+		}
+		o := st.Outcomes
+		fmt.Fprintf(w, "  %d\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n", st.Index+1, name, st.Iterations, st.OK, good,
+			o[OutcomeRateLimited], o[OutcomeUnavailable], o[OutcomeServerError], o[OutcomeTimeout],
+			o[OutcomeNetworkError]+o[OutcomeStreamCut], ftP50, ftP95, totP50, totP95)
+	}
 }
 
 func deduplicate(values []interface{}) []interface{} {

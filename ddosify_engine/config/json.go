@@ -46,8 +46,10 @@ func init() {
 }
 
 type timeRunCount []struct {
-	Duration int `json:"duration"`
-	Count    int `json:"count"`
+	Duration int    `json:"duration"`
+	Count    int    `json:"count"`
+	Name     string `json:"name"`
+	Warmup   bool   `json:"warmup"`
 }
 
 type auth struct {
@@ -94,6 +96,46 @@ type step struct {
 	CertKeyPath      string                 `json:"cert_key_path"`
 	CaptureEnv       map[string]capturePath `json:"capture_env"`
 	Assertions       []string               `json:"assertion"`
+	Stream           *streamConf            `json:"stream"`
+}
+
+type streamMatch struct {
+	Event    string  `json:"event"`
+	JsonPath string  `json:"json_path"`
+	Equals   *string `json:"equals"`
+	Regexp   string  `json:"regexp"`
+}
+
+type streamConf struct {
+	Type         string       `json:"type"`
+	FirstToken   *streamMatch `json:"first_token"`
+	Error        *streamMatch `json:"error"`
+	Done         *string      `json:"done"`
+	MaxBodyBytes *int         `json:"max_body_bytes"`
+}
+
+func (m *streamMatch) toStreamMatch() types.StreamMatch {
+	return types.StreamMatch{Event: m.Event, JsonPath: m.JsonPath, Equals: m.Equals, Regexp: m.Regexp}
+}
+
+func (c *streamConf) toStreamConf() *types.StreamConf {
+	conf := types.DefaultStreamConf()
+	if c.Type != "" {
+		conf.Type = strings.ToLower(c.Type)
+	}
+	if c.FirstToken != nil {
+		conf.FirstToken = c.FirstToken.toStreamMatch()
+	}
+	if c.Error != nil {
+		conf.Error = c.Error.toStreamMatch()
+	}
+	if c.Done != nil {
+		conf.Done = *c.Done
+	}
+	if c.MaxBodyBytes != nil {
+		conf.MaxBodyBytes = *c.MaxBodyBytes
+	}
+	return conf
 }
 
 func (s *step) UnmarshalJSON(data []byte) error {
@@ -162,6 +204,8 @@ type JsonReader struct {
 	SamplingRate *int                   `json:"sampling_rate"`
 	EngineMode   string                 `json:"engine_mode"`
 	Cookies      CookieConf             `json:"cookie_jar"`
+	LoadSpread   string                 `json:"load_spread"`
+	SLO          *types.SLO             `json:"slo"`
 }
 
 type CookieConf struct {
@@ -325,6 +369,8 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		CookiesEnabled:    j.Cookies.Enabled,
 		Assertions:        testAssertions,
 		SingleMode:        types.DefaultSingleMode,
+		LoadSpread:        strings.ToLower(j.LoadSpread),
+		SLO:               j.SLO,
 	}
 	return
 }
@@ -406,6 +452,10 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		Custom:        s.Others,
 		EnvsToCapture: capturedEnvs,
 		Assertions:    s.Assertions,
+	}
+
+	if s.Stream != nil {
+		item.Stream = s.Stream.toStreamConf()
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {

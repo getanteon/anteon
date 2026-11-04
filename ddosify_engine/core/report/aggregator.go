@@ -29,6 +29,9 @@ import (
 )
 
 func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int, samplingRate int) {
+	if result.ext != nil {
+		result.ext.add(scr)
+	}
 	var scenarioDuration float32
 	errOccured := false
 	assertionFail := false
@@ -143,6 +146,14 @@ type Result struct {
 	AssertionFailCount   int64                                 `json:"assertion_fail_count"`
 	AvgDuration          float32                               `json:"avg_duration"`
 	StepResults          map[uint16]*ScenarioStepResultSummary `json:"steps"`
+
+	// Warm-up stages excluded. Set only when an SLO is given.
+	Goodput *Goodput `json:"goodput,omitempty"`
+
+	// One per manual_load stage, set only when a stage has a name or is a warm-up.
+	Stages []*StageSummary `json:"stages,omitempty"`
+
+	ext *extended
 }
 
 func (r *Result) successPercentage() int {
@@ -182,6 +193,10 @@ type ScenarioStepResultSummary struct {
 	Fail           FailVerbose        `json:"fail"`
 	Durations      map[string]float32 `json:"durations"`
 	SuccessCount   int64              `json:"success_count"`
+
+	// Set once a stream, an SLO or a stage is seen. Warm-up stages excluded.
+	Outcomes map[string]int64 `json:"outcomes,omitempty"`
+	Stream   *StreamSummary   `json:"stream,omitempty"`
 }
 
 func (s *ScenarioStepResultSummary) successPercentage() int {
