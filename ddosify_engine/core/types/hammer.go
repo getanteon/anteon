@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"go.ddosify.com/ddosify/v2/core/proxy"
 	"go.ddosify.com/ddosify/v2/core/util"
@@ -155,6 +156,9 @@ type Hammer struct {
 
 	// Skip TLS certificate verification on every step
 	Insecure bool
+
+	// After an interrupt, how long iterations in flight may finish before they are cut
+	Drain time.Duration
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.

@@ -168,6 +168,15 @@ func (r *LLMResult) tpot() (time.Duration, bool) {
 	return r.TPOT, r.HasTPOT && r.Tokens()
 }
 
+// OthersInterrupted marks a ScenarioResult whose iteration was cut while in flight.
+const OthersInterrupted = "interrupted"
+
+// Interrupted tells whether the iteration was cut while in flight.
+func (r *ScenarioResult) Interrupted() bool {
+	v, _ := r.Others[OthersInterrupted].(bool)
+	return v
+}
+
 // OthersIntendedStart is the ScenarioResult.Others key of the time.Time the schedule meant the iteration to start.
 const OthersIntendedStart = "intendedStart"
 

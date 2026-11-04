@@ -30,6 +30,14 @@ import (
 )
 
 func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint16]map[string]int, samplingRate int) {
+	if scr.Interrupted() {
+		// cut in flight: counted on its own, left out of every other count and latency
+		result.InterruptedCount++
+		if result.ext != nil {
+			result.ext.addInterrupted(scr)
+		}
+		return
+	}
 	if result.ext != nil {
 		result.ext.add(scr)
 	}
@@ -147,6 +155,9 @@ type Result struct {
 	AssertionFailCount   int64                                 `json:"assertion_fail_count"`
 	AvgDuration          float32                               `json:"avg_duration"`
 	StepResults          map[uint16]*ScenarioStepResultSummary `json:"steps"`
+
+	// Iterations in flight when the test was cut, after an interrupt and its drain
+	InterruptedCount int64 `json:"interrupted_count,omitempty"`
 
 	// Warm-up stages excluded. Set only when an SLO is given.
 	Goodput *Goodput `json:"goodput,omitempty"`

@@ -161,6 +161,7 @@ var outcomeOrder = []struct {
 	{report.OutcomeNetworkError, "network error", true},
 	{report.OutcomeStreamCut, "stream cut", true},
 	{report.OutcomeStreamError, "error event in stream", true},
+	{report.OutcomeInterrupted, "interrupted (in flight when cut)", false},
 }
 
 func outcomeRows(m map[string]int64) []outcomeRow {

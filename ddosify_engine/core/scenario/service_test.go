@@ -324,7 +324,7 @@ func TestDoErrorOnSend(t *testing.T) {
 		responseItemsShouldEmpty bool
 	}{
 		{"ProxyError", requestersProxyError, true, types.ErrorProxy, false},
-		{"IntentedError", requestersIntentedError, true, types.ErrorIntented, true},
+		{"IntentedError", requestersIntentedError, true, types.ErrorIntented, false}, // a cut step is kept and reported as interrupted
 		{"ConnError", requestersConnError, false, "", false},
 	}
 	for _, test := range tests {

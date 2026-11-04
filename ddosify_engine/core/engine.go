@@ -79,7 +79,11 @@ type engine struct {
 
 	abortChan   <-chan struct{}
 	testSuccess bool
-	ctx         context.Context
+
+	// ctx ends the schedule: an interrupt. reqCtx is the requests' and cut ends them.
+	ctx    context.Context
+	reqCtx context.Context
+	cut    context.CancelFunc
 }
 
 type EngineServices struct {
@@ -139,10 +143,13 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 func NewEngine(ctx context.Context, h types.Hammer,
 	services *EngineServices) (e *engine, err error) {
 	ss := scenario.NewScenarioService()
+	reqCtx, cut := context.WithCancel(context.Background())
 
 	e = &engine{
 		hammer:          h,
 		ctx:             ctx,
+		reqCtx:          reqCtx,
+		cut:             cut,
 		proxyService:    services.ProxyServ,
 		scenarioService: ss,
 		reportService:   services.ReportServ,
@@ -179,7 +186,7 @@ func (e *engine) Init() (err error) {
 		}
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
+	if err = e.scenarioService.Init(e.reqCtx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
@@ -245,7 +252,7 @@ func (e *engine) Start() (status string) {
 
 	defer func() {
 		ticker.Stop()
-		e.stop(status)
+		status = e.stop(status)
 	}()
 
 	e.tickCounter = 0
@@ -337,17 +344,20 @@ func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage, 
 			continue
 		}
 
-		if err != nil && err.Type == types.ErrorIntented {
-			// Don't report intentionally created errors. Like canceled requests.
-			if e.collector != nil {
-				e.collector.IterationDone(nil, stage, 0)
-			}
-			return
-		}
 		break
+	}
+	if res == nil { // the requesters could not be built
+		if e.collector != nil {
+			e.collector.IterationDone(nil, stage, 0)
+		}
+		return
 	}
 
 	res.Others = make(map[string]interface{})
+	if err != nil && err.Type == types.ErrorIntented {
+		// cut while in flight: reported as interrupted, out of the latencies
+		res.Others[types.OthersInterrupted] = true
+	}
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
 	if stage != nil {
@@ -370,8 +380,48 @@ func (e *engine) runAssertionsInEngine() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
-func (e *engine) stop(status string) {
-	e.wg.Wait()
+// Cut ends the requests in flight now, without waiting for the drain. Safe to call more than once.
+func (e *engine) Cut() {
+	e.cut()
+}
+
+// drain waits for the iterations in flight. An interrupt, during the schedule or after it, makes
+// the status stopped and gives them hammer.Drain to finish before they are cut.
+func (e *engine) drain(status string) string {
+	done := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(done)
+	}()
+	interrupted := e.ctx.Done()
+	var deadline <-chan time.Time
+	for {
+		select {
+		case <-done:
+			return status
+		case <-interrupted:
+			interrupted = nil
+			if status != resultAborted {
+				status = resultStopped
+			}
+			if e.hammer.Drain <= 0 {
+				e.cut()
+			} else {
+				deadline = time.After(e.hammer.Drain)
+			}
+		case <-deadline:
+			deadline = nil
+			e.cut()
+		}
+	}
+}
+
+func (e *engine) stop(status string) string {
+	status = e.drain(status)
+	defer e.cut()
+	if rs, ok := e.reportService.(report.RunStatusSetter); ok {
+		rs.SetRunStatus(status)
+	}
 	close(e.resultReportChan)
 	close(e.resultAssertChan)
 	e.proxyService.Done()
@@ -390,7 +440,7 @@ func (e *engine) stop(status string) {
 		}
 		e.collector.Finish(status, e.testSuccess, result)
 	}
-
+	return status
 }
 
 func (e *engine) getMaxConcurrentIterCount() int {

@@ -177,7 +177,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
 			if res.Err.Type == types.ErrorIntented {
-				// Stop the loop. ErrorProxy can be fixed in time. But ErrorIntented is a signal to stop all.
+				// Cut: keep the step for the report, which counts it as interrupted, and stop the iteration.
+				response.StepResults = append(response.StepResults, res)
 				return
 			}
 		}

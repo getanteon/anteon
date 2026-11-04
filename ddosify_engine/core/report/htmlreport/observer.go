@@ -24,6 +24,7 @@ package htmlreport
 
 import (
 	"fmt"
+	"os"
 
 	elive "go.ddosify.com/ddosify/v2/core/live"
 	"go.ddosify.com/ddosify/v2/core/report/live"
@@ -37,14 +38,24 @@ type observer struct {
 	o    elive.Options
 	plan elive.Plan
 	rec  *Recorder
+	f    *os.File
+	err  error
 }
 
+// newObserver opens the file now, so a path that can not be written fails before the test runs.
 func newObserver(o elive.Options) (elive.Observer, error) {
 	if o.Arg == "" {
 		return nil, fmt.Errorf("--html needs a file path")
 	}
-	return &observer{o: o, rec: NewRecorder(0)}, nil
+	f, err := os.OpenFile(o.Arg, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("--html: %w", err)
+	}
+	return &observer{o: o, rec: NewRecorder(0), f: f}, nil
 }
+
+// Err is the write's error, if the report could not be written.
+func (h *observer) Err() error { return h.err }
 
 func (h *observer) Start(p elive.Plan) { h.plan = p }
 
@@ -64,8 +75,13 @@ func (h *observer) Finish(f elive.Final) {
 	if f.Result == nil {
 		rep.Status = map[bool]string{true: "success", false: "failed"}[f.Passed]
 	}
-	if err := WriteFile(h.o.Arg, rep); err != nil {
-		fmt.Fprintf(h.o.Stderr, "html report: %v\n", err)
+	err := Write(h.f, rep)
+	if cerr := h.f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		h.err = fmt.Errorf("html report %s: %w", h.o.Arg, err)
+		fmt.Fprintln(h.o.Stderr, h.err)
 		return
 	}
 	fmt.Fprintf(h.o.Stderr, "HTML report written to %s\n", h.o.Arg)

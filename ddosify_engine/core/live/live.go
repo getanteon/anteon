@@ -69,6 +69,12 @@ type Options struct {
 // Factory builds an observer.
 type Factory func(o Options) (Observer, error)
 
+// Failer is implemented by an observer whose Finish can fail, such as a file write. The CLI exits 1
+// when Err is not nil after the run.
+type Failer interface {
+	Err() error
+}
+
 // TerminalOwner is implemented by an observer that draws on the terminal, such as a TUI.
 // While one runs, the CLI prints no progress lines and prints the plain summary after Finish.
 type TerminalOwner interface {

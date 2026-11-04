@@ -127,12 +127,13 @@ type Outcomes struct {
 	NetworkError int64
 	StreamCut    int64
 	StreamError  int64
+	Interrupted  int64 // in flight when the test was cut
 }
 
 // Total is the sum of all outcomes.
 func (o Outcomes) Total() int64 {
 	return o.OK + o.RateLimited + o.Unavailable + o.ServerError + o.ClientError +
-		o.Timeout + o.NetworkError + o.StreamCut + o.StreamError
+		o.Timeout + o.NetworkError + o.StreamCut + o.StreamError + o.Interrupted
 }
 
 // Map returns the counts keyed as in the final report's outcomes.
@@ -147,6 +148,7 @@ func (o Outcomes) Map() map[string]int64 {
 		report.OutcomeNetworkError: o.NetworkError,
 		report.OutcomeStreamCut:    o.StreamCut,
 		report.OutcomeStreamError:  o.StreamError,
+		report.OutcomeInterrupted:  o.Interrupted,
 	}
 }
 
@@ -162,6 +164,7 @@ func OutcomesFromMap(m map[string]int64) Outcomes {
 		NetworkError: m[report.OutcomeNetworkError],
 		StreamCut:    m[report.OutcomeStreamCut],
 		StreamError:  m[report.OutcomeStreamError],
+		Interrupted:  m[report.OutcomeInterrupted],
 	}
 }
 

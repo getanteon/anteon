@@ -165,6 +165,14 @@ func newAgg() *agg {
 
 func ms(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
 
+// addInterrupted counts an iteration cut in flight: outcomes only, no latency, not in goodput.
+func (a *agg) addInterrupted(res *types.ScenarioResult) {
+	for _, sr := range res.StepResults {
+		a.outcomes[report.OutcomeOf(sr)]++
+		a.codes[sr.StatusCode]++
+	}
+}
+
 func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) {
 	a.iterations++
 	good := true
@@ -181,6 +189,9 @@ func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) 
 		}
 		if slo != nil && !slo.Met(st) {
 			good = false
+		}
+		if !st.Clean() || st.ErrorEvents > 0 {
+			continue // its outcome counts it; latencies are of successful streams
 		}
 		if st.LLM != nil {
 			a.addLLM(st.LLM)
@@ -321,21 +332,35 @@ func (c *Collector) IterationDone(res *types.ScenarioResult, stage *types.LoadSt
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.completed++
-	if res == nil { // canceled
+	if res == nil { // the requesters could not be built
+		return
+	}
+	if res.Interrupted() {
+		if stage != nil {
+			c.stageAgg(stage.Index).addInterrupted(res)
+		}
+		if stage == nil || !stage.Warmup {
+			c.total.addInterrupted(res)
+		}
 		return
 	}
 	if stage != nil {
-		a, ok := c.stages[stage.Index]
-		if !ok {
-			a = newAgg()
-			c.stages[stage.Index] = a
-		}
+		a := c.stageAgg(stage.Index)
 		a.add(res, e2e, c.slo)
 		if stage.Warmup {
 			return
 		}
 	}
 	c.total.add(res, e2e, c.slo)
+}
+
+func (c *Collector) stageAgg(index int) *agg {
+	a, ok := c.stages[index]
+	if !ok {
+		a = newAgg()
+		c.stages[index] = a
+	}
+	return a
 }
 
 func (c *Collector) stageAt(elapsed time.Duration) Stage {

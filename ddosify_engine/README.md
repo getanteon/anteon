@@ -305,6 +305,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--observer` | Adds a registered live observer, `name` or `name=arg` | - |
 | `--ui` | `auto` shows the live TUI on a terminal and ndjson snapshots when stdout is not a terminal or with `--json`, when the build has them; `tui`, `ndjson` or `plain` choose one. `TERM=dumb` never gets the TUI | `auto` |
 | `--no-color` | No colors; `NO_COLOR` and `TERM=dumb` do the same | `false` |
+| `--drain` | After an interrupt, how long iterations in flight may finish before they are cut; a second interrupt cuts them now | `30s` |
 | `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
 | `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
 
@@ -317,10 +318,12 @@ ddosify run [TARGET_URL] [FLAGS]
 | Code | Meaning |
 | ---- | ------- |
 | `0` | The test ran and passed |
-| `1` | The test could not run: a network, file or engine error |
-| `2` | A flag, an argument or the config is wrong |
-| `3` | The test ran and a [success criterion](#success-criteria-pass--fail) or the SLO's `goodput_perc` failed |
-| `130` | Interrupted with CTRL+C |
+| `1` | The test ran but its output could not be written, such as the `--html` file, or the engine failed; the report on stdout is still printed |
+| `2` | A flag, an argument or the config is wrong, or a file it names (the config, a CSV, a dataset, a tokenizer, the `--html` path) can not be read or written; nothing was sent |
+| `3` | The test ran and failed: a [success criterion](#success-criteria-pass--fail), the SLO's `goodput_perc`, or no iteration succeeded (every one refused, failed or cut) |
+| `130` | Interrupted: the iterations finished until then are reported, those still in flight after `--drain` are counted as interrupted |
+
+**Interrupting.** The first CTRL+C (or SIGTERM, or `q` in the TUI) stops starting iterations and gives the ones in flight `--drain` (30 s by default) to finish; a second one cuts them at once. Finished iterations are reported as usual. Cut ones are counted as `interrupted`, apart from every other count and from the latencies.
 
 ### Load Types
 
@@ -1316,7 +1319,7 @@ Every time is from the moment the request was sent.
 
 The parser follows the WHATWG event stream rules: `LF`, `CR` and `CRLF` line ends, a line or a `CRLF` split across reads, multi-line `data:` joined with a newline, comments, a leading byte order mark. Memory per stream is bounded: one event's data is cut at 1 MiB, and at most 4,096 gaps are kept for its percentiles.
 
-The report gives each metric's p50, p90, p95, p99, max and mean over all streams of a step, and counts every step result as one outcome: `ok`, `rate_limited_429`, `unavailable_503`, `server_error_5xx`, `client_error_4xx`, `timeout`, `network_error`, `stream_cut` or `stream_error_event`. With `-o stdout-json` they are under `steps.<id>.stream` and `steps.<id>.outcomes`. Percentiles are exact up to 100,000 samples per metric and from a uniform sample beyond. These sections appear only once a test has a stream, an `slo` or a named stage, so the output of other tests does not change. The step's existing `duration` fields still end when the headers arrive; the stream's `total` is the one that includes the body.
+The report gives each metric's p50, p90, p95, p99, max and mean over the step's successful streams, those that ended cleanly with no error event, as vLLM aggregates successful requests only; cut, timed out and failed streams are in the ends and outcomes and counted as `excluded_from_latency`. It counts every step result as one outcome: `ok`, `rate_limited_429`, `unavailable_503`, `server_error_5xx`, `client_error_4xx`, `timeout`, `network_error`, `stream_cut`, `stream_error_event` or `interrupted`. With `-o stdout-json` they are under `steps.<id>.stream` and `steps.<id>.outcomes`. Percentiles are exact up to 100,000 samples per metric and from a uniform sample beyond. These sections appear only once a test has a stream, an `slo` or a named stage, so the output of other tests does not change. For a streamed step the duration table runs to the end of the stream: Response Read is the time from the headers to the last event, Total is the stream's total, and `response_time` in an assertion is the same total.
 
 Run one iteration with `-debug` to see one stream's measurements next to the request and response.
 

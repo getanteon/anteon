@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"html"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 
 	"go.ddosify.com/ddosify/v2/core/types"
@@ -78,7 +80,7 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 
 	if sr.Err.Type == types.ErrorInvalidRequest {
 		// could not prepare request at all
-		verboseInfo.Error = sr.Err.Error()
+		verboseInfo.Error = redactText(sr.Err.Error())
 		return verboseInfo
 	}
 
@@ -90,14 +92,14 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 		Headers map[string]string "json:\"headers\""
 		Body    interface{}       "json:\"body\""
 	}{
-		Url:     sr.Url,
+		Url:     redactURL(sr.Url),
 		Method:  sr.Method,
 		Headers: requestHeaders,
 		Body:    requestBody,
 	}
 
 	if sr.Err.Type != "" {
-		verboseInfo.Error = sr.Err.Error()
+		verboseInfo.Error = redactText(sr.Err.Error())
 	} else {
 		responseHeaders, responseBody, _ := decode(sr.RespHeaders,
 			sr.RespBody)
@@ -129,6 +131,45 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	return verboseInfo
 }
 
+const redacted = "[REDACTED]"
+
+// Headers and query parameters that carry credentials; debug output shows them as [REDACTED].
+var secretHeaders = map[string]bool{"Authorization": true, "Proxy-Authorization": true, "Cookie": true, "Set-Cookie": true,
+	"X-Api-Key": true, "Api-Key": true}
+var secretParams = map[string]bool{"api_key": true, "apikey": true, "key": true, "token": true, "access_token": true}
+
+var secretParamRe = regexp.MustCompile(`(?i)\b(api_key|apikey|key|token|access_token)=[^&\s"']+`)
+
+// redactText hides credential query values in a text such as an error that quotes a URL.
+func redactText(s string) string {
+	return secretParamRe.ReplaceAllString(s, "${1}="+redacted)
+}
+
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if u.User != nil {
+		u.User = url.User(u.User.Username())
+	}
+	if u.RawQuery == "" {
+		return u.String()
+	}
+	q := u.Query()
+	changed := false
+	for k := range q {
+		if secretParams[strings.ToLower(k)] {
+			q[k] = []string{redacted}
+			changed = true
+		}
+	}
+	if changed {
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
+}
+
 func decode(headers http.Header, byteBody []byte) (map[string]string, interface{}, error) {
 	contentType := headers.Get("Content-Type")
 	var reqBody interface{}
@@ -136,6 +177,9 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	hs := make(map[string]string, 0)
 	for k, v := range headers {
 		values := strings.Join(v, ",")
+		if secretHeaders[http.CanonicalHeaderKey(k)] {
+			values = redacted
+		}
 		hs[k] = values
 	}
 

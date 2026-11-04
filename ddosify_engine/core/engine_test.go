@@ -506,7 +506,7 @@ func TestEngineResult(t *testing.T) {
 		expectedStatus string
 		testFailed     bool
 	}{
-		{"CtxCancel", true, "stopped", false},
+		{"CtxCancel", true, "stopped", true}, // an interrupted run does not pass
 		{"Normal", false, "done", false},
 		{"Abort", false, "aborted", true},
 	}

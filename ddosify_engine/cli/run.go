@@ -31,7 +31,9 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -71,6 +73,7 @@ type runOptions struct {
 	ui          string
 	noColor     bool
 
+	drain     time.Duration
 	tokenizer string
 	llmURL    string
 	model     string
@@ -146,6 +149,7 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.StringArrayVar(&o.observers, "observer", nil, "add a live observer, name or name=arg")
 	f.StringVar(&o.ui, "ui", "auto", "auto (the TUI on a terminal, ndjson snapshots in a pipe or with --json, when built in), tui, ndjson or plain")
 	f.BoolVar(&o.noColor, "no-color", false, "no colors; NO_COLOR and TERM=dumb do the same")
+	f.DurationVar(&o.drain, "drain", 30*time.Second, "after an interrupt, how long iterations in flight may finish; a second interrupt cuts them")
 	f.StringVar(&o.tokenizer, "tokenizer", "", "Hugging Face tokenizer.json to count the streamed answers' tokens")
 	f.StringVar(&o.llmURL, "url", "", "with --preset openai: the chat completions URL")
 	f.StringVar(&o.model, "model", "", "with --preset openai: the model")
@@ -201,12 +205,44 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 	if err := h.Validate(); err != nil {
 		return usageErr(err)
 	}
+	h.Drain = o.drain
 	if h.Insecure {
 		fmt.Fprintln(s.Err, "Warning: TLS certificates are not verified (--insecure).")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	// The first interrupt (CTRL+C, SIGTERM or an observer's Stop) ends the schedule and lets the
+	// iterations in flight finish for --drain; the second cuts them.
+	ctx, interrupt := context.WithCancel(context.Background())
+	defer interrupt()
+	var cut atomic.Value
+	var interrupts int32
+	stop := func() {
+		switch atomic.AddInt32(&interrupts, 1) {
+		case 1:
+			fmt.Fprintf(s.Err, "\nStopping: iterations in flight get %v to finish (--drain); interrupt again to cut them now.\n", h.Drain)
+			interrupt()
+		case 2:
+			if f, ok := cut.Load().(func()); ok {
+				fmt.Fprintln(s.Err, "Cutting the iterations in flight.")
+				f()
+			}
+		}
+	}
+	sigs := make(chan os.Signal, 2)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigs)
+	finished := make(chan struct{})
+	defer close(finished)
+	go func() {
+		for {
+			select {
+			case <-sigs:
+				stop()
+			case <-finished:
+				return
+			}
+		}
+	}()
 
 	observers, ownsTerminal, err := buildObservers(o, s, color, stop)
 	if err != nil {
@@ -234,16 +270,22 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 	if err := engine.Init(); err != nil {
 		return usageErr(err)
 	}
+	cut.Store(engine.Cut)
 	status := engine.Start()
 
 	if ownsTerminal {
 		io.Copy(s.Out, &held)
 	}
+	for _, obs := range observers {
+		if f, ok := obs.(live.Failer); ok && f.Err() != nil {
+			return runtimeErr(f.Err())
+		}
+	}
 	switch {
 	case status == "stopped":
 		return &exitError{code: ExitInterrupted}
 	case engine.IsTestFailed():
-		return &exitError{code: ExitTestFailed, err: fmt.Errorf("the test failed its success criteria")}
+		return &exitError{code: ExitTestFailed, err: fmt.Errorf("the test failed: a success criterion, the SLO's goodput, or no iteration succeeded")}
 	}
 	return nil
 }
@@ -343,16 +385,23 @@ func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
 	}
 	reader, err := config.NewConfigReader(raw, config.ConfigTypeJson)
 	if err != nil {
-		return types.Hammer{}, fmt.Errorf("%s: %w", o.config, err)
+		return types.Hammer{}, fmt.Errorf("%s: %w", configLabel(o), err)
 	}
 	h, err := reader.CreateHammer()
 	if err != nil {
-		return h, fmt.Errorf("%s: %w", o.config, err)
+		return h, fmt.Errorf("%s: %w", configLabel(o), err)
 	}
 	if err := overrideHammer(&h, flags, o); err != nil {
 		return h, err
 	}
 	return h, applyTokenizer(&h, flags, o)
+}
+
+func configLabel(o *runOptions) string {
+	if o.config != "" {
+		return o.config
+	}
+	return "--preset"
 }
 
 // applyLLMFlags puts --url, --model, --dataset, --api-key and --max-tokens into the top level "llm" config.

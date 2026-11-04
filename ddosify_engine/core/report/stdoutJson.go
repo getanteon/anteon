@@ -109,6 +109,10 @@ func (s *stdoutJson) Result() *Result {
 	return s.result
 }
 
+func (s *stdoutJson) SetRunStatus(status string) {
+	s.result.ext.runStatus = status
+}
+
 func (s *stdoutJson) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

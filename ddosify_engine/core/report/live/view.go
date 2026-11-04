@@ -333,6 +333,7 @@ func (m *Model) outcomes(w int) []string {
 		plain("4xx", o.ClientError, false),
 		plain("network", o.NetworkError, false),
 		plain("error event", o.StreamError, false),
+		plain("interrupted", o.Interrupted, false),
 	}
 	return flow(chunks, w)
 }

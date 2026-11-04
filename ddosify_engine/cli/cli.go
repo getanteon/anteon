@@ -81,8 +81,16 @@ func runtimeErr(err error) error { return &exitError{code: ExitError, err: err} 
 // Main runs the command line and returns the exit code.
 func Main(args []string, info BuildInfo, s Streams) int {
 	root := newRoot(info, s)
-	root.SetArgs(normalizeArgs(args))
-	err := root.Execute()
+	args = normalizeArgs(args)
+	if len(args) > 0 && args[0] == "run" {
+		if msg := removedFlag(args[1:]); msg != "" {
+			fmt.Fprintln(s.Err, "Error:", msg)
+			fmt.Fprintln(s.Err, "Run 'ddosify run --help' for the flags.")
+			return ExitUsage
+		}
+	}
+	root.SetArgs(args)
+	cmd, err := root.ExecuteC()
 	if err == nil {
 		return ExitOK
 	}
@@ -95,8 +103,39 @@ func Main(args []string, info BuildInfo, s Streams) int {
 	}
 	// cobra's own errors: an unknown command or flag, a missing argument
 	fmt.Fprintln(s.Err, "Error:", err)
-	fmt.Fprintf(s.Err, "Run '%s --help' for usage.\n", root.CommandPath())
+	path := root.CommandPath()
+	if cmd != nil {
+		path = cmd.CommandPath()
+	}
+	fmt.Fprintf(s.Err, "Run '%s --help' for usage.\n", path)
 	return ExitUsage
+}
+
+// removedV1Flags are the v1 flags v2 has no place for, and what replaced them.
+var removedV1Flags = map[string]string{
+	"-p":         "-p (protocol) is gone: the scheme goes in the URL, such as https://example.com",
+	"--protocol": "--protocol is gone: the scheme goes in the URL, such as https://example.com",
+	"-h":         "-h is help now: give a header with -H 'Name: value'",
+}
+
+// removedFlag tells what replaced a v1 flag in args, or "" when there is none.
+func removedFlag(args []string) string {
+	for i, a := range args {
+		if a == "--" {
+			return ""
+		}
+		name, _, _ := strings.Cut(a, "=")
+		msg, ok := removedV1Flags[name]
+		if !ok {
+			continue
+		}
+		// -h alone asks for help; -h followed by a value was v1's header
+		if name == "-h" && (i+1 >= len(args) || strings.HasPrefix(args[i+1], "-")) {
+			continue
+		}
+		return msg
+	}
+	return ""
 }
 
 func newRoot(info BuildInfo, s Streams) *cobra.Command {

@@ -171,6 +171,10 @@ func (s *stdout) Result() *Result {
 	return s.result
 }
 
+func (s *stdout) SetRunStatus(status string) {
+	s.result.ext.runStatus = status
+}
+
 func (s *stdout) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }
@@ -465,6 +469,9 @@ func (s *stdout) printDetails() {
 		fmt.Fprintln(w)
 	}
 
+	if n := s.result.InterruptedCount; n > 0 {
+		fmt.Fprintf(w, "\nInterrupted:\t%d iterations were in flight when the test was cut; they are left out of the counts and latencies above\n", n)
+	}
 	printGoodput(w, s.result.Goodput)
 	llm.WriteSystem(w, s.result.LLM, s.result.Schedule)
 	printStages(w, s.result.Stages, s.result.Goodput != nil)
@@ -472,6 +479,8 @@ func (s *stdout) printDetails() {
 	if s.result.TestStatus == "success" {
 		fmt.Fprintf(w, "%s", green("Test Status : Success\n"))
 
+	} else if s.result.TestStatus == "stopped" {
+		fmt.Fprintf(w, "\n%s", yellow("Test Status : Stopped (interrupted)\n"))
 	} else if s.result.TestStatus == "failed" {
 		fmt.Fprintf(w, "\n%s", red("Test Status: Failed\n"))
 		for _, failedRule := range s.result.TestFailedAssertions {
@@ -489,7 +498,7 @@ func (s *stdout) printDetails() {
 }
 
 var outcomeOrder = []string{OutcomeOK, OutcomeRateLimited, OutcomeUnavailable, OutcomeServerError,
-	OutcomeClientError, OutcomeTimeout, OutcomeNetworkError, OutcomeStreamCut, OutcomeStreamError}
+	OutcomeClientError, OutcomeTimeout, OutcomeNetworkError, OutcomeStreamCut, OutcomeStreamError, OutcomeInterrupted}
 
 var outcomeLabel = map[string]string{
 	OutcomeOK:           "OK",
@@ -501,6 +510,7 @@ var outcomeLabel = map[string]string{
 	OutcomeNetworkError: "Network Error",
 	OutcomeStreamCut:    "Stream Cut",
 	OutcomeStreamError:  "Error Event In Stream",
+	OutcomeInterrupted:  "Interrupted",
 }
 
 func printOutcomes(w io.Writer, outcomes map[string]int64) {
@@ -540,6 +550,9 @@ func printStream(w io.Writer, st *StreamSummary) {
 	if st.Events != nil {
 		fmt.Fprintf(w, "  %s\t%.0f\t%.0f\t%.0f\t%.0f\t%.0f\t%.1f\t%d\n", "Events", st.Events.P50, st.Events.P90,
 			st.Events.P95, st.Events.P99, st.Events.Max, st.Events.Mean, st.Events.Count)
+	}
+	if st.Excluded > 0 {
+		fmt.Fprintf(w, "  %d streams cut, timed out or with an error event are counted above and left out of the percentiles\n", st.Excluded)
 	}
 	if st.TruncatedBodies > 0 {
 		fmt.Fprintf(w, "  Bodies cut at max_body_bytes: %d\n", st.TruncatedBodies)

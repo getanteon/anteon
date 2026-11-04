@@ -47,6 +47,7 @@ const (
 	OutcomeNetworkError = "network_error"
 	OutcomeStreamCut    = "stream_cut"
 	OutcomeStreamError  = "stream_error_event"
+	OutcomeInterrupted  = "interrupted"
 )
 
 // SLOSetter is implemented by the report services that compute goodput.
@@ -151,14 +152,17 @@ type StreamSummary struct {
 	ErrorEvents     int64            `json:"error_events"`
 	NoFirstToken    int64            `json:"no_first_token"`
 	TruncatedBodies int64            `json:"truncated_bodies,omitempty"`
-	TTFB            *Dist            `json:"ttfb_ms,omitempty"`
-	FirstEvent      *Dist            `json:"first_event_ms,omitempty"`
-	FirstToken      *Dist            `json:"first_token_ms,omitempty"`
-	Total           *Dist            `json:"total_ms,omitempty"`
-	GapMax          *Dist            `json:"gap_max_ms,omitempty"`
-	GapP50          *Dist            `json:"gap_p50_ms,omitempty"`
-	GapP95          *Dist            `json:"gap_p95_ms,omitempty"`
-	Events          *Dist            `json:"events,omitempty"`
+
+	// Streams cut, timed out or with an error event: in Ends and ErrorEvents, not in the percentiles
+	Excluded   int64 `json:"excluded_from_latency"`
+	TTFB       *Dist `json:"ttfb_ms,omitempty"`
+	FirstEvent *Dist `json:"first_event_ms,omitempty"`
+	FirstToken *Dist `json:"first_token_ms,omitempty"`
+	Total      *Dist `json:"total_ms,omitempty"`
+	GapMax     *Dist `json:"gap_max_ms,omitempty"`
+	GapP50     *Dist `json:"gap_p50_ms,omitempty"`
+	GapP95     *Dist `json:"gap_p95_ms,omitempty"`
+	Events     *Dist `json:"events,omitempty"`
 
 	// Metrics stream observers returned, such as "output_tokens"
 	Extra map[string]*Dist `json:"extra,omitempty"`
@@ -167,6 +171,7 @@ type StreamSummary struct {
 
 type streamAgg struct {
 	count, errorEvents, noFirstToken, truncated int64
+	excluded                                    int64
 	ends                                        map[string]int64
 	ttfb, firstEvent, firstToken, total         sampler
 	gapMax, gapP50, gapP95, events              sampler
@@ -185,6 +190,11 @@ func (a *streamAgg) add(r *types.StreamResult) {
 	}
 	if r.BodyTruncated {
 		a.truncated++
+	}
+	// like vLLM, latencies count successful streams only: a cut, timed out or failed one is counted apart
+	if !r.Clean() || r.ErrorEvents > 0 {
+		a.excluded++
+		return
 	}
 	a.ttfb.add(ms(r.TTFB))
 	if r.HasFirstEvent {
@@ -229,6 +239,7 @@ func (a *streamAgg) summary() *StreamSummary {
 	}
 	return &StreamSummary{
 		Extra:           extra,
+		Excluded:        a.excluded,
 		Count:           a.count,
 		Ends:            a.ends,
 		ErrorEvents:     a.errorEvents,
@@ -277,13 +288,22 @@ type stageAgg struct {
 }
 
 type stepExt struct {
+	name     string
 	outcomes map[string]int64
 	stream   streamAgg
 }
 
 // extended holds what the reports add for streams, goodput and stages.
 // It reports only once a stream, an SLO or a stage tag is seen, so other tests' output does not change.
+// RunStatusSetter is implemented by the report services that print how the run ended.
+// The engine calls it before it closes the results channel.
+type RunStatusSetter interface {
+	SetRunStatus(status string)
+}
+
 type extended struct {
+	runStatus string
+
 	slo        *types.SLO
 	active     bool
 	steps      map[uint16]*stepExt
@@ -292,6 +312,9 @@ type extended struct {
 	good       int64
 	llmAll     llm.Agg
 	sched      llm.ScheduleAgg
+
+	// every iteration, warm-up included, and those whose every step was ok
+	allIterations, allOK int64
 }
 
 func newExtended() *extended {
@@ -302,6 +325,8 @@ func newExtended() *extended {
 func OutcomeOf(sr *types.ScenarioStepResult) string {
 	if sr.Err.Type != "" {
 		switch {
+		case sr.Err.Type == types.ErrorIntented:
+			return OutcomeInterrupted
 		case sr.Err.Reason == types.ReasonConnTimeout || sr.Err.Reason == types.ReasonReadTimeout:
 			return OutcomeTimeout
 		case sr.Stream != nil && sr.Stream.End == types.StreamEndTimeout:
@@ -341,6 +366,27 @@ func stageOf(scr *types.ScenarioResult) (types.LoadStage, bool) {
 	return st, ok
 }
 
+// addInterrupted counts an iteration cut in flight: its steps' outcomes only.
+func (x *extended) addInterrupted(scr *types.ScenarioResult) {
+	x.active = true
+	stage, staged := stageOf(scr)
+	for _, sr := range scr.StepResults {
+		outcome := OutcomeOf(sr)
+		if staged {
+			x.stage(stage).outcomes[outcome]++
+		}
+		if staged && stage.Warmup {
+			continue
+		}
+		se, exists := x.steps[sr.StepID]
+		if !exists {
+			se = &stepExt{name: sr.StepName, outcomes: make(map[string]int64)}
+			x.steps[sr.StepID] = se
+		}
+		se.outcomes[outcome]++
+	}
+}
+
 func (x *extended) add(scr *types.ScenarioResult) {
 	stage, staged := stageOf(scr)
 
@@ -371,16 +417,22 @@ func (x *extended) add(scr *types.ScenarioResult) {
 
 		se, exists := x.steps[sr.StepID]
 		if !exists {
-			se = &stepExt{outcomes: make(map[string]int64)}
+			se = &stepExt{name: sr.StepName, outcomes: make(map[string]int64)}
 			x.steps[sr.StepID] = se
 		}
 		se.outcomes[outcome]++
 		if sr.Stream != nil {
 			se.stream.add(sr.Stream)
-			x.llmAll.Add(sr.Stream.LLM)
+			if sr.Stream.Clean() && sr.Stream.ErrorEvents == 0 {
+				x.llmAll.Add(sr.Stream.LLM)
+			}
 		}
 	}
 	good = good && ok
+	x.allIterations++
+	if ok {
+		x.allOK++
+	}
 
 	if staged {
 		x.active = true
@@ -421,13 +473,33 @@ func perc(part, whole int64) float64 {
 
 // finalize writes the extended summaries into the result.
 func (x *extended) finalize(r *Result) {
-	if x == nil || !(x.active || x.slo != nil) {
+	if x == nil {
+		return
+	}
+	defer func() {
+		// an interrupted run did not pass, whatever its finished iterations did
+		if x.runStatus == "stopped" && r.TestStatus == "success" {
+			r.TestStatus = "stopped"
+		}
+	}()
+	if x.allIterations > 0 && x.allOK == 0 {
+		// every request refused, failed or cut is not a passed test
+		r.TestStatus = "failed"
+		r.TestFailedAssertions = append(r.TestFailedAssertions, assertion.FailedRule{
+			Rule:        "at least one iteration succeeds",
+			ReceivedMap: map[string]interface{}{"iterations": x.allIterations, "ok_iterations": 0},
+		})
+	}
+	if !(x.active || x.slo != nil) {
 		return
 	}
 	for id, se := range x.steps {
 		step, ok := r.StepResults[id]
-		if !ok {
-			continue
+		if !ok { // only interrupted results: the step is still shown
+			step = &ScenarioStepResultSummary{Name: se.name, StatusCodeDist: map[int]int{}, Durations: map[string]float32{},
+				Fail: FailVerbose{AssertionErrorDist: AssertionErrVerbose{Conditions: map[string]*AssertInfo{}},
+					ServerErrorDist: ServerErrVerbose{Reasons: map[string]int{}}}}
+			r.StepResults[id] = step
 		}
 		step.Outcomes = se.outcomes
 		step.Stream = se.stream.summary()
