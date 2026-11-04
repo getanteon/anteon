@@ -332,8 +332,13 @@ func (m *Model) stages(w int) []string {
 		var status string
 		marker := " "
 		switch {
-		case i < cur || (i == cur && m.finished):
+		case i < cur || (i == cur && m.finished && !m.stopping):
 			frac, status = 1, "done"
+		case i == cur && m.finished:
+			if p.Duration > 0 {
+				frac = math.Min(1, float64(s.Stage.Elapsed)/float64(p.Duration))
+			}
+			status = fmt.Sprintf("stopped at %.0f%%", frac*100)
 		case i == cur:
 			marker = ">"
 			if p.Duration > 0 {

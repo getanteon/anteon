@@ -20,7 +20,6 @@
 *
  */
 
-
 // The --html observer, for v2/foundation's core/live. Built with -tags v2live until that branch merges.
 
 package htmlreport

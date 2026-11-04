@@ -1,6 +1,7 @@
 package live
 
 import (
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -123,5 +124,17 @@ func TestNoColorFromEnv(t *testing.T) {
 		if got := NoColorFromEnv(c.env); got != c.want {
 			t.Errorf("%v: %v, want %v", c.env, got, c.want)
 		}
+	}
+}
+
+func TestStoppedStageIsNotDone(t *testing.T) {
+	m := NewModel(make(chan Snapshot), ModelOptions{NoColor: true})
+	m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	feed(m, 1)
+	m.Update(tea.KeyPressMsg{Code: 'q', Text: "q"})
+	m.Update(closedMsg{})
+	v := m.Render()
+	if !strings.Contains(v, "stopped at 52%") || !strings.Contains(v, "test finished") {
+		t.Fatalf("stopped stage not shown as stopped:\n%s", v)
 	}
 }
