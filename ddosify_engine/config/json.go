@@ -35,6 +35,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"go.ddosify.com/ddosify/core/llm"
 	"go.ddosify.com/ddosify/core/proxy"
 	"go.ddosify.com/ddosify/core/types"
 )
@@ -97,6 +98,7 @@ type step struct {
 	CaptureEnv       map[string]capturePath `json:"capture_env"`
 	Assertions       []string               `json:"assertion"`
 	Stream           *streamConf            `json:"stream"`
+	LLM              *types.LLMConf         `json:"llm"`
 }
 
 type streamMatch struct {
@@ -206,6 +208,7 @@ type JsonReader struct {
 	Cookies      CookieConf             `json:"cookie_jar"`
 	LoadSpread   string                 `json:"load_spread"`
 	SLO          *types.SLO             `json:"slo"`
+	LLM          *llm.Preset            `json:"llm"`
 }
 
 type CookieConf struct {
@@ -275,6 +278,14 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 
 		s.Steps = append(s.Steps, si)
+	}
+	if j.LLM != nil {
+		if len(j.Steps) > 0 {
+			return h, fmt.Errorf("give either steps or an llm preset, not both")
+		}
+		if s.Steps, err = j.LLM.Steps(); err != nil {
+			return
+		}
 	}
 
 	// Proxy
@@ -456,6 +467,12 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 
 	if s.Stream != nil {
 		item.Stream = s.Stream.toStreamConf()
+	}
+	if s.LLM != nil {
+		item.LLM = s.LLM
+		if item.Stream == nil {
+			item.Stream = types.DefaultStreamConf()
+		}
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {
