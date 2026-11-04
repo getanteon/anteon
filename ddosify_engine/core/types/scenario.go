@@ -233,6 +233,9 @@ type ScenarioStep struct {
 
 	// assertion expressions
 	Assertions []string
+
+	// Read the response as a stream. Nil reads it whole, unless it is text/event-stream.
+	Stream *StreamConf
 }
 
 type SourceType string
@@ -302,6 +305,12 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 			if dur > maxSleep {
 				return fmt.Errorf("maximum sleep limit exceeded. provided: %d ms, maximum: %d ms", dur, maxSleep)
 			}
+		}
+	}
+
+	if si.Stream != nil {
+		if err := si.Stream.validate(); err != nil {
+			return err
 		}
 	}
 

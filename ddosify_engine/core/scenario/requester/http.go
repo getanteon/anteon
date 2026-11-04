@@ -89,6 +89,15 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		}
 	}
 
+	if h.packet.Stream != nil {
+		if err = h.packet.Stream.FirstToken.Compile(); err != nil {
+			return
+		}
+		if err = h.packet.Stream.Error.Compile(); err != nil {
+			return
+		}
+	}
+
 	// Request instance
 	err = h.initRequestInstance()
 	if err != nil {
@@ -186,6 +195,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	var extractedVars = make(map[string]interface{})
 	var failedCaptures = make(map[string]string, 0)
 	var failedAssertions = make([]types.FailedAssertion, 0)
+	var streamResult *types.StreamResult
 
 	var usableVars = make(map[string]interface{}, len(envs))
 	for k, v := range envs {
@@ -249,6 +259,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	// Action
+	sentAt := time.Now()
 	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		requestErr = fetchErrType(err)
@@ -262,8 +273,16 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	// the Client's underlying RoundTripper (typically Transport)
 	// may not be able to re-use a persistent TCP connection to the server for a subsequent "keep-alive" request.
 	if httpRes != nil {
+		needBody := h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0
 		// read resp body conditionally
-		if h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0 {
+		if conf := h.streamConf(httpRes); conf != nil {
+			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody)
+			streamResult = read.result
+			respBody = read.body
+			if read.err != nil {
+				requestErr = streamErrType(read.err)
+			}
+		} else if needBody {
 			respBody, bodyReadErr = io.ReadAll(httpRes.Body)
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
@@ -353,6 +372,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		UsableEnvs:       usableVars,
 		FailedCaptures:   failedCaptures,
 		FailedAssertions: failedAssertions,
+		Stream:           streamResult,
 	}
 
 	if strings.EqualFold(h.request.URL.Scheme, types.ProtocolHTTPS) { // TODOcorr : check here, used URL.scheme instead TODOcorr
@@ -364,6 +384,39 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 	}
 
 	return
+}
+
+// autoStreamConf reads a text/event-stream response of a step that has no stream config.
+// The body is not capped, as io.ReadAll did before.
+var autoStreamConf = func() *types.StreamConf {
+	c := types.DefaultStreamConf()
+	c.MaxBodyBytes = 0
+	return c
+}()
+
+// streamConf decides whether a response is read as a stream: always for text/event-stream,
+// and for any 2xx when the step asks for it. An error status is read whole.
+func (h *HttpRequester) streamConf(res *http.Response) *types.StreamConf {
+	if h.packet.Stream != nil {
+		if (res.StatusCode >= 200 && res.StatusCode < 300) || isEventStream(res.Header.Get("Content-Type")) {
+			return h.packet.Stream
+		}
+		return nil
+	}
+	if isEventStream(res.Header.Get("Content-Type")) {
+		return autoStreamConf
+	}
+	return nil
+}
+
+func streamErrType(err error) types.RequestError {
+	if errors.Is(err, context.Canceled) {
+		return types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
+	}
+	if isTimeout(err) {
+		return types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
+	}
+	return fetchErrType(err)
 }
 
 var durationCloseFunc = func(d *duration) func() {
@@ -733,6 +786,7 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			}
 		},
 		GotFirstResponseByte: func() {
+			duration.setFirstByteAt(time.Now())
 			go duration.setServerProcessDur()
 			go duration.setResStartTime(time.Now())
 		},
@@ -830,6 +884,9 @@ type duration struct {
 	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
 	serverProcessDur time.Duration
 
+	// Time of the first response byte, for streams
+	firstByteAt time.Time
+
 	// Time at response reading start
 	resStart         time.Time
 	resStartCh       chan time.Time
@@ -870,6 +927,20 @@ func (d *duration) setServerProcessStart(t time.Time) {
 		d.serverProcessStartChClosed = true
 		close(d.serverProcessStartCh)
 	}
+}
+
+func (d *duration) setFirstByteAt(t time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.firstByteAt.IsZero() {
+		d.firstByteAt = t
+	}
+}
+
+func (d *duration) getFirstByteAt() time.Time {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.firstByteAt
 }
 
 func (d *duration) setDNSDur(t time.Duration) {
