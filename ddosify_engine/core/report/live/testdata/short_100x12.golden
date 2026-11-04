@@ -1,0 +1,11 @@
+ddosify   stage 4/6 24/min   elapsed 17:45   remaining 9:14
+rps target 0.40   achieved 0.39   in flight 12   iterations 1,273
+latency ms       p50       p90       p99
+TTFT           1,204     2,310     4,980
+ITL               41        88       210
+E2E            9,870    14,200    21,300
+goodput 93.4%   1,120 of 1,199 iterations met the SLO   ! target 98.0% missed
+slo first token <= 10,000 ms, total <= 30,000 ms
+outcomes   ok 1,120   ! 429 31 (2.7%)   ! 503 4 (0.3%)   5xx 2 (0.2%)   timeout 3 (0.3%)
+cut 1 (0.1%)
+q stop and write the report

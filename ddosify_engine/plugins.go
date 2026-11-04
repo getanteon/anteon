@@ -22,4 +22,7 @@ package main
 
 // Optional features register themselves in init(): live observers (core/live.Register) and
 // engine hooks (core/hooks). Add one blank import per feature package here.
-import ()
+import (
+	_ "go.ddosify.com/ddosify/v2/core/report/htmlreport"
+	_ "go.ddosify.com/ddosify/v2/core/report/live"
+)
