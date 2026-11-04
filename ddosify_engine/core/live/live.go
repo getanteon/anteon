@@ -201,7 +201,7 @@ type Metrics struct {
 	TTFT Percentiles `json:"ttft_ms"` // the first token
 	ITL  Percentiles `json:"itl_ms"`  // each stream's median gap between events
 
-	// Iteration wall time, all steps
+	// Wall time of the iterations whose every step was ok, all steps
 	E2E Percentiles `json:"e2e_ms"`
 
 	// Set when an SLO is configured

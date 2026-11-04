@@ -175,11 +175,14 @@ func (a *agg) addInterrupted(res *types.ScenarioResult) {
 
 func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) {
 	a.iterations++
-	good := true
+	good, ok := true, true
 	for _, sr := range res.StepResults {
 		o := report.OutcomeOf(sr)
 		a.outcomes[o]++
 		a.codes[sr.StatusCode]++
+		if o != report.OutcomeOK {
+			ok = false
+		}
 		if o != report.OutcomeOK || len(sr.FailedAssertions) > 0 {
 			good = false
 		}
@@ -212,7 +215,11 @@ func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) 
 			r.add(v)
 		}
 	}
-	a.e2e.add(ms(e2e))
+	// Like the stream latencies, E2E is of iterations that succeeded: a 429 answered in 2 ms is an
+	// outcome, and as a latency it would pull a stage's percentiles toward zero.
+	if ok {
+		a.e2e.add(ms(e2e))
+	}
 	if intended, ok := res.Others[types.OthersIntendedStart].(time.Time); ok && !intended.IsZero() && len(res.StepResults) > 0 {
 		if sent := res.StepResults[0].RequestTime; !sent.IsZero() {
 			lag := sent.Sub(intended)

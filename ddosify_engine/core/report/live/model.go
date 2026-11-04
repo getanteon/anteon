@@ -21,6 +21,8 @@
 package live
 
 import (
+	"math"
+
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/progress"
 	tea "charm.land/bubbletea/v2"
@@ -153,7 +155,11 @@ func (m *Model) observe(s Snapshot) {
 	m.last = s
 	m.have = true
 	m.rps.push(s.AchievedRPS)
-	m.ttft.push(s.TTFT.P95)
+	if s.TTFT.Count > 0 {
+		m.ttft.push(s.TTFT.P95)
+	} else {
+		m.ttft.push(math.NaN())
+	}
 }
 
 func (m *Model) requestStop() tea.Cmd {

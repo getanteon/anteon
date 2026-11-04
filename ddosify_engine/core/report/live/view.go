@@ -67,7 +67,7 @@ func (m *Model) Render() string {
 	secs := []section{{prioHeader, m.header(w)}}
 	if m.have {
 		secs = append(secs,
-			section{prioLatency, m.latency()},
+			section{prioLatency, m.latency(w)},
 			section{prioGoodput, m.goodput(w)},
 			section{prioOutcomes, m.outcomes(w)},
 		)
@@ -178,38 +178,85 @@ func (m *Model) header(w int) []string {
 		m.kv("rps target", rate(s.TargetRPS)),
 		m.kv("achieved", rate(s.AchievedRPS)),
 		m.kv("in flight", num(s.InFlight)),
-		m.kv("iterations", num(s.Iterations)),
+		m.kv("started", num(s.Iterations)),
 	}
 	return append(flow(first, w), flow(second, w)...)
 }
 
-func (m *Model) latency() []string {
+// padRight and padLeft pad by display width, so styled or wide text keeps its column.
+func padRight(str string, w int) string {
+	return str + strings.Repeat(" ", max(0, w-lipgloss.Width(str)))
+}
+
+func padLeft(str string, w int) string {
+	return strings.Repeat(" ", max(0, w-lipgloss.Width(str))) + str
+}
+
+const (
+	labelCol = 12
+	valueCol = 10
+	minAllW  = labelCol + 5*valueCol
+)
+
+func cell(l Latency, v float64) string {
+	if l.Count == 0 {
+		return "-"
+	}
+	return msf(v)
+}
+
+// latency is a table of fixed-width, right-aligned columns: the current stage's p50, p90 and p99,
+// then the whole run's p50 and p99 when the test has stages and the terminal has room.
+func (m *Model) latency(w int) []string {
 	s := m.last
 	itl := "ITL"
 	if s.ITLIsEventGap {
 		itl = "event gap"
 	}
-	row := func(name string, l Latency) string {
-		vals := []float64{l.P50, l.P90, l.P99}
-		var b strings.Builder
-		b.WriteString(fmt.Sprintf("%-10s", name))
-		for _, v := range vals {
-			cell := "-"
-			if l.Count > 0 {
-				cell = msf(v)
-			}
-			b.WriteString(fmt.Sprintf("%10s", cell))
+	all := s.All != nil && w >= minAllW
+	title := "latency ms"
+	if s.All != nil {
+		title = "this stage"
+	}
+	headCells := []string{"p50", "p90", "p99"}
+	if all {
+		headCells = append(headCells, "all p50", "all p99")
+	}
+	head := padRight(title, labelCol)
+	for _, c := range headCells {
+		head += padLeft(c, valueCol)
+	}
+	row := func(name string, l Latency, a *Latency) string {
+		line := padRight(name, labelCol)
+		for _, v := range []float64{l.P50, l.P90, l.P99} {
+			line += padLeft(cell(l, v), valueCol)
 		}
-		return m.st.value.Render(b.String())
+		if all {
+			if a == nil {
+				line += padLeft("", 2*valueCol)
+			} else {
+				line += padLeft(cell(*a, a.P50), valueCol) + padLeft(cell(*a, a.P99), valueCol)
+			}
+		}
+		return m.st.value.Render(strings.TrimRight(line, " "))
 	}
-	head := m.st.label.Render(fmt.Sprintf("%-10s%10s%10s%10s", "latency ms", "p50", "p90", "p99"))
-	lines := []string{head, row("TTFT", s.TTFT)}
+	var sc Scope
+	if s.All != nil {
+		sc = *s.All
+	}
+	ref := func(l Latency) *Latency {
+		if s.All == nil {
+			return nil
+		}
+		return &l
+	}
+	lines := []string{m.st.label.Render(head), row("TTFT", s.TTFT, ref(sc.TTFT))}
 	if t := s.Tokens; t != nil && t.Unit == "tokens" {
-		lines = append(lines, row("TPOT", t.TPOT))
+		lines = append(lines, row("TPOT", t.TPOT, ref(sc.TPOT)))
 	}
-	lines = append(lines, row(itl, s.ITL), row("E2E", s.E2E))
+	lines = append(lines, row(itl, s.ITL, ref(sc.ITL)), row("E2E", s.E2E, ref(sc.E2E)))
 	if s.SchedulingLag.Count > 0 {
-		lines = append(lines, row("sched lag", s.SchedulingLag))
+		lines = append(lines, row("sched lag", s.SchedulingLag, nil))
 	}
 	return append(lines, m.tokens()...)
 }
@@ -239,26 +286,40 @@ func (m *Model) tokens() []string {
 	return lines
 }
 
+func (m *Model) goodputText(g Goodput) string {
+	if g.Total == 0 {
+		return "-"
+	}
+	return fmt.Sprintf("%s (%s of %s)", pct(g.Perc()), num(g.Good), num(g.Total))
+}
+
+// goodput shows the current stage's and, with stages, the run's; the target is checked on the run.
 func (m *Model) goodput(w int) []string {
-	g := m.last.Goodput
-	var first []string
-	switch {
-	case len(m.thresholds) == 0 && g.Total == 0:
+	s := m.last
+	run := s.Goodput
+	if s.All != nil {
+		run = s.All.Goodput
+	}
+	if len(m.thresholds) == 0 && run.Total == 0 && s.Goodput.Total == 0 {
 		return []string{m.kv("goodput", "-") + "  " + m.st.label.Render("no SLO set")}
-	case g.Total == 0:
-		first = append(first, m.kv("goodput", "-"), m.st.label.Render("no iteration finished yet"))
-	default:
-		first = append(first,
-			m.kv("goodput", pct(g.Perc())),
-			m.st.label.Render(fmt.Sprintf("%s of %s iterations met the SLO", num(g.Good), num(g.Total))),
-		)
-		if m.target > 0 {
-			t := "target " + pct(m.target)
-			if g.Perc() >= m.target {
-				first = append(first, m.st.good.Render(t+" met"))
-			} else {
-				first = append(first, m.st.bad.Render("! "+t+" missed"))
-			}
+	}
+	first := []string{m.st.label.Render("goodput")}
+	if s.All != nil {
+		first = append(first, m.kv("this stage", m.goodputText(s.Goodput)), m.kv("all", m.goodputText(run)))
+	} else {
+		if run.Total == 0 {
+			first = append(first, m.st.value.Render("-"), m.st.label.Render("no iteration finished yet"))
+		} else {
+			first = append(first, m.st.value.Render(pct(run.Perc())),
+				m.st.label.Render(fmt.Sprintf("%s of %s iterations met the SLO", num(run.Good), num(run.Total))))
+		}
+	}
+	if m.target > 0 && run.Total > 0 {
+		t := "target " + pct(m.target)
+		if run.Perc() >= m.target {
+			first = append(first, m.st.good.Render(t+" met"))
+		} else {
+			first = append(first, m.st.bad.Render("! "+t+" missed"))
 		}
 	}
 	lines := flow(first, w)
@@ -297,45 +358,116 @@ func flowTight(chunks []string, w int) []string {
 	return lines
 }
 
-func (m *Model) outcomes(w int) []string {
-	o := m.last.Outcomes
+type outcomeItem struct {
+	label  string
+	v      int64
+	alarm  bool // 429 and 503: a "!" and the share, so the warning does not rest on colour
+	always bool
+}
+
+func items(o Outcomes) []outcomeItem {
+	return []outcomeItem{
+		{"ok", o.OK, false, true},
+		{"429", o.RateLimited, true, true},
+		{"503", o.Unavailable, true, true},
+		{"5xx", o.ServerError, false, true},
+		{"timeout", o.Timeout, false, true},
+		{"cut", o.StreamCut, false, true},
+		{"4xx", o.ClientError, false, false},
+		{"network", o.NetworkError, false, false},
+		{"error event", o.StreamError, false, false},
+		{"interrupted", o.Interrupted, false, false},
+	}
+}
+
+// outcomeChunks renders the outcomes; show[i] false leaves item i out.
+func (m *Model) outcomeChunks(o Outcomes, show []bool) []string {
 	total := o.Total()
-	share := func(v int64) string {
-		if total == 0 || v == 0 {
-			return ""
+	var out []string
+	for i, it := range items(o) {
+		if !show[i] {
+			continue
 		}
-		return " (" + pct(float64(v)*100/float64(total)) + ")"
-	}
-	// 429 and 503 carry a "!" when present, so the warning does not rest on colour.
-	alarm := func(label string, v int64) string {
-		if v == 0 {
-			return m.kv(label, "0")
+		switch {
+		case it.v == 0 || (it.label == "ok"):
+			out = append(out, m.kv(it.label, num(it.v)))
+		case it.alarm:
+			share := ""
+			if total > 0 {
+				share = " (" + pct(float64(it.v)*100/float64(total)) + ")"
+			}
+			out = append(out, m.st.bad.Render(fmt.Sprintf("! %s %s%s", it.label, num(it.v), share)))
+		default:
+			out = append(out, m.st.warn.Render(fmt.Sprintf("%s %s", it.label, num(it.v))))
 		}
-		return m.st.bad.Render(fmt.Sprintf("! %s %s%s", label, num(v), share(v)))
 	}
-	plain := func(label string, v int64, always bool) string {
-		if v == 0 && !always {
-			return ""
+	return out
+}
+
+func shown(scopes ...Outcomes) []bool {
+	show := make([]bool, len(items(Outcomes{})))
+	for _, o := range scopes {
+		for i, it := range items(o) {
+			show[i] = show[i] || it.always || it.v > 0
 		}
-		if v == 0 {
-			return m.kv(label, "0")
+	}
+	return show
+}
+
+// outcomes is one line for a test without stages, else one for this stage and one for the run,
+// their items in shared columns when both fit on a line.
+func (m *Model) outcomes(w int) []string {
+	s := m.last
+	if s.All == nil {
+		show := shown(s.Outcomes)
+		return flow(append([]string{m.st.label.Render("outcomes")}, m.outcomeChunks(s.Outcomes, show)...), w)
+	}
+	show := shown(s.Outcomes, s.All.Outcomes)
+	stage, all := m.outcomeChunks(s.Outcomes, show), m.outcomeChunks(s.All.Outcomes, show)
+	const gap = "   "
+	widths := make([]int, len(stage))
+	lineW := 0
+	for i := range stage {
+		widths[i] = max(lipgloss.Width(stage[i]), lipgloss.Width(all[i]))
+		lineW += widths[i] + len(gap)
+	}
+	prefixW, stageLabel, allLabel := 21, "outcomes this stage", "         all"
+	if w < 100 {
+		prefixW, stageLabel, allLabel = 7, "stage", "all"
+	}
+	if prefixW+lineW-len(gap) <= w {
+		row := func(label string, chunks []string) string {
+			line := m.st.label.Render(padRight(label, prefixW))
+			for i, c := range chunks {
+				if i > 0 {
+					line += gap
+				}
+				line += padRight(c, widths[i])
+			}
+			return strings.TrimRight(line, " ")
 		}
-		return m.st.warn.Render(fmt.Sprintf("%s %s%s", label, num(v), share(v)))
+		out := []string{row(stageLabel, stage), row(allLabel, all)}
+		if w < 100 {
+			out = append([]string{m.st.label.Render("outcomes")}, out...)
+		}
+		return out
 	}
-	chunks := []string{
-		m.st.label.Render("outcomes"),
-		m.kv("ok", num(o.OK)),
-		alarm("429", o.RateLimited),
-		alarm("503", o.Unavailable),
-		plain("5xx", o.ServerError, true),
-		plain("timeout", o.Timeout, true),
-		plain("cut", o.StreamCut, true),
-		plain("4xx", o.ClientError, false),
-		plain("network", o.NetworkError, false),
-		plain("error event", o.StreamError, false),
-		plain("interrupted", o.Interrupted, false),
+	line := func(label string, chunks []string) []string {
+		out := flow(chunks, max(20, w-prefixW))
+		for i := range out {
+			if i == 0 {
+				out[i] = m.st.label.Render(padRight(label, prefixW)) + out[i]
+			} else {
+				out[i] = strings.Repeat(" ", prefixW) + out[i]
+			}
+		}
+		return out
 	}
-	return flow(chunks, w)
+	out := line(stageLabel, stage)
+	if w < 100 {
+		out = append([]string{m.st.label.Render("outcomes")}, out...)
+	}
+	return append(out, line(allLabel, all)...)
 }
 
 func (m *Model) stages(w int) []string {
@@ -382,8 +514,7 @@ func (m *Model) stages(w int) []string {
 		default:
 			status = "queued"
 		}
-		name := ansi.Truncate(stageName(p), nameW, "")
-		row := fmt.Sprintf("%s %2d %-*s", marker, i+1, nameW, name)
+		row := fmt.Sprintf("%s %2d ", marker, i+1) + padRight(ansi.Truncate(stageName(p), nameW, ""), nameW)
 		if w >= minBarWidth {
 			barW := min(30, w-lipgloss.Width(row)-24)
 			if barW >= 8 {
@@ -416,12 +547,13 @@ func stageName(p StagePlan) string {
 	return n
 }
 
+// sparks draw the history in what the label and the value leave, the value ending at the right edge.
 func (m *Model) sparks(w int) []string {
 	const labelW, valueW = 10, 12
-	sw := min(w-labelW-valueW-2, historyLen)
+	sw := min(w-labelW-1-valueW, historyLen)
 	line := func(label string, r *ring, value string) string {
-		return m.st.label.Render(fmt.Sprintf("%-*s", labelW, label)) +
-			m.st.good.Render(spark(r.last(sw), sw)) + " " + m.st.value.Render(fmt.Sprintf("%*s", valueW, value))
+		return m.st.label.Render(padRight(label, labelW)) +
+			m.st.good.Render(spark(r.last(sw), sw)) + " " + m.st.value.Render(padLeft(value, w-labelW-sw-1))
 	}
 	s := m.last
 	ttft := "-"
@@ -436,15 +568,22 @@ func (m *Model) sparks(w int) []string {
 
 var sparkLevels = []rune("▁▂▃▄▅▆▇█")
 
-// spark draws values from 0 to their maximum, newest on the right.
+// spark draws values from 0 to their maximum, newest on the right. NaN, a snapshot with no
+// samples, is a gap rather than a zero.
 func spark(vals []float64, w int) string {
 	top := 0.0
 	for _, v := range vals {
-		top = math.Max(top, v)
+		if !math.IsNaN(v) {
+			top = math.Max(top, v)
+		}
 	}
 	var b strings.Builder
 	b.WriteString(strings.Repeat(" ", max(0, w-len(vals))))
 	for _, v := range vals {
+		if math.IsNaN(v) {
+			b.WriteByte(' ')
+			continue
+		}
 		i := 0
 		if top > 0 {
 			i = int(math.Round(v / top * float64(len(sparkLevels)-1)))

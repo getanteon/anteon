@@ -63,6 +63,20 @@ type Snapshot struct {
 
 	// The prompt's prefix cache setting: "busted", "shared N tokens", or "" when untouched
 	PrefixCache string
+
+	// The figures above are the current stage's when the test has stages; All is then the whole
+	// run's with warm-up left out. Nil without stages, where the figures above are the run's.
+	All *Scope
+}
+
+// Scope is one span's latency, goodput and outcomes.
+type Scope struct {
+	TTFT     Latency
+	TPOT     Latency
+	ITL      Latency
+	E2E      Latency
+	Goodput  Goodput
+	Outcomes Outcomes
 }
 
 // Tokens is the answers' output. Unit is "tokens", or "chunks" when no answer could be counted in

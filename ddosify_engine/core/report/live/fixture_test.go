@@ -39,7 +39,21 @@ func synthetic(i int) Snapshot {
 		Outcomes: Outcomes{
 			OK: 1120, RateLimited: 31, Unavailable: 4, ServerError: 2, Timeout: 3, StreamCut: 1,
 		},
+		All: &Scope{
+			TTFT:     Latency{Count: 4200, P50: 1150, P90: 2200, P95: 2400, P99: 4700},
+			ITL:      Latency{Count: 4200, P50: 40, P90: 80, P95: 110, P99: 190},
+			E2E:      Latency{Count: 4200, P50: 9500, P90: 13800, P95: 16000, P99: 20900},
+			Goodput:  Goodput{Good: 3900, Total: 4180},
+			Outcomes: Outcomes{OK: 4100, RateLimited: 60, Unavailable: 9, ServerError: 3, Timeout: 5, StreamCut: 3},
+		},
 	}
+}
+
+// unstaged is a test without manual_load stages: one scope, no "all".
+func unstaged(i int) Snapshot {
+	s := synthetic(i)
+	s.Stages, s.Stage, s.All = nil, StageRef{}, nil
+	return s
 }
 
 func feed(m *Model, n int) {

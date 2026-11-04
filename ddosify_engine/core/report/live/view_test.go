@@ -77,6 +77,19 @@ func TestGoldenViews(t *testing.T) {
 	}
 }
 
+func TestGoldenUnstaged(t *testing.T) {
+	m := newTestModel(100, 30, true)
+	for i := 0; i < 40; i++ {
+		m.Update(snapshotMsg(unstaged(i)))
+	}
+	v := m.Render()
+	checkFits(t, v, 100, 30)
+	if strings.Contains(v, "this stage") || strings.Contains(v, "all p50") {
+		t.Error("a test without stages labels a stage scope")
+	}
+	golden(t, "unstaged_100x30", v)
+}
+
 func TestGoldenStopping(t *testing.T) {
 	m := newTestModel(100, 30, true)
 	feed(m, 40)

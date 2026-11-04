@@ -37,16 +37,28 @@ func init() {
 	elive.Register("ndjson", newNDJSONObserver)
 }
 
-// FromEngine converts the engine's snapshot. Latency, goodput and outcomes are the current stage's,
-// so each step of a stepped load reads on its own; ITL is the gap between SSE events.
+func pc(x elive.Percentiles) Latency {
+	return Latency{Count: x.Count, P50: x.P50, P90: x.P90, P95: x.P95, P99: x.P99}
+}
+
+func scopeOf(m elive.Metrics) *Scope {
+	sc := &Scope{TTFT: pc(m.TTFT), ITL: pc(m.ITL), E2E: pc(m.E2E), Outcomes: OutcomesFromMap(m.Outcomes)}
+	if m.Goodput != nil {
+		sc.Goodput = Goodput{Good: m.Goodput.Good, Total: m.Goodput.Iterations}
+	}
+	if t := m.Tokens; t != nil {
+		sc.TPOT = pc(t.TPOT)
+		if t.ITL.Count > 0 {
+			sc.ITL = pc(t.ITL)
+		}
+	}
+	return sc
+}
+
+// FromEngine converts the engine's snapshot. With stages, latency, goodput and outcomes are the
+// current stage's, so each step of a stepped load reads on its own, and All holds the run's.
 func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 	m := s.Current
-	if m.Iterations == 0 && s.Total.Iterations > 0 {
-		m = s.Total
-	}
-	pc := func(x elive.Percentiles) Latency {
-		return Latency{Count: x.Count, P50: x.P50, P90: x.P90, P95: x.P95, P99: x.P99}
-	}
 	out := Snapshot{
 		At:            s.At,
 		Elapsed:       s.Elapsed,
@@ -74,6 +86,9 @@ func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 	out.PrefixCache = PrefixCache(p)
 	for _, st := range p.Stages {
 		out.Stages = append(out.Stages, StagePlan{Name: st.Name, Warmup: st.Warmup, Duration: st.End - st.Start, Count: int64(st.Iterations)})
+	}
+	if len(p.Stages) > 0 {
+		out.All = scopeOf(s.Total)
 	}
 	if s.Stage.Index >= 0 && len(p.Stages) > 0 {
 		out.Stage = StageRef{

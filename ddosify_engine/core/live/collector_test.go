@@ -116,3 +116,18 @@ func TestCollectorTokens(t *testing.T) {
 	}
 	c.Finish("done", true, nil)
 }
+
+func TestE2EIsOfSuccessfulIterations(t *testing.T) {
+	c := NewCollector(Plan{Duration: time.Second, Schedule: make([]int, 10)}, nil, []Observer{&recorder{}})
+	c.Start()
+	c.IterationDone(streamed(50*time.Millisecond, 429), nil, 2*time.Millisecond)
+	s := c.Snapshot()
+	if s.Total.E2E.Count != 0 {
+		t.Fatalf("a 429 counted as an E2E sample: %+v", s.Total.E2E)
+	}
+	c.IterationDone(streamed(50*time.Millisecond, 200), nil, time.Second)
+	s = c.Snapshot()
+	if s.Total.E2E.Count != 1 || s.Total.E2E.P50 != 1000 || s.Total.Outcomes[report.OutcomeRateLimited] != 1 {
+		t.Fatalf("E2E %+v, outcomes %v", s.Total.E2E, s.Total.Outcomes)
+	}
+}
