@@ -6,6 +6,7 @@ before:
     - go mod verify
     - rm -rf build
     - mkdir -p build/completions build/manpages
+    - cp ../LICENSE build/LICENSE
     - sh -c "go run . completion bash > build/completions/ddosify.bash"
     - sh -c "go run . completion zsh > build/completions/_ddosify"
     - sh -c "go run . completion fish > build/completions/ddosify.fish"
@@ -42,7 +43,7 @@ archives:
         formats: [zip]
     files:
       - README.md
-      - src: ../LICENSE
+      - src: build/LICENSE
         dst: LICENSE
       - build/completions/*
       - build/manpages/*
