@@ -236,6 +236,9 @@ type ScenarioStep struct {
 
 	// Read the response as a stream. Nil reads it whole, unless it is text/event-stream.
 	Stream *StreamConf
+
+	// Skip TLS certificate verification. Off unless the user opts in.
+	Insecure bool
 }
 
 type SourceType string

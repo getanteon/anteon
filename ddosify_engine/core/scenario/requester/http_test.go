@@ -72,9 +72,7 @@ func TestInitClient(t *testing.T) {
 		URL:     "https://test.com",
 		Timeout: types.DefaultTimeout,
 	}
-	expectedTLS := &tls.Config{
-		InsecureSkipVerify: true,
-	}
+	expectedTLS := &tls.Config{}
 	expectedTr := &http.Transport{
 		TLSClientConfig:   expectedTLS,
 		Proxy:             http.ProxyURL(p),
@@ -99,8 +97,7 @@ func TestInitClient(t *testing.T) {
 		},
 	}
 	expectedTLSCustomData := &tls.Config{
-		InsecureSkipVerify: true,
-		ServerName:         "dummy.com",
+		ServerName: "dummy.com",
 	}
 	expectedTrCustomData := &http.Transport{
 		TLSClientConfig:    expectedTLSCustomData,
@@ -126,9 +123,7 @@ func TestInitClient(t *testing.T) {
 			"h2": true,
 		},
 	}
-	expectedTLSHTTP2 := &tls.Config{
-		InsecureSkipVerify: true,
-	}
+	expectedTLSHTTP2 := &tls.Config{}
 	expectedTrHTTP2 := &http.Transport{
 		TLSClientConfig:   expectedTLSHTTP2,
 		Proxy:             http.ProxyURL(p),

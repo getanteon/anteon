@@ -2026,6 +2026,7 @@ func TestTLSMutualAuth(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 
@@ -2095,6 +2096,7 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 
@@ -2172,6 +2174,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 

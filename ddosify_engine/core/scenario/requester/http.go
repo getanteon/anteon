@@ -662,8 +662,13 @@ func (h *HttpRequester) updateTransport(tr *http.Transport) {
 }
 
 func (h *HttpRequester) initTLSConfig() *tls.Config {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+	tlsConfig := &tls.Config{}
+
+	// Certificates are verified unless the user opts out with --insecure or "insecure": true,
+	// to test a host with a self-signed certificate. Before v2 they were never verified, which
+	// is what code scanning's go/disabled-certificate-check reported.
+	if h.packet.Insecure {
+		tlsConfig.InsecureSkipVerify = true // #nosec G402 -- explicit opt-in, the CLI warns on stderr
 	}
 
 	if h.packet.CertPool != nil && h.packet.Cert.Certificate != nil {

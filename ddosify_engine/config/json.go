@@ -98,6 +98,7 @@ type step struct {
 	CaptureEnv       map[string]capturePath `json:"capture_env"`
 	Assertions       []string               `json:"assertion"`
 	Stream           *streamConf            `json:"stream"`
+	Insecure         bool                   `json:"insecure"`
 }
 
 type streamMatch struct {
@@ -207,6 +208,7 @@ type JsonReader struct {
 	Cookies      CookieConf             `json:"cookie_jar"`
 	LoadSpread   string                 `json:"load_spread"`
 	SLO          *types.SLO             `json:"slo"`
+	Insecure     bool                   `json:"insecure"`
 }
 
 type CookieConf struct {
@@ -377,6 +379,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		SingleMode:        types.DefaultSingleMode,
 		LoadSpread:        strings.ToLower(j.LoadSpread),
 		SLO:               j.SLO,
+		Insecure:          j.Insecure,
 	}
 	return
 }
@@ -458,6 +461,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		Custom:        s.Others,
 		EnvsToCapture: capturedEnvs,
 		Assertions:    s.Assertions,
+		Insecure:      s.Insecure,
 	}
 
 	if s.Stream != nil {

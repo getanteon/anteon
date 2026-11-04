@@ -152,6 +152,9 @@ type Hammer struct {
 
 	// Thresholds an iteration's streams have to meet to count as goodput
 	SLO *SLO
+
+	// Skip TLS certificate verification on every step
+	Insecure bool
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
@@ -161,6 +164,12 @@ func (h *Hammer) Validate() error {
 	}
 
 	h.Scenario.CsvVars = getCsvEnvs(h.TestDataConf)
+
+	if h.Insecure {
+		for i := range h.Scenario.Steps {
+			h.Scenario.Steps[i].Insecure = true
+		}
+	}
 
 	if err := h.Scenario.validate(); err != nil {
 		return err
