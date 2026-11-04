@@ -66,6 +66,17 @@ type jsonLine struct {
 	E2E         jsonLatency      `json:"e2e_ms"`
 	Goodput     jsonGoodput      `json:"goodput"`
 	Outcomes    map[string]int64 `json:"outcomes"`
+	Tokens      *jsonTokens      `json:"tokens,omitempty"`
+	SchedLag    *jsonLatency     `json:"scheduling_lag_ms,omitempty"`
+	PrefixCache string           `json:"prefix_cache,omitempty"`
+}
+
+type jsonTokens struct {
+	Unit   string      `json:"unit"`
+	Output jsonLatency `json:"output"`
+	TPOT   jsonLatency `json:"tpot_ms"`
+	ITL    jsonLatency `json:"itl_ms"`
+	PerSec float64     `json:"per_sec"`
 }
 
 func r3(v float64) float64 { return math.Round(v*1000) / 1000 }
@@ -92,6 +103,14 @@ func toJSONLine(s Snapshot) jsonLine {
 	if s.ITLIsEventGap {
 		l.ITLKind = "event_gap"
 	}
+	if t := s.Tokens; t != nil {
+		l.Tokens = &jsonTokens{Unit: t.Unit, Output: jl(t.Output), TPOT: jl(t.TPOT), ITL: jl(t.ITL), PerSec: r3(t.PerSec)}
+	}
+	if s.SchedulingLag.Count > 0 {
+		lag := jl(s.SchedulingLag)
+		l.SchedLag = &lag
+	}
+	l.PrefixCache = s.PrefixCache
 	if !s.At.IsZero() {
 		l.Time = s.At.UTC().Format(time.RFC3339Nano)
 	}

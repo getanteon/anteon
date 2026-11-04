@@ -18,11 +18,13 @@
 *
  */
 
-// Package hooks is where optional features plug into the engine without the engine importing them:
-// stream observers that see every SSE event (a tokenizer), request hooks (prefix cache busting),
-// {{_name}} variables, and config presets (an OpenAI compatible endpoint). A package registers
-// itself in init(), and the binary imports it for that side effect (see ddosify_engine/plugins.go).
-// Register is meant for init time; lookups are safe from any goroutine.
+// Package hooks is where optional features plug into the engine without the engine importing them.
+// A step hook prepares each request of a step and sees its answer, with one state per request:
+// a tokenizer counting a stream, a prompt builder, prefix cache busting, multi-turn sessions.
+// There are also {{_name}} variables, config presets, and top level config keys that build a
+// scenario (the OpenAI preset). A package registers itself in init(), and the binary imports it
+// for that side effect (see ddosify_engine/plugins.go). Register at init time; lookups are safe
+// from any goroutine.
 package hooks
 
 import (
@@ -37,44 +39,66 @@ import (
 )
 
 var (
-	mu              sync.RWMutex
-	streamObservers = map[string]StreamObserverFactory{}
-	requestHooks    = map[string]RequestHook{}
-	variables       = map[string]func() interface{}{}
-	presets         = map[string]Preset{}
+	mu        sync.RWMutex
+	stepHooks = map[string]StepHookFactory{}
+	variables = map[string]func() interface{}{}
+	presets   = map[string]Preset{}
+	scenarios = map[string]ScenarioBuilder{}
 )
 
-// StreamObserver sees one streamed response, on the goroutine that reads it.
-type StreamObserver interface {
-	// Event is called for every dispatched event, the done marker excluded.
-	// at is the time since the request was sent. data must not be kept after the call.
-	Event(at time.Duration, event string, data []byte)
+// StepHookFactory builds a step's hook once per requester, or returns nil, nil to skip the step.
+type StepHookFactory func(step *types.ScenarioStep) (StepHook, error)
 
-	// End is called once, after the stream ended. Metrics are aggregated by the reports as
-	// distributions under their name, such as "output_tokens" or "tpot_ms". Vars are added to
-	// the iteration's variables, so a later step can use them, such as the answer for the next turn.
-	End(r *types.StreamResult) (metrics map[string]float64, vars map[string]interface{})
+// StepHook serves one step. It must be safe for concurrent use: requests of a step run in parallel.
+type StepHook interface {
+	// Prepare is called for every request, after the variables are injected and before it is sent.
+	// It may change r.Body and r.HTTP's headers and add r.Vars, and returns the request's
+	// Exchange, which then sees the answer, or nil.
+	Prepare(r *Request) (Exchange, error)
 }
 
-// StreamObserverFactory returns an observer for one response of step, or nil to skip the step.
-type StreamObserverFactory func(step *types.ScenarioStep) StreamObserver
+// Request is one request a StepHook prepares.
+type Request struct {
+	Step *types.ScenarioStep
+	HTTP *http.Request
 
-// RequestHook may change a request before it is sent. envs holds the iteration's variables.
-type RequestHook func(step *types.ScenarioStep, req *http.Request, envs map[string]interface{}) error
+	// The body after injection; set it to change what is sent
+	Body []byte
+
+	// The iteration's variables; read them, do not change them
+	Envs map[string]interface{}
+
+	// Variables for the later steps, set whatever the answer is
+	Vars map[string]interface{}
+}
+
+// Exchange is one request's state, from Prepare to the end of its answer.
+type Exchange interface {
+	// Event is called for every dispatched SSE event, the done marker excluded.
+	// at is the time since the request was sent.
+	Event(at time.Duration, event, data string)
+
+	// End is called once per request. r is the stream's result, which End may extend (r.LLM),
+	// or nil when the answer was not read as a stream: an error status or a failed request.
+	// Metrics are aggregated by the reports as distributions under their name; Vars go to the
+	// iteration's variables for the later steps.
+	End(r *types.StreamResult) (metrics map[string]float64, vars map[string]interface{})
+}
 
 // Preset changes a decoded JSON config before it is read.
 type Preset func(config map[string]interface{}) error
 
-func RegisterStreamObserver(name string, f StreamObserverFactory) {
-	mu.Lock()
-	defer mu.Unlock()
-	streamObservers[name] = f
-}
+// ScenarioBuilder turns a top level config key's value into the scenario's steps.
+type ScenarioBuilder func(raw json.RawMessage) ([]types.ScenarioStep, error)
 
-func RegisterRequestHook(name string, h RequestHook) {
+func RegisterStepHook(name string, f StepHookFactory) {
 	mu.Lock()
 	defer mu.Unlock()
-	requestHooks[name] = h
+	if f == nil {
+		delete(stepHooks, name)
+		return
+	}
+	stepHooks[name] = f
 }
 
 // RegisterVariable makes {{_name}} available in URLs, headers, payloads and env values.
@@ -90,6 +114,13 @@ func RegisterPreset(name string, p Preset) {
 	presets[name] = p
 }
 
+// RegisterScenario makes a top level config key, such as "llm", build the steps.
+func RegisterScenario(key string, b ScenarioBuilder) {
+	mu.Lock()
+	defer mu.Unlock()
+	scenarios[key] = b
+}
+
 func sortedKeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -99,35 +130,35 @@ func sortedKeys[T any](m map[string]T) []string {
 	return keys
 }
 
-// StreamObserversFor returns the observers that want this step, in name order.
-func StreamObserversFor(step *types.ScenarioStep) []StreamObserver {
+// StepHooksFor builds the hooks that want this step, in name order.
+func StepHooksFor(step *types.ScenarioStep) ([]StepHook, error) {
 	mu.RLock()
 	defer mu.RUnlock()
-	var out []StreamObserver
-	for _, name := range sortedKeys(streamObservers) {
-		if o := streamObservers[name](step); o != nil {
-			out = append(out, o)
+	var out []StepHook
+	for _, name := range sortedKeys(stepHooks) {
+		h, err := stepHooks[name](step)
+		if err != nil {
+			return nil, fmt.Errorf("step %d, %s: %w", step.ID, name, err)
+		}
+		if h != nil {
+			out = append(out, h)
 		}
 	}
-	return out
+	return out, nil
 }
 
-// RunRequestHooks runs every request hook, in name order.
-func RunRequestHooks(step *types.ScenarioStep, req *http.Request, envs map[string]interface{}) error {
+// Scenario returns the builder of a top level config key.
+func Scenario(key string) (ScenarioBuilder, bool) {
 	mu.RLock()
 	defer mu.RUnlock()
-	for _, name := range sortedKeys(requestHooks) {
-		if err := requestHooks[name](step, req, envs); err != nil {
-			return fmt.Errorf("request hook %s: %w", name, err)
-		}
-	}
-	return nil
+	b, ok := scenarios[key]
+	return b, ok
 }
 
-func HasRequestHooks() bool {
+func ScenarioKeys() []string {
 	mu.RLock()
 	defer mu.RUnlock()
-	return len(requestHooks) > 0
+	return sortedKeys(scenarios)
 }
 
 func Variable(name string) (func() interface{}, bool) {

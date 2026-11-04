@@ -203,7 +203,40 @@ func (m *Model) latency() []string {
 		return m.st.value.Render(b.String())
 	}
 	head := m.st.label.Render(fmt.Sprintf("%-10s%10s%10s%10s", "latency ms", "p50", "p90", "p99"))
-	return []string{head, row("TTFT", s.TTFT), row(itl, s.ITL), row("E2E", s.E2E)}
+	lines := []string{head, row("TTFT", s.TTFT)}
+	if t := s.Tokens; t != nil && t.Unit == "tokens" {
+		lines = append(lines, row("TPOT", t.TPOT))
+	}
+	lines = append(lines, row(itl, s.ITL), row("E2E", s.E2E))
+	if s.SchedulingLag.Count > 0 {
+		lines = append(lines, row("sched lag", s.SchedulingLag))
+	}
+	return append(lines, m.tokens()...)
+}
+
+// tokens is the output line: in tokens when counted in tokens, else in chunks, never mixed up.
+func (m *Model) tokens() []string {
+	t := m.last.Tokens
+	if t == nil {
+		return nil
+	}
+	unit := t.Unit
+	per := "-"
+	if t.Output.Count > 0 {
+		per = num(int64(math.Round(t.Output.P50)))
+	}
+	parts := []string{
+		m.kv("output", fmt.Sprintf("%s %s/s", rate(t.PerSec), unit)),
+		m.kv("per answer p50", per+" "+unit),
+	}
+	if pc := m.last.PrefixCache; pc != "" {
+		parts = append(parts, m.kv("prefix cache", pc))
+	}
+	lines := []string{strings.Join(parts, "   ")}
+	if unit != "tokens" {
+		lines = append(lines, m.st.label.Render("chunks are content events; give a tokenizer to count tokens"))
+	}
+	return lines
 }
 
 func (m *Model) goodput(w int) []string {

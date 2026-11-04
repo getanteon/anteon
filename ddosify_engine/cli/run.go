@@ -23,6 +23,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -69,7 +70,17 @@ type runOptions struct {
 	observers   []string
 	ui          string
 	noColor     bool
+
+	tokenizer string
+	llmURL    string
+	model     string
+	dataset   string
+	apiKey    string
+	maxTokens int
 }
+
+// Flags of the top level "llm" config, the OpenAI compatible preset
+var llmFlags = []string{"url", "model", "dataset", "api-key", "max-tokens"}
 
 // Flags that only describe a single request; with --config the scenario comes from the file.
 var requestOnlyFlags = []string{"target", "method", "body", "auth", "cert-path", "cert-key-path"}
@@ -90,7 +101,9 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 3 a success criterion or the SLO's goodput failed, 130 interrupted.`,
 		Example: `  ddosify run https://example.com -n 100 -d 10
   ddosify run --config config.json --json > result.json
-  DDOSIFY_ITERATIONS=50 ddosify run --config config.json --duration 30`,
+  DDOSIFY_ITERATIONS=50 ddosify run --config config.json --duration 30
+  ddosify run --preset openai --url http://localhost:8000/v1/chat/completions --model qwen3 \
+    --dataset prompts.jsonl --tokenizer tokenizer.json -n 120 -d 60`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := applyEnv(cmd.Flags()); err != nil {
@@ -133,6 +146,12 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.StringArrayVar(&o.observers, "observer", nil, "add a live observer, name or name=arg")
 	f.StringVar(&o.ui, "ui", "auto", "auto (the TUI on a terminal, ndjson snapshots in a pipe or with --json, when built in), tui, ndjson or plain")
 	f.BoolVar(&o.noColor, "no-color", false, "no colors; NO_COLOR and TERM=dumb do the same")
+	f.StringVar(&o.tokenizer, "tokenizer", "", "Hugging Face tokenizer.json to count the streamed answers' tokens")
+	f.StringVar(&o.llmURL, "url", "", "with --preset openai: the chat completions URL")
+	f.StringVar(&o.model, "model", "", "with --preset openai: the model")
+	f.StringVar(&o.dataset, "dataset", "", "with --preset openai: prompts, a .jsonl, .csv or .txt file")
+	f.StringVar(&o.apiKey, "api-key", "", "with --preset openai: sent as Authorization: Bearer; DDOSIFY_API_KEY keeps it off the command line")
+	f.IntVar(&o.maxTokens, "max-tokens", 0, "with --preset openai: max_tokens of every request")
 	return cmd
 }
 
@@ -284,16 +303,37 @@ func buildObservers(o *runOptions, s Streams, color bool, stop func()) ([]live.O
 	return out, owns, nil
 }
 
+func anyChanged(flags *pflag.FlagSet, names []string) bool {
+	for _, n := range names {
+		if flags.Changed(n) {
+			return true
+		}
+	}
+	return false
+}
+
 func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
-	if o.config == "" {
-		return hammerFromFlags(o)
+	fromPreset := o.config == "" && (len(o.presets) > 0 || anyChanged(flags, llmFlags))
+	if o.config == "" && !fromPreset {
+		h, err := hammerFromFlags(o)
+		if err == nil {
+			err = applyTokenizer(&h, flags, o)
+		}
+		return h, err
 	}
 	for _, name := range requestOnlyFlags {
 		if flags.Changed(name) {
-			return types.Hammer{}, fmt.Errorf("--%s describes a single request and can not be used with --config", name)
+			return types.Hammer{}, fmt.Errorf("--%s describes a single request and can not be used with --config or --preset", name)
 		}
 	}
-	raw, err := os.ReadFile(o.config)
+	raw := []byte("{}")
+	if o.config != "" {
+		var err error
+		if raw, err = os.ReadFile(o.config); err != nil {
+			return types.Hammer{}, err
+		}
+	}
+	raw, err := applyLLMFlags(raw, flags, o)
 	if err != nil {
 		return types.Hammer{}, err
 	}
@@ -309,7 +349,63 @@ func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
 	if err != nil {
 		return h, fmt.Errorf("%s: %w", o.config, err)
 	}
-	return h, overrideHammer(&h, flags, o)
+	if err := overrideHammer(&h, flags, o); err != nil {
+		return h, err
+	}
+	return h, applyTokenizer(&h, flags, o)
+}
+
+// applyLLMFlags puts --url, --model, --dataset, --api-key and --max-tokens into the top level "llm" config.
+func applyLLMFlags(raw []byte, flags *pflag.FlagSet, o *runOptions) ([]byte, error) {
+	if !anyChanged(flags, llmFlags) {
+		return raw, nil
+	}
+	var c map[string]interface{}
+	if err := json.Unmarshal(raw, &c); err != nil {
+		return nil, err
+	}
+	m, ok := c["llm"].(map[string]interface{})
+	if !ok {
+		m = map[string]interface{}{}
+		c["llm"] = m
+	}
+	if flags.Changed("url") {
+		m["url"] = o.llmURL
+	}
+	if flags.Changed("model") {
+		m["model"] = o.model
+	}
+	if flags.Changed("dataset") {
+		m["dataset"] = map[string]interface{}{"path": o.dataset}
+	}
+	if flags.Changed("api-key") {
+		m["api_key"] = o.apiKey
+	}
+	if flags.Changed("max-tokens") {
+		m["max_tokens"] = o.maxTokens
+	}
+	return json.Marshal(c)
+}
+
+// applyTokenizer gives every streamed step --tokenizer; a step without an llm config gets one.
+func applyTokenizer(h *types.Hammer, flags *pflag.FlagSet, o *runOptions) error {
+	if !flags.Changed("tokenizer") {
+		return nil
+	}
+	if _, err := os.Stat(o.tokenizer); err != nil {
+		return fmt.Errorf("--tokenizer: %w", err)
+	}
+	for i := range h.Scenario.Steps {
+		st := &h.Scenario.Steps[i]
+		if st.LLM == nil {
+			if st.Stream == nil {
+				continue
+			}
+			st.LLM = &types.LLMConf{}
+		}
+		st.LLM.Tokenizer = o.tokenizer
+	}
+	return nil
 }
 
 // overrideHammer applies the flags and environment variables that were given over the config.

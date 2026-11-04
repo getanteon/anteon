@@ -58,6 +58,7 @@ func (h *observer) Finish(f elive.Final) {
 		cfg.SLO = live.ThresholdsFromSLO(&f.Result.Goodput.SLO)
 	}
 	rep := FromResult(f.Result, cfg, h.rec)
+	rep.PrefixCache = live.PrefixCache(h.plan)
 	rep.Duration = f.Elapsed
 	rep.Stopped = f.Status != "done"
 	if f.Result == nil {

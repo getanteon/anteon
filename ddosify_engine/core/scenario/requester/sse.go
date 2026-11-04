@@ -320,8 +320,8 @@ type streamRead struct {
 // readSSE reads body as server-sent events until the done marker, EOF or an error.
 // sentAt is when the request was sent and firstByteAt when the first response byte came.
 func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt, firstByteAt time.Time, keepBody bool,
-	observers ...hooks.StreamObserver) streamRead {
-	res := &types.StreamResult{}
+	observers ...hooks.Exchange) streamRead {
+	res := &types.StreamResult{SentAt: sentAt}
 	if !firstByteAt.IsZero() {
 		res.TTFB = firstByteAt.Sub(sentAt)
 	}
@@ -344,7 +344,7 @@ func readSSE(ctx context.Context, body io.Reader, conf *types.StreamConf, sentAt
 			return
 		}
 		for _, o := range observers {
-			o.Event(now.Sub(sentAt), ev.Event, []byte(ev.Data))
+			o.Event(now.Sub(sentAt), ev.Event, ev.Data)
 		}
 		res.Events++
 		if !res.HasFirstEvent {

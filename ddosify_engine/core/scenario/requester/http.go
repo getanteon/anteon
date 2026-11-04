@@ -59,6 +59,7 @@ type HttpRequester struct {
 	debug                bool
 	dynamicRgx           *regexp.Regexp
 	envRgx               *regexp.Regexp
+	stepHooks            []hooks.StepHook
 }
 
 // Init creates a client with the given scenarioItem. HttpRequester uses the same http.Client for all requests
@@ -97,6 +98,10 @@ func (h *HttpRequester) Init(ctx context.Context, s types.ScenarioStep, proxyAdd
 		if err = h.packet.Stream.Error.Compile(); err != nil {
 			return
 		}
+	}
+
+	if h.stepHooks, err = hooks.StepHooksFor(&h.packet); err != nil {
+		return
 	}
 
 	// Request instance
@@ -245,14 +250,11 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		return res
 	}
 
-	if hooks.HasRequestHooks() {
-		if err := hooks.RunRequestHooks(&h.packet, httpReq, usableVars); err != nil {
-			return &types.ScenarioStepResult{
-				StepID:    h.packet.ID,
-				StepName:  h.packet.Name,
-				RequestID: uuid.New(),
-				Err:       types.RequestError{Type: types.ErrorInvalidRequest, Reason: err.Error()},
-			}
+	var exchanges []hooks.Exchange
+	if len(h.stepHooks) > 0 {
+		if exchanges, err = h.prepareHooks(httpReq, usableVars, extractedVars); err != nil {
+			return &types.ScenarioStepResult{StepID: h.packet.ID, StepName: h.packet.Name, RequestID: uuid.New(),
+				Err: types.RequestError{Type: types.ErrorInvalidRequest, Reason: fmt.Sprintf("Could not prepare req, %s", err.Error())}}
 		}
 	}
 
@@ -288,8 +290,8 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		needBody := h.debug || len(h.packet.EnvsToCapture) > 0 || len(h.packet.Assertions) > 0
 		// read resp body conditionally
 		if conf := h.streamConf(httpRes); conf != nil {
-			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody,
-				hooks.StreamObserversFor(&h.packet)...)
+			read := readSSE(h.ctx, httpRes.Body, conf, sentAt, durations.getFirstByteAt(), needBody, exchanges...)
+			exchanges = nil // ended by readSSE
 			streamResult = read.result
 			respBody = read.body
 			for k, v := range read.vars {
@@ -310,6 +312,9 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 				requestErr = fetchErrType(bodyReadErr)
 			}
 		}
+
+		endExchanges(exchanges, extractedVars)
+		exchanges = nil
 
 		httpRes.Body.Close()
 		respHeaders = httpRes.Header
@@ -349,6 +354,8 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 			})
 		}
 	}
+
+	endExchanges(exchanges, extractedVars) // the request failed
 
 	var ddResTime time.Duration
 	if httpRes != nil && httpRes.Header.Get("x-ddsfy-response-time") != "" {

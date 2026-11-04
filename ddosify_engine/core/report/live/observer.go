@@ -24,6 +24,7 @@ package live
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -63,6 +64,14 @@ func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 	if m.Goodput != nil {
 		out.Goodput = Goodput{Good: m.Goodput.Good, Total: m.Goodput.Iterations}
 	}
+	out.SchedulingLag = pc(m.SchedulingLag)
+	if t := m.Tokens; t != nil {
+		out.Tokens = &Tokens{Unit: t.Unit, Output: pc(t.Output), TPOT: pc(t.TPOT), ITL: pc(t.ITL), PerSec: t.PerSec}
+		if t.ITL.Count > 0 {
+			out.ITL, out.ITLIsEventGap = pc(t.ITL), t.Unit != "tokens"
+		}
+	}
+	out.PrefixCache = PrefixCache(p)
 	for _, st := range p.Stages {
 		out.Stages = append(out.Stages, StagePlan{Name: st.Name, Warmup: st.Warmup, Duration: st.End - st.Start, Count: int64(st.Iterations)})
 	}
@@ -79,6 +88,25 @@ func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 	return out
 }
 
+func goodputTarget(p elive.Plan) float64 {
+	if p.SLO == nil {
+		return 0
+	}
+	return p.SLO.GoodputPerc
+}
+
+// PrefixCache describes what the llm steps do to the prompt's prefix cache.
+func PrefixCache(p elive.Plan) string {
+	for _, s := range p.Steps {
+		switch {
+		case s.CacheBust:
+			return "busted"
+		case s.SharedPrefixTokens > 0:
+			return fmt.Sprintf("shared %d tokens", s.SharedPrefixTokens)
+		}
+	}
+	return ""
+}
 
 type tuiObserver struct {
 	o    elive.Options
@@ -100,11 +128,12 @@ func (t *tuiObserver) Start(p elive.Plan) {
 	go func() {
 		defer close(t.done)
 		_, _ = RunTUI(context.Background(), t.ch, Options{
-			Out:        t.o.Stdout,
-			In:         os.Stdin,
-			NoColor:    !t.o.Color,
-			Stop:       t.o.Stop,
-			Thresholds: ThresholdsFromSLO(p.SLO),
+			Out:           t.o.Stdout,
+			In:            os.Stdin,
+			NoColor:       !t.o.Color,
+			Stop:          t.o.Stop,
+			Thresholds:    ThresholdsFromSLO(p.SLO),
+			GoodputTarget: goodputTarget(p),
 		})
 	}()
 }

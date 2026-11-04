@@ -84,3 +84,35 @@ func TestRegistry(t *testing.T) {
 		t.Error("a missing observer is an error")
 	}
 }
+
+func llmResult(source string, out int, intended, sent time.Time) *types.ScenarioResult {
+	r := streamed(50*time.Millisecond, 200)
+	r.StepResults[0].RequestTime = sent
+	r.StepResults[0].Stream.LLM = &types.LLMResult{SentAt: sent, Output: out, OutputSource: source, HasContent: true,
+		LastContent: time.Second, TPOT: 20 * time.Millisecond, HasTPOT: true, ITL: []time.Duration{10 * time.Millisecond, 30 * time.Millisecond},
+		CacheBusted: true}
+	r.Others = map[string]interface{}{types.OthersIntendedStart: intended}
+	return r
+}
+
+func TestCollectorTokens(t *testing.T) {
+	c := NewCollector(Plan{Duration: time.Second}, nil, nil)
+	c.Start()
+	t0 := time.Now()
+	c.IterationStarted()
+	c.IterationDone(llmResult(types.TokenSourceChunks, 9, t0, t0.Add(2*time.Millisecond)), nil, time.Second)
+	s := c.Snapshot()
+	if tk := s.Total.Tokens; tk == nil || tk.Unit != "chunks" || tk.TPOT.Count != 0 || tk.Output.P50 != 9 {
+		t.Errorf("only chunks: never tokens, no TPOT: %+v", tk)
+	}
+	if s.Total.SchedulingLag.Max != 2 {
+		t.Errorf("scheduling lag %+v", s.Total.SchedulingLag)
+	}
+	c.IterationStarted()
+	c.IterationDone(llmResult(types.TokenSourceTokenizer, 100, t0, t0), nil, time.Second)
+	tk := c.Snapshot().Total.Tokens
+	if tk.Unit != "tokens" || tk.Output.P50 != 100 || tk.TPOT.P50 != 20 || tk.ITL.Count != 4 || tk.CacheBusted != 2 || tk.PerSec != 100 {
+		t.Errorf("tokens counted in tokens: %+v", tk)
+	}
+	c.Finish("done", true, nil)
+}

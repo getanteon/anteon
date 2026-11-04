@@ -1,0 +1,14 @@
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[{"index":0,"delta":{"reasoning_content":"The user greets."},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[{"index":0,"delta":{"content":"! How"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[{"index":0,"delta":{"content":" can I help?"},"logprobs":null,"finish_reason":"stop"}],"usage":null}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1762257600,"model":"Qwen/Qwen3-8B","choices":[],"usage":{"prompt_tokens":12,"total_tokens":24,"completion_tokens":12}}
+
+data: [DONE]
+

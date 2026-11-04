@@ -35,6 +35,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
 	"go.ddosify.com/ddosify/v2/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/llm"
 	"go.ddosify.com/ddosify/v2/core/types"
 	"go.ddosify.com/ddosify/v2/core/util"
 )
@@ -305,6 +306,9 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 					fmt.Fprintf(w, "\tStream:\tend %s, %d events, %d comments, %d error events, %d bytes\n", st.End, st.Events, st.Comments, st.ErrorEvents, st.Bytes)
 					fmt.Fprintf(w, "\t\tTTFB %.1fms, first event %.1fms, first token %.1fms, total %.1fms\n", st.TTFB, st.FirstEvent, st.FirstToken, st.Total)
 					fmt.Fprintf(w, "\t\tgap max %.1fms, p50 %.1fms, p95 %.1fms\n", st.GapMax, st.GapP50, st.GapP95)
+					if l := st.LLM; l != nil {
+						fmt.Fprintf(w, "\t\toutput %d (%s), input %d (%s), first content %.1fms, tpot %.2fms, %d content events\n", l.Output, l.OutputSource, l.Input, l.InputSource, float64(l.FirstContent)/1e6, float64(l.TPOT)/1e6, l.ContentEvents)
+					}
 				}
 				fmt.Fprintf(w, "\t%s\n", "Headers: ")
 				for hKey, hVal := range verboseInfo.Response.Headers {
@@ -462,6 +466,7 @@ func (s *stdout) printDetails() {
 	}
 
 	printGoodput(w, s.result.Goodput)
+	llm.WriteSystem(w, s.result.LLM, s.result.Schedule)
 	printStages(w, s.result.Stages, s.result.Goodput != nil)
 
 	if s.result.TestStatus == "success" {
@@ -539,6 +544,7 @@ func printStream(w io.Writer, st *StreamSummary) {
 	if st.TruncatedBodies > 0 {
 		fmt.Fprintf(w, "  Bodies cut at max_body_bytes: %d\n", st.TruncatedBodies)
 	}
+	llm.WriteText(w, st.LLM)
 }
 
 func sloText(slo types.SLO) string {
@@ -553,6 +559,7 @@ func sloText(slo types.SLO) string {
 	add("first token", slo.FirstTokenMs)
 	add("total", slo.TotalMs)
 	add("max gap", slo.MaxGapMs)
+	add("tpot", slo.TPOTMs)
 	if len(parts) == 0 {
 		return "every step succeeds"
 	}

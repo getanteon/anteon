@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.ddosify.com/ddosify/v2/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/llm"
 	"go.ddosify.com/ddosify/v2/core/types"
 )
 
@@ -152,6 +153,10 @@ type Result struct {
 
 	// One per manual_load stage, set only when a stage has a name or is a warm-up.
 	Stages []*StageSummary `json:"stages,omitempty"`
+
+	// Tokens of all steps, and the scheduling lag. Set once a stream is seen. Warm-up stages excluded.
+	LLM      *llm.Summary         `json:"llm,omitempty"`
+	Schedule *llm.ScheduleSummary `json:"schedule,omitempty"`
 
 	ext *extended
 }

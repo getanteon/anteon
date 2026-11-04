@@ -139,6 +139,11 @@ type StepInfo struct {
 	Method   string `json:"method"`
 	URL      string `json:"url"`
 	Streamed bool   `json:"streamed"`
+
+	// The llm config's prompt changes: a unique marker per prompt, or a shared prefix of this many tokens
+	CacheBust          bool   `json:"cache_bust,omitempty"`
+	SharedPrefixTokens int    `json:"shared_prefix_tokens,omitempty"`
+	TokenSource        string `json:"token_source,omitempty"`
 }
 
 // Plan is the test as configured.
@@ -198,6 +203,36 @@ type Metrics struct {
 
 	// Metrics stream observers returned, such as "output_tokens"
 	Extra map[string]Percentiles `json:"extra,omitempty"`
+
+	// Answers' output, set when a step has an llm config
+	Tokens *Tokens `json:"tokens,omitempty"`
+
+	// The first request's send time minus the time the schedule meant the iteration to start, ms.
+	// A high p99 means the client, not the server, fell behind.
+	SchedulingLag Percentiles `json:"scheduling_lag_ms"`
+}
+
+// Tokens is the output of the answers, counted in tokens (the server's usage or a tokenizer) or,
+// when no answer could be, in chunks: content events. Unit says which; a chunk is never a token.
+type Tokens struct {
+	Unit    string `json:"unit"`
+	Answers int64  `json:"answers"`
+
+	// Output per answer, in Unit
+	Output Percentiles `json:"output"`
+
+	// Time per output token, ms; only with Unit "tokens"
+	TPOT Percentiles `json:"tpot_ms"`
+
+	// Gaps between content events, ms, all answers pooled
+	ITL Percentiles `json:"itl_ms"`
+
+	// All output over the time from the first send to the last answer's end, in Unit a second
+	PerSec float64 `json:"per_sec"`
+
+	// Answers whose prompt got a cache-busting marker, and the shared prefix's tokens
+	CacheBusted  int64 `json:"cache_busted,omitempty"`
+	PrefixTokens int   `json:"prefix_tokens,omitempty"`
 }
 
 // Snapshot is the state of the test at one moment.

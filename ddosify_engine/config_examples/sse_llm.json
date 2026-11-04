@@ -57,6 +57,10 @@
                 "error": {"json_path": "type", "equals": "error"},
                 "done": "[DONE]",
                 "max_body_bytes": 1048576
+            },
+            "llm": {
+                "token_source": "tokenizer",
+                "tokenizer": "tokenizer.json"
             }
         }
     ]

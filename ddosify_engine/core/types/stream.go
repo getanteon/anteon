@@ -130,6 +130,8 @@ func (c *StreamConf) validate() error {
 
 // StreamResult is what one streamed response measured. Durations are from the moment the request was sent.
 type StreamResult struct {
+	SentAt time.Time
+
 	// Time to the first byte of the response.
 	TTFB time.Duration
 
@@ -169,6 +171,8 @@ type StreamResult struct {
 
 	// Metrics hooks.StreamObserver implementations returned, such as "output_tokens"
 	Extra map[string]float64
+	// Token metrics, set when the step has an "llm" config
+	LLM *LLMResult
 }
 
 // Clean tells whether the stream ended with the done marker or a close between events.
@@ -186,10 +190,12 @@ type SLO struct {
 
 	// The test fails, exit code 3, when the goodput is below this percentage
 	GoodputPerc float64 `json:"goodput_perc,omitempty"`
+	// Time per output token; needs a token count, from usage or a tokenizer
+	TPOTMs int64 `json:"tpot_ms,omitempty"`
 }
 
 func (s *SLO) validate() error {
-	if s.TTFBMs < 0 || s.FirstEventMs < 0 || s.FirstTokenMs < 0 || s.TotalMs < 0 || s.MaxGapMs < 0 {
+	if s.TTFBMs < 0 || s.FirstEventMs < 0 || s.FirstTokenMs < 0 || s.TotalMs < 0 || s.MaxGapMs < 0 || s.TPOTMs < 0 {
 		return fmt.Errorf("slo thresholds can not be negative")
 	}
 	if s.GoodputPerc < 0 || s.GoodputPerc > 100 {
@@ -206,11 +212,13 @@ func (s *SLO) Met(r *StreamResult) bool {
 	within := func(limit int64, d time.Duration, present bool) bool {
 		return limit == 0 || (present && d <= time.Duration(limit)*time.Millisecond)
 	}
+	tpot, hasTPOT := r.LLM.tpot()
 	return within(s.TTFBMs, r.TTFB, true) &&
 		within(s.FirstEventMs, r.FirstEvent, r.HasFirstEvent) &&
 		within(s.FirstTokenMs, r.FirstToken, r.HasFirstToken) &&
 		within(s.TotalMs, r.Total, true) &&
-		within(s.MaxGapMs, r.GapMax, true)
+		within(s.MaxGapMs, r.GapMax, true) &&
+		within(s.TPOTMs, tpot, hasTPOT)
 }
 
 // LoadStage tags an iteration with the manual_load stage it was started in.

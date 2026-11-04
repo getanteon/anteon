@@ -305,6 +305,8 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--observer` | Adds a registered live observer, `name` or `name=arg` | - |
 | `--ui` | `auto` shows the live TUI on a terminal and ndjson snapshots when stdout is not a terminal or with `--json`, when the build has them; `tui`, `ndjson` or `plain` choose one. `TERM=dumb` never gets the TUI | `auto` |
 | `--no-color` | No colors; `NO_COLOR` and `TERM=dumb` do the same | `false` |
+| `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
+| `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
 
 **Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config.
 
@@ -1364,6 +1366,16 @@ ddosify run --config config_examples/sse_llm.json          # the whole run
 ```
 
 Count every request against the API's rate limits: two requests an iteration at 96 iterations a minute is 192 requests a minute on one key.
+
+The ask step counts the answer's tokens with `"llm": {"token_source": "tokenizer"}` and the served model's Hugging Face `tokenizer.json`, given in the config or with `--tokenizer` (`DDOSIFY_TOKENIZER`). The tokenizer is forced rather than left to `auto` because Gurubase's `finish` chunk carries the usage of the whole run, every model call that planned, wrote and judged the answer, not the tokens the stream delivered; TPOT and tokens per second from it would be wrong by a large factor. The server's numbers stay in each result as `usage_output` and `usage_input`. Without a tokenizer the output is counted in chunks, and the report says chunks.
+
+```bash
+ddosify run --config config_examples/sse_llm.json --tokenizer ~/models/Qwen3-8B/tokenizer.json --html report.html
+```
+
+### Tokens, the OpenAI preset, sessions and prefix caching
+
+[docs/llm.md](docs/llm.md) covers output tokens (from the server's usage, a Hugging Face `tokenizer.json`, or labelled as chunks), TPOT, ITL and tokens per second, the OpenAI compatible preset that needs only a URL, a key and a dataset, multi-turn sessions, cache-busting and shared prefixes, and the scheduling lag that shows a saturated client.
 
 ## Common Issues
 

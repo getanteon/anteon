@@ -29,6 +29,7 @@ import (
 	"sort"
 	"time"
 
+	"go.ddosify.com/ddosify/v2/core/llm"
 	"go.ddosify.com/ddosify/v2/core/types"
 )
 
@@ -161,6 +162,7 @@ type StreamSummary struct {
 
 	// Metrics stream observers returned, such as "output_tokens"
 	Extra map[string]*Dist `json:"extra,omitempty"`
+	LLM   *llm.Summary     `json:"llm,omitempty"`
 }
 
 type streamAgg struct {
@@ -169,6 +171,7 @@ type streamAgg struct {
 	ttfb, firstEvent, firstToken, total         sampler
 	gapMax, gapP50, gapP95, events              sampler
 	extra                                       map[string]*sampler
+	llm                                         llm.Agg
 }
 
 func (a *streamAgg) add(r *types.StreamResult) {
@@ -210,6 +213,7 @@ func (a *streamAgg) add(r *types.StreamResult) {
 		}
 		s.add(v)
 	}
+	a.llm.Add(r.LLM)
 }
 
 func (a *streamAgg) summary() *StreamSummary {
@@ -238,6 +242,7 @@ func (a *streamAgg) summary() *StreamSummary {
 		GapP50:          a.gapP50.dist(),
 		GapP95:          a.gapP95.dist(),
 		Events:          a.events.dist(),
+		LLM:             a.llm.Summary(),
 	}
 }
 
@@ -285,6 +290,8 @@ type extended struct {
 	stages     map[int]*stageAgg
 	iterations int64
 	good       int64
+	llmAll     llm.Agg
+	sched      llm.ScheduleAgg
 }
 
 func newExtended() *extended {
@@ -370,6 +377,7 @@ func (x *extended) add(scr *types.ScenarioResult) {
 		se.outcomes[outcome]++
 		if sr.Stream != nil {
 			se.stream.add(sr.Stream)
+			x.llmAll.Add(sr.Stream.LLM)
 		}
 	}
 	good = good && ok
@@ -388,6 +396,7 @@ func (x *extended) add(scr *types.ScenarioResult) {
 			return
 		}
 	}
+	x.sched.Add(scr)
 	x.iterations++
 	if good {
 		x.good++
@@ -423,6 +432,8 @@ func (x *extended) finalize(r *Result) {
 		step.Outcomes = se.outcomes
 		step.Stream = se.stream.summary()
 	}
+	r.LLM = x.llmAll.Summary()
+	r.Schedule = x.sched.Summary()
 	if x.slo != nil {
 		r.Goodput = &Goodput{SLO: *x.slo, Iterations: x.iterations, Good: x.good, Perc: perc(x.good, x.iterations)}
 		if x.slo.GoodputPerc > 0 && r.Goodput.Perc < x.slo.GoodputPerc {

@@ -117,6 +117,9 @@ func (s *Scenario) validate() error {
 			}
 			definedEnvs[ce.Name] = struct{}{}
 		}
+		for _, name := range st.LLM.capturedNames() {
+			definedEnvs[name] = struct{}{}
+		}
 
 		if _, ok := stepIds[st.ID]; ok {
 			return fmt.Errorf("duplicate step id: %d", st.ID)
@@ -239,6 +242,8 @@ type ScenarioStep struct {
 
 	// Skip TLS certificate verification. Off unless the user opts in.
 	Insecure bool
+	// Count the streamed answer's tokens, and prepare its prompt. Needs Stream.
+	LLM *LLMConf
 }
 
 type SourceType string
@@ -313,6 +318,15 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 
 	if si.Stream != nil {
 		if err := si.Stream.validate(); err != nil {
+			return err
+		}
+	}
+
+	if si.LLM != nil {
+		if si.Stream == nil {
+			return fmt.Errorf("step %d: llm needs a stream config", si.ID)
+		}
+		if err := si.LLM.validate(); err != nil {
 			return err
 		}
 	}

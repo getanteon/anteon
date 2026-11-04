@@ -98,6 +98,25 @@ footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
   </table></div>
 </section>
 
+{{- if or .TokenMetrics .TokenFacts}}
+<section id="tokens">
+  <h2>Answers' output{{if .TokenUnit}} <span class="muted">(in {{.TokenUnit}})</span>{{end}}</h2>
+  {{- range .TokenFacts}}
+  <p>{{.}}</p>
+  {{- end}}
+  {{- if .TokenMetrics}}
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">Metric</th><th>Count</th><th>p50</th><th>p90</th><th>p95</th><th>p99</th><th>Max</th><th>Mean</th></tr></thead>
+    <tbody>
+    {{- range .TokenMetrics}}
+      <tr><td class="name">{{.Name}}</td><td>{{.Count}}</td><td>{{.P50}}</td><td>{{.P90}}</td><td>{{.P95}}</td><td>{{.P99}}</td><td>{{.Max}}</td><td>{{.Mean}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+</section>
+{{- end}}
+
 {{- if .Charts}}
 <section id="charts">
   <h2>Over time</h2>

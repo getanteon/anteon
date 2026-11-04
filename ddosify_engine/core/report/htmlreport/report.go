@@ -30,6 +30,7 @@ import (
 	"sort"
 	"time"
 
+	"go.ddosify.com/ddosify/v2/core/llm"
 	"go.ddosify.com/ddosify/v2/core/report"
 	"go.ddosify.com/ddosify/v2/core/report/live"
 	"go.ddosify.com/ddosify/v2/core/types"
@@ -53,6 +54,11 @@ type Report struct {
 
 	Series        []Point
 	ITLIsEventGap bool
+
+	// Answers' output and the scheduling lag, set when a step has an llm config
+	LLM         *llm.Summary
+	Schedule    *llm.ScheduleSummary
+	PrefixCache string
 }
 
 // Config is the shape of the load, without anything a request carries.
@@ -133,6 +139,8 @@ func FromResult(r *report.Result, cfg Config, rec *Recorder) Report {
 	rep.FailedCriteria = len(r.TestFailedAssertions)
 	rep.Goodput = r.Goodput
 	rep.Stages = r.Stages
+	rep.LLM = r.LLM
+	rep.Schedule = r.Schedule
 
 	ids := make([]int, 0, len(r.StepResults))
 	for id := range r.StepResults {

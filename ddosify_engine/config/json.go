@@ -99,6 +99,7 @@ type step struct {
 	Assertions       []string               `json:"assertion"`
 	Stream           *streamConf            `json:"stream"`
 	Insecure         bool                   `json:"insecure"`
+	LLM              *types.LLMConf         `json:"llm"`
 }
 
 type streamMatch struct {
@@ -209,6 +210,9 @@ type JsonReader struct {
 	LoadSpread   string                 `json:"load_spread"`
 	SLO          *types.SLO             `json:"slo"`
 	Insecure     bool                   `json:"insecure"`
+
+	// Top level keys a hooks.ScenarioBuilder turns into steps, such as "llm"
+	scenarioRaw map[string]json.RawMessage
 }
 
 type CookieConf struct {
@@ -267,6 +271,21 @@ func (j *JsonReader) Init(jsonByte []byte) (err error) {
 	if err != nil {
 		return
 	}
+
+	if keys := hooks.ScenarioKeys(); len(keys) > 0 {
+		var top map[string]json.RawMessage
+		if err = json.Unmarshal(jsonByte, &top); err != nil {
+			return
+		}
+		for _, k := range keys {
+			if raw, ok := top[k]; ok && string(raw) != "null" {
+				if j.scenarioRaw == nil {
+					j.scenarioRaw = map[string]json.RawMessage{}
+				}
+				j.scenarioRaw[k] = raw
+			}
+		}
+	}
 	return
 }
 
@@ -283,6 +302,19 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		}
 
 		s.Steps = append(s.Steps, si)
+	}
+	for _, key := range hooks.ScenarioKeys() {
+		raw, ok := j.scenarioRaw[key]
+		if !ok {
+			continue
+		}
+		if len(s.Steps) > 0 {
+			return h, fmt.Errorf("give either steps or %q, not both", key)
+		}
+		build, _ := hooks.Scenario(key)
+		if s.Steps, err = build(raw); err != nil {
+			return h, fmt.Errorf("%s: %w", key, err)
+		}
 	}
 
 	// Proxy
@@ -466,6 +498,12 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 
 	if s.Stream != nil {
 		item.Stream = s.Stream.toStreamConf()
+	}
+	if s.LLM != nil {
+		item.LLM = s.LLM
+		if item.Stream == nil {
+			item.Stream = types.DefaultStreamConf()
+		}
 	}
 
 	if s.CertPath != "" && s.CertKeyPath != "" {

@@ -87,6 +87,76 @@ type agg struct {
 	ttfb, ttft, itl  reservoir
 	e2e              reservoir
 	extra            map[string]*reservoir
+	lag              reservoir
+	tok, chunk       outputAgg
+	itl2             reservoir
+	cacheBusted      int64
+	prefixTokens     int
+	answers          int64
+}
+
+// outputAgg is the answers counted in one unit.
+type outputAgg struct {
+	n                 int64
+	total             int64
+	output, tpot      reservoir
+	firstSent, lastAt time.Time
+}
+
+func (o *outputAgg) add(r *types.LLMResult) {
+	o.n++
+	o.total += int64(r.Output)
+	o.output.add(float64(r.Output))
+	if r.HasTPOT {
+		o.tpot.add(ms(r.TPOT))
+	}
+	if !r.SentAt.IsZero() {
+		if o.firstSent.IsZero() || r.SentAt.Before(o.firstSent) {
+			o.firstSent = r.SentAt
+		}
+		if end := r.SentAt.Add(r.LastContent); end.After(o.lastAt) {
+			o.lastAt = end
+		}
+	}
+}
+
+func (o *outputAgg) perSec() float64 {
+	if w := o.lastAt.Sub(o.firstSent).Seconds(); w > 0 {
+		return float64(o.total) / w
+	}
+	return 0
+}
+
+func (a *agg) addLLM(r *types.LLMResult) {
+	a.answers++
+	if r.Tokens() {
+		a.tok.add(r)
+	} else {
+		a.chunk.add(r)
+	}
+	for _, g := range r.ITL {
+		a.itl2.add(ms(g))
+	}
+	if r.CacheBusted {
+		a.cacheBusted++
+	}
+	if r.PrefixTokens > a.prefixTokens {
+		a.prefixTokens = r.PrefixTokens
+	}
+}
+
+// tokens reports in tokens when any answer was counted in tokens, else in chunks.
+func (a *agg) tokens() *Tokens {
+	if a.answers == 0 {
+		return nil
+	}
+	t := &Tokens{Answers: a.answers, ITL: a.itl2.percentiles(), CacheBusted: a.cacheBusted, PrefixTokens: a.prefixTokens}
+	if a.tok.n > 0 {
+		t.Unit, t.Output, t.TPOT, t.PerSec = "tokens", a.tok.output.percentiles(), a.tok.tpot.percentiles(), a.tok.perSec()
+	} else {
+		t.Unit, t.Output, t.PerSec = "chunks", a.chunk.output.percentiles(), a.chunk.perSec()
+	}
+	return t
 }
 
 func newAgg() *agg {
@@ -112,6 +182,9 @@ func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) 
 		if slo != nil && !slo.Met(st) {
 			good = false
 		}
+		if st.LLM != nil {
+			a.addLLM(st.LLM)
+		}
 		a.ttfb.add(ms(st.TTFB))
 		if st.HasFirstToken {
 			a.ttft.add(ms(st.FirstToken))
@@ -129,6 +202,15 @@ func (a *agg) add(res *types.ScenarioResult, e2e time.Duration, slo *types.SLO) 
 		}
 	}
 	a.e2e.add(ms(e2e))
+	if intended, ok := res.Others[types.OthersIntendedStart].(time.Time); ok && !intended.IsZero() && len(res.StepResults) > 0 {
+		if sent := res.StepResults[0].RequestTime; !sent.IsZero() {
+			lag := sent.Sub(intended)
+			if lag < 0 {
+				lag = 0
+			}
+			a.lag.add(ms(lag))
+		}
+	}
 	if good {
 		a.good++
 	}
@@ -144,7 +226,8 @@ func copyMap[K comparable](m map[K]int64) map[K]int64 {
 
 func (a *agg) metrics(withGoodput bool) Metrics {
 	m := Metrics{Iterations: a.iterations, Outcomes: copyMap(a.outcomes), StatusCodes: copyMap(a.codes),
-		TTFB: a.ttfb.percentiles(), TTFT: a.ttft.percentiles(), ITL: a.itl.percentiles(), E2E: a.e2e.percentiles()}
+		TTFB: a.ttfb.percentiles(), TTFT: a.ttft.percentiles(), ITL: a.itl.percentiles(), E2E: a.e2e.percentiles(),
+		Tokens: a.tokens(), SchedulingLag: a.lag.percentiles()}
 	if withGoodput {
 		g := &Goodput{Good: a.good, Iterations: a.iterations}
 		if a.iterations > 0 {

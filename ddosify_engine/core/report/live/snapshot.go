@@ -54,6 +54,25 @@ type Snapshot struct {
 
 	Goodput  Goodput
 	Outcomes Outcomes
+
+	// Set when a step has an llm config
+	Tokens *Tokens
+
+	// Milliseconds the first request went out after the schedule meant it to
+	SchedulingLag Latency
+
+	// The prompt's prefix cache setting: "busted", "shared N tokens", or "" when untouched
+	PrefixCache string
+}
+
+// Tokens is the answers' output. Unit is "tokens", or "chunks" when no answer could be counted in
+// tokens: then Output and PerSec count content events and TPOT is empty.
+type Tokens struct {
+	Unit   string
+	Output Latency // per answer, in Unit
+	TPOT   Latency // ms, tokens only
+	ITL    Latency // ms between content events
+	PerSec float64 // in Unit a second, all answers
 }
 
 // StageRef is the stage the test is in. Index is 0-based, Count is the number of stages.
@@ -168,6 +187,7 @@ func ThresholdsFromSLO(s *types.SLO) []Threshold {
 	add("first token", s.FirstTokenMs)
 	add("total", s.TotalMs)
 	add("max gap", s.MaxGapMs)
+	add("tpot", s.TPOTMs)
 	return t
 }
 

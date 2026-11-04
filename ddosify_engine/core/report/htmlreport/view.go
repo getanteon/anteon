@@ -23,6 +23,7 @@ package htmlreport
 import (
 	_ "embed"
 	"fmt"
+	"go.ddosify.com/ddosify/v2/core/llm"
 	"html/template"
 	"math"
 	"strings"
@@ -90,6 +91,61 @@ type pageView struct {
 	ITLName     string
 	GoodputText string
 	SLOText     []string
+
+	// The answers' output: Unit is tokens, or chunks when no answer could be counted in tokens
+	TokenUnit    string
+	TokenMetrics []metricRow
+	TokenFacts   []string
+}
+
+func fromLLM(d *llm.Dist) *report.Dist {
+	if d == nil {
+		return nil
+	}
+	return &report.Dist{Count: d.Count, Min: d.Min, Mean: d.Mean, P50: d.P50, P90: d.P90, P95: d.P95, P99: d.P99, Max: d.Max}
+}
+
+// tokenView never calls a chunk a token: without a token count it reports content events.
+func tokenView(r Report, v *pageView) {
+	s := r.LLM
+	if s == nil && r.Schedule == nil {
+		return
+	}
+	if s != nil {
+		out := s.Tokens
+		v.TokenUnit = "tokens"
+		if out == nil {
+			out, v.TokenUnit = s.Chunks, "chunks"
+		}
+		if out != nil {
+			v.TokenMetrics = append(v.TokenMetrics, metric("Output per answer ("+v.TokenUnit+")", fromLLM(out.Output)))
+			if v.TokenUnit == "tokens" {
+				v.TokenMetrics = append(v.TokenMetrics, metric("TPOT, ms per output token", fromLLM(out.TimePer)))
+			}
+			v.TokenMetrics = append(v.TokenMetrics, metric("Output "+v.TokenUnit+"/s per answer", fromLLM(out.OutputPerSec)))
+			v.TokenFacts = append(v.TokenFacts, fmt.Sprintf("%s %s over %d answers, %.1f %s/s from the first send to the last answer's end",
+				fmtInt(out.Total), v.TokenUnit, out.Requests, out.SystemPerSec, v.TokenUnit))
+			if v.TokenUnit == "chunks" {
+				v.TokenFacts = append(v.TokenFacts, "No answer carried a token count: these are content events, not tokens. Give a tokenizer.json to count tokens.")
+			}
+		}
+		v.TokenMetrics = append(v.TokenMetrics, metric("ITL, ms between content events", fromLLM(s.ITL)))
+		if s.InputTokens != nil {
+			v.TokenMetrics = append(v.TokenMetrics, metric("Input tokens", fromLLM(s.InputTokens)))
+		}
+	}
+	switch {
+	case r.PrefixCache != "":
+		v.TokenFacts = append(v.TokenFacts, "Prefix cache: "+r.PrefixCache+".")
+	default:
+		v.TokenFacts = append(v.TokenFacts, "Prefix cache: prompts sent as they are.")
+	}
+	if sc := r.Schedule; sc != nil && sc.Lag != nil {
+		v.TokenMetrics = append(v.TokenMetrics, metric("Scheduling lag, ms", fromLLM(sc.Lag)))
+		if sc.Saturated {
+			v.TokenFacts = append(v.TokenFacts, fmt.Sprintf("The client fell behind its schedule: p99 lag %.0f ms, %d iterations over 100 ms late.", sc.Lag.P99, sc.Late))
+		}
+	}
 }
 
 var outcomeOrder = []struct {
@@ -252,6 +308,7 @@ func buildView(r Report) pageView {
 	}
 
 	v.Charts = buildCharts(r, v.ITLName)
+	tokenView(r, &v)
 	return v
 }
 
