@@ -1296,6 +1296,10 @@ ddosify -config config_examples/sse_llm.json          # the whole run
 
 Count every request against the API's rate limits: two requests an iteration at 96 iterations a minute is 192 requests a minute on one key.
 
+### Tokens, the OpenAI preset, sessions and prefix caching
+
+[docs/llm.md](docs/llm.md) covers output tokens (from the server's usage, a Hugging Face `tokenizer.json`, or labelled as chunks), TPOT, ITL and tokens per second, the OpenAI compatible preset that needs only a URL, a key and a dataset, multi-turn sessions, cache-busting and shared prefixes, and the scheduling lag that shows a saturated client.
+
 ## Common Issues
 
 ### macOS Security Issue

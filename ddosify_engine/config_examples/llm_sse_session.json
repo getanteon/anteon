@@ -1,0 +1,81 @@
+{
+    "engine_mode": "distinct-user",
+    "load_spread": "even",
+    "manual_load": [
+        {"duration": 120, "count": 6, "name": "warm-up", "warmup": true},
+        {"duration": 300, "count": 30, "name": "6/min"},
+        {"duration": 300, "count": 60, "name": "12/min"},
+        {"duration": 300, "count": 120, "name": "24/min"}
+    ],
+    "slo": {"first_token_ms": 10000, "total_ms": 30000},
+    "env": {
+        "END_USER": "loadtest:{{_randomUUID}}"
+    },
+    "data": {
+        "sessions": {
+            "path": "config_examples/sessions.csv",
+            "vars": {"0": {"tag": "question"}, "1": {"tag": "follow_up"}},
+            "skip_first_line": true,
+            "order": "random"
+        }
+    },
+    "steps": [
+        {
+            "id": 1,
+            "name": "Create chat",
+            "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats",
+            "method": "POST",
+            "timeout": 30,
+            "headers": {
+                "Authorization": "Bearer {{$GURUBASE_API_KEY}}",
+                "Gurubase-End-User-Id": "{{END_USER}}"
+            },
+            "capture_env": {
+                "CHAT_ID": {"from": "body", "json_path": "id"}
+            }
+        },
+        {
+            "id": 2,
+            "name": "Turn 1",
+            "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats/{{CHAT_ID}}/messages",
+            "method": "POST",
+            "timeout": 330,
+            "sleep": "5000-15000",
+            "headers": {
+                "Authorization": "Bearer {{$GURUBASE_API_KEY}}",
+                "Gurubase-End-User-Id": "{{END_USER}}",
+                "Idempotency-Key": "{{_randomUUID}}",
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"
+            },
+            "payload": "{\"id\": \"{{CHAT_ID}}\", \"trigger\": \"submit-message\", \"message\": {\"id\": \"msg-1\", \"role\": \"user\", \"parts\": [{\"type\": \"text\", \"text\": \"{{data.sessions.question}}\"}]}}",
+            "stream": {"type": "sse"},
+            "llm": {
+                "tokenizer": "tokenizer.json",
+                "token_source": "tokenizer",
+                "prompt_path": "message.parts.0.text"
+            }
+        },
+        {
+            "id": 3,
+            "name": "Turn 2",
+            "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats/{{CHAT_ID}}/messages",
+            "method": "POST",
+            "timeout": 330,
+            "headers": {
+                "Authorization": "Bearer {{$GURUBASE_API_KEY}}",
+                "Gurubase-End-User-Id": "{{END_USER}}",
+                "Idempotency-Key": "{{_randomUUID}}",
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"
+            },
+            "payload": "{\"id\": \"{{CHAT_ID}}\", \"trigger\": \"submit-message\", \"message\": {\"id\": \"msg-2\", \"role\": \"user\", \"parts\": [{\"type\": \"text\", \"text\": \"{{data.sessions.follow_up}}\"}]}}",
+            "stream": {"type": "sse"},
+            "llm": {
+                "tokenizer": "tokenizer.json",
+                "token_source": "tokenizer",
+                "prompt_path": "message.parts.0.text"
+            }
+        }
+    ]
+}
