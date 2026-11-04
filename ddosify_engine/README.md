@@ -74,6 +74,12 @@
   - [Initial / Custom Cookies](#initial--custom-cookies)
   - [Cookie Capture](#cookie-capture)
   - [Cookie Assertion](#cookie-assertion)
+- [Streaming (SSE) and LLM Endpoints](#streaming-sse-and-llm-endpoints)
+  - [Stream config](#stream-config)
+  - [What is measured](#what-is-measured)
+  - [Goodput and SLO](#goodput-and-slo)
+  - [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages)
+  - [Example: an AI SDK chat API](#example-an-ai-sdk-chat-api)
 - [Common Issues](#common-issues)
   - [macOS Security Issue](#macos-security-issue)
   - [OS Limit - Too Many Open Files](#os-limit---too-many-open-files)
@@ -107,6 +113,8 @@
 - ✅ **[Success Criteria](#success-criteria-pass--fail)** - Set the success criteria for your test.
 
 - ✅ **[Cookies](#cookies)** - Pass cookies through steps and set initial cookies if you want.
+
+- ✅ **[Streaming (SSE) and LLM Endpoints](#streaming-sse-and-llm-endpoints)** - Time to first token, gaps between events, goodput against an SLO, and a report per load stage.
 
 - ✅ **Widely Used Protocols** - Currently supporting _HTTP, HTTPS, HTTP/2_. Other protocols are on the way.
 
@@ -321,6 +329,7 @@ The features you can use by config file:
 - Assertions
 - Cookies
 - Custom load type creation
+- Streaming (SSE) responses, goodput and per-stage reports
 - Payload from a file
 - Multipart/form-data payload
 - Extra connection configuration
@@ -358,6 +367,16 @@ There is an example config file at [config_examples/config.json](https://github.
       {"duration": 7, "count": 20}
   ]
   ```
+
+  A stage can also carry a `name` and `"warmup": true`. Once any stage does, the report has a row per stage, and a warm-up stage is left out of the stream summary, the outcomes and the goodput. See [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages).
+
+- `load_spread` (_optional_)
+
+  How iterations are placed in time. `front` (default) is the behaviour Ddosify always had: each second's share is started at the first ticks of that second, and with fewer iterations than seconds, in the first seconds of the test or `manual_load` stage. `even` starts them at even intervals across the stage instead: 30 iterations over 300 seconds start one every 10 seconds. Use `even` for a low arrival rate, such as an LLM endpoint at a few questions a minute.
+
+- `slo` (_optional_)
+
+  Thresholds in milliseconds for the goodput, the share of iterations that succeeded and whose streams met every threshold. Keys: `ttfb_ms`, `first_event_ms`, `first_token_ms`, `total_ms`, `max_gap_ms`. See [Goodput and SLO](#goodput-and-slo).
 
 - `proxy` (_optional_)
 
@@ -601,6 +620,14 @@ There is an example config file at [config_examples/config.json](https://github.
             ]
         },
     ]
+    ```
+
+  - `stream` (_optional_)
+
+    Reads the response as server-sent events instead of reading it whole, and measures the stream. A `text/event-stream` response is read this way even without it. See [Stream config](#stream-config).
+
+    ```json
+    "stream": {"type": "sse"}
     ```
 
   - `sleep` (_optional_) <a name="#sleep"></a>
@@ -1174,6 +1201,100 @@ Following fields are available for cookie assertion:
 
 - `cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")` is a valid assertion expression. It checks if the cookie named `test` has an expiration date before `Thu, 01 Jan 1990 00:00:00 GMT`.
 - `cookies.test.path == \"/login\"` is another valid assertion expression. It checks if the cookie named `test` has a path value equal to `/login`.
+
+## Streaming (SSE) and LLM Endpoints
+
+An LLM API answers with a stream: the headers come at once, the first word comes seconds later, and the answer ends tens of seconds after that. A plain response time says none of this. A step with `stream` reads the body as [server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html) as it arrives and records, per request, when each event came.
+
+### Stream config
+
+```json
+"stream": {
+    "type": "sse",
+    "first_token": {"json_path": "type", "equals": "text-delta"},
+    "error": {"json_path": "type", "equals": "error"},
+    "done": "[DONE]",
+    "max_body_bytes": 1048576
+}
+```
+
+| Field            | Description                                                                                                                                                                                                                          | Default                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| `type`           | `sse`, the only stream type.                                                                                                                                                                                                        | `sse`                             |
+| `first_token`    | The event that counts as the first token. Fields: `event` (the SSE `event:` name), `json_path` (a [gjson](https://github.com/tidwall/gjson) path into the event's data), `equals` (the value at `json_path`), `regexp` (matched against the value at `json_path`, or the whole data). Every field given has to match. `json_path` alone needs a value that is not empty. `{}` makes the first event the first token. | `type` equals `text-delta`, the [AI SDK UI message stream](https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol)'s first word |
+| `error`          | An event that reports a failure inside a `200` stream. Same fields as `first_token`. A stream that carries one is not counted as goodput.                                                                                          | `type` equals `error`             |
+| `done`           | The data that ends the stream. Reading stops there. `""` reads until the server closes.                                                                                                                                         | `[DONE]`                          |
+| `max_body_bytes` | The body is kept only when an assertion, a capture or debug mode needs it, and then up to this many bytes. `0` keeps all of it.                                                                                                | `1048576`                         |
+
+For an OpenAI compatible chat completions endpoint use `"first_token": {"json_path": "choices.0.delta.content"}`.
+
+When a step has no `stream` but the response is `text/event-stream`, it is read as a stream with the defaults above and no body cap, so assertions and captures see the whole body as before. A step with `stream` that gets an error status, such as a `429` problem document, reads it whole and records no stream. A stream is read until `done`, the end of the body or the step's `timeout`, which covers the whole stream: set it above the longest answer.
+
+### What is measured
+
+Every time is from the moment the request was sent.
+
+| Metric        | Meaning                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `ttfb`        | First byte of the response, the status line                                                             |
+| `first_event` | First event dispatched. Comments such as `: keepalive` are not events                                   |
+| `first_token` | First event matching `first_token`                                                                      |
+| `total`       | End of the stream                                                                                       |
+| `gap_max`, `gap_p50`, `gap_p95` | The largest, median and 95th percentile time between consecutive events of one stream |
+| `events`      | Events in the stream, `done` excluded                                                                   |
+| ends          | `done` (the done marker came), `closed` (the server closed between events), `cut` (the connection broke, or closed in the middle of an event), `timeout` |
+
+The parser follows the WHATWG event stream rules: `LF`, `CR` and `CRLF` line ends, a line or a `CRLF` split across reads, multi-line `data:` joined with a newline, comments, a leading byte order mark. Memory per stream is bounded: one event's data is cut at 1 MiB, and at most 4,096 gaps are kept for its percentiles.
+
+The report gives each metric's p50, p90, p95, p99, max and mean over all streams of a step, and counts every step result as one outcome: `ok`, `rate_limited_429`, `unavailable_503`, `server_error_5xx`, `client_error_4xx`, `timeout`, `network_error`, `stream_cut` or `stream_error_event`. With `-o stdout-json` they are under `steps.<id>.stream` and `steps.<id>.outcomes`. Percentiles are exact up to 100,000 samples per metric and from a uniform sample beyond. These sections appear only once a test has a stream, an `slo` or a named stage, so the output of other tests does not change. The step's existing `duration` fields still end when the headers arrive; the stream's `total` is the one that includes the body.
+
+Run one iteration with `-debug` to see one stream's measurements next to the request and response.
+
+### Goodput and SLO
+
+```json
+"slo": {"first_token_ms": 10000, "total_ms": 30000}
+```
+
+An iteration is good when every step's outcome is `ok`, no assertion failed, and every stream ended cleanly, carried no error event and met every threshold given. A threshold left out is not checked; a stream that never sent its first token misses `first_token_ms`. The report prints `Goodput: good / iterations (%)`, warm-up excluded, and `goodput` in the JSON output.
+
+| Key              | Threshold on      |
+| ---------------- | ----------------- |
+| `ttfb_ms`        | `ttfb`            |
+| `first_event_ms` | `first_event`     |
+| `first_token_ms` | `first_token`     |
+| `total_ms`       | `total`           |
+| `max_gap_ms`     | `gap_max`         |
+
+### Stepped arrival rate and stages
+
+Ddosify starts iterations on a schedule, whatever the earlier ones are doing, so `manual_load` is an arrival rate. With `load_spread: even`, a stage of `count` iterations over `duration` seconds starts one every `duration / count` seconds. Two minutes of warm-up, then 6, 12, 24, 48 and 96 iterations a minute for five minutes each:
+
+```json
+"load_spread": "even",
+"manual_load": [
+    {"duration": 120, "count": 6,   "name": "warm-up", "warmup": true},
+    {"duration": 300, "count": 30,  "name": "6/min"},
+    {"duration": 300, "count": 60,  "name": "12/min"},
+    {"duration": 300, "count": 120, "name": "24/min"},
+    {"duration": 300, "count": 240, "name": "48/min"},
+    {"duration": 300, "count": 480, "name": "96/min"}
+]
+```
+
+An iteration belongs to the stage it started in. The report has one row per stage: iterations, iterations that succeeded, goodput, `429`, `503`, other `5xx`, timeouts, network errors and cut streams, and first token and total p50 and p95. The stream summary, the outcomes and the goodput of the whole test leave the warm-up out. With `-o stdout-json` each stage is in `stages`, with its full stream summary.
+
+### Example: an AI SDK chat API
+
+[config_examples/sse_llm.json](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/sse_llm.json) creates a chat, captures its id and asks a question from [a CSV](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/questions.csv) in the same iteration. Each iteration is one person: `"END_USER": "loadtest:{{_randomUUID}}"` in `env` is generated once per iteration and sent by both steps, so a per end user rate limit sees a new person every time, and `{{_randomUUID}}` in the `Idempotency-Key` header is new on every request. A question is put into the JSON body as `"{{data.questions.text}}"`, quoted, so Ddosify escapes it as a JSON string; UTF-8 text such as Turkish passes through unchanged.
+
+```bash
+export GURUBASE_URL=https://gurubase.example.internal GURU_ID=... GURUBASE_API_KEY=gbk_...
+ddosify -config config_examples/sse_llm.json -debug   # one iteration, verbose
+ddosify -config config_examples/sse_llm.json          # the whole run
+```
+
+Count every request against the API's rate limits: two requests an iteration at 96 iterations a minute is 192 requests a minute on one key.
 
 ## Common Issues
 
