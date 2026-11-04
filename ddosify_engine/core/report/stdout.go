@@ -41,7 +41,19 @@ import (
 
 const OutputTypeStdout = "stdout"
 
-var out = colorable.NewColorableStdout()
+// out takes the report, the primary output; errOut takes progress and banners.
+var out io.Writer = colorable.NewColorableStdout()
+var errOut io.Writer = colorable.NewColorableStderr()
+var progress = true
+
+// SetOutputs sends the report to stdout, and banners and progress lines to stderr.
+// showProgress false prints no live progress lines, for a pipe or while a TUI owns the terminal.
+func SetOutputs(stdout, stderr io.Writer, showProgress bool) {
+	out, errOut, progress = stdout, stderr, showProgress
+}
+
+var cyan = color.New(color.FgCyan).SprintFunc()
+var hiCyan = color.New(color.FgHiCyan).SprintFunc()
 
 func init() {
 	AvailableOutputServices[OutputTypeStdout] = &stdout{}
@@ -72,9 +84,9 @@ func (s *stdout) Init(debug bool, samplingRate int) (err error) {
 	s.debug = debug
 	s.samplingRate = samplingRate
 
-	color.Cyan("%s  Initializing... \n", emoji.Gear)
+	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s  Initializing... \n", emoji.Gear)))
 	if s.debug {
-		color.Cyan("%s Running in debug mode, 1 iteration will be played... \n", emoji.Bug)
+		fmt.Fprint(errOut, cyan(fmt.Sprintf("%s Running in debug mode, 1 iteration will be played... \n", emoji.Bug)))
 	}
 	return
 }
@@ -167,14 +179,14 @@ func (s *stdout) DoneChan() <-chan bool {
 }
 
 func (s *stdout) realTimePrintStart() {
-	if util.IsSystemInTestMode() {
+	if util.IsSystemInTestMode() || !progress {
 		return
 	}
 
 	s.printTicker = time.NewTicker(realTimePrintInterval)
 
-	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
-	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s Engine fired. \n\n", emoji.Fire)))
+	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s CTRL+C to gracefully stop.\n", emoji.StopSign)))
 
 	for range s.printTicker.C {
 		go func() {
@@ -186,7 +198,7 @@ func (s *stdout) realTimePrintStart() {
 }
 
 func (s *stdout) liveResultPrint() {
-	fmt.Fprintf(out, "%s %s %s\n",
+	fmt.Fprintf(errOut, "%s %s %s\n",
 		green(fmt.Sprintf("%s  Successful Run: %-6d %3d%% %5s",
 			emoji.CheckMark, s.result.SuccessCount, s.result.successPercentage(), "")),
 		red(fmt.Sprintf("%s Failed Run: %-6d %3d%% %5s",
@@ -195,7 +207,7 @@ func (s *stdout) liveResultPrint() {
 }
 
 func (s *stdout) realTimePrintStop() {
-	if util.IsSystemInTestMode() {
+	if util.IsSystemInTestMode() || !progress || s.printTicker == nil {
 		return
 	}
 	// Last print.
@@ -204,8 +216,8 @@ func (s *stdout) realTimePrintStop() {
 }
 
 func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
-	color.Cyan("%s Engine fired. \n\n", emoji.Fire)
-	color.Cyan("%s CTRL+C to gracefully stop.\n", emoji.StopSign)
+	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s Engine fired. \n\n", emoji.Fire)))
+	fmt.Fprint(errOut, cyan(fmt.Sprintf("%s CTRL+C to gracefully stop.\n", emoji.StopSign)))
 
 	for r := range input { // only 1 ScenarioResult expected
 		for _, sr := range r.StepResults {
@@ -213,8 +225,8 @@ func (s *stdout) printInDebugMode(input chan *types.ScenarioResult) {
 
 			b := strings.Builder{}
 			w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
-			color.Cyan("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)
-			color.Cyan("-------------------------------------")
+			fmt.Fprint(out, cyan(fmt.Sprintf("\n\nSTEP (%d) %-5s\n", verboseInfo.StepId, verboseInfo.StepName)))
+			fmt.Fprint(out, cyan("-------------------------------------"))
 			if len(verboseInfo.Envs) > 0 {
 				fmt.Fprintf(w, "%s\n", blue("- Environment Variables"))
 				for eKey, eVal := range verboseInfo.Envs {
@@ -368,9 +380,6 @@ func printBody(w io.Writer, contentType string, body interface{}) {
 
 // TODO:REFACTOR use template
 func (s *stdout) printDetails() {
-	color.Set(color.FgHiCyan)
-	defer color.Unset()
-
 	b := strings.Builder{}
 	w := tabwriter.NewWriter(&b, 0, 0, 4, ' ', 0)
 
@@ -471,7 +480,7 @@ func (s *stdout) printDetails() {
 	}
 
 	w.Flush()
-	fmt.Fprint(out, b.String())
+	fmt.Fprint(out, hiCyan(b.String()))
 }
 
 var outcomeOrder = []string{OutcomeOK, OutcomeRateLimited, OutcomeUnavailable, OutcomeServerError,

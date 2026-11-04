@@ -26,6 +26,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go.ddosify.com/ddosify/v2/cli"
 	"log"
 	"os"
 	"runtime"
@@ -268,8 +269,6 @@ func BenchmarkEngines(t *testing.B) {
 			var memPercents []float32
 			var cpuStats []*cpu.TimesStat
 
-			*configPath = conf.path
-			run = tempRun
 			doneChan := make(chan struct{}, 1)
 			go func() {
 				ticker := time.NewTicker(100 * time.Millisecond)
@@ -288,7 +287,8 @@ func BenchmarkEngines(t *testing.B) {
 					}
 				}
 			}()
-			start()
+			cli.Main([]string{"run", "--config", conf.path, "--ui", "plain"}, cli.BuildInfo{},
+				cli.Streams{In: os.Stdin, Out: os.Stdout, Err: os.Stderr})
 			doneChan <- struct{}{}
 
 			lastCpuStat := cpuStats[len(cpuStats)-1]

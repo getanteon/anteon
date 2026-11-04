@@ -220,7 +220,7 @@ func (s ScenarioStepResultSummary) MarshalJSON() ([]byte, error) {
 }
 
 var printJson = func(j []byte) {
-	fmt.Println(string(j))
+	fmt.Fprintln(out, string(j))
 }
 
 var strKeyToJsonKey = map[string]string{
