@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"reflect"
@@ -343,11 +344,18 @@ func TestCreateHammerPayload(t *testing.T) {
 
 func TestCreateHammerMultipartPayload(t *testing.T) {
 	t.Parallel()
-	jsonReader, _ := NewConfigReader(readConfigFile("config_testdata/config_multipart_payload.json"), ConfigTypeJson)
+	// serve the remote file locally, so the test does not depend on a third party's site
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "config_testdata/test_img.svg")
+	}))
+	defer remote.Close()
+	conf := strings.Replace(string(readConfigFile("config_testdata/config_multipart_payload.json")),
+		"https://upload.wikimedia.org/wikipedia/commons/b/bd/Test.svg", remote.URL+"/Test.svg", 1)
+	jsonReader, _ := NewConfigReader([]byte(conf), ConfigTypeJson)
 
 	h, err := jsonReader.CreateHammer()
 	if err != nil {
-		t.Errorf("TestCreateHammerMultipartPayload error occurred: %v", err)
+		t.Fatalf("TestCreateHammerMultipartPayload error occurred: %v", err)
 	}
 	steps := h.Scenario.Steps
 

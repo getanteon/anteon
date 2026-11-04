@@ -602,7 +602,7 @@ func TestCreateRequestersErrorOnRequesterInit(t *testing.T) {
 	}
 }
 
-func TestnewSleeper(t *testing.T) {
+func TestNewSleeper(t *testing.T) {
 	t.Parallel()
 
 	sleepRange := "300-500"

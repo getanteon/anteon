@@ -204,7 +204,8 @@ func TestSetCookiesSecure(t *testing.T) {
 
 	// expect secure cookie to be sent only to secure host
 
-	if httpServerGotCookie != nil {
+	// Go 1.24 and later treat a loopback host as a secure origin, as browsers do, and send it secure cookies
+	if httpServerGotCookie != nil && !jarSendsSecureCookiesToLoopback() {
 		t.Errorf("TestSetCookiesSecure, expected no cookie to be sent to http host, got %s", httpServerGotCookie.Value)
 	}
 
@@ -251,4 +252,11 @@ func TestPutInitialCookiesInJarFactory(t *testing.T) {
 	if cookies[0].Value != "test" {
 		t.Errorf("TestPutInitialCookiesInJarFactory, expected cookie value 'test', got %s", cookies[0].Value)
 	}
+}
+
+func jarSendsSecureCookiesToLoopback() bool {
+	jar, _ := cookiejar.New(nil)
+	u, _ := url.Parse("http://127.0.0.1/")
+	jar.SetCookies(u, []*http.Cookie{{Name: "probe", Value: "1", Secure: true}})
+	return len(jar.Cookies(u)) > 0
 }
