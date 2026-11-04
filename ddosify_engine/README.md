@@ -303,7 +303,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--preset` | Applies a registered config preset; repeat it | - |
 | `--html` | Also writes an HTML report to this file, when the build has the HTML report | - |
 | `--observer` | Adds a registered live observer, `name` or `name=arg` | - |
-| `--ui` | `auto` shows the live TUI on a terminal when the build has it, `tui` requires it, `plain` never | `auto` |
+| `--ui` | `auto` shows the live TUI on a terminal and ndjson snapshots when stdout is not a terminal or with `--json`, when the build has them; `tui`, `ndjson` or `plain` choose one. `TERM=dumb` never gets the TUI | `auto` |
 | `--no-color` | No colors; `NO_COLOR` and `TERM=dumb` do the same | `false` |
 
 **Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config.

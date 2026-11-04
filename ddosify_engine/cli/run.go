@@ -131,7 +131,7 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.StringArrayVar(&o.presets, "preset", nil, fmt.Sprintf("apply a config preset; repeat it (available: %s)", strings.Join(presetNames(), ", ")))
 	f.StringVar(&o.html, "html", "", "also write an HTML report to this file")
 	f.StringArrayVar(&o.observers, "observer", nil, "add a live observer, name or name=arg")
-	f.StringVar(&o.ui, "ui", "auto", "auto (the TUI on a terminal when it is built in), tui or plain")
+	f.StringVar(&o.ui, "ui", "auto", "auto (the TUI on a terminal, ndjson snapshots in a pipe or with --json, when built in), tui, ndjson or plain")
 	f.BoolVar(&o.noColor, "no-color", false, "no colors; NO_COLOR and TERM=dumb do the same")
 	return cmd
 }
@@ -186,7 +186,10 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 		fmt.Fprintln(s.Err, "Warning: TLS certificates are not verified (--insecure).")
 	}
 
-	observers, ownsTerminal, err := buildObservers(o, s, color)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	observers, ownsTerminal, err := buildObservers(o, s, color, stop)
 	if err != nil {
 		return usageErr(err)
 	}
@@ -204,9 +207,6 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 		return usageErr(err)
 	}
 	es.Observers = observers
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	engine, err := core.NewEngine(ctx, h, es)
 	if err != nil {
@@ -229,21 +229,36 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 	return nil
 }
 
-func buildObservers(o *runOptions, s Streams, color bool) ([]live.Observer, bool, error) {
+// buildObservers picks the live view: the TUI on a full terminal, ndjson snapshots when stdout
+// is not a terminal or with --json, then --html and every --observer.
+func buildObservers(o *runOptions, s Streams, color bool, stop func()) ([]live.Observer, bool, error) {
 	interactive := isTerminal(s.Out) && isTerminal(s.In)
-	opts := live.Options{Stdout: s.Out, Stderr: s.Err, Color: color, Interactive: interactive}
+	dumb := os.Getenv("TERM") == "dumb"
+	opts := live.Options{Stdout: s.Out, Stderr: s.Err, Color: color, Interactive: interactive && !dumb, Stop: stop}
+	registered := func(name string) bool { _, ok := live.Lookup(name); return ok }
 
 	var names, argsOf []string
+	add := func(name, arg string) { names, argsOf = append(names, name), append(argsOf, arg) }
 	switch o.ui {
 	case "plain":
+	case "ndjson":
+		add("ndjson", "")
 	case "tui":
-		names, argsOf = append(names, "tui"), append(argsOf, "")
+		if dumb {
+			fmt.Fprintln(s.Err, "Warning: TERM=dumb has no full-screen TUI; printing plain output.")
+			break
+		}
+		add("tui", "")
 	case "auto":
-		if _, ok := live.Lookup("tui"); ok && interactive && !o.json && !o.debug {
-			names, argsOf = append(names, "tui"), append(argsOf, "")
+		switch {
+		case o.debug:
+		case interactive && !dumb && !o.json && registered("tui"):
+			add("tui", "")
+		case (!isTerminal(s.Out) || o.json) && registered("ndjson"):
+			add("ndjson", "")
 		}
 	default:
-		return nil, false, fmt.Errorf("--ui must be auto, tui or plain, got %q", o.ui)
+		return nil, false, fmt.Errorf("--ui must be auto, tui, ndjson or plain, got %q", o.ui)
 	}
 	if o.html != "" {
 		names, argsOf = append(names, "html"), append(argsOf, o.html)

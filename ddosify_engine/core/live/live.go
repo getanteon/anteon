@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"go.ddosify.com/ddosify/v2/core/report"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 // Interval between two snapshots.
@@ -59,6 +60,10 @@ type Options struct {
 
 	// Arg is the observer's argument: the path of --html, or what follows "=" in --observer name=arg.
 	Arg string
+
+	// Stop ends the test gracefully, as CTRL+C does: no new iterations, the running ones finish,
+	// then Finish is called. Safe to call more than once and from any goroutine.
+	Stop func()
 }
 
 // Factory builds an observer.
@@ -75,11 +80,16 @@ var (
 	factories = map[string]Factory{}
 )
 
-// Register makes an observer available to the CLI under name: "tui" for the live view,
-// "html" for --html <path>, anything else for --observer name[=arg].
+// Register makes an observer available to the CLI under name: "tui" for the live view on a
+// terminal, "ndjson" for snapshots when stdout is not a terminal or with --json, "html" for
+// --html <path>, anything else for --observer name[=arg]. A nil Factory unregisters name.
 func Register(name string, f Factory) {
 	regMu.Lock()
 	defer regMu.Unlock()
+	if f == nil {
+		delete(factories, name)
+		return
+	}
 	factories[name] = f
 }
 
@@ -142,6 +152,9 @@ type Plan struct {
 
 	// Planned iterations per 100 ms tick, from which TargetRPS is read
 	Schedule []int `json:"schedule"`
+
+	// The thresholds, and the goodput target in SLO.GoodputPerc; nil without an slo
+	SLO *types.SLO `json:"slo,omitempty"`
 }
 
 // Percentiles in milliseconds, or in units for an Extra metric such as output tokens.

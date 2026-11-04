@@ -202,6 +202,7 @@ func (e *engine) plan() live.Plan {
 		LoadType:   e.hammer.LoadType,
 		EngineMode: e.hammer.EngineMode,
 		Schedule:   append([]int(nil), e.reqCountArr...),
+		SLO:        e.hammer.SLO,
 	}
 	for _, ts := range e.stages {
 		p.Stages = append(p.Stages, live.Stage{Index: ts.stage.Index, Name: ts.stage.Name, Warmup: ts.stage.Warmup,

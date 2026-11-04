@@ -75,7 +75,7 @@ func (e *exitError) Error() string {
 
 func (e *exitError) Unwrap() error { return e.err }
 
-func usageErr(err error) error  { return &exitError{code: ExitUsage, err: err} }
+func usageErr(err error) error   { return &exitError{code: ExitUsage, err: err} }
 func runtimeErr(err error) error { return &exitError{code: ExitError, err: err} }
 
 // Main runs the command line and returns the exit code.
