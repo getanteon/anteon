@@ -24,9 +24,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
 	"sync/atomic"
+
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // ChatMessage is an OpenAI chat message.
@@ -42,11 +43,10 @@ func (s *Step) pickSession(envs map[string]interface{}, p *Prepared) int {
 	if v, ok := envs[VarSession].(int); ok && v >= 0 && v < len(c.Sessions) {
 		return v
 	}
-	var idx int
+	seq := uint64(atomic.AddInt64(&sessionSeq, 1) - 1)
+	idx := int(seq % uint64(len(c.Sessions)))
 	if c.Random {
-		idx = rand.Intn(len(c.Sessions))
-	} else {
-		idx = int((atomic.AddInt64(&sessionSeq, 1) - 1) % int64(len(c.Sessions)))
+		idx = int(util.SeedMix(c.Seed, seq, uint64(len(c.Sessions))) % uint64(len(c.Sessions)))
 	}
 	p.Vars[VarSession] = idx
 	return idx

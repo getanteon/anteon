@@ -80,3 +80,34 @@ func TestLLMExamples(t *testing.T) {
 		}
 	}
 }
+
+func TestSessionAndScheduleFields(t *testing.T) {
+	read := func(conf string) types.Hammer {
+		t.Helper()
+		c, err := NewConfigReader([]byte(conf), ConfigTypeJson)
+		if err != nil {
+			t.Fatal(err)
+		}
+		h, err := c.CreateHammer()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return h
+	}
+	h := read(`{"steps": [{"id": 1, "url": "https://example.com"}]}`)
+	if h.Seed != types.DefaultSeed || h.RequestLog || h.StopOnFailure || h.Scenario.Steps[0].SkipIfEmpty != "" {
+		t.Errorf("defaults: %+v", h)
+	}
+	h = read(`{"seed": 0, "load_spread": "Poisson", "request_log": true, "stop_on_failure": true, "env": {"T2": ""},
+		"steps": [{"id": 1, "url": "https://example.com", "skip_if_empty": "{{T2}}"}]}`)
+	if h.Seed != 0 || h.LoadSpread != types.LoadSpreadPoisson || !h.RequestLog || !h.StopOnFailure || h.Scenario.Steps[0].SkipIfEmpty != "{{T2}}" {
+		t.Errorf("fields: %+v", h)
+	}
+	if err := h.Validate(); err != nil {
+		t.Error(err)
+	}
+	h = read(`{"steps": [{"id": 1, "url": "https://example.com", "skip_if_empty": "{{UNDEFINED}}"}]}`)
+	if err := h.Validate(); err == nil {
+		t.Error("skip_if_empty with an undefined variable should be refused")
+	}
+}

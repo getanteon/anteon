@@ -106,7 +106,7 @@ A dataset is JSONL (`{"prompt": ...}`, `{"text": ...}`, `{"turns": [...]}`, Open
 | `capture_text` | A variable that gets the answer's text |
 | `capture` | Variables from the first event holding a gjson path, such as a run id in the AI SDK `start` event |
 
-A step with `llm` and no `stream` gets the default stream config. [config_examples/llm_sse_session.json](../config_examples/llm_sse_session.json) is a two turn Gurubase session.
+A step with `llm` and no `stream` gets the default stream config. [config_examples/llm_sse_session.json](../config_examples/llm_sse_session.json) is a Gurubase session of one or two turns, with Poisson arrivals.
 
 ## Multi-turn sessions
 
@@ -115,6 +115,20 @@ An iteration is a session: its steps run one after another, a step's `sleep` is 
 - **The preset** with `"turns": N` makes N steps. Each turn sends the earlier turns' user and assistant messages, then its own: turn k of a dataset row with turns is that turn; a row with fewer turns borrows the first turn of the rows after it.
 - **An API that keeps the history**, such as Gurubase, carries an id: capture the chat id from the first response (`capture_env`) or from the stream (`llm.capture`), and use it in the next URL.
 - **An API that wants the history in the body** gets the answer from `capture_text`, put into the next payload as `"{{ANSWER}}"`, quoted, so it is escaped as a JSON string.
+
+### Sessions of different lengths
+
+A dataset whose rows have one, two or three turns is one step per turn, each later turn with `"skip_if_empty"`:
+
+```json
+{"id": 3, "name": "Turn 2", "skip_if_empty": "{{data.sessions.turn2}}", ...}
+```
+
+The template is rendered with the iteration's variables, as `url` and `payload` are. When the result is blank after trimming, the step is not sent, its `sleep` is not applied, and it is counted nowhere: not a failure, not a zero latency sample in the steps, streams, tokens, goodput or stages. The steps after it still run, so each later turn is skipped by its own field. A variable that is not defined (a capture that failed) counts as blank.
+
+`"stop_on_failure": true` at the top level ends the iteration at its first step whose outcome is not `ok` (a 4xx or 5xx, a timeout, a network error, a cut stream or a stream error event), so a follow-up is never asked without the answer it follows. The steps left out are treated as skipped ones. Off by default.
+
+A step's `sleep`, the think time, is applied only when a later step of the iteration is sent. A one-turn row does not wait after its only turn and stops counting as in flight when its answer ends.
 
 ## Prefix caching: why repeated prompts inflate results
 
@@ -125,11 +139,48 @@ vLLM's automatic prefix caching and SGLang's radix cache keep the KV of prompts 
 
 What fits depends on the question. Sizing a card for real users: `cache_bust`, plus a shared prefix the size of the real system prompt. Measuring the cache itself: two runs, with and without. An application that puts its own system prompt and documents first (Gurubase) already varies the prompt; a marker in the user's question changes the question the application reads, so leave `cache_bust` off there unless the answers are not being judged.
 
+## Poisson arrivals and the seed
+
+`"load_spread": "poisson"` starts each `manual_load` stage's `count` iterations at times drawn uniformly at random over its `duration` and sorted: a Poisson process conditioned on its count. The gaps between arrivals are exponential, as with independent users, yet each stage starts exactly `count` iterations, so the stages of two runs stay comparable. `even` starts them at equal gaps, which never makes two users arrive together; `front` puts each second's share at its start.
+
+```json
+"load_spread": "poisson",
+"seed": 1,
+"manual_load": [
+    {"duration": 120, "count": 6, "name": "warm-up", "warmup": true},
+    {"duration": 300, "count": 60, "name": "12/min"}
+]
+```
+
+Without `manual_load`, a `linear` load is one stage of `iteration_count` over `duration`; `incremental` and `waved` do not take `poisson`.
+
+`"seed"` (default `1`, `--seed` on the command line) seeds each stage's draw, mixed with the stage's index so stages are independent, and the choice of rows of a data set read in `random` order, and of the preset's `"order": "random"`. The same config and seed start iterations at the same offsets and use the same rows. Which row an iteration gets follows its index, so the set of rows a run uses repeats exactly; with many iterations starting together, which of them takes which index can differ. Think time ranges, `{{_random...}}` variables and the `cache_bust` marker stay random on every run.
+
 ## Coordinated omission: scheduling lag
 
 Ddosify's arrival rate is an open model: an iteration starts on schedule whether or not the earlier ones have answered. When the client itself falls behind (CPU, garbage collection, waiting for a pooled client) the first request goes out late. The server then sees a lower rate than asked, and every latency leaves out the wait: coordinated omission.
 
-Each iteration records when the schedule meant it to start and when its first request was sent. The report prints the lag's p50, p99 and max and the iterations more than 100 ms late (`schedule` in the JSON), and warns when the p99 is above 100 ms: the numbers of that run describe a slower test than the one configured. Run from a bigger machine, or split the load.
+Each iteration records when the schedule meant it to start (with `poisson`, its drawn time) and when its first request was sent. The report prints the lag's p50, p99 and max and the iterations more than 100 ms late (`schedule` in the JSON), and warns when the p99 is above 100 ms: the numbers of that run describe a slower test than the one configured. Run from a bigger machine, or split the load.
+
+## Per-request records
+
+`"request_log": true` with `-o stdout-json` (or `--json`) writes one line per sent request on stdout, as its iteration ends, before the report line:
+
+```json
+{"type":"request","time":"2026-11-06T12:00:02.002Z","stage":"12/min","stage_index":1,"warmup":false,"iteration":7,"step_id":2,"step_name":"Turn 1","intended_start":"2026-11-06T12:00:00Z","sent":"2026-11-06T12:00:00.002Z","status_code":200,"outcome":"ok","first_token_ms":300.000,"total_ms":2000.000,"output_tokens":101,"input_tokens":42}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `time`, `sent` | When the response ended and when the request was sent, RFC 3339 in UTC |
+| `intended_start` | When the schedule meant the iteration to start |
+| `stage`, `stage_index`, `warmup` | The `manual_load` stage, when stages are named or a warm-up, as in the report |
+| `iteration` | The iteration's 0 based index, the one that picks its data row |
+| `outcome` | `ok`, `unavailable_503`, `rate_limited_429`, `server_error_5xx`, `client_error_4xx`, `timeout`, `network_error`, `stream_cut`, `stream_error_event` or `interrupted`, as the report counts them |
+| `first_token_ms`, `total_ms` | The stream's first token, and the whole request |
+| `output_tokens`, `input_tokens` | As counted above; `output_chunks` instead when the output was counted in content events |
+
+A field that does not apply is left out. A skipped step has no line. The lines and the report are written by the report's one writer, a whole line at a time, so they never interleave; the live progress lines go to stderr. With another output the setting is ignored with a warning.
 
 ## From the command line
 

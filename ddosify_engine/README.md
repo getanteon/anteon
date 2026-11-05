@@ -287,7 +287,8 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-n`, `--iterations` | Total iteration count | `100` |
 | `-d`, `--duration` | Test duration in seconds | `10` |
 | `-l`, `--load-type` | [Load type](#load-types): `linear`, `incremental`, `waved` | `linear` |
-| `--load-spread` | `front` or `even`, see `load_spread` | `front` |
+| `--load-spread` | `front`, `even` or `poisson`, see `load_spread` | `front` |
+| `--seed` | Seeds the `poisson` arrivals and the random data rows, see `seed` | `1` |
 | `--engine-mode` | `ddosify`, `distinct-user`, `repeated-user` | `ddosify` |
 | `-m`, `--method` | Request method: _GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS_ | `GET` |
 | `-b`, `--body` | Request body | - |
@@ -414,7 +415,19 @@ There is an example config file at [config_examples/config.json](https://github.
 
 - `load_spread` (_optional_)
 
-  How iterations are placed in time. `front` (default) is the behaviour Ddosify always had: each second's share is started at the first ticks of that second, and with fewer iterations than seconds, in the first seconds of the test or `manual_load` stage. `even` starts them at even intervals across the stage instead: 30 iterations over 300 seconds start one every 10 seconds. Use `even` for a low arrival rate, such as an LLM endpoint at a few questions a minute.
+  How iterations are placed in time. `front` (default) is the behaviour Ddosify always had: each second's share is started at the first ticks of that second, and with fewer iterations than seconds, in the first seconds of the test or `manual_load` stage. `even` starts them at even intervals across the stage instead: 30 iterations over 300 seconds start one every 10 seconds. Use `even` for a low arrival rate, such as an LLM endpoint at a few questions a minute. `poisson` starts exactly `count` iterations in each stage at random times, as independent users arrive: see [Poisson arrivals](docs/llm.md#poisson-arrivals-and-the-seed).
+
+- `seed` (_optional_)
+
+  An integer that seeds the `poisson` arrivals and the rows of a data set read in `random` order, so a run can be repeated. Default `1`.
+
+- `stop_on_failure` (_optional_)
+
+  `true` ends an iteration at its first step whose outcome is not `ok`: its remaining steps are not sent and not counted. Off by default.
+
+- `request_log` (_optional_)
+
+  `true` writes a `request` line per sent step with `-o stdout-json`, before the report line. See [Per-request records](docs/llm.md#per-request-records).
 
 - `slo` (_optional_)
 
@@ -714,6 +727,16 @@ There is an example config file at [config_examples/config.json](https://github.
             "url": "http://getanteon.com/endpoint2",
         }
     ]
+    ```
+
+    The sleep is applied only when a later step of the iteration is sent: never after the last one, nor before steps that `skip_if_empty` or `stop_on_failure` leave out.
+
+  - `skip_if_empty` (_optional_)
+
+    A template rendered with the iteration's variables, like `url` and `payload`. When the result is blank the step is not sent, its `sleep` is not applied, and it is counted nowhere; the next steps still run. A variable that is not defined, such as a capture that failed, counts as blank.
+
+    ```json
+    "skip_if_empty": "{{data.sessions.turn2}}"
     ```
 
   - `auth` (_optional_)

@@ -58,6 +58,9 @@ type ScenarioService struct {
 
 	ei        *injection.EnvironmentInjector
 	iterIndex int64
+
+	seed          int64
+	stopOnFailure bool
 }
 
 // NewScenarioService is the constructor of the ScenarioService.
@@ -71,6 +74,12 @@ type ScenarioOpts struct {
 	MaxConcurrentIterCount int
 	EngineMode             string
 	InitialCookies         []*http.Cookie
+
+	// Picks the rows of data read in random order
+	Seed int64
+
+	// A step whose outcome is not ok ends the iteration
+	StopOnFailure bool
 }
 
 // Init initializes the ScenarioService.clients with the given types.Scenario and proxies.
@@ -96,6 +105,8 @@ func (s *ScenarioService) Init(ctx context.Context, scenario types.Scenario,
 	vi.Init()
 	s.ei = vi
 	s.engineMode = opts.EngineMode
+	s.seed = opts.Seed
+	s.stopOnFailure = opts.StopOnFailure
 
 	if s.engineInUserMode() {
 		// create client pool
@@ -140,7 +151,6 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	response = &types.ScenarioResult{StepResults: []*types.ScenarioStepResult{}}
 	response.StartTime = startTime
 	response.ProxyAddr = proxy
-	rand.Seed(time.Now().UnixNano())
 
 	requesters, e := s.getOrCreateRequesters(proxy)
 	if e != nil {
@@ -155,7 +165,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	// inject dynamic variables beforehand for each iteration
 	injectDynamicVars(s.ei, envs)
 	// pass a row from data for each iteration
-	s.enrichEnvFromData(envs, atomic.AddInt64(&s.iterIndex, 1)-1)
+	response.Iteration = atomic.AddInt64(&s.iterIndex, 1) - 1
+	s.enrichEnvFromData(envs, response.Iteration)
 
 	var client *http.Client
 	if s.engineInUserMode() {
@@ -164,7 +175,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		defer s.cPool.Put(client)
 	}
 
-	for _, sr := range requesters {
+	for i := s.nextToSend(requesters, 0, envs); i < len(requesters); {
+		sr := requesters[i]
 		var res *types.ScenarioStepResult
 		switch sr.requester.Type() {
 		case "HTTP":
@@ -183,16 +195,36 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 			}
 		}
 		response.StepResults = append(response.StepResults, res)
+		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
 
-		// Sleep before running the next step
-		if sr.sleeper != nil && len(s.scenario.Steps) > 1 {
+		if s.stopOnFailure && res.Failed() {
+			return
+		}
+		next := s.nextToSend(requesters, i+1, envs)
+		// the think time is before a step that is sent, never after the last one
+		if sr.sleeper != nil && next < len(requesters) {
 			sr.sleeper.sleep()
 		}
-
-		enrichEnvFromPrevStep(envs, res.ExtractedEnvs)
+		i = next
 	}
 
 	return
+}
+
+// nextToSend is the first step from i on that is sent: one with no skip_if_empty, or whose template
+// renders to something other than blank. A template that can not be rendered (a variable that
+// was never captured) skips the step too. len(requesters) when none is left.
+func (s *ScenarioService) nextToSend(requesters []scenarioItemRequester, i int, envs map[string]interface{}) int {
+	for ; i < len(requesters); i++ {
+		tmpl := requesters[i].skipIfEmpty
+		if tmpl == "" {
+			return i
+		}
+		if v, err := s.ei.InjectEnv(tmpl, envs); err == nil && strings.TrimSpace(v) != "" {
+			return i
+		}
+	}
+	return i
 }
 
 func enrichEnvFromPrevStep(m1 map[string]interface{}, m2 map[string]interface{}) {
@@ -214,7 +246,8 @@ func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}, iterInd
 	for key, csvData := range s.scenario.Data {
 		lenRows := len(csvData.Rows)
 		if csvData.Random {
-			row = csvData.Rows[rand.Intn(lenRows)]
+			// from the seed, the iteration and the data set: the same rows on every run with that seed
+			row = csvData.Rows[util.SeedMix(s.seed, uint64(iterIndex), util.StringHash(key))%uint64(lenRows)]
 		} else {
 			row = csvData.Rows[iterIndex%int64(lenRows)]
 		}
@@ -271,6 +304,7 @@ func (s *ScenarioService) createRequesters(proxy *url.URL) (err error) {
 				scenarioItemID: si.ID,
 				sleeper:        newSleeper(si.Sleep),
 				requester:      r,
+				skipIfEmpty:    si.SkipIfEmpty,
 			},
 		)
 
@@ -310,6 +344,7 @@ type scenarioItemRequester struct {
 	scenarioItemID uint16
 	sleeper        Sleeper
 	requester      requester.Requester
+	skipIfEmpty    string
 }
 
 // Sleeper is the interface for implementing different sleep strategies.
@@ -323,8 +358,8 @@ type RangeSleep struct {
 	max int
 }
 
+// The think time is drawn from the global source, which is not seeded: it differs on every run.
 func (rs *RangeSleep) sleep() {
-	rand.Seed(time.Now().UnixNano())
 	dur := rand.Intn(rs.max-rs.min+1) + rs.min
 	time.Sleep(time.Duration(dur) * time.Millisecond)
 }

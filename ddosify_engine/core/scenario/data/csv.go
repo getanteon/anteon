@@ -45,7 +45,8 @@ func ReadCsv(conf types.CsvConf) ([]map[string]interface{}, error) {
 	var reader io.Reader
 
 	var pUrl *url.URL
-	if pUrl, err = url.ParseRequestURI(conf.Path); err == nil && pUrl.IsAbs() { // url
+	// http or https only: a Windows path such as C:\data.csv parses as a URL whose scheme is "c"
+	if pUrl, err = url.ParseRequestURI(conf.Path); err == nil && (pUrl.Scheme == "http" || pUrl.Scheme == "https") { // url
 		req, err := http.NewRequest(http.MethodGet, conf.Path, nil)
 		if err != nil {
 			return nil, wrapAsCsvError("can not create request", err)

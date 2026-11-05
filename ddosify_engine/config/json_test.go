@@ -61,6 +61,7 @@ func TestCreateHammerDefaultValues(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -117,6 +118,7 @@ func TestCreateHammer(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -173,6 +175,7 @@ func TestCreateHammerWithIterationCountInsteadOfReqCount(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -232,6 +235,7 @@ func TestCreateHammerWithIterationCountOverridesReqCount(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -270,6 +274,7 @@ func TestCreateHammerManualLoad(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -308,6 +313,7 @@ func TestCreateHammerManualLoadOverrideOthers(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -590,6 +596,7 @@ func TestCreateHammerTLSWithOnlyCertPath(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -638,6 +645,7 @@ func TestCreateHammerTLSWithOnlyKeyPath(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()
@@ -677,6 +685,7 @@ func TestCreateHammerTLSWithWithEmptyPath(t *testing.T) {
 		EngineMode:   types.EngineModeDdosify,
 		TestDataConf: make(map[string]types.CsvConf),
 		SingleMode:   true,
+		Seed:         types.DefaultSeed,
 	}
 
 	h, err := jsonReader.CreateHammer()

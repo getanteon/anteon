@@ -54,6 +54,7 @@ type runOptions struct {
 	duration    int
 	loadType    string
 	loadSpread  string
+	seed        int64
 	engineMode  string
 	method      string
 	body        string
@@ -130,7 +131,8 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.IntVarP(&o.iterations, "iterations", "n", types.DefaultIterCount, "total iterations")
 	f.IntVarP(&o.duration, "duration", "d", types.DefaultDuration, "test duration in seconds")
 	f.StringVarP(&o.loadType, "load-type", "l", types.DefaultLoadType, "linear, incremental or waved")
-	f.StringVar(&o.loadSpread, "load-spread", "", "front or even: where in a second or stage iterations start")
+	f.StringVar(&o.loadSpread, "load-spread", "", "front, even or poisson: where in a second or stage iterations start")
+	f.Int64Var(&o.seed, "seed", types.DefaultSeed, "seeds the poisson arrivals and the random data rows; the same seed repeats a run")
 	f.StringVar(&o.engineMode, "engine-mode", types.EngineModeDdosify, "ddosify, distinct-user or repeated-user")
 	f.StringVarP(&o.method, "method", "m", types.DefaultMethod, "request method")
 	f.StringVarP(&o.body, "body", "b", "", "request body")
@@ -485,6 +487,9 @@ func overrideHammer(h *types.Hammer, flags *pflag.FlagSet, o *runOptions) error 
 	if changed("load-spread") {
 		h.LoadSpread = strings.ToLower(o.loadSpread)
 	}
+	if changed("seed") {
+		h.Seed = o.seed
+	}
 	if changed("engine-mode") {
 		h.EngineMode = o.engineMode
 	}
@@ -562,6 +567,7 @@ func hammerFromFlags(o *runOptions) (types.Hammer, error) {
 		IterationCount:    o.iterations,
 		LoadType:          strings.ToLower(o.loadType),
 		LoadSpread:        strings.ToLower(o.loadSpread),
+		Seed:              o.seed,
 		EngineMode:        o.engineMode,
 		TestDuration:      o.duration,
 		Scenario:          types.Scenario{Steps: []types.ScenarioStep{step}},

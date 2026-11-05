@@ -187,8 +187,11 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 	}
 
 	// check env usage in payload
-	err = f(st.Payload)
-	return err
+	if err = f(st.Payload); err != nil {
+		return err
+	}
+
+	return f(st.SkipIfEmpty)
 
 }
 
@@ -242,6 +245,10 @@ type ScenarioStep struct {
 
 	// Skip TLS certificate verification. Off unless the user opts in.
 	Insecure bool
+
+	// A template rendered with the iteration's variables; when it is blank the step is not sent
+	SkipIfEmpty string
+
 	// Count the streamed answer's tokens, and prepare its prompt. Needs Stream.
 	LLM *LLMConf
 }
