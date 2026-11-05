@@ -224,3 +224,18 @@ func TestBenchmarkCsvRead(t *testing.T) {
 		fmt.Printf("N:%d", res.N)
 	}
 }
+
+// A Windows path parses as a URL whose scheme is the drive letter; it is a file, never fetched.
+func TestReadCsvDrivePathIsAFile(t *testing.T) {
+	t.Parallel()
+	conf := types.CsvConf{Path: `c:\no\such\dir\sessions.csv`, Delimiter: ",",
+		Vars: map[string]types.Tag{"0": {Tag: "q", Type: "string"}}, Order: "sequential"}
+	_, err := ReadCsv(conf)
+	var remoteCsvErr RemoteCsvError
+	if err == nil || (errors.As(err, &remoteCsvErr) && strings.Contains(err.Error(), "can not get response")) {
+		t.Errorf("a drive path was fetched as a URL: %v", err)
+	}
+	if !strings.Contains(err.Error(), "can not parse path") {
+		t.Errorf("expected a missing file, got %v", err)
+	}
+}

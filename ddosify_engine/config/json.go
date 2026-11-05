@@ -440,7 +440,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		}
 	} else if s.PayloadFile != "" {
 		var pUrl *url.URL
-		if pUrl, err = url.ParseRequestURI(s.PayloadFile); err == nil && pUrl.IsAbs() { // url
+		if pUrl, err = url.ParseRequestURI(s.PayloadFile); err == nil && (pUrl.Scheme == "http" || pUrl.Scheme == "https") { // url, not C:\ on Windows
 			payload, err = preparePayloadFile(s.PayloadFile)
 			if err != nil {
 				return types.ScenarioStep{}, err
