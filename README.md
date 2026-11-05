@@ -21,6 +21,7 @@
 <h2 align="center">
     <a href="https://demo.getanteon.com/" target="_blank">Live Demo</a> •
     <a href="https://getanteon.com/docs" target="_blank">Documentation</a> •
+    <a href="https://github.com/getanteon/anteon/tree/master/ddosify_engine" target="_blank">Ddosify CLI</a> •
     <a href="https://discord.com/invite/9KdnrSUZQg" target="_blank">Discord</a>
 </h2>
 
@@ -44,6 +45,7 @@
 
 ### 🔨 Performance Testing
 
+- **Open-Source Load Engine:** [Ddosify](https://github.com/getanteon/anteon/tree/master/ddosify_engine) is the CLI behind Anteon's tests. Run it from a terminal, CI or a Kubernetes pod, including LLM and streaming (SSE) APIs with time to first token, inter-token latency and tokens per second.
 - **Multi-Location Based:** Generate load/performance tests from over 25 countries worldwide.
 - **Easy Scenario Builder:** Create test scenarios easily without writing any code.
 - **Seamless Integration with Kubernetes Monitoring:** Performance testing is natively integrated with Kubernetes monitoring for a unified experience.
