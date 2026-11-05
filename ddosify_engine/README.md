@@ -245,7 +245,7 @@ This section aims to show you how to use Ddosify easily without deep dive into i
 
     `ddosify run https://getanteon.com/{{_randomInt}} -d 10 -n 100 -H 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'`
 
-    Ddosify sends a total of _100_ _GET_ requests to *https://getanteon.com/{{_randomInt}}* in _10_ seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in _URL_, _headers_, _payload (body)_ and _basic authentication_. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
+    Ddosify sends a total of _100_ _GET_ requests to `https://getanteon.com/{{_randomInt}}` in _10_ seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in _URL_, _headers_, _payload (body)_ and _basic authentication_. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
 
 6.  ### Correlation (Captured Variables)
 
@@ -917,7 +917,7 @@ Users can specify the required percentile of response times and failure counts i
 
 Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-You can see a success criteria example in the [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-2-success-criteria) file.
+The [examples](#examples) below show both.
 
 ## Difference Between Success Criteria and Step Assertions
 
@@ -1193,7 +1193,7 @@ In `repeated-user` mode, Ddosify uses the same cookie jar for all iterations exe
 
 In `distinct-user` mode, Ddosify uses a different cookie jar for each iteration, so cookies are passed through steps in one iteration only.
 
-You can see a cookie example in the [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-1-cookie-support) file.
+The sections below show each case.
 
 ### Initial / Custom Cookies
 
@@ -1360,7 +1360,7 @@ An iteration belongs to the stage it started in. The report has one row per stag
 
 ### Example: an AI SDK chat API
 
-[config_examples/sse_llm.json](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/sse_llm.json) creates a chat, captures its id and asks a question from [a CSV](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/questions.csv) in the same iteration. Each iteration is one person: `"END_USER": "loadtest:{{_randomUUID}}"` in `env` is generated once per iteration and sent by both steps, so a per end user rate limit sees a new person every time, and `{{_randomUUID}}` in the `Idempotency-Key` header is new on every request. A question is put into the JSON body as `"{{data.questions.text}}"`, quoted, so Ddosify escapes it as a JSON string; UTF-8 text such as Turkish passes through unchanged.
+[config_examples/sse_llm.json](config_examples/sse_llm.json) creates a chat, captures its id and asks a question from [a CSV](config_examples/questions.csv) in the same iteration. Each iteration is one person: `"END_USER": "loadtest:{{_randomUUID}}"` in `env` is generated once per iteration and sent by both steps, so a per end user rate limit sees a new person every time, and `{{_randomUUID}}` in the `Idempotency-Key` header is new on every request. A question is put into the JSON body as `"{{data.questions.text}}"`, quoted, so Ddosify escapes it as a JSON string; UTF-8 text such as Turkish passes through unchanged.
 
 ```bash
 export GURUBASE_URL=https://gurubase.example.internal GURU_ID=... GURUBASE_API_KEY=gbk_...

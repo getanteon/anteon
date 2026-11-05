@@ -13,7 +13,7 @@
 ## 📚 Documentation
 
 - [🐝 Installing Anteon Self-Hosted](https://getanteon.com/docs/self-hosted/installation/)
-- [⚙ Installing eBPF Agent (Alaz)](https://getanteon.com/docs/self-hosted/install-ebpf-agent-alaz-on-self-hosted/)
+- [⚙ Installing eBPF Agent (Alaz)](https://getanteon.com/docs/ebpf-agent-alaz/installation/)
 - [📰 Upgrading to Self-Hosted Enterprise](https://getanteon.com/docs/self-hosted/upgrading-to-self-hosted-enterprise/)
 - [📧 Slack Integration](https://getanteon.com/docs/self-hosted/self-hosted-slack-integration/)
 
