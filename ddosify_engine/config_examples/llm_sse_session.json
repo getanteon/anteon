@@ -1,6 +1,8 @@
 {
     "engine_mode": "distinct-user",
-    "load_spread": "even",
+    "load_spread": "poisson",
+    "seed": 1,
+    "stop_on_failure": true,
     "manual_load": [
         {"duration": 120, "count": 6, "name": "warm-up", "warmup": true},
         {"duration": 300, "count": 30, "name": "6/min"},
@@ -59,6 +61,7 @@
         {
             "id": 3,
             "name": "Turn 2",
+            "skip_if_empty": "{{data.sessions.follow_up}}",
             "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats/{{CHAT_ID}}/messages",
             "method": "POST",
             "timeout": 330,
