@@ -70,12 +70,16 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
           GORELEASER_PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
 
+      # Also when a later publisher (the Homebrew tap) failed: the release and the images are out by then,
+      # and an unattested published artefact is worse than a failed formula push (v2.0.0, v2.1.0).
       - name: Attest the archives and SBOMs
+        if: ${{ !cancelled() && hashFiles('ddosify_engine/dist/checksums.txt') != '' }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: ddosify_engine/dist/checksums.txt
 
       - name: Attest the images
+        if: ${{ !cancelled() && hashFiles('ddosify_engine/dist/digests.txt') != '' }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: ddosify_engine/dist/digests.txt
