@@ -51,6 +51,9 @@ const (
 	DefaultOutputType    = "stdout" // TODO: get this value from report.OutputTypeStdout when import cycle resolved.
 	DefaultSamplingCount = 3
 	DefaultSingleMode    = true
+
+	// Seeds the poisson arrivals and the random data rows when the config gives no seed
+	DefaultSeed int64 = 1
 )
 
 var loadTypes = [...]string{LoadTypeLinear, LoadTypeIncremental, LoadTypeWaved}
@@ -148,8 +151,17 @@ type Hammer struct {
 	// Engine runs single
 	SingleMode bool
 
-	// How iterations are spread inside a second or a manual_load stage: LoadSpreadFront (default) or LoadSpreadEven
+	// How iterations are spread inside a second or a manual_load stage: LoadSpreadFront (default), LoadSpreadEven or LoadSpreadPoisson
 	LoadSpread string
+
+	// Seeds the poisson arrivals and the random data rows, so a run can be repeated
+	Seed int64
+
+	// Once a step's outcome is not ok, the iteration sends none of its remaining steps
+	StopOnFailure bool
+
+	// One line per sent request in the stdout-json output
+	RequestLog bool
 
 	// Thresholds an iteration's streams have to meet to count as goodput
 	SLO *SLO
@@ -194,8 +206,11 @@ func (h *Hammer) Validate() error {
 		}
 	}
 
-	if h.LoadSpread != "" && h.LoadSpread != LoadSpreadFront && h.LoadSpread != LoadSpreadEven {
-		return fmt.Errorf("unsupported load_spread: %s, supported: %s, %s", h.LoadSpread, LoadSpreadFront, LoadSpreadEven)
+	if h.LoadSpread != "" && h.LoadSpread != LoadSpreadFront && h.LoadSpread != LoadSpreadEven && h.LoadSpread != LoadSpreadPoisson {
+		return fmt.Errorf("unsupported load_spread: %s, supported: %s, %s, %s", h.LoadSpread, LoadSpreadFront, LoadSpreadEven, LoadSpreadPoisson)
+	}
+	if h.LoadSpread == LoadSpreadPoisson && len(h.TimeRunCountMap) == 0 && h.LoadType != "" && h.LoadType != LoadTypeLinear {
+		return fmt.Errorf("load_spread %s needs manual_load or load_type %s", LoadSpreadPoisson, LoadTypeLinear)
 	}
 
 	if h.SLO != nil {

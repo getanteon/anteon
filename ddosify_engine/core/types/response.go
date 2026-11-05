@@ -36,6 +36,9 @@ type ScenarioResult struct {
 	ProxyAddr   *url.URL
 	StepResults []*ScenarioStepResult
 
+	// 0 based index of the iteration, the one that picks its data row
+	Iteration int64
+
 	// Dynamic field for extra data needs in response object consumers.
 	Others map[string]interface{}
 }
@@ -101,4 +104,13 @@ type ScenarioStepResult struct {
 
 	// Stream metrics, set when the response was read as a stream
 	Stream *StreamResult
+}
+
+// Failed tells whether the step's outcome is anything but ok: a request error, a 4xx or 5xx, or a
+// stream that was cut or carried an error event. report.OutcomeOf gives the same answer.
+func (r *ScenarioStepResult) Failed() bool {
+	if r.Err.Type != "" || r.StatusCode >= 400 {
+		return true
+	}
+	return r.Stream != nil && (!r.Stream.Clean() || r.Stream.ErrorEvents > 0)
 }

@@ -43,8 +43,9 @@ const (
 	StreamEndTimeout = "timeout"
 
 	// Load spreads
-	LoadSpreadFront = "front"
-	LoadSpreadEven  = "even"
+	LoadSpreadFront   = "front"
+	LoadSpreadEven    = "even"
+	LoadSpreadPoisson = "poisson"
 )
 
 // StreamMatch selects SSE events. Every field that is set has to match.

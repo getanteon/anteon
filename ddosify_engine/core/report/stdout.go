@@ -48,6 +48,11 @@ var out io.Writer = colorable.NewColorableStdout()
 var errOut io.Writer = colorable.NewColorableStderr()
 var progress = true
 
+// Warn writes a warning line where the banners go.
+func Warn(msg string) {
+	fmt.Fprintln(errOut, "Warning: "+msg)
+}
+
 // SetOutputs sends the report to stdout, and banners and progress lines to stderr.
 // showProgress false prints no live progress lines, for a pipe or while a TUI owns the terminal.
 func SetOutputs(stdout, stderr io.Writer, showProgress bool) {

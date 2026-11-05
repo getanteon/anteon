@@ -24,8 +24,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/rand"
 	"net/http"
 	"reflect"
+	"slices"
 	"sync"
 	"time"
 
@@ -37,6 +39,7 @@ import (
 	"go.ddosify.com/ddosify/v2/core/scenario"
 	"go.ddosify.com/ddosify/v2/core/scenario/data"
 	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 const (
@@ -63,6 +66,10 @@ type engine struct {
 
 	tickCounter int
 	reqCountArr []int
+
+	// load_spread poisson: each iteration's start from the schedule's start, sorted, and the next one to start
+	arrivals    []time.Duration
+	nextArrival int
 
 	// manual_load stages by tick, set only when a stage is named or a warm-up
 	stages []tickStage
@@ -125,6 +132,13 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 	if ss, ok := rs.(report.SLOSetter); ok && h.SLO != nil {
 		ss.SetSLO(h.SLO)
 	}
+	if h.RequestLog && !h.Debug {
+		if rl, ok := rs.(report.RequestLogSetter); ok {
+			rl.SetRequestLog(true)
+		} else {
+			report.Warn(fmt.Sprintf("request_log writes its lines with the stdout-json output only, not with %s", h.ReportDestination))
+		}
+	}
 
 	return &EngineServices{
 		// defaultAssertionService as implements all
@@ -186,12 +200,20 @@ func (e *engine) Init() (err error) {
 		}
 	}
 
+	for _, st := range e.hammer.Scenario.Steps {
+		if st.LLM != nil && st.LLM.Chat != nil {
+			st.LLM.Chat.Seed = e.hammer.Seed
+		}
+	}
+
 	if err = e.scenarioService.Init(e.reqCtx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
 		EngineMode:             e.hammer.EngineMode,
 		InitialCookies:         initialCookies,
+		Seed:                   e.hammer.Seed,
+		StopOnFailure:          e.hammer.StopOnFailure,
 	}); err != nil {
 		return
 	}
@@ -275,8 +297,14 @@ func (e *engine) Start() (status string) {
 			return resultAborted
 		default:
 			mutex.Lock()
-			e.wg.Add(e.reqCountArr[e.tickCounter])
-			go e.runWorkers(e.tickCounter)
+			n := e.reqCountArr[e.tickCounter]
+			e.wg.Add(n)
+			var at []time.Duration
+			if e.arrivals != nil {
+				at = e.arrivals[e.nextArrival : e.nextArrival+n]
+				e.nextArrival += n
+			}
+			go e.runWorkers(e.tickCounter, at)
 			e.tickCounter++
 			mutex.Unlock()
 		}
@@ -284,8 +312,14 @@ func (e *engine) Start() (status string) {
 	return resultDone
 }
 
-func (e *engine) runWorkers(c int) {
+// runWorkers starts the iterations of tick c. at, with load_spread poisson, holds their starts
+// from the schedule's start: each waits for its own, which is also its intended start.
+func (e *engine) runWorkers(c int, at []time.Duration) {
 	stage := e.stageOf(c)
+	if at != nil {
+		e.runArrivals(stage, at)
+		return
+	}
 	intended := e.startedAt.Add(time.Duration(c+1) * tickerInterval * time.Millisecond)
 	for i := 1; i <= e.reqCountArr[c]; i++ {
 		scenarioStartTime := time.Now()
@@ -293,6 +327,39 @@ func (e *engine) runWorkers(c int) {
 			e.runWorker(t, stage, intended)
 			e.wg.Done()
 		}(scenarioStartTime)
+	}
+}
+
+func (e *engine) runArrivals(stage *types.LoadStage, at []time.Duration) {
+	// tick c fires at startedAt + (c+1) intervals, so the schedule's start is one interval in
+	zero := e.startedAt.Add(tickerInterval * time.Millisecond)
+	var timer *time.Timer
+	for i, off := range at {
+		intended := zero.Add(off)
+		if d := time.Until(intended); d > 0 {
+			if timer == nil {
+				timer = time.NewTimer(d)
+			} else {
+				timer.Reset(d)
+			}
+			select {
+			case <-timer.C:
+			case <-e.ctx.Done():
+				// interrupted: the schedule ends, and these iterations never start
+				timer.Stop()
+				for range at[i:] {
+					e.wg.Done()
+				}
+				return
+			}
+		}
+		go func() {
+			e.runWorker(time.Now(), stage, intended)
+			e.wg.Done()
+		}()
+	}
+	if timer != nil {
+		timer.Stop()
 	}
 }
 
@@ -349,7 +416,7 @@ func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage, 
 
 		break
 	}
-	if res == nil { // the requesters could not be built
+	if res == nil || (len(res.StepResults) == 0 && err == nil) { // the requesters could not be built, or every step was skipped
 		if e.collector != nil {
 			e.collector.IterationDone(nil, stage, 0)
 		}
@@ -486,10 +553,52 @@ func (e *engine) evenSpread() bool {
 	return e.hammer.LoadSpread == types.LoadSpreadEven
 }
 
+func (e *engine) poissonSpread() bool {
+	return e.hammer.LoadSpread == types.LoadSpreadPoisson
+}
+
+// poissonOffsets draws count start times in [0, d), sorted: a Poisson process conditioned on its
+// count, so a stage starts exactly count iterations at independent, exponentially spaced times.
+func poissonOffsets(count int, d time.Duration, r *rand.Rand) []time.Duration {
+	offs := make([]time.Duration, count)
+	for i := range offs {
+		o := time.Duration(r.Float64() * float64(d))
+		if o >= d {
+			o = d - 1
+		}
+		offs[i] = o
+	}
+	slices.Sort(offs)
+	return offs
+}
+
+// stageRand is the source of stage i's arrivals: the same for a seed, and independent across stages.
+func stageRand(seed int64, stage int) *rand.Rand {
+	return rand.New(rand.NewSource(int64(util.SeedMix(seed, uint64(stage), 0))))
+}
+
+// addArrivals puts a stage's poisson arrivals, starting at tick start, into the ticks and arrivals.
+func (e *engine) addArrivals(stage, count, start int, d time.Duration) {
+	tickDur := time.Duration(tickerInterval) * time.Millisecond
+	base := time.Duration(start) * tickDur
+	for _, o := range poissonOffsets(count, d, stageRand(e.hammer.Seed, stage)) {
+		e.reqCountArr[start+int(o/tickDur)]++
+		e.arrivals = append(e.arrivals, base+o)
+	}
+}
+
 func (e *engine) createManualReqCountArr() {
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	stepStartIndex := 0
-	for _, t := range e.hammer.TimeRunCountMap {
+	if e.poissonSpread() {
+		e.arrivals = make([]time.Duration, 0, e.hammer.IterationCount)
+	}
+	for i, t := range e.hammer.TimeRunCountMap {
+		if e.poissonSpread() {
+			e.addArrivals(i, t.Count, stepStartIndex, time.Duration(t.Duration)*time.Second)
+			stepStartIndex += t.Duration * tickPerSecond
+			continue
+		}
 		if e.evenSpread() {
 			end := stepStartIndex + t.Duration*tickPerSecond
 			createEvenDistArr(t.Count, e.reqCountArr[stepStartIndex:end])
@@ -510,6 +619,11 @@ func (e *engine) createManualReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
+	if e.poissonSpread() {
+		e.arrivals = make([]time.Duration, 0, e.hammer.IterationCount)
+		e.addArrivals(0, e.hammer.IterationCount, 0, time.Duration(e.hammer.TestDuration)*time.Second)
+		return
+	}
 	if e.evenSpread() {
 		createEvenDistArr(e.hammer.IterationCount, e.reqCountArr)
 		return

@@ -100,6 +100,7 @@ type step struct {
 	Stream           *streamConf            `json:"stream"`
 	Insecure         bool                   `json:"insecure"`
 	LLM              *types.LLMConf         `json:"llm"`
+	SkipIfEmpty      string                 `json:"skip_if_empty"`
 }
 
 type streamMatch struct {
@@ -210,6 +211,9 @@ type JsonReader struct {
 	LoadSpread   string                 `json:"load_spread"`
 	SLO          *types.SLO             `json:"slo"`
 	Insecure     bool                   `json:"insecure"`
+	Seed         *int64                 `json:"seed"`
+	StopOnFail   bool                   `json:"stop_on_failure"`
+	RequestLog   bool                   `json:"request_log"`
 
 	// Top level keys a hooks.ScenarioBuilder turns into steps, such as "llm"
 	scenarioRaw map[string]json.RawMessage
@@ -412,6 +416,12 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		LoadSpread:        strings.ToLower(j.LoadSpread),
 		SLO:               j.SLO,
 		Insecure:          j.Insecure,
+		Seed:              types.DefaultSeed,
+		StopOnFailure:     j.StopOnFail,
+		RequestLog:        j.RequestLog,
+	}
+	if j.Seed != nil {
+		h.Seed = *j.Seed
 	}
 	return
 }
@@ -494,6 +504,7 @@ func stepToScenarioStep(s step) (types.ScenarioStep, error) {
 		EnvsToCapture: capturedEnvs,
 		Assertions:    s.Assertions,
 		Insecure:      s.Insecure,
+		SkipIfEmpty:   s.SkipIfEmpty,
 	}
 
 	if s.Stream != nil {

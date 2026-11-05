@@ -88,6 +88,9 @@ type ChatRequest struct {
 	Sessions [][]string
 	Random   bool
 
+	// The run's seed, so a random order picks the same sessions on every run with it
+	Seed int64
+
 	// 0 based turn of this step in the session
 	Turn int
 

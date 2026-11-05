@@ -48,6 +48,9 @@ type stdoutJson struct {
 	// it is the last line, after the final progress snapshot.
 	deferPrint bool
 	final      []byte
+
+	// set by request_log: a line per sent request, before the report
+	reqLog *requestLog
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
@@ -132,6 +135,14 @@ func (s *stdoutJson) SetRunStatus(status string) {
 	s.result.ext.runStatus = status
 }
 
+// SetRequestLog turns the "request" lines on.
+func (s *stdoutJson) SetRequestLog(on bool) {
+	s.reqLog = nil
+	if on {
+		s.reqLog = &requestLog{buf: make([]byte, 0, 512)}
+	}
+}
+
 func (s *stdoutJson) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }
@@ -148,6 +159,9 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assert
 		s.mu.Lock() // avoid race around samplingCount
 		aggregate(s.result, r, samplingCount, s.samplingRate)
 		s.mu.Unlock()
+		if s.reqLog != nil {
+			s.reqLog.write(out, r)
+		}
 	}
 	// listen for assertion result, add to json
 	s.result.TestStatus = "success"

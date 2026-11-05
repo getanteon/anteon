@@ -233,3 +233,36 @@ func TestScheduleLag(t *testing.T) {
 	}
 	a.Add(&types.ScenarioResult{}) // no schedule, ignored
 }
+
+func TestRandomSessionsFollowTheSeed(t *testing.T) {
+	sessions := make([][]string, 20)
+	for i := range sessions {
+		sessions[i] = []string{"q"}
+	}
+	picks := func(seed int64) []int {
+		sessionSeq = 0
+		s, err := NewStep(&types.LLMConf{Chat: &types.ChatRequest{Sessions: sessions, Random: true, Seed: seed}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []int
+		for i := 0; i < 30; i++ {
+			out = append(out, s.pickSession(map[string]interface{}{}, &Prepared{Vars: map[string]interface{}{}}))
+		}
+		return out
+	}
+	a, b, c := picks(1), picks(1), picks(2)
+	if !reflect.DeepEqual(a, b) {
+		t.Error("the same seed should pick the same sessions")
+	}
+	if reflect.DeepEqual(a, c) {
+		t.Error("another seed should pick other sessions")
+	}
+	distinct := map[int]bool{}
+	for _, v := range a {
+		distinct[v] = true
+	}
+	if len(distinct) < 10 {
+		t.Errorf("picks do not look random: %v", a)
+	}
+}
