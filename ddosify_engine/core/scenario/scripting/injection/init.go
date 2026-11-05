@@ -1,9 +1,14 @@
 package injection
 
-import "github.com/ddosify/go-faker/faker"
+import (
+	"sync"
+
+	"github.com/ddosify/go-faker/faker"
+)
 
 var dynamicFakeDataMap map[string]interface{}
 var dataFaker faker.Faker
+var fakerMu sync.Mutex
 
 func init() {
 	dataFaker = faker.NewFaker()

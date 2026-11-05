@@ -10,16 +10,20 @@ on:
       - master
       - develop
 
+permissions:
+  contents: read
+
 jobs:
   link-checker:
     name: Check links
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check the links
-        uses: lycheeverse/lychee-action@v1
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: --max-concurrency 1 -v *.md **/*.md
           fail: true

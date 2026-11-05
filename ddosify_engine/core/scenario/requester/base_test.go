@@ -23,7 +23,7 @@ package requester
 import (
 	"reflect"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 var protocolStrategiesStructMap = map[string]reflect.Type{

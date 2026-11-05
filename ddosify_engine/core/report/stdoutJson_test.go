@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/assertion"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestInitStdoutJson(t *testing.T) {
@@ -205,6 +205,7 @@ func TestStdoutJsonOutput(t *testing.T) {
 	}
 
 	expectedOutputByte := []byte(`{
+		"type": "report",
 		"success_perc": 81,
 		"fail_perc": 19,
 		"test_status": "success",

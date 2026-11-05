@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func Extract(source interface{}, ce types.EnvCaptureConf) (val interface{}, err error) {

@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
-	"go.ddosify.com/ddosify/core/types"
-	"golang.org/x/exp/slices"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/evaluator"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"slices"
 )
 
 var tickerInterval = 100 // interval in millisecond

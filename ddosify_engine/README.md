@@ -74,6 +74,14 @@
   - [Initial / Custom Cookies](#initial--custom-cookies)
   - [Cookie Capture](#cookie-capture)
   - [Cookie Assertion](#cookie-assertion)
+- [Upgrading from v1](#upgrading-from-v1)
+- [Verifying a release](#verifying-a-release)
+- [Streaming (SSE) and LLM Endpoints](#streaming-sse-and-llm-endpoints)
+  - [Stream config](#stream-config)
+  - [What is measured](#what-is-measured)
+  - [Goodput and SLO](#goodput-and-slo)
+  - [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages)
+  - [Example: an AI SDK chat API](#example-an-ai-sdk-chat-api)
 - [Common Issues](#common-issues)
   - [macOS Security Issue](#macos-security-issue)
   - [OS Limit - Too Many Open Files](#os-limit---too-many-open-files)
@@ -108,6 +116,8 @@
 
 - ✅ **[Cookies](#cookies)** - Pass cookies through steps and set initial cookies if you want.
 
+- ✅ **[Streaming (SSE) and LLM Endpoints](#streaming-sse-and-llm-endpoints)** - Time to first token, gaps between events, goodput against an SLO, and a report per load stage.
+
 - ✅ **Widely Used Protocols** - Currently supporting _HTTP, HTTPS, HTTP/2_. Other protocols are on the way.
 
 ## Tutorials / Blog Posts
@@ -117,15 +127,18 @@
 
 ## Installation
 
-`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable as pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/tag/v1.0.6) for macOS, Linux and Windows.
+`ddosify` is available via [Docker](https://hub.docker.com/r/ddosify/ddosify), [Docker Extension](https://hub.docker.com/extensions/ddosify/ddosify-docker-extension), [Homebrew Tap](#homebrew-tap-macos-and-linux), and downloadable as pre-compiled binaries from the [releases page](https://github.com/getanteon/anteon/releases/latest) for macOS, Linux and Windows.
 
 For shell auto completions, see [Ddosify Completions](https://github.com/getanteon/anteon/tree/master/ddosify_engine/completions).
 
 ### Docker
 
 ```bash
-docker run -it --rm ddosify/ddosify
+docker run --rm ddosify/ddosify run https://getanteon.com
+docker run --rm -v "$PWD:/cfg:ro" ddosify/ddosify run --config /cfg/config.json
 ```
+
+The image holds only the static binary on a distroless base, running as a non-root user, with `ddosify` as its entrypoint. Images are signed with keyless cosign and attested; see [Verifying a release](#verifying-a-release).
 
 ### Docker Extension
 
@@ -170,7 +183,7 @@ pkg install ddosify
 
 ### Windows Executable
 
-- Download zip file for your architecture from the [releases page](https://github.com/ddosify/ddosify/releases/tag/v1.0.6).
+- Download zip file for your architecture from the [releases page](https://github.com/ddosify/ddosify/releases/latest).
   - For example, download ddosify version `vx.x.x` with amd64 architecture: `ddosify_x.x.x.zip_windows_amd64`
 - Unzip `ddosify_x.x.x_windows_amd64.zip`
 - Open Powershell or CMD (Command Prompt) and change directory to unzipped folder: `ddosify_x.x.x_windows_amd64`
@@ -194,10 +207,10 @@ curl -sSfL https://raw.githubusercontent.com/getanteon/anteon/master/scripts/ins
 
 ### Go install from source (macOS, FreeBSD, Linux, Windows)
 
-_Minimum supported Go version is 1.18_
+_Requires Go 1.26 (the module pins toolchain go1.26.10)_
 
 ```bash
-go install -v go.ddosify.com/ddosify@latest
+go install -v go.ddosify.com/ddosify/v2@latest
 ```
 
 ## Quick Start
@@ -206,43 +219,43 @@ This section aims to show you how to use Ddosify easily without deep dive into i
 
 1.  ### Simple load test
 
-    `ddosify -t https://getanteon.com`
+    `ddosify run https://getanteon.com`
 
     The above command runs a load test with the default value that is 100 requests in 10 seconds.
 
 2.  ### Using some of the features
 
-    `ddosify -t https://getanteon.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80`
+    `ddosify run https://getanteon.com -n 1000 -d 20 -m PUT -T 7 -P http://proxy_server.com:80`
 
     Ddosify sends a total of _1000_ _PUT_ requests to *https://getanteon.com* over proxy _http://proxy_server.com:80_ in _20_ seconds with a timeout of _7_ seconds per request.
 
 3.  ### Usage for CI/CD pipelines (JSON output)
 
-    `ddosify -t https://getanteon.com -o stdout-json | jq .avg_duration`
+    `ddosify run https://getanteon.com -o stdout-json | jq .avg_duration`
 
     Ddosify outputs the result in JSON format. Then `jq` (or any other command-line JSON processor) fetches the `avg_duration`. The rest depends on your CI/CD flow logic.
 
 4.  ### Scenario based load test
 
-    `ddosify -config config_examples/config.json`
+    `ddosify run --config config_examples/config.json`
 
     Ddosify first sends _HTTP/2 POST_ request to *https://getanteon.com/endpoint_1* using basic auth credentials _test_user:12345_ over proxy _http://proxy_host.com:proxy_port_ and with a timeout of _3_ seconds. Once the response is received, HTTPS GET request will be sent to *https://getanteon.com/endpoint_2* along with the payload included in _config_examples/payload.txt_ file with a timeout of 2 seconds. This flow will be repeated _20_ times in _5_ seconds and response will be written to _stdout_.
 
 5.  ### Load test with Dynamic Variables (Parameterization)
 
-    `ddosify -t https://getanteon.com/{{_randomInt}} -d 10 -n 100 -h 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'`
+    `ddosify run https://getanteon.com/{{_randomInt}} -d 10 -n 100 -H 'User-Agent: {{_randomUserAgent}}' -b '{"city": "{{_randomCity}}"}'`
 
-    Ddosify sends a total of _100_ _GET_ requests to *https://getanteon.com/{{_randomInt}}* in _10_ seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in _URL_, _headers_, _payload (body)_ and _basic authentication_. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
+    Ddosify sends a total of _100_ _GET_ requests to `https://getanteon.com/{{_randomInt}}` in _10_ seconds. `{{_randomInt}}` path generates random integers between 1 and 1000 in every request. Dynamic variables can be used in _URL_, _headers_, _payload (body)_ and _basic authentication_. In this example, Ddosify generates a random user agent in the header and a random city in the body. The full list of the dynamic variables can be found in the [docs](https://getanteon.com/docs/performance-testing/dynamic-variables-parametrization/).
 
 6.  ### Correlation (Captured Variables)
 
-    `ddosify -config ddosify_config_correlation.json`
+    `ddosify run --config ddosify_config_correlation.json`
 
     Ddosify allows you to specify variables at the global level and use them throughout the scenario, as well as extract variables from previous steps and inject them to the next steps in each iteration individually. You can inject those variables in requests _url_, _headers_ and _payload(body)_. The example config can be found in [correlation-config-example](#Correlation).
 
 7.  ### Test Data
 
-    `ddosify -config ddosify_data_csv.json`
+    `ddosify run --config ddosify_data_csv.json`
 
     Ddosify allows you to load test data from a file, tag specific columns for later use. You can inject those variables in requests _url_, _headers_ and _payload (body)_. The example config can be found in [test-data-example](#test-data-set).
 
@@ -250,37 +263,74 @@ This section aims to show you how to use Ddosify easily without deep dive into i
 
 You can configure your load test by the CLI options or a config file. Config file supports more features than the CLI. For example, you can't create a scenario-based load test with CLI options.
 
+### Commands
+
+| Command | What it does |
+| ------- | ------------ |
+| `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
+| `ddosify version [--json]` | Prints the version, commit, build date and Go version |
+| `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
+| `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
+
+`ddosify -t URL ...` and `ddosify -config FILE` from v1 still run a test.
+
 ### CLI Flags
 
 ```bash
-ddosify [FLAG]
+ddosify run [TARGET_URL] [FLAGS]
 ```
 
-| Flag                                                        | Description                                                                                                       | Type     | Default  | Required |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------- | -------- | -------- |
-| `-t`                                                        | Target website URL. Example: https://getanteon.com                                                                | `string` | -        | Yes      |
-| `-n`                                                        | Total iteration count                                                                                             | `int`    | `100`    | No       |
-| `-d`                                                        | Test duration in seconds.                                                                                         | `int`    | `10`     | No       |
-| `-m`                                                        | Request method. Available methods for HTTP(s) are _GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS_                  | `string` | `GET`    | No       |
-| `-b`                                                        | The payload of the network packet. AKA body for the HTTP.                                                         | `string` | -        | No       |
-| `-a`                                                        | Basic authentication. Usage: `-a username:password`                                                               | `string` | -        | No       |
-| `-h`                                                        | Headers of the request. You can provide multiple headers with multiple `-h` flag. Usage: `-h 'Accept: text/html'` | `string` | -        | No       |
-| `-T`                                                        | Timeout of the request in seconds.                                                                                | `int`    | `5`      | No       |
-| `-P`                                                        | Proxy address as host:port. `-P 'http://user:pass@proxy_host.com:port'`                                           | `string` | -        | No       |
-| `-o`                                                        | Test result output destination. Supported outputs are [*stdout, stdout-json*] Other output types will be added.   | `string` | `stdout` | No       |
-| `-l`                                                        | [Type](#load-types) of the load test. Ddosify supports 3 load types.                                              | `string` | `linear` | No       |
-| <span style="white-space: nowrap;">`--config`</span>        | [Config File](#config-file) of the load test.                                                                     | `string` | -        | No       |
-| <span style="white-space: nowrap;">`--version`</span>       | Prints version, git commit, built date (utc), go information and quit                                             | -        | -        | No       |
-| <span style="white-space: nowrap;">`--cert_path`</span>     | A path to a certificate file (usually called 'cert.pem')                                                          | -        | -        | No       |
-| <span style="white-space: nowrap;">`--cert_key_path`</span> | A path to a certificate key file (usually called 'key.pem')                                                       | -        | -        | No       |
-| <span style="white-space: nowrap;">`--debug`</span>         | Iterates the scenario once and prints curl-like verbose result. Note that this flag overrides json config.        | `bool`   | `false`  | No       |
+| Flag | Description | Default |
+| ---- | ----------- | ------- |
+| `-f`, `--config` | [Config file](#config-file) of the load test | - |
+| `-t`, `--target` | Target URL, when there is no config file; it can also be the argument | - |
+| `-n`, `--iterations` | Total iteration count | `100` |
+| `-d`, `--duration` | Test duration in seconds | `10` |
+| `-l`, `--load-type` | [Load type](#load-types): `linear`, `incremental`, `waved` | `linear` |
+| `--load-spread` | `front` or `even`, see `load_spread` | `front` |
+| `--engine-mode` | `ddosify`, `distinct-user`, `repeated-user` | `ddosify` |
+| `-m`, `--method` | Request method: _GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS_ | `GET` |
+| `-b`, `--body` | Request body | - |
+| `-a`, `--auth` | Basic authentication, `username:password` | - |
+| `-H`, `--header` | Request header, `-H 'Accept: text/html'`; repeat it. With a config it is added to every step | - |
+| `-T`, `--timeout` | Request timeout in seconds; for a stream it covers the whole stream | `5` |
+| `-P`, `--proxy` | Proxy, `http://user:pass@proxy_host.com:port` | - |
+| `-o`, `--output` | `stdout` or `stdout-json` | `stdout` |
+| `--json` | The report as JSON on stdout, the same as `-o stdout-json`: one line with `"type": "report"`, written after the last `"type": "progress"` line of the live view (on stderr), so a log that holds both streams, such as a Kubernetes pod's, ends with it | `false` |
+| `--debug` | Runs one iteration and prints every request and response | `false` |
+| `--cert-path`, `--cert-key-path` | Client certificate and key files | - |
+| `--insecure` | Does not verify the target's TLS certificate. Off by default: certificates are verified | `false` |
+| `--preset` | Applies a registered config preset; repeat it | - |
+| `--html` | Also writes an HTML report to this file, when the build has the HTML report | - |
+| `--observer` | Adds a registered live observer, `name` or `name=arg` | - |
+| `--ui` | `auto` shows the live TUI on a terminal and ndjson snapshots when stdout is not a terminal or with `--json`, when the build has them; `tui`, `ndjson` or `plain` choose one. `TERM=dumb` never gets the TUI | `auto` |
+| `--no-color` | No colors; `NO_COLOR` and `TERM=dumb` do the same | `false` |
+| `--drain` | After an interrupt, how long iterations in flight may finish before they are cut; a second interrupt cuts them now | `30s` |
+| `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
+| `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
+
+**Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config.
+
+**Output.** The report goes to stdout, banners, progress lines and errors to stderr. Progress lines are printed only when stderr is a terminal, and colors only when stdout is one.
+
+**Exit codes.**
+
+| Code | Meaning |
+| ---- | ------- |
+| `0` | The test ran and passed |
+| `1` | The test ran but its output could not be written, such as the `--html` file, or the engine failed; the report on stdout is still printed |
+| `2` | A flag, an argument or the config is wrong, or a file it names (the config, a CSV, a dataset, a tokenizer, the `--html` path) can not be read or written; nothing was sent |
+| `3` | The test ran and failed: a [success criterion](#success-criteria-pass--fail), the SLO's `goodput_perc`, or no iteration succeeded (every one refused, failed or cut) |
+| `130` | Interrupted: the iterations finished until then are reported, those still in flight after `--drain` are counted as interrupted |
+
+**Interrupting.** The first CTRL+C (or SIGTERM, or `q` in the TUI) stops starting iterations and gives the ones in flight `--drain` (30 s by default) to finish; a second one cuts them at once. Finished iterations are reported as usual. Cut ones are counted as `interrupted`, apart from every other count and from the latencies.
 
 ### Load Types
 
 #### Linear
 
 ```bash
-ddosify -t https://getanteon.com -l linear
+ddosify run https://getanteon.com -l linear
 ```
 
 Result:
@@ -292,7 +342,7 @@ _Note:_ If the iteration count is too low for the given duration, the test might
 #### Incremental
 
 ```bash
-ddosify -t https://getanteon.com -l incremental
+ddosify run https://getanteon.com -l incremental
 ```
 
 Result:
@@ -302,7 +352,7 @@ Result:
 #### Waved
 
 ```bash
-ddosify -t https://getanteon.com -l waved
+ddosify run https://getanteon.com -l waved
 ```
 
 Result:
@@ -321,6 +371,7 @@ The features you can use by config file:
 - Assertions
 - Cookies
 - Custom load type creation
+- Streaming (SSE) responses, goodput and per-stage reports
 - Payload from a file
 - Multipart/form-data payload
 - Extra connection configuration
@@ -329,7 +380,7 @@ The features you can use by config file:
 Usage:
 
 ```bash
-ddosify -config <json_config_path>
+ddosify run --config <json_config_path>
 ```
 
 There is an example config file at [config_examples/config.json](https://github.com/getanteon/anteon/blob/master/ddosify_engine/config_examples/config.json). This file contains all of the parameters you can use. Details of each parameter;
@@ -358,6 +409,24 @@ There is an example config file at [config_examples/config.json](https://github.
       {"duration": 7, "count": 20}
   ]
   ```
+
+  A stage can also carry a `name` and `"warmup": true`. Once any stage does, the report has a row per stage, and a warm-up stage is left out of the stream summary, the outcomes and the goodput. See [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages).
+
+- `load_spread` (_optional_)
+
+  How iterations are placed in time. `front` (default) is the behaviour Ddosify always had: each second's share is started at the first ticks of that second, and with fewer iterations than seconds, in the first seconds of the test or `manual_load` stage. `even` starts them at even intervals across the stage instead: 30 iterations over 300 seconds start one every 10 seconds. Use `even` for a low arrival rate, such as an LLM endpoint at a few questions a minute.
+
+- `slo` (_optional_)
+
+  Thresholds in milliseconds for the goodput, the share of iterations that succeeded and whose streams met every threshold. Keys: `ttfb_ms`, `first_event_ms`, `first_token_ms`, `total_ms`, `max_gap_ms`, and `goodput_perc`, below which the test fails.
+
+- `insecure` (_optional_)
+
+  `true` skips TLS certificate verification for every step; a step can set it alone. Off by default.
+
+- `presets` (_optional_)
+
+  A preset name, or a list of them, registered by a feature package, applied to this config before it is read. `--preset` adds more. See [Goodput and SLO](#goodput-and-slo).
 
 - `proxy` (_optional_)
 
@@ -603,6 +672,14 @@ There is an example config file at [config_examples/config.json](https://github.
     ]
     ```
 
+  - `stream` (_optional_)
+
+    Reads the response as server-sent events instead of reading it whole, and measures the stream. A `text/event-stream` response is read this way even without it. See [Stream config](#stream-config).
+
+    ```json
+    "stream": {"type": "sse"}
+    ```
+
   - `sleep` (_optional_) <a name="#sleep"></a>
 
     Sleep duration(ms) before executing the next step. Can be an exact duration or a range.
@@ -673,7 +750,7 @@ The full list of dynamic variables can be found in the [documentation](https://g
 Ddosify sends _100_ GET requests in _10_ seconds with random string `key` parameter. This approach can be also used in cache bypass.
 
 ```bash
-ddosify -t https://getanteon.com/?key={{_randomString}} -d 10 -n 100
+ddosify run https://getanteon.com/?key={{_randomString}} -d 10 -n 100
 ```
 
 ### Parameterization on Headers
@@ -681,7 +758,7 @@ ddosify -t https://getanteon.com/?key={{_randomString}} -d 10 -n 100
 Ddosify sends _100_ GET requests in _10_ seconds with random `Transaction-Type` and `Country` headers.
 
 ```bash
-ddosify -t https://getanteon.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTransactionType}}' -h 'Country: {{_randomCountry}}'
+ddosify run https://getanteon.com -d 10 -n 100 -H 'Transaction-Type: {{_randomTransactionType}}' -H 'Country: {{_randomCountry}}'
 ```
 
 ### Parameterization on Payload (Body)
@@ -689,7 +766,7 @@ ddosify -t https://getanteon.com -d 10 -n 100 -h 'Transaction-Type: {{_randomTra
 Ddosify sends _100_ GET requests in _10_ seconds with random `latitude` and `longitude` values in body.
 
 ```bash
-ddosify -t https://getanteon.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
+ddosify run https://getanteon.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitude}}", "longitude": "{{_randomLongitude}}"}'
 ```
 
 ### Parameterization on Basic Authentication
@@ -697,7 +774,7 @@ ddosify -t https://getanteon.com -d 10 -n 100 -b '{"latitude": "{{_randomLatitud
 Ddosify sends _100_ GET requests in _10_ seconds with random `username` and `password` with basic authentication.
 
 ```bash
-ddosify -t https://getanteon.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
+ddosify run https://getanteon.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomPassword}}'
 ```
 
 ### Parameterization on Config File
@@ -705,7 +782,7 @@ ddosify -t https://getanteon.com -d 10 -n 100 -a '{{_randomUserName}}:{{_randomP
 Dynamic variables can be used on config file as well. Ddosify sends _100_ GET requests in _10_ seconds with random string `key` parameter in URL and random `User-Key` header.
 
 ```bash
-ddosify -config ddosify_config_dynamic.json
+ddosify run --config ddosify_config_dynamic.json
 ```
 
 ```json
@@ -736,7 +813,7 @@ Here is an example of using operating system environment variables in the config
 
 ```bash
 export TARGET_SITE="https://getanteon.com"
-ddosify -config ddosify_config_os_env.json
+ddosify run --config ddosify_config_os_env.json
 ```
 
 ```json
@@ -840,7 +917,7 @@ Users can specify the required percentile of response times and failure counts i
 
 Note that the functions and operators mentioned in the [Step Assertion](#assertion) section can also be utilized for the Success Criteria keywords listed below.
 
-You can see a success criteria example in the [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-2-success-criteria) file.
+The [examples](#examples) below show both.
 
 ## Difference Between Success Criteria and Step Assertions
 
@@ -889,7 +966,7 @@ Ddosify enables you to capture variables from steps using **json_path**, **xpath
 You can use **debug** parameter to validate your config.
 
 ```bash
-ddosify -config ddosify_config_correlation.json -debug
+ddosify run --config ddosify_config_correlation.json -debug
 ```
 
 ### Capture with json_path
@@ -1116,7 +1193,7 @@ In `repeated-user` mode, Ddosify uses the same cookie jar for all iterations exe
 
 In `distinct-user` mode, Ddosify uses a different cookie jar for each iteration, so cookies are passed through steps in one iteration only.
 
-You can see a cookie example in the [EXAMPLES](https://github.com/getanteon/anteon/blob/master/ddosify_engine/EXAMPLES.md#example-1-cookie-support) file.
+The sections below show each case.
 
 ### Initial / Custom Cookies
 
@@ -1174,6 +1251,134 @@ Following fields are available for cookie assertion:
 
 - `cookies.test.expires < time(\"Thu, 01 Jan 1990 00:00:00 GMT\")` is a valid assertion expression. It checks if the cookie named `test` has an expiration date before `Thu, 01 Jan 1990 00:00:00 GMT`.
 - `cookies.test.path == \"/login\"` is another valid assertion expression. It checks if the cookie named `test` has a path value equal to `/login`.
+
+## Upgrading from v1
+
+Ddosify v2.0.0 is a major version:
+
+- The module path is `go.ddosify.com/ddosify/v2`.
+- The CLI has commands (`ddosify run`); headers are `-H`, `-h` is help, long flags take two dashes (`--config`, `--cert-path`), and flags override the config file instead of being ignored. `ddosify -t URL` and `ddosify -config FILE` keep working.
+- TLS certificates are verified. `--insecure`, or `"insecure": true` in the config or on a step, turns that off for a host with a self-signed certificate.
+- A failed success criterion exits `3` instead of `1`.
+- The Docker image has no shell: `docker run --rm ddosify/ddosify run ...`.
+
+## Verifying a release
+
+The release's `checksums.txt` lists every archive and its SBOM, and carries a keyless cosign signature and a GitHub artifact attestation; so do the images.
+
+```bash
+cosign verify-blob --bundle checksums.txt.sigstore.json \
+  --certificate-identity 'https://github.com/getanteon/anteon/.github/workflows/release.yml@refs/tags/v2.0.0' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com checksums.txt
+sha256sum --check --ignore-missing checksums.txt
+gh attestation verify --owner getanteon ddosify_2.0.0_linux_amd64.tar.gz
+gh attestation verify --owner getanteon oci://docker.io/ddosify/ddosify:v2.0.0
+```
+
+## Streaming (SSE) and LLM Endpoints
+
+An LLM API answers with a stream: the headers come at once, the first word comes seconds later, and the answer ends tens of seconds after that. A plain response time says none of this. A step with `stream` reads the body as [server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html) as it arrives and records, per request, when each event came.
+
+### Stream config
+
+```json
+"stream": {
+    "type": "sse",
+    "first_token": {"json_path": "type", "equals": "text-delta"},
+    "error": {"json_path": "type", "equals": "error"},
+    "done": "[DONE]",
+    "max_body_bytes": 1048576
+}
+```
+
+| Field            | Description                                                                                                                                                                                                                          | Default                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| `type`           | `sse`, the only stream type.                                                                                                                                                                                                        | `sse`                             |
+| `first_token`    | The event that counts as the first token. Fields: `event` (the SSE `event:` name), `json_path` (a [gjson](https://github.com/tidwall/gjson) path into the event's data), `equals` (the value at `json_path`), `regexp` (matched against the value at `json_path`, or the whole data). Every field given has to match. `json_path` alone needs a value that is not empty. `{}` makes the first event the first token. | `type` equals `text-delta`, the [AI SDK UI message stream](https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol)'s first word |
+| `error`          | An event that reports a failure inside a `200` stream. Same fields as `first_token`. A stream that carries one is not counted as goodput.                                                                                          | `type` equals `error`             |
+| `done`           | The data that ends the stream. Reading stops there. `""` reads until the server closes.                                                                                                                                         | `[DONE]`                          |
+| `max_body_bytes` | The body is kept only when an assertion, a capture or debug mode needs it, and then up to this many bytes. `0` keeps all of it.                                                                                                | `1048576`                         |
+
+For an OpenAI compatible chat completions endpoint use `"first_token": {"json_path": "choices.0.delta.content"}`.
+
+When a step has no `stream` but the response is `text/event-stream`, it is read as a stream with the defaults above and no body cap, so assertions and captures see the whole body as before. A step with `stream` that gets an error status, such as a `429` problem document, reads it whole and records no stream. A stream is read until `done`, the end of the body or the step's `timeout`, which covers the whole stream: set it above the longest answer.
+
+### What is measured
+
+Every time is from the moment the request was sent.
+
+| Metric        | Meaning                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `ttfb`        | First byte of the response, the status line                                                             |
+| `first_event` | First event dispatched. Comments such as `: keepalive` are not events                                   |
+| `first_token` | First event matching `first_token`                                                                      |
+| `total`       | End of the stream                                                                                       |
+| `gap_max`, `gap_p50`, `gap_p95` | The largest, median and 95th percentile time between consecutive events of one stream |
+| `events`      | Events in the stream, `done` excluded                                                                   |
+| ends          | `done` (the done marker came), `closed` (the server closed between events), `cut` (the connection broke, or closed in the middle of an event), `timeout` |
+
+The parser follows the WHATWG event stream rules: `LF`, `CR` and `CRLF` line ends, a line or a `CRLF` split across reads, multi-line `data:` joined with a newline, comments, a leading byte order mark. Memory per stream is bounded: one event's data is cut at 1 MiB, and at most 4,096 gaps are kept for its percentiles.
+
+The report gives each metric's p50, p90, p95, p99, max and mean over the step's successful streams, those that ended cleanly with no error event, as vLLM aggregates successful requests only; cut, timed out and failed streams are in the ends and outcomes and counted as `excluded_from_latency`. It counts every step result as one outcome: `ok`, `rate_limited_429`, `unavailable_503`, `server_error_5xx`, `client_error_4xx`, `timeout`, `network_error`, `stream_cut`, `stream_error_event` or `interrupted`. With `-o stdout-json` they are under `steps.<id>.stream` and `steps.<id>.outcomes`. Percentiles are exact up to 100,000 samples per metric and from a uniform sample beyond. These sections appear only once a test has a stream, an `slo` or a named stage, so the output of other tests does not change. For a streamed step the duration table runs to the end of the stream: Response Read is the time from the headers to the last event, Total is the stream's total, and `response_time` in an assertion is the same total.
+
+Run one iteration with `-debug` to see one stream's measurements next to the request and response.
+
+### Goodput and SLO
+
+```json
+"slo": {"first_token_ms": 10000, "total_ms": 30000}
+```
+
+An iteration is good when every step's outcome is `ok`, no assertion failed, and every stream ended cleanly, carried no error event and met every threshold given. A threshold left out is not checked; a stream that never sent its first token misses `first_token_ms`. The report prints `Goodput: good / iterations (%)`, warm-up excluded, and `goodput` in the JSON output.
+
+| Key              | Threshold on      |
+| ---------------- | ----------------- |
+| `ttfb_ms`        | `ttfb`            |
+| `first_event_ms` | `first_event`     |
+| `first_token_ms` | `first_token`     |
+| `total_ms`       | `total`           |
+| `max_gap_ms`     | `gap_max`         |
+| `goodput_perc`   | not a threshold on a stream: the test fails, exit code `3`, when the goodput is below this percentage |
+
+### Stepped arrival rate and stages
+
+Ddosify starts iterations on a schedule, whatever the earlier ones are doing, so `manual_load` is an arrival rate. With `load_spread: even`, a stage of `count` iterations over `duration` seconds starts one every `duration / count` seconds. Two minutes of warm-up, then 6, 12, 24, 48 and 96 iterations a minute for five minutes each:
+
+```json
+"load_spread": "even",
+"manual_load": [
+    {"duration": 120, "count": 6,   "name": "warm-up", "warmup": true},
+    {"duration": 300, "count": 30,  "name": "6/min"},
+    {"duration": 300, "count": 60,  "name": "12/min"},
+    {"duration": 300, "count": 120, "name": "24/min"},
+    {"duration": 300, "count": 240, "name": "48/min"},
+    {"duration": 300, "count": 480, "name": "96/min"}
+]
+```
+
+An iteration belongs to the stage it started in. The report has one row per stage: iterations, iterations that succeeded, goodput, `429`, `503`, other `5xx`, timeouts, network errors and cut streams, and first token and total p50 and p95. The stream summary, the outcomes and the goodput of the whole test leave the warm-up out. With `-o stdout-json` each stage is in `stages`, with its full stream summary.
+
+### Example: an AI SDK chat API
+
+[config_examples/sse_llm.json](config_examples/sse_llm.json) creates a chat, captures its id and asks a question from [a CSV](config_examples/questions.csv) in the same iteration. Each iteration is one person: `"END_USER": "loadtest:{{_randomUUID}}"` in `env` is generated once per iteration and sent by both steps, so a per end user rate limit sees a new person every time, and `{{_randomUUID}}` in the `Idempotency-Key` header is new on every request. A question is put into the JSON body as `"{{data.questions.text}}"`, quoted, so Ddosify escapes it as a JSON string; UTF-8 text such as Turkish passes through unchanged.
+
+```bash
+export GURUBASE_URL=https://gurubase.example.internal GURU_ID=... GURUBASE_API_KEY=gbk_...
+ddosify run --config config_examples/sse_llm.json -debug   # one iteration, verbose
+ddosify run --config config_examples/sse_llm.json          # the whole run
+```
+
+Count every request against the API's rate limits: two requests an iteration at 96 iterations a minute is 192 requests a minute on one key.
+
+The ask step counts the answer's tokens with `"llm": {"token_source": "tokenizer"}` and the served model's Hugging Face `tokenizer.json`, given in the config or with `--tokenizer` (`DDOSIFY_TOKENIZER`). The tokenizer is forced rather than left to `auto` because Gurubase's `finish` chunk carries the usage of the whole run, every model call that planned, wrote and judged the answer, not the tokens the stream delivered; TPOT and tokens per second from it would be wrong by a large factor. The server's numbers stay in each result as `usage_output` and `usage_input`. Without a tokenizer the output is counted in chunks, and the report says chunks.
+
+```bash
+ddosify run --config config_examples/sse_llm.json --tokenizer ~/models/Qwen3-8B/tokenizer.json --html report.html
+```
+
+### Tokens, the OpenAI preset, sessions and prefix caching
+
+[docs/llm.md](docs/llm.md) covers output tokens (from the server's usage, a Hugging Face `tokenizer.json`, or labelled as chunks), TPOT, ITL and tokens per second, the OpenAI compatible preset that needs only a URL, a key and a dataset, multi-turn sessions, cache-busting and shared prefixes, and the scheduling lag that shows a saturated client.
 
 ## Common Issues
 

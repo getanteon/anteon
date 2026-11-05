@@ -24,9 +24,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // Constants for Hammer field values
@@ -64,6 +65,8 @@ type TestAssertionOpt struct {
 type TimeRunCount []struct {
 	Duration int
 	Count    int
+	Name     string
+	Warmup   bool
 }
 
 type Tag struct {
@@ -144,6 +147,18 @@ type Hammer struct {
 
 	// Engine runs single
 	SingleMode bool
+
+	// How iterations are spread inside a second or a manual_load stage: LoadSpreadFront (default) or LoadSpreadEven
+	LoadSpread string
+
+	// Thresholds an iteration's streams have to meet to count as goodput
+	SLO *SLO
+
+	// Skip TLS certificate verification on every step
+	Insecure bool
+
+	// After an interrupt, how long iterations in flight may finish before they are cut
+	Drain time.Duration
 }
 
 // Validate validates attack metadata and executes the validation methods of the services.
@@ -153,6 +168,12 @@ func (h *Hammer) Validate() error {
 	}
 
 	h.Scenario.CsvVars = getCsvEnvs(h.TestDataConf)
+
+	if h.Insecure {
+		for i := range h.Scenario.Steps {
+			h.Scenario.Steps[i].Insecure = true
+		}
+	}
 
 	if err := h.Scenario.validate(); err != nil {
 		return err
@@ -170,6 +191,16 @@ func (h *Hammer) Validate() error {
 			if t.Duration < 1 {
 				return fmt.Errorf("duration in manual_load should be greater than 0")
 			}
+		}
+	}
+
+	if h.LoadSpread != "" && h.LoadSpread != LoadSpreadFront && h.LoadSpread != LoadSpreadEven {
+		return fmt.Errorf("unsupported load_spread: %s, supported: %s, %s", h.LoadSpread, LoadSpreadFront, LoadSpreadEven)
+	}
+
+	if h.SLO != nil {
+		if err := h.SLO.validate(); err != nil {
+			return err
 		}
 	}
 

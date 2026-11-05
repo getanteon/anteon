@@ -3,9 +3,10 @@ package injection
 import (
 	"encoding/json"
 	"fmt"
+	"go.ddosify.com/ddosify/v2/core/hooks"
 	"reflect"
 
-	"go.ddosify.com/ddosify/core/types/regex"
+	"go.ddosify.com/ddosify/v2/core/types/regex"
 )
 
 func (ei *EnvironmentInjector) InjectDynamic(text string) (string, error) {
@@ -37,12 +38,16 @@ func (ei *EnvironmentInjector) getFakeData(key string) (interface{}, error) {
 	var fakeFunc interface{}
 	var keyExists bool
 	if fakeFunc, keyExists = dynamicFakeDataMap[key]; !keyExists {
+		if fn, ok := hooks.Variable(key); ok {
+			return fn(), nil
+		}
 		return nil, fmt.Errorf("%s is not a valid dynamic variable", key)
 	}
 
+	// one faker serves every injector, and its rand.Rand is not safe for concurrent use
 	preventRaceOnRandomFunc := func(fakeFunc interface{}) interface{} {
-		ei.mu.Lock()
-		defer ei.mu.Unlock()
+		fakerMu.Lock()
+		defer fakerMu.Unlock()
 		return reflect.ValueOf(fakeFunc).Call(nil)[0].Interface()
 	}
 

@@ -29,13 +29,14 @@ import (
 	"sync"
 	"time"
 
-	"go.ddosify.com/ddosify/core/assertion"
+	"go.ddosify.com/ddosify/v2/core/assertion"
 
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/report"
-	"go.ddosify.com/ddosify/core/scenario"
-	"go.ddosify.com/ddosify/core/scenario/data"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/live"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/report"
+	"go.ddosify.com/ddosify/v2/core/scenario"
+	"go.ddosify.com/ddosify/v2/core/scenario/data"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 const (
@@ -62,14 +63,27 @@ type engine struct {
 
 	tickCounter int
 	reqCountArr []int
-	wg          sync.WaitGroup
+
+	// manual_load stages by tick, set only when a stage is named or a warm-up
+	stages []tickStage
+
+	observers []live.Observer
+	collector *live.Collector
+	wg        sync.WaitGroup
+
+	// when the ticker started; tick c is meant to start iterations at startedAt + (c+1) intervals
+	startedAt time.Time
 
 	resultReportChan chan *types.ScenarioResult
 	resultAssertChan chan *types.ScenarioResult
 
 	abortChan   <-chan struct{}
 	testSuccess bool
-	ctx         context.Context
+
+	// ctx ends the schedule: an interrupt. reqCtx is the requests' and cut ends them.
+	ctx    context.Context
+	reqCtx context.Context
+	cut    context.CancelFunc
 }
 
 type EngineServices struct {
@@ -79,6 +93,9 @@ type EngineServices struct {
 
 	ProxyServ  proxy.ProxyService
 	ReportServ report.ReportService
+
+	// Observers get the live snapshots and the final report; the CLI sets them
+	Observers []live.Observer
 }
 
 var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
@@ -105,6 +122,9 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 	if err = rs.Init(h.Debug, h.SamplingRate); err != nil {
 		return nil, err
 	}
+	if ss, ok := rs.(report.SLOSetter); ok && h.SLO != nil {
+		ss.SetSLO(h.SLO)
+	}
 
 	return &EngineServices{
 		// defaultAssertionService as implements all
@@ -123,10 +143,13 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 func NewEngine(ctx context.Context, h types.Hammer,
 	services *EngineServices) (e *engine, err error) {
 	ss := scenario.NewScenarioService()
+	reqCtx, cut := context.WithCancel(context.Background())
 
 	e = &engine{
 		hammer:          h,
 		ctx:             ctx,
+		reqCtx:          reqCtx,
+		cut:             cut,
 		proxyService:    services.ProxyServ,
 		scenarioService: ss,
 		reportService:   services.ReportServ,
@@ -135,6 +158,7 @@ func NewEngine(ctx context.Context, h types.Hammer,
 		aborter:     services.Aborter,
 		resListener: services.ResListener,
 		asserter:    services.Asserter,
+		observers:   services.Observers,
 	}
 
 	return
@@ -162,7 +186,7 @@ func (e *engine) Init() (err error) {
 		}
 	}
 
-	if err = e.scenarioService.Init(e.ctx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
+	if err = e.scenarioService.Init(e.reqCtx, e.hammer.Scenario, e.proxyService.GetAll(), scenario.ScenarioOpts{
 		Debug:                  e.hammer.Debug,
 		IterationCount:         e.hammer.IterationCount,
 		MaxConcurrentIterCount: e.getMaxConcurrentIterCount(),
@@ -174,10 +198,38 @@ func (e *engine) Init() (err error) {
 
 	e.abortChan = e.aborter.AbortChan()
 
+	if len(e.observers) > 0 {
+		e.collector = live.NewCollector(e.plan(), e.hammer.SLO, e.observers)
+	}
 	return
 }
 
-func (e *engine) Start() string {
+func (e *engine) plan() live.Plan {
+	tickDur := time.Duration(tickerInterval) * time.Millisecond
+	p := live.Plan{
+		Duration:   time.Duration(len(e.reqCountArr)) * tickDur,
+		Iterations: arraySum(e.reqCountArr),
+		LoadType:   e.hammer.LoadType,
+		EngineMode: e.hammer.EngineMode,
+		Schedule:   append([]int(nil), e.reqCountArr...),
+		SLO:        e.hammer.SLO,
+	}
+	for _, ts := range e.stages {
+		p.Stages = append(p.Stages, live.Stage{Index: ts.stage.Index, Name: ts.stage.Name, Warmup: ts.stage.Warmup,
+			Start: time.Duration(ts.start) * tickDur, End: time.Duration(ts.end) * tickDur,
+			Iterations: arraySum(e.reqCountArr[ts.start:ts.end])})
+	}
+	for _, s := range e.hammer.Scenario.Steps {
+		info := live.StepInfo{ID: s.ID, Name: s.Name, Method: s.Method, URL: s.URL, Streamed: s.Stream != nil}
+		if s.LLM != nil {
+			info.CacheBust, info.SharedPrefixTokens, info.TokenSource = s.LLM.CacheBust, s.LLM.SharedPrefixTokens, s.LLM.TokenSource
+		}
+		p.Steps = append(p.Steps, info)
+	}
+	return p
+}
+
+func (e *engine) Start() (status string) {
 	ticker := time.NewTicker(time.Duration(tickerInterval) * time.Millisecond)
 	e.resultReportChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
 	e.resultAssertChan = make(chan *types.ScenarioResult, e.hammer.IterationCount)
@@ -192,14 +244,22 @@ func (e *engine) Start() string {
 		go e.resListener.Start(e.resultAssertChan)
 	}
 
+	if dp, ok := e.reportService.(report.DeferredPrinter); ok && e.collector != nil {
+		dp.DeferPrint()
+	}
 	go e.reportService.Start(e.resultReportChan, testResultChan)
+
+	if e.collector != nil {
+		e.collector.Start()
+	}
 
 	defer func() {
 		ticker.Stop()
-		e.stop()
+		status = e.stop(status)
 	}()
 
 	e.tickCounter = 0
+	e.startedAt = time.Now()
 	e.wg = sync.WaitGroup{}
 	var mutex = &sync.Mutex{}
 	for range ticker.C {
@@ -225,16 +285,55 @@ func (e *engine) Start() string {
 }
 
 func (e *engine) runWorkers(c int) {
+	stage := e.stageOf(c)
+	intended := e.startedAt.Add(time.Duration(c+1) * tickerInterval * time.Millisecond)
 	for i := 1; i <= e.reqCountArr[c]; i++ {
 		scenarioStartTime := time.Now()
 		go func(t time.Time) {
-			e.runWorker(t)
+			e.runWorker(t, stage, intended)
 			e.wg.Done()
 		}(scenarioStartTime)
 	}
 }
 
-func (e *engine) runWorker(scenarioStartTime time.Time) {
+type tickStage struct {
+	start, end int // ticks, end not inclusive
+	stage      types.LoadStage
+}
+
+func (e *engine) stageOf(tick int) *types.LoadStage {
+	for i := range e.stages {
+		if tick >= e.stages[i].start && tick < e.stages[i].end {
+			return &e.stages[i].stage
+		}
+	}
+	return nil
+}
+
+func (e *engine) initStages() {
+	tagged := false
+	for _, t := range e.hammer.TimeRunCountMap {
+		if t.Name != "" || t.Warmup {
+			tagged = true
+		}
+	}
+	if !tagged || e.hammer.Debug {
+		return
+	}
+	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
+	start := 0
+	for i, t := range e.hammer.TimeRunCountMap {
+		end := start + t.Duration*tickPerSecond
+		e.stages = append(e.stages, tickStage{start: start, end: end,
+			stage: types.LoadStage{Index: i, Name: t.Name, Warmup: t.Warmup}})
+		start = end
+	}
+}
+
+func (e *engine) runWorker(scenarioStartTime time.Time, stage *types.LoadStage, intended time.Time) {
+	if e.collector != nil {
+		e.collector.IterationStarted()
+	}
 	var res *types.ScenarioResult
 	var err *types.RequestError
 
@@ -248,16 +347,31 @@ func (e *engine) runWorker(scenarioStartTime time.Time) {
 			continue
 		}
 
-		if err != nil && err.Type == types.ErrorIntented {
-			// Don't report intentionally created errors. Like canceled requests.
-			return
-		}
 		break
+	}
+	if res == nil { // the requesters could not be built
+		if e.collector != nil {
+			e.collector.IterationDone(nil, stage, 0)
+		}
+		return
 	}
 
 	res.Others = make(map[string]interface{})
+	if err != nil && err.Type == types.ErrorIntented {
+		// cut while in flight: reported as interrupted, out of the latencies
+		res.Others[types.OthersInterrupted] = true
+	}
 	res.Others["hammerOthers"] = e.hammer.Others
 	res.Others["proxyCountry"] = e.proxyService.GetProxyCountry(p)
+	if stage != nil {
+		res.Others["loadStage"] = *stage
+	}
+	if !e.startedAt.IsZero() {
+		res.Others[types.OthersIntendedStart] = intended
+	}
+	if e.collector != nil {
+		e.collector.IterationDone(res, stage, time.Since(scenarioStartTime))
+	}
 	e.resultReportChan <- res
 
 	if len(e.hammer.Assertions) > 0 {
@@ -269,8 +383,48 @@ func (e *engine) runAssertionsInEngine() bool {
 	return e.hammer.SingleMode && len(e.hammer.Assertions) > 0
 }
 
-func (e *engine) stop() {
-	e.wg.Wait()
+// Cut ends the requests in flight now, without waiting for the drain. Safe to call more than once.
+func (e *engine) Cut() {
+	e.cut()
+}
+
+// drain waits for the iterations in flight. An interrupt, during the schedule or after it, makes
+// the status stopped and gives them hammer.Drain to finish before they are cut.
+func (e *engine) drain(status string) string {
+	done := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(done)
+	}()
+	interrupted := e.ctx.Done()
+	var deadline <-chan time.Time
+	for {
+		select {
+		case <-done:
+			return status
+		case <-interrupted:
+			interrupted = nil
+			if status != resultAborted {
+				status = resultStopped
+			}
+			if e.hammer.Drain <= 0 {
+				e.cut()
+			} else {
+				deadline = time.After(e.hammer.Drain)
+			}
+		case <-deadline:
+			deadline = nil
+			e.cut()
+		}
+	}
+}
+
+func (e *engine) stop(status string) string {
+	status = e.drain(status)
+	defer e.cut()
+	if rs, ok := e.reportService.(report.RunStatusSetter); ok {
+		rs.SetRunStatus(status)
+	}
 	close(e.resultReportChan)
 	close(e.resultAssertChan)
 	e.proxyService.Done()
@@ -282,6 +436,17 @@ func (e *engine) stop() {
 
 	e.testSuccess = <-e.reportService.DoneChan()
 
+	if e.collector != nil {
+		var result *report.Result
+		if rp, ok := e.reportService.(report.ResultProvider); ok {
+			result = rp.Result()
+		}
+		e.collector.Finish(status, e.testSuccess, result)
+		if dp, ok := e.reportService.(report.DeferredPrinter); ok {
+			dp.PrintReport()
+		}
+	}
+	return status
 }
 
 func (e *engine) getMaxConcurrentIterCount() int {
@@ -304,6 +469,7 @@ func (e *engine) initReqCountArr() {
 
 	if e.hammer.TimeRunCountMap != nil {
 		e.createManualReqCountArr()
+		e.initStages()
 	} else {
 		switch e.hammer.LoadType {
 		case types.LoadTypeLinear:
@@ -316,10 +482,20 @@ func (e *engine) initReqCountArr() {
 	}
 }
 
+func (e *engine) evenSpread() bool {
+	return e.hammer.LoadSpread == types.LoadSpreadEven
+}
+
 func (e *engine) createManualReqCountArr() {
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
 	stepStartIndex := 0
 	for _, t := range e.hammer.TimeRunCountMap {
+		if e.evenSpread() {
+			end := stepStartIndex + t.Duration*tickPerSecond
+			createEvenDistArr(t.Count, e.reqCountArr[stepStartIndex:end])
+			stepStartIndex = end
+			continue
+		}
 		steps := make([]int, t.Duration)
 		createLinearDistArr(t.Count, steps)
 
@@ -334,6 +510,10 @@ func (e *engine) createManualReqCountArr() {
 }
 
 func (e *engine) createLinearReqCountArr() {
+	if e.evenSpread() {
+		createEvenDistArr(e.hammer.IterationCount, e.reqCountArr)
+		return
+	}
 	steps := make([]int, e.hammer.TestDuration)
 	createLinearDistArr(e.hammer.IterationCount, steps)
 	tickPerSecond := int(time.Second / (tickerInterval * time.Millisecond))
@@ -352,7 +532,7 @@ func (e *engine) createIncrementalReqCountArr() {
 		tickArrStartIndex := i * tickPerSecond
 		tickArrEndIndex := tickArrStartIndex + tickPerSecond
 		segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
-		createLinearDistArr(steps[i], segment)
+		e.spreadInSecond(steps[i], segment)
 	}
 }
 
@@ -380,9 +560,31 @@ func (e *engine) createWavedReqCountArr() {
 		for j := range steps {
 			tickArrEndIndex := tickArrStartIndex + tickPerSecond
 			segment := e.reqCountArr[tickArrStartIndex:tickArrEndIndex]
-			createLinearDistArr(steps[j], segment)
+			e.spreadInSecond(steps[j], segment)
 			tickArrStartIndex += tickPerSecond
 		}
+	}
+}
+
+func (e *engine) spreadInSecond(count int, ticks []int) {
+	if e.evenSpread() {
+		createEvenDistArr(count, ticks)
+		return
+	}
+	createLinearDistArr(count, ticks)
+}
+
+// createEvenDistArr puts count iterations at even intervals over arr, the first one at arr[0].
+// 30 over 3000 ticks is one every 100 ticks, where createLinearDistArr fills the first 30.
+func createEvenDistArr(count int, arr []int) {
+	n := int64(len(arr))
+	if n == 0 {
+		return
+	}
+	c := int64(count)
+	ceilDiv := func(a, b int64) int64 { return (a + b - 1) / b }
+	for i := int64(0); i < n; i++ {
+		arr[i] = int(ceilDiv((i+1)*c, n) - ceilDiv(i*c, n))
 	}
 }
 

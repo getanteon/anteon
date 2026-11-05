@@ -1,0 +1,5 @@
+{"turns": ["What does time to first token measure in an LLM server?", "And how is it different from time per output token?"]}
+{"turns": ["Explain continuous batching in two sentences.", "Why does it raise throughput?"]}
+{"prompt": "Write a haiku about load testing."}
+{"messages": [{"role": "user", "content": "List three causes of tail latency in a GPU inference server."}, {"role": "assistant", "content": "..."}, {"role": "user", "content": "Which one matters most at high concurrency?"}]}
+{"conversations": [{"from": "human", "value": "What is a KV cache?"}, {"from": "gpt", "value": "..."}, {"from": "human", "value": "How does prefix caching reuse it?"}]}

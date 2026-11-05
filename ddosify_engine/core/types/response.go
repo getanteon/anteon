@@ -98,4 +98,7 @@ type ScenarioStepResult struct {
 
 	// Failed assertion rules and received values
 	FailedAssertions []FailedAssertion
+
+	// Stream metrics, set when the response was read as a stream
+	Stream *StreamResult
 }

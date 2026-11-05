@@ -1,16 +1,14 @@
-FROM golang:1.18.1-alpine as builder
-WORKDIR /app
-COPY . ./
+# Builds ddosify from source: docker build -t ddosify ddosify_engine
+FROM golang:1.26.10-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/ddosify main.go
+COPY . ./
+ARG VERSION=development
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.GitVersion=${VERSION}" -o /out/ddosify .
 
-
-FROM alpine:3.15.4
-ENV ENV="/root/.ashrc"
-WORKDIR /root
-RUN apk --no-cache add ca-certificates
-
-COPY --from=builder /app/ddosify /bin/
-
-COPY assets/ddosify.profile /tmp/profile
-RUN cat /tmp/profile >> "$ENV"
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329
+COPY --from=builder /out/ddosify /usr/bin/ddosify
+USER 65532:65532
+ENTRYPOINT ["/usr/bin/ddosify"]
+CMD ["--help"]

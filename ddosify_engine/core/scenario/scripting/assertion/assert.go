@@ -1,12 +1,13 @@
 package assertion
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/evaluator"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/lexer"
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/parser"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/evaluator"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/lexer"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/parser"
 )
 
 type AssertionError struct { // UnWrappable
@@ -40,7 +41,7 @@ func Assert(input string, env *evaluator.AssertEnv) (bool, error) {
 		return false, AssertionError{
 			failedAssertion: input,
 			received:        map[string]interface{}{},
-			wrappedErr:      fmt.Errorf(strings.Join(p.Errors(), ",")),
+			wrappedErr:      errors.New(strings.Join(p.Errors(), ",")),
 		}
 	}
 

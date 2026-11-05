@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/assertion/ast"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/assertion/ast"
 )
 
 func Eval(node ast.Node, env *AssertEnv, receivedMap map[string]interface{}) (interface{}, error) {

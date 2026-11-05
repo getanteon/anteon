@@ -33,11 +33,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/requester"
-	"go.ddosify.com/ddosify/core/scenario/scripting/injection"
-	"go.ddosify.com/ddosify/core/types"
-	"go.ddosify.com/ddosify/core/types/regex"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/scenario/requester"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/injection"
+	"go.ddosify.com/ddosify/v2/core/types"
+	"go.ddosify.com/ddosify/v2/core/types/regex"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // ScenarioService encapsulates proxy/scenario/requester information and runs the scenario.
@@ -155,8 +155,7 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 	// inject dynamic variables beforehand for each iteration
 	injectDynamicVars(s.ei, envs)
 	// pass a row from data for each iteration
-	s.enrichEnvFromData(envs)
-	atomic.AddInt64(&s.iterIndex, 1)
+	s.enrichEnvFromData(envs, atomic.AddInt64(&s.iterIndex, 1)-1)
 
 	var client *http.Client
 	if s.engineInUserMode() {
@@ -178,7 +177,8 @@ func (s *ScenarioService) Do(proxy *url.URL, startTime time.Time) (
 		if res.Err.Type == types.ErrorProxy || res.Err.Type == types.ErrorIntented {
 			err = &res.Err
 			if res.Err.Type == types.ErrorIntented {
-				// Stop the loop. ErrorProxy can be fixed in time. But ErrorIntented is a signal to stop all.
+				// Cut: keep the step for the report, which counts it as interrupted, and stop the iteration.
+				response.StepResults = append(response.StepResults, res)
 				return
 			}
 		}
@@ -208,7 +208,7 @@ func (s *ScenarioService) engineInUserMode() bool {
 	return false
 }
 
-func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
+func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}, iterIndex int64) {
 	var row map[string]interface{}
 	sb := strings.Builder{}
 	for key, csvData := range s.scenario.Data {
@@ -216,7 +216,7 @@ func (s *ScenarioService) enrichEnvFromData(envs map[string]interface{}) {
 		if csvData.Random {
 			row = csvData.Rows[rand.Intn(lenRows)]
 		} else {
-			row = csvData.Rows[s.iterIndex%int64(lenRows)]
+			row = csvData.Rows[iterIndex%int64(lenRows)]
 		}
 
 		for tag, v := range row {

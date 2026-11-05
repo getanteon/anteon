@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"html"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 type verboseRequest struct {
@@ -21,6 +23,41 @@ type verboseResponse struct {
 	Headers      map[string]string `json:"headers"`
 	Body         interface{}       `json:"body"`
 	ResponseTime int64             `json:"response_time"` // in milliseconds
+	Stream       *verboseStream    `json:"stream,omitempty"`
+}
+
+// verboseStream is a streamed response's metrics, in milliseconds.
+type verboseStream struct {
+	TTFB          float64 `json:"ttfb_ms"`
+	FirstEvent    float64 `json:"first_event_ms"`
+	FirstToken    float64 `json:"first_token_ms"`
+	HasFirstToken bool    `json:"has_first_token"`
+	Total         float64 `json:"total_ms"`
+	Events        int     `json:"events"`
+	Comments      int     `json:"comments"`
+	ErrorEvents   int     `json:"error_events"`
+	GapMax        float64 `json:"gap_max_ms"`
+	GapP50        float64 `json:"gap_p50_ms"`
+	GapP95        float64 `json:"gap_p95_ms"`
+	End           string  `json:"end"`
+	EndReason     string  `json:"end_reason,omitempty"`
+	Bytes         int64   `json:"bytes"`
+	BodyTruncated bool    `json:"body_truncated"`
+
+	LLM *types.LLMResult `json:"llm,omitempty"`
+}
+
+func toVerboseStream(r *types.StreamResult) *verboseStream {
+	if r == nil {
+		return nil
+	}
+	return &verboseStream{
+		TTFB: round1(ms(r.TTFB)), FirstEvent: round1(ms(r.FirstEvent)), FirstToken: round1(ms(r.FirstToken)),
+		HasFirstToken: r.HasFirstToken, Total: round1(ms(r.Total)), Events: r.Events, Comments: r.Comments,
+		ErrorEvents: r.ErrorEvents, GapMax: round1(ms(r.GapMax)), GapP50: round1(ms(r.GapP50)),
+		GapP95: round1(ms(r.GapP95)), End: r.End, EndReason: r.EndReason, Bytes: r.Bytes, BodyTruncated: r.BodyTruncated,
+		LLM: r.LLM,
+	}
 }
 
 type verboseHttpRequestInfo struct {
@@ -43,7 +80,7 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 
 	if sr.Err.Type == types.ErrorInvalidRequest {
 		// could not prepare request at all
-		verboseInfo.Error = sr.Err.Error()
+		verboseInfo.Error = redactText(sr.Err.Error())
 		return verboseInfo
 	}
 
@@ -55,14 +92,14 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 		Headers map[string]string "json:\"headers\""
 		Body    interface{}       "json:\"body\""
 	}{
-		Url:     sr.Url,
+		Url:     redactURL(sr.Url),
 		Method:  sr.Method,
 		Headers: requestHeaders,
 		Body:    requestBody,
 	}
 
 	if sr.Err.Type != "" {
-		verboseInfo.Error = sr.Err.Error()
+		verboseInfo.Error = redactText(sr.Err.Error())
 	} else {
 		responseHeaders, responseBody, _ := decode(sr.RespHeaders,
 			sr.RespBody)
@@ -72,6 +109,7 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 			Headers:      responseHeaders,
 			Body:         responseBody,
 			ResponseTime: sr.Duration.Milliseconds(),
+			Stream:       toVerboseStream(sr.Stream),
 		}
 	}
 
@@ -93,6 +131,45 @@ func ScenarioStepResultToVerboseHttpRequestInfo(sr *types.ScenarioStepResult) ve
 	return verboseInfo
 }
 
+const redacted = "[REDACTED]"
+
+// Headers and query parameters that carry credentials; debug output shows them as [REDACTED].
+var secretHeaders = map[string]bool{"Authorization": true, "Proxy-Authorization": true, "Cookie": true, "Set-Cookie": true,
+	"X-Api-Key": true, "Api-Key": true}
+var secretParams = map[string]bool{"api_key": true, "apikey": true, "key": true, "token": true, "access_token": true}
+
+var secretParamRe = regexp.MustCompile(`(?i)\b(api_key|apikey|key|token|access_token)=[^&\s"']+`)
+
+// redactText hides credential query values in a text such as an error that quotes a URL.
+func redactText(s string) string {
+	return secretParamRe.ReplaceAllString(s, "${1}="+redacted)
+}
+
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if u.User != nil {
+		u.User = url.User(u.User.Username())
+	}
+	if u.RawQuery == "" {
+		return u.String()
+	}
+	q := u.Query()
+	changed := false
+	for k := range q {
+		if secretParams[strings.ToLower(k)] {
+			q[k] = []string{redacted}
+			changed = true
+		}
+	}
+	if changed {
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
+}
+
 func decode(headers http.Header, byteBody []byte) (map[string]string, interface{}, error) {
 	contentType := headers.Get("Content-Type")
 	var reqBody interface{}
@@ -100,6 +177,9 @@ func decode(headers http.Header, byteBody []byte) (map[string]string, interface{
 	hs := make(map[string]string, 0)
 	for k, v := range headers {
 		values := strings.Join(v, ",")
+		if secretHeaders[http.CanonicalHeaderKey(k)] {
+			values = redacted
+		}
 		hs[k] = values
 	}
 

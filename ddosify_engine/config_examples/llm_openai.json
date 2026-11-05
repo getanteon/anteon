@@ -1,0 +1,24 @@
+{
+    "load_spread": "even",
+    "manual_load": [
+        {"duration": 60, "count": 30, "name": "warm-up", "warmup": true},
+        {"duration": 300, "count": 300, "name": "1/s"},
+        {"duration": 300, "count": 600, "name": "2/s"},
+        {"duration": 300, "count": 1200, "name": "4/s"}
+    ],
+    "slo": {"first_token_ms": 2000, "tpot_ms": 50},
+    "llm": {
+        "preset": "openai",
+        "url": "{{$OPENAI_BASE_URL}}/chat/completions",
+        "api_key": "{{$OPENAI_API_KEY}}",
+        "model": "Qwen/Qwen3-8B",
+        "max_tokens": 256,
+        "dataset": {"path": "config_examples/prompts.jsonl"},
+        "order": "random",
+        "tokenizer": "tokenizer.json",
+        "cache_bust": true,
+        "shared_prefix_tokens": 512,
+        "turns": 2,
+        "think_time": "2000-5000"
+    }
+}

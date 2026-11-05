@@ -32,7 +32,7 @@ import (
 	"strings"
 
 	validator "github.com/asaskevich/govalidator"
-	"go.ddosify.com/ddosify/core/util"
+	"go.ddosify.com/ddosify/v2/core/util"
 )
 
 // Constants for Scenario field values
@@ -116,6 +116,9 @@ func (s *Scenario) validate() error {
 				return fmt.Errorf("captured env key is not valid: %s", ce.Name)
 			}
 			definedEnvs[ce.Name] = struct{}{}
+		}
+		for _, name := range st.LLM.capturedNames() {
+			definedEnvs[name] = struct{}{}
 		}
 
 		if _, ok := stepIds[st.ID]; ok {
@@ -233,6 +236,14 @@ type ScenarioStep struct {
 
 	// assertion expressions
 	Assertions []string
+
+	// Read the response as a stream. Nil reads it whole, unless it is text/event-stream.
+	Stream *StreamConf
+
+	// Skip TLS certificate verification. Off unless the user opts in.
+	Insecure bool
+	// Count the streamed answer's tokens, and prepare its prompt. Needs Stream.
+	LLM *LLMConf
 }
 
 type SourceType string
@@ -302,6 +313,21 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 			if dur > maxSleep {
 				return fmt.Errorf("maximum sleep limit exceeded. provided: %d ms, maximum: %d ms", dur, maxSleep)
 			}
+		}
+	}
+
+	if si.Stream != nil {
+		if err := si.Stream.validate(); err != nil {
+			return err
+		}
+	}
+
+	if si.LLM != nil {
+		if si.Stream == nil {
+			return fmt.Errorf("step %d: llm needs a stream config", si.ID)
+		}
+		if err := si.LLM.validate(); err != nil {
+			return err
 		}
 	}
 

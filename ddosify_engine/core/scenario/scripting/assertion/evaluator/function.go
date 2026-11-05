@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"go.ddosify.com/ddosify/core/scenario/scripting/extraction"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/scenario/scripting/extraction"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 var less_than = func(variable int64, limit int64) bool {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestApplyAssertionsAbortsCorrectly(t *testing.T) {

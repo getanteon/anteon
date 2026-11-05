@@ -1,0 +1,26 @@
+ddosify   stage 4/6 24/min   elapsed 17:45   remaining 9:14
+rps target 0.40   achieved 0.39   in flight 12   started 1,273
+
+this stage         p50       p90       p99   all p50   all p99
+TTFT             1,204     2,310     4,980     1,150     4,700
+ITL                 41        88       210        40       190
+E2E              9,870    14,200    21,300     9,500    20,900
+
+goodput   this stage 93.4% (1,120 of 1,199)   all 93.3% (3,900 of 4,180)   ! target 98.0% missed
+slo first token <= 10,000 ms, total <= 30,000 ms
+
+outcomes this stage  ok 1,120   ! 429 31 (2.7%)   ! 503 4 (0.3%)   5xx 2   timeout 3   cut 1
+         all         ok 4,100   ! 429 60 (1.4%)   ! 503 9 (0.2%)   5xx 3   timeout 5   cut 3
+
+stages
+   1 warm-up ############################## done
+   2 6/min   ############################## done
+   3 12/min  ############################## done
+>  4 24/min  #################-------------  55%  2:45 / 5:00
+   5 48/min  ------------------------------ queued
+   6 96/min  ------------------------------ queued
+
+rps                                            ▆▇▇▇▇▇▇███▆▇▇▇▇▇▇███▆▇▇▇▇▇▇███▆▇▇▇▇▇▇███       0.39/s
+p95 TTFT                                       ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇██████████████████     2,390 ms
+
+stopping: waiting for requests in flight, then the report   ctrl+c again to leave now

@@ -1,0 +1,2 @@
+# Golden files are compared byte for byte; a Windows checkout must not turn them into CRLF.
+*.golden text eol=lf

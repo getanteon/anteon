@@ -42,10 +42,10 @@ import (
 	"time"
 
 	"github.com/ddosify/go-faker/faker"
-	"go.ddosify.com/ddosify/config"
-	"go.ddosify.com/ddosify/core/proxy"
-	"go.ddosify.com/ddosify/core/report"
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/config"
+	"go.ddosify.com/ddosify/v2/core/proxy"
+	"go.ddosify.com/ddosify/v2/core/report"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 //TODO: Engine stop channel close order test
@@ -506,7 +506,7 @@ func TestEngineResult(t *testing.T) {
 		expectedStatus string
 		testFailed     bool
 	}{
-		{"CtxCancel", true, "stopped", false},
+		{"CtxCancel", true, "stopped", true}, // an interrupted run does not pass
 		{"Normal", false, "done", false},
 		{"Abort", false, "aborted", true},
 	}
@@ -1741,7 +1741,7 @@ func TestDynamicVarAndEnvVarInSameSection(t *testing.T) {
 }
 
 func TestLoadRandomInfoFromData(t *testing.T) {
-	t.Parallel()
+	// not parallel: it replaces a package level function the other tests call
 
 	// Test server
 	requestCalled := false
@@ -1912,7 +1912,7 @@ func TestInvalidCsvEnvs(t *testing.T) {
 }
 
 func TestCreateInitialCookiesReturnsErr(t *testing.T) {
-	t.Parallel()
+	// not parallel: it replaces a package level function the other tests call
 
 	// Prepare
 	h := newDummyHammer()
@@ -2026,6 +2026,7 @@ func TestTLSMutualAuth(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 
@@ -2095,6 +2096,7 @@ func TestTLSMutualAuthButWeHaveNoCerts(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 
@@ -2172,6 +2174,7 @@ func TestTLSMutualAuthButServerAndClientHasDifferentCerts(t *testing.T) {
 	}
 
 	server.StartTLS()
+	h.Scenario.Steps[0].Insecure = true // these test the client certificate; the server's is self-signed
 
 	h.Scenario.Steps[0].URL = server.URL
 

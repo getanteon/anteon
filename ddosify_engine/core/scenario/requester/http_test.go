@@ -33,7 +33,7 @@ import (
 	"testing"
 	"time"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 	"golang.org/x/net/http2"
 )
 
@@ -72,9 +72,7 @@ func TestInitClient(t *testing.T) {
 		URL:     "https://test.com",
 		Timeout: types.DefaultTimeout,
 	}
-	expectedTLS := &tls.Config{
-		InsecureSkipVerify: true,
-	}
+	expectedTLS := &tls.Config{}
 	expectedTr := &http.Transport{
 		TLSClientConfig:   expectedTLS,
 		Proxy:             http.ProxyURL(p),
@@ -99,8 +97,7 @@ func TestInitClient(t *testing.T) {
 		},
 	}
 	expectedTLSCustomData := &tls.Config{
-		InsecureSkipVerify: true,
-		ServerName:         "dummy.com",
+		ServerName: "dummy.com",
 	}
 	expectedTrCustomData := &http.Transport{
 		TLSClientConfig:    expectedTLSCustomData,
@@ -126,9 +123,7 @@ func TestInitClient(t *testing.T) {
 			"h2": true,
 		},
 	}
-	expectedTLSHTTP2 := &tls.Config{
-		InsecureSkipVerify: true,
-	}
+	expectedTLSHTTP2 := &tls.Config{}
 	expectedTrHTTP2 := &http.Transport{
 		TLSClientConfig:   expectedTLSHTTP2,
 		Proxy:             http.ProxyURL(p),
@@ -368,7 +363,7 @@ func TestSendOnDebugModePopulatesDebugInfo(t *testing.T) {
 		var proxy *url.URL
 		_ = h.Init(ctx, s, proxy, debug, nil)
 		envs := map[string]interface{}{}
-		res := h.Send(http.DefaultClient, envs)
+		res := h.Send(&http.Client{}, envs)
 
 		if expectedMethod != res.Method {
 			t.Errorf("Method Expected %#v, Found: \n%#v", expectedMethod, res.Method)
@@ -434,18 +429,21 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 
 			tempDurationClose := durationCloseFunc
 
-			durationCloseCalled := false
+			// the close runs on a timer after Send returns
+			durationClosed := make(chan struct{})
 			durationCloseFunc = func(d *duration) func() {
 				return func() {
 					tempDurationClose(d)()
-					durationCloseCalled = true
+					close(durationClosed)
 				}
 			}
 			defer func() { durationCloseFunc = tempDurationClose }()
 
-			res := h.Send(http.DefaultClient, envs)
+			res := h.Send(&http.Client{}, envs)
 
-			if !durationCloseCalled {
+			select {
+			case <-durationClosed:
+			case <-time.After(5 * time.Second):
 				t.Errorf("Duration close should be called")
 			}
 
@@ -486,7 +484,7 @@ func TestAssertions(t *testing.T) {
 	h := &HttpRequester{}
 	h.Init(ctx, s, nil, false, nil)
 
-	res := h.Send(http.DefaultClient, map[string]interface{}{})
+	res := h.Send(&http.Client{}, map[string]interface{}{})
 
 	if !strings.EqualFold(res.FailedAssertions[0].Rule, rule1) {
 		t.Errorf("rule expected %s, got %s", rule1, res.FailedAssertions[0].Rule)
@@ -720,7 +718,7 @@ func TestResponseCookiesSentToAssertions(t *testing.T) {
 	h := &HttpRequester{}
 	h.Init(ctx, s, nil, false, nil)
 
-	res := h.Send(http.DefaultClient, map[string]interface{}{})
+	res := h.Send(&http.Client{}, map[string]interface{}{})
 
 	if len(res.FailedAssertions) != 1 {
 		t.Errorf("expected 1 failed assertion, got %d", len(res.FailedAssertions))

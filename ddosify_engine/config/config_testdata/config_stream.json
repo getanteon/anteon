@@ -1,0 +1,34 @@
+{
+    "load_spread": "even",
+    "manual_load": [
+        {"duration": 120, "count": 4, "name": "warm-up", "warmup": true},
+        {"duration": 300, "count": 30, "name": "6/min"},
+        {"duration": 300, "count": 60, "name": "12/min"}
+    ],
+    "slo": {"first_token_ms": 10000, "total_ms": 30000},
+    "steps": [
+        {
+            "id": 1,
+            "url": "http://localhost:3826/chats",
+            "method": "POST"
+        },
+        {
+            "id": 2,
+            "url": "http://localhost:3826/messages",
+            "method": "POST",
+            "timeout": 320,
+            "stream": {"type": "sse"}
+        },
+        {
+            "id": 3,
+            "url": "http://localhost:3826/openai",
+            "method": "POST",
+            "stream": {
+                "first_token": {"json_path": "choices.0.delta.content"},
+                "error": {"event": "error"},
+                "done": "",
+                "max_body_bytes": 4096
+            }
+        }
+    ]
+}

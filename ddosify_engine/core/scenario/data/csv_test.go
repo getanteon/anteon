@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestValidateCsvConf(t *testing.T) {
@@ -35,7 +35,7 @@ func TestValidateCsvConf(t *testing.T) {
 func TestReadCsv_RemoteErr(t *testing.T) {
 	t.Parallel()
 	conf := types.CsvConf{
-		Path:          "https://invalidurl.com/csv",
+		Path:          "http://127.0.0.1:1/csv", // nothing listens on port 1
 		Delimiter:     ";",
 		SkipFirstLine: true,
 		Vars: map[string]types.Tag{

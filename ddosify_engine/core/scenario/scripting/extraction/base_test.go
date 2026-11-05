@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"go.ddosify.com/ddosify/core/types"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func TestHttpHeaderKey_NotSpecified(t *testing.T) {

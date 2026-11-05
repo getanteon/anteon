@@ -1,0 +1,67 @@
+{
+    "engine_mode": "distinct-user",
+    "load_spread": "even",
+    "manual_load": [
+        {"duration": 120, "count": 6, "name": "warm-up", "warmup": true},
+        {"duration": 300, "count": 30, "name": "6/min"},
+        {"duration": 300, "count": 60, "name": "12/min"},
+        {"duration": 300, "count": 120, "name": "24/min"},
+        {"duration": 300, "count": 240, "name": "48/min"},
+        {"duration": 300, "count": 480, "name": "96/min"}
+    ],
+    "slo": {"first_token_ms": 10000, "total_ms": 30000},
+    "output": "stdout",
+    "env": {
+        "END_USER": "loadtest:{{_randomUUID}}"
+    },
+    "data": {
+        "questions": {
+            "path": "config_examples/questions.csv",
+            "vars": {"0": {"tag": "text"}},
+            "skip_first_line": true,
+            "order": "random"
+        }
+    },
+    "steps": [
+        {
+            "id": 1,
+            "name": "Create chat",
+            "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats",
+            "method": "POST",
+            "timeout": 30,
+            "headers": {
+                "Authorization": "Bearer {{$GURUBASE_API_KEY}}",
+                "Gurubase-End-User-Id": "{{END_USER}}"
+            },
+            "capture_env": {
+                "CHAT_ID": {"from": "body", "json_path": "id"}
+            }
+        },
+        {
+            "id": 2,
+            "name": "Ask",
+            "url": "{{$GURUBASE_URL}}/api/v1beta/gurus/{{$GURU_ID}}/chats/{{CHAT_ID}}/messages",
+            "method": "POST",
+            "timeout": 330,
+            "headers": {
+                "Authorization": "Bearer {{$GURUBASE_API_KEY}}",
+                "Gurubase-End-User-Id": "{{END_USER}}",
+                "Idempotency-Key": "{{_randomUUID}}",
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"
+            },
+            "payload": "{\"id\": \"{{CHAT_ID}}\", \"trigger\": \"submit-message\", \"message\": {\"id\": \"msg-1\", \"role\": \"user\", \"parts\": [{\"type\": \"text\", \"text\": \"{{data.questions.text}}\"}]}}",
+            "stream": {
+                "type": "sse",
+                "first_token": {"json_path": "type", "equals": "text-delta"},
+                "error": {"json_path": "type", "equals": "error"},
+                "done": "[DONE]",
+                "max_body_bytes": 1048576
+            },
+            "llm": {
+                "token_source": "tokenizer",
+                "tokenizer": "tokenizer.json"
+            }
+        }
+    ]
+}

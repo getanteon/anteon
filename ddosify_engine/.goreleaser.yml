@@ -1,7 +1,8 @@
+version: 2
+
 project_name: ddosify
-before:
-  hooks:
-    - go mod tidy
+# No hooks: scripts/release-assets.sh builds build/ (licence, completions, man pages) first,
+# so goreleaser runs no go run while it holds the release tokens.
 builds:
   - env:
       - CGO_ENABLED=0
@@ -16,35 +17,54 @@ builds:
       - arm64
     goarm:
       - 6
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
     ldflags:
-      - -s -w -X main.GitVersion={{ .Tag }} -X main.GitCommit={{ .ShortCommit }}  -X main.BuildDate={{ .CommitDate }}
+      - -s -w -X main.GitVersion={{ .Tag }} -X main.GitCommit={{ .ShortCommit }} -X main.BuildDate={{ .CommitDate }}
     ignore:
       - goos: darwin
         goarch: 386
       - goos: darwin
         goarch: arm
-        goarm: 7
-      - goos: darwin
+      - goos: windows
         goarch: arm
-        goarm: 6
-      - goos: darwin
-        goarch: arm
-        goarm: 5
 archives:
   - format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - README.md
-      - LICENSE*
+      - src: build/LICENSE
+        dst: LICENSE
+      - build/completions/*
+      - build/manpages/*
+    builds_info:
+      mtime: "{{ .CommitDate }}"
+
+# Syft SBOMs of every archive
+sboms:
+  - artifacts: archive
 
 universal_binaries:
 - replace: true
 
 checksum:
   name_template: 'checksums.txt'
+
+# Keyless cosign signature of the checksum file, which lists every archive and SBOM
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+    output: true
 snapshot:
-  name_template: "{{ incpatch .Tag }}-next"
+  version_template: "{{ incpatch .Tag }}-next"
 changelog:
   sort: asc
   use: github
@@ -57,10 +77,11 @@ changelog:
       - go mod tidy
 
 brews:
-  - tap:
-      owner: ddosify
+  - repository:
+      owner: getanteon
       name: homebrew-tap
-    folder: Formula
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Formula
     homepage:  https://ddosify.com
     description: High-performance load testing tool, written in Golang.
     license: AGPL-3.0-only
@@ -72,50 +93,44 @@ brews:
       type: optional
     install: |-
       bin.install "ddosify"
+      bash_completion.install "build/completions/ddosify.bash" => "ddosify"
+      zsh_completion.install "build/completions/_ddosify"
+      fish_completion.install "build/completions/ddosify.fish"
+      man1.install Dir["build/manpages/*.1"]
     commit_author:
       name: ddosifyadmin
       email: admin@ddosify.com
 
-dockers:
-- image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}-amd64'
-  dockerfile: Dockerfile.release
-  use: buildx
-  build_flag_templates:
-  - "--pull"
-  - "--label=org.opencontainers.image.created={{.Date}}"
-  - "--label=org.opencontainers.image.name={{.ProjectName}}"
-  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-  - "--label=org.opencontainers.image.version={{.Tag}}"
-  - "--label=org.opencontainers.image.source={{.GitURL}}"
-  - "--platform=linux/amd64"
-  extra_files:
-  - assets/ddosify.profile
-- image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}-arm64'
-  dockerfile: Dockerfile.release
-  use: buildx
-  build_flag_templates:
-  - "--pull"
-  - "--label=org.opencontainers.image.created={{.Date}}"
-  - "--label=org.opencontainers.image.name={{.ProjectName}}"
-  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-  - "--label=org.opencontainers.image.version={{.Tag}}"
-  - "--label=org.opencontainers.image.source={{.GitURL}}"
-  - "--platform=linux/arm64"
-  extra_files:
-  - assets/ddosify.profile
-  goarch: arm64
+dockers_v2:
+  - images:
+      - "ddosify/ddosify"
+    tags:
+      - "{{ .Tag }}"
+      - latest
+    dockerfile: Dockerfile.release
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.source: "{{ .GitURL }}"
+      org.opencontainers.image.licenses: AGPL-3.0-only
 
-docker_manifests:
-- name_template: 'ddosify/ddosify:{{ .Tag }}'
-  image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}-amd64'
-  - 'ddosify/ddosify:{{ .Tag }}-arm64'
-- name_template: 'ddosify/ddosify:latest'
-  image_templates:
-  - 'ddosify/ddosify:{{ .Tag }}-amd64'
-  - 'ddosify/ddosify:{{ .Tag }}-arm64'
+# Keyless cosign signature of the pushed images
+docker_signs:
+  - cmd: cosign
+    output: true
+    args:
+      - "sign"
+      - "${artifact}"
+      - "--yes"
+
+# dist/digests.txt, for the attestation step of the release workflow
+docker_digest:
+  name_template: digests.txt
 
 nfpms:
   - file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
@@ -129,6 +144,15 @@ nfpms:
     - apk
     - deb
     - rpm
+    contents:
+      - src: build/completions/ddosify.bash
+        dst: /usr/share/bash-completion/completions/ddosify
+      - src: build/completions/_ddosify
+        dst: /usr/share/zsh/vendor-completions/_ddosify
+      - src: build/completions/ddosify.fish
+        dst: /usr/share/fish/vendor_completions.d/ddosify.fish
+      - src: build/manpages/*.1
+        dst: /usr/share/man/man1/
 
 release:
   footer: |

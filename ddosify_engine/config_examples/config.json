@@ -7,10 +7,14 @@
     "engine_mode": "distinct-user", // could be one of  "distinct-user","repeated-user", or default mode "ddosify"
     "duration": 5,
     "manual_load": [
-        {"duration": 5, "count": 5},
+        {"duration": 5, "count": 5, "name": "warm-up", "warmup": true}, // a named stage gets its own report row, a warm-up is left out of the totals
         {"duration": 6, "count": 10},
         {"duration": 7, "count": 20}
     ],
+    "load_spread": "even", // "front" (default) or "even": start a stage's iterations at even intervals
+    "slo": {"ttfb_ms": 2000, "first_event_ms": 5000, "first_token_ms": 10000, "total_ms": 30000, "max_gap_ms": 15000, "goodput_perc": 95}, // goodput thresholds for streamed steps; below goodput_perc the test fails, exit 3
+    "insecure": false, // true skips TLS certificate verification, for a self-signed certificate
+    "presets": [], // names of presets a feature package registered, applied before the config is read
     "env" : {
         "HTTPBIN" : "https://httpbin.ddosify.com",
         "LOCAL" : "http://localhost:8084",
@@ -99,6 +103,19 @@
                 "contains(body,\"xyz\")",
                 "range(headers.content-length,1000,10000)"
             ]
+        },
+        {
+            "id": 4,
+            "url": "https://getanteon.com/llm/chat",
+            "method": "POST",
+            "timeout": 330, // covers the whole stream
+            "stream": {
+                "type": "sse",
+                "first_token": {"json_path": "type", "equals": "text-delta"}, // also "event" and "regexp"
+                "error": {"json_path": "type", "equals": "error"},
+                "done": "[DONE]",
+                "max_body_bytes": 1048576
+            }
         },
         {
             "id": 3,
