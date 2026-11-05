@@ -19,7 +19,6 @@
 </p>
 
 <h2 align="center">
-    <a href="https://demo.getanteon.com/" target="_blank">Live Demo</a> •
     <a href="https://getanteon.com/docs" target="_blank">Documentation</a> •
     <a href="https://github.com/getanteon/anteon/tree/master/ddosify_engine" target="_blank">Ddosify CLI</a> •
     <a href="https://discord.com/invite/9KdnrSUZQg" target="_blank">Discord</a>
