@@ -52,6 +52,7 @@ type runOptions struct {
 	target      string
 	iterations  int
 	duration    int
+	stages      []string
 	loadType    string
 	loadSpread  string
 	seed        int64
@@ -90,7 +91,10 @@ var llmFlags = []string{"url", "model", "dataset", "api-key", "max-tokens"}
 var requestOnlyFlags = []string{"target", "method", "body", "auth", "cert-path", "cert-key-path"}
 
 func newRunCmd(s Streams) *cobra.Command {
-	o := &runOptions{}
+	return newRunCmdWith(&runOptions{}, s)
+}
+
+func newRunCmdWith(o *runOptions, s Streams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [TARGET_URL]",
 		Short: "Run a load test from a config file or from flags",
@@ -106,6 +110,7 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 		Example: `  ddosify run https://example.com -n 100 -d 10
   ddosify run --config config.json --json > result.json
   DDOSIFY_ITERATIONS=50 ddosify run --config config.json --duration 30
+  ddosify run --config config.json --stage 60s:4:warm-up:warmup --stage 4m:15:6/min
   ddosify run --preset openai --url http://localhost:8000/v1/chat/completions --model qwen3 \
     --dataset prompts.jsonl --tokenizer tokenizer.json -n 120 -d 60`,
 		Args: cobra.MaximumNArgs(1),
@@ -130,6 +135,7 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.StringVarP(&o.target, "target", "t", "", "target URL, when there is no config file")
 	f.IntVarP(&o.iterations, "iterations", "n", types.DefaultIterCount, "total iterations")
 	f.IntVarP(&o.duration, "duration", "d", types.DefaultDuration, "test duration in seconds")
+	f.StringArrayVar(&o.stages, "stage", nil, "a manual_load stage, "+stageFormat+"; repeat it, and the stages replace the config's manual_load")
 	f.StringVarP(&o.loadType, "load-type", "l", types.DefaultLoadType, "linear, incremental or waved")
 	f.StringVar(&o.loadSpread, "load-spread", "", "front, even or poisson: where in a second or stage iterations start")
 	f.Int64Var(&o.seed, "seed", types.DefaultSeed, "seeds the poisson arrivals and the random data rows; the same seed repeats a run")
@@ -371,6 +377,9 @@ func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
 	if o.config == "" && !fromPreset {
 		h, err := hammerFromFlags(o)
 		if err == nil {
+			err = applyStages(&h, flags, o)
+		}
+		if err == nil {
 			err = applyTokenizer(&h, flags, o)
 		}
 		return h, err
@@ -402,6 +411,9 @@ func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
 	h, err := reader.CreateHammer()
 	if err != nil {
 		return h, fmt.Errorf("%s: %w", configLabel(o), err)
+	}
+	if err := applyStages(&h, flags, o); err != nil {
+		return h, err
 	}
 	if err := overrideHammer(&h, flags, o); err != nil {
 		return h, err

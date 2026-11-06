@@ -191,6 +191,12 @@ ddosify run --preset openai --url http://localhost:8000/v1/chat/completions --mo
   --dataset config_examples/prompts.jsonl --tokenizer tokenizer.json --max-tokens 256 -n 120 -d 60
 ```
 
+`--stage DURATION:COUNT[:NAME[:warmup]]`, repeated, replaces the config's `manual_load` and keeps the rest of it, so the stages of a config baked into an image can change without a new image:
+
+```bash
+ddosify run --config /loadtest/config.json --stage 60s:4:warm-up:warmup --stage 4m:15:6/min --stage 4m:30:12/min
+```
+
 `--url`, `--model`, `--dataset`, `--api-key` and `--max-tokens` fill the top level `llm` object, over a config's when `--config` is given too; `DDOSIFY_API_KEY` keeps the key off the command line. `--tokenizer` (`DDOSIFY_TOKENIZER`) gives every streamed step that tokenizer, and gives a streamed step without an `llm` block one, so a plain SSE scenario counts tokens too.
 
 ## Gurubase

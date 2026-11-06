@@ -286,6 +286,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-t`, `--target` | Target URL, when there is no config file; it can also be the argument | - |
 | `-n`, `--iterations` | Total iteration count | `100` |
 | `-d`, `--duration` | Test duration in seconds | `10` |
+| `--stage` | A [`manual_load`](#configuration) stage, `DURATION:COUNT[:NAME[:warmup]]`: `60s:4:warm-up:warmup`, `4m:15:6/min`. Repeat it; the stages replace the config's `manual_load`, and the iterations and duration follow from them. `DURATION` is whole seconds, `COUNT` the iterations started in the stage, `NAME` can not hold a `:` | - |
 | `-l`, `--load-type` | [Load type](#load-types): `linear`, `incremental`, `waved` | `linear` |
 | `--load-spread` | `front`, `even` or `poisson`, see `load_spread` | `front` |
 | `--seed` | Seeds the `poisson` arrivals and the random data rows, see `seed` | `1` |
@@ -310,7 +311,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
 | `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
 
-**Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config.
+**Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config or with `--stage`.
 
 **Output.** The report goes to stdout, banners, progress lines and errors to stderr. Progress lines are printed only when stderr is a terminal, and colors only when stdout is one.
 
@@ -401,7 +402,7 @@ There is an example config file at [config_examples/config.json](https://github.
 - `manual_load` (_optional_)
 
   If you are looking for creating your own custom load type, you can use this feature. The example below says that Ddosify will run the scenario 5 times, 10 times, and 20 times, respectively along with the provided durations. `iteration_count` and `duration` will be auto-filled by Ddosify according to `manual_load` configuration. In this example, `iteration_count` will be 35 and the `duration` will be 18 seconds.
-  Also `manual_load` overrides `load_type` if you provide both of them. As a result, you don't need to provide these 3 parameters when using `manual_load`.
+  Also `manual_load` overrides `load_type` if you provide both of them. As a result, you don't need to provide these 3 parameters when using `manual_load`. `--stage` on the command line replaces the stages without editing the file.
 
   ```json
   "manual_load": [
