@@ -214,6 +214,10 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 		return usageErr(err)
 	}
 	h.Drain = o.drain
+	// "output": "stdout-json" in the config or -o stdout-json is --json, streams and all.
+	if h.ReportDestination == report.OutputTypeStdoutJson && !h.Debug {
+		o.json = true
+	}
 	// While a TUI owns the terminal nothing else may write to it: stderr is held and printed after.
 	errw := &heldWriter{w: s.Err}
 	s.Err = errw
@@ -313,7 +317,7 @@ func runTest(cmd *cobra.Command, o *runOptions, s Streams) error {
 func buildObservers(o *runOptions, s Streams, color bool, stop func()) ([]live.Observer, bool, error) {
 	interactive := isTerminal(s.Out) && isTerminal(s.In)
 	dumb := os.Getenv("TERM") == "dumb"
-	opts := live.Options{Stdout: s.Out, Stderr: s.Err, Color: color, Interactive: interactive && !dumb, Stop: stop}
+	opts := live.Options{Stdout: s.Out, Stderr: s.Err, Color: color, Interactive: interactive && !dumb, Stop: stop, JSON: o.json}
 	registered := func(name string) bool { _, ok := live.Lookup(name); return ok }
 
 	var names, argsOf []string
@@ -335,6 +339,10 @@ func buildObservers(o *runOptions, s Streams, color bool, stop func()) ([]live.O
 			add("tui", "")
 		case (!isTerminal(s.Out) || o.json) && registered("ndjson"):
 			add("ndjson", "")
+			// Under --json the data is on stdout; stderr says, for a person, what the run is doing.
+			if o.json && registered("status") {
+				add("status", "")
+			}
 		}
 	default:
 		return nil, false, fmt.Errorf("--ui must be auto, tui, ndjson or plain, got %q", o.ui)
@@ -403,6 +411,9 @@ func buildHammer(flags *pflag.FlagSet, o *runOptions) (types.Hammer, error) {
 	raw, err = hooks.ApplyPresets(raw, o.presets)
 	if err != nil {
 		return types.Hammer{}, err
+	}
+	if err := missingEnv(raw); err != nil {
+		return types.Hammer{}, fmt.Errorf("%s: %w", configLabel(o), err)
 	}
 	reader, err := config.NewConfigReader(raw, config.ConfigTypeJson)
 	if err != nil {
@@ -617,4 +628,32 @@ func parseHeaders(in []string) (map[string]string, error) {
 		out[m[1]] = m[2]
 	}
 	return out, nil
+}
+
+var envRef = regexp.MustCompile(`\{\{\s*\$([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
+
+// missingEnv names every {{$NAME}} the config uses that is not set, at once and before anything
+// is sent: a run inside a container sees only the variables passed with -e.
+func missingEnv(raw []byte) error {
+	var missing []string
+	seen := map[string]bool{}
+	for _, m := range envRef.FindAllSubmatch(raw, -1) {
+		name := string(m[1])
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		if _, ok := os.LookupEnv(name); !ok {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	what := "the environment variables " + strings.Join(missing, ", ") + " are not set"
+	if len(missing) == 1 {
+		what = "the environment variable " + missing[0] + " is not set"
+	}
+	return fmt.Errorf("%s; the config uses {{$NAME}}. Set it, or with docker run pass each one with -e NAME=value "+
+		"(-e NAME alone passes it only when it is exported in this shell)", what)
 }

@@ -301,7 +301,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-T`, `--timeout` | Request timeout in seconds; for a stream it covers the whole stream | `5` |
 | `-P`, `--proxy` | Proxy, `http://user:pass@proxy_host.com:port` | - |
 | `-o`, `--output` | `stdout` or `stdout-json` | `stdout` |
-| `--json` | The report as JSON on stdout, the same as `-o stdout-json`: one line with `"type": "report"`, written after the last `"type": "progress"` line of the live view (on stderr), so a log that holds both streams, such as a Kubernetes pod's, ends with it | `false` |
+| `--json` | NDJSON on stdout, the same as `-o stdout-json`: a `"type": "progress"` line every second, a `"type": "request"` line per request with `request_log`, and last the report, one line with `"type": "report"`. Stderr is for a person: what the run is doing every 10 seconds, the first error of each kind the moment it happens, and how it ended. See [Seeing what a run does](#seeing-what-a-run-does) | `false` |
 | `--debug` | Runs one iteration and prints every request and response | `false` |
 | `--cert-path`, `--cert-key-path` | Client certificate and key files | - |
 | `--insecure` | Does not verify the target's TLS certificate. Off by default: certificates are verified | `false` |
@@ -314,9 +314,26 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
 | `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
 
+#### Seeing what a run does
+
+With `--json` the data goes to stdout and a person's view of the run to stderr, so `> run.ndjson` keeps the data in a file and the terminal, or `docker logs`, still says what is happening:
+
+```text
+Started: 3 iterations over 1:00; stages: smoke 3 in 1:00; steps: 1 "Create chat", 2 "Turn 1"
+Error: step 1 "Create chat": network_error: Post "https://gurubase.bank.local/api/v1beta/gurus/.../chats": tls: failed to verify certificate: x509: certificate signed by unknown authority
+0:10/1:00 smoke · started 1 · in flight 0 · ok 0 · failed 1 (network_error 1)
+Finished in 1:01: 3 iterations started, requests ok 0, failed 3 (network_error 3); the test failed: no request succeeded; the first error of each kind is above
+```
+
+- **An error is shown when it first happens**, once per step, outcome and reason, with the reason in full: a refused certificate, a timeout, an `HTTP 503`. A URL in the reason does not make a new kind, so an id in the path does not repeat it. Twenty kinds at most; the report counts them all.
+- **A config that needs an environment variable** (`{{$NAME}}`) that is not set stops before anything is sent, naming every missing one. In a container, pass each with `-e NAME=value`; `-e NAME` alone passes it only when it is exported in the shell that runs `docker`.
+- **The exit code** says how it ended: `0` passed, `2` the command or the config is wrong, `3` a success criterion failed, for example no request succeeded.
+
+A pod's log holds both streams; `ddosify report` and other NDJSON readers skip the lines that are not JSON.
+
 **Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config or with `--stage`.
 
-**Output.** The report goes to stdout, banners, progress lines and errors to stderr. Progress lines are printed only when stderr is a terminal, and colors only when stdout is one.
+**Output.** The report goes to stdout, banners and errors to stderr. With `--json`, progress lines are data and go to stdout too, and stderr gets the status lines above; without it, progress lines go to stderr. Colors only when stdout is a terminal.
 
 **Exit codes.**
 
@@ -1416,7 +1433,7 @@ Write it while the test runs, or afterwards from the `--json` output:
 ```bash
 ddosify run --config config.json --html report.html
 
-ddosify run --config config.json --json > run.ndjson 2>&1   # progress lines are on stderr
+ddosify run --config config.json --json > run.ndjson
 ddosify report run.ndjson -o report.html --title "Nightly run"
 
 kubectl logs job/loadtest | ddosify report -o report.html  # a pod's log holds both streams

@@ -51,6 +51,8 @@ type stdoutJson struct {
 
 	// set by request_log: a line per sent request, before the report
 	reqLog *requestLog
+
+	firstErrors firstErrors
 }
 
 func (s *stdoutJson) Init(debug bool, samplingRate int) (err error) {
@@ -162,6 +164,7 @@ func (s *stdoutJson) listenAndAggregate(input chan *types.ScenarioResult, assert
 		if s.reqLog != nil {
 			s.reqLog.write(out, r)
 		}
+		s.firstErrors.note(errOut, r)
 	}
 	// listen for assertion result, add to json
 	s.result.TestStatus = "success"
