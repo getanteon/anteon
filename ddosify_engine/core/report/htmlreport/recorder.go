@@ -29,17 +29,23 @@ import (
 // DefaultMaxPoints bounds the time series: about 1,500 points whatever the test's length.
 const DefaultMaxPoints = 1500
 
-// Point is one recorded snapshot, numbers only.
+// Point is one recorded snapshot, numbers and the stage's name only.
 type Point struct {
 	T           float64 // seconds from the start
+	At          int64   // Unix milliseconds, 0 when unknown
 	Stage       int     // 0-based stage index, -1 when the test has no stages
+	StageName   string
+	Warmup      bool
 	TargetRPS   float64
 	AchievedRPS float64
 	InFlight    int64
+	Iterations  int64 // started so far, the whole run
 	TTFT        live.Latency
 	ITL         live.Latency
 	E2E         live.Latency
 	Goodput     live.Goodput
+	// The current stage's counts when the test has stages, else the run's
+	OK, Failed, Unavailable, RateLimited int64
 }
 
 // Recorder keeps a bounded time series of snapshots for the report's charts.
@@ -55,6 +61,16 @@ type Recorder struct {
 	// The latest snapshot, kept so the series always ends where the test did.
 	tail        Point
 	tailPending bool
+
+	// When each stage began and ended, from every snapshot, not only the kept ones
+	spans map[int]*Span
+}
+
+// Span is when a stage ran: seconds from the start, and Unix milliseconds when known.
+type Span struct {
+	Start, End     float64
+	StartAt, EndAt int64
+	Failed         int64 // the stage's failed requests at its last snapshot
 }
 
 // NewRecorder keeps at most maxPoints points; 0 uses DefaultMaxPoints.
@@ -75,16 +91,38 @@ func (r *Recorder) Add(s live.Snapshot) {
 	if s.Stage.Count > 0 {
 		stage = s.Stage.Index
 	}
+	o := s.Outcomes
 	p := Point{
 		T:           s.Elapsed.Seconds(),
 		Stage:       stage,
+		StageName:   s.Stage.Name,
+		Warmup:      s.Stage.Warmup,
 		TargetRPS:   s.TargetRPS,
 		AchievedRPS: s.AchievedRPS,
 		InFlight:    s.InFlight,
+		Iterations:  s.Iterations,
 		TTFT:        s.TTFT,
 		ITL:         s.ITL,
 		E2E:         s.E2E,
 		Goodput:     s.Goodput,
+		OK:          o.OK,
+		Failed:      o.Total() - o.OK - o.Interrupted,
+		Unavailable: o.Unavailable,
+		RateLimited: o.RateLimited,
+	}
+	if !s.At.IsZero() {
+		p.At = s.At.UnixMilli()
+	}
+	if stage >= 0 {
+		if r.spans == nil {
+			r.spans = map[int]*Span{}
+		}
+		sp := r.spans[stage]
+		if sp == nil {
+			sp = &Span{Start: p.T, StartAt: p.At}
+			r.spans[stage] = sp
+		}
+		sp.End, sp.EndAt, sp.Failed = p.T, p.At, p.Failed
 	}
 	r.seen++
 	if (r.seen-1)%r.stride != 0 {
@@ -119,4 +157,15 @@ func (r *Recorder) EventGap() bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.eventGap
+}
+
+// Spans returns when each stage ran, by its index.
+func (r *Recorder) Spans() map[int]Span {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make(map[int]Span, len(r.spans))
+	for i, s := range r.spans {
+		out[i] = *s
+	}
+	return out
 }

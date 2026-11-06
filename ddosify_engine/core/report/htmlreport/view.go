@@ -34,6 +34,9 @@ import (
 //go:embed page.html.tmpl
 var pageSource string
 
+//go:embed charts.js
+var chartsJS string
+
 var page = template.Must(template.New("page").Funcs(template.FuncMap{"inc": func(i int) int { return i + 1 }}).Parse(pageSource))
 
 type card struct {
@@ -85,7 +88,12 @@ type pageView struct {
 	StatusAlarm bool
 	Cards       []card
 	Outcomes    []outcomeRow
-	Charts      []chart
+	Data        chartData
+	Steady      *ReqData
+	SteadyRows  []steadyRow
+	StepRows    []stepStageRow
+	Script      template.JS
+	PerStep     string
 	Stages      []stageRow
 	Steps       []stepRow
 	ITLName     string
@@ -276,12 +284,12 @@ func buildView(r Report) pageView {
 			}
 			if len(v.Cards) < 7 && st.FirstToken != nil {
 				v.Cards = append(v.Cards,
-					card{Label: "TTFT p95", Value: fmtMs(st.FirstToken.P95) + " ms", Note: s.Name},
+					card{Label: "TTFT p95", Value: fmtDur(st.FirstToken.P95), Note: s.Name},
 				)
 			}
 			if len(v.Cards) < 7 && st.Total != nil {
 				v.Cards = append(v.Cards,
-					card{Label: "E2E p95", Value: fmtMs(st.Total.P95) + " ms", Note: s.Name},
+					card{Label: "E2E p95", Value: fmtDur(st.Total.P95), Note: s.Name},
 				)
 			}
 		}
@@ -312,85 +320,66 @@ func buildView(r Report) pageView {
 		v.Stages = append(v.Stages, row)
 	}
 
-	v.Charts = buildCharts(r, v.ITLName)
+	v.Data, v.Steady = buildData(r, v.ITLName)
+	v.SteadyRows, v.StepRows = steadyRows(v.Steady)
+	v.Script = template.JS(chartsJS)
+	v.PerStep = fmtInt(PerStepSamples)
 	tokenView(r, &v)
 	return v
 }
 
-func buildCharts(r Report, itlName string) []chart {
-	pts := r.Series
-	if len(pts) < 2 {
-		return nil
-	}
-	ts := make([]float64, len(pts))
-	var marks []stageMark
-	for i, p := range pts {
-		ts[i] = p.T
-		if p.Stage >= 0 && (i == 0 || p.Stage != pts[i-1].Stage) {
-			marks = append(marks, stageMark{T: p.T, Label: fmt.Sprintf("S%d", p.Stage+1)})
-		}
-	}
-	lat := func(get func(Point) (float64, int64)) []float64 {
-		out := make([]float64, len(pts))
-		for i, p := range pts {
-			v, n := get(p)
-			if n == 0 {
-				v = math.NaN()
-			}
-			out[i] = v
-		}
-		return out
-	}
-	pcts := func(sel func(Point) struct {
-		P50, P90, P99 float64
-		N             int64
-	}) []series {
-		return []series{
-			{Name: "p50", Dash: dashSolid, vals: lat(func(p Point) (float64, int64) { s := sel(p); return s.P50, s.N })},
-			{Name: "p90", Dash: dashLong, vals: lat(func(p Point) (float64, int64) { s := sel(p); return s.P90, s.N })},
-			{Name: "p99", Dash: dashDotted, vals: lat(func(p Point) (float64, int64) { s := sel(p); return s.P99, s.N })},
-		}
-	}
-	type trio = struct {
-		P50, P90, P99 float64
-		N             int64
-	}
-	ttft := pcts(func(p Point) trio { return trio{p.TTFT.P50, p.TTFT.P90, p.TTFT.P99, p.TTFT.Count} })
-	itl := pcts(func(p Point) trio { return trio{p.ITL.P50, p.ITL.P90, p.ITL.P99, p.ITL.Count} })
-	e2e := pcts(func(p Point) trio { return trio{p.E2E.P50, p.E2E.P90, p.E2E.P99, p.E2E.Count} })
-
-	target := make([]float64, len(pts))
-	achieved := make([]float64, len(pts))
-	inflight := make([]float64, len(pts))
-	goodput := make([]float64, len(pts))
-	for i, p := range pts {
-		target[i], achieved[i], inflight[i] = p.TargetRPS, p.AchievedRPS, float64(p.InFlight)
-		goodput[i] = math.NaN()
-		if p.Goodput.Total > 0 {
-			goodput[i] = p.Goodput.Perc()
-		}
-	}
-	charts := []chart{
-		buildChart("ttft", "Time to first token", "ms", "Percentiles of the successful requests so far in the stage running at each snapshot; a gap is a snapshot with none yet.", ts, ttft, marks, 0),
-		buildChart("itl", itlName, "ms", "Time between tokens, or between SSE events when tokens are not counted.", ts, itl, marks, 0),
-		buildChart("e2e", "End to end", "ms", "Iteration wall time, all steps, of the iterations that succeeded.", ts, e2e, marks, 0),
-		buildChart("rps", "Arrival rate", "/s", "Iterations started a second: the plan and what was reached.", ts,
-			[]series{{Name: "target", Dash: dashLong, vals: target}, {Name: "achieved", Dash: dashSolid, vals: achieved}}, marks, 0),
-		buildChart("inflight", "In flight", "", "Requests started and not yet ended.", ts,
-			[]series{{Name: "in flight", Dash: dashSolid, vals: inflight}}, marks, 0),
-	}
-	if r.Goodput != nil || hasValue(goodput) {
-		charts = append(charts, buildChart("goodput", "Goodput", "%", "Share of finished iterations that met the SLO so far.", ts,
-			[]series{{Name: "goodput", Dash: dashSolid, vals: goodput}}, marks, 100))
-	}
-	return charts
+type steadyRow struct {
+	Name, Settle, Steady, Answered, NoText, Rejected, Failed, Good string
+	FTp50, FTp95, Totp50, Totp95                                   string
+	Warmup                                                         bool
 }
 
-func hasValue(vs []float64) bool {
-	for _, v := range vs {
-		if !math.IsNaN(v) {
-			return true
+type stepStageRow struct {
+	Stage, Step, N               string
+	FTp50, FTp95, Totp50, Totp95 string
+	Warmup                       bool
+}
+
+func msCell(v *float64) string {
+	if v == nil {
+		return "-"
+	}
+	return fmtMs(*v)
+}
+
+// p95Cell is p95 with its 95% interval.
+func p95Cell(d Dist) string {
+	if d.P95 == nil {
+		return "-"
+	}
+	if len(d.P95CI) == 2 {
+		return fmt.Sprintf("%s [%s-%s]", fmtMs(*d.P95), fmtMs(d.P95CI[0]), fmtMs(d.P95CI[1]))
+	}
+	return fmtMs(*d.P95)
+}
+
+func steadyRows(q *ReqData) ([]steadyRow, []stepStageRow) {
+	if q == nil {
+		return nil, nil
+	}
+	var rows []steadyRow
+	var steps []stepStageRow
+	for _, s := range q.Stages {
+		good := "-"
+		if s.Steady > 0 {
+			good = fmt.Sprintf("%.1f%%", float64(s.Good)/float64(s.Steady)*100)
+		}
+		rows = append(rows, steadyRow{Name: s.Name, Warmup: s.Warmup, Settle: fmtInt(int64(math.Round(s.SettleMs / 1000))),
+			Steady: fmtInt(int64(s.Steady)), Answered: fmtInt(int64(s.Answered)), NoText: fmtInt(int64(s.NoText)),
+			Rejected: fmtInt(int64(s.Rejected)), Failed: fmtInt(int64(s.Failed)), Good: good,
+			FTp50: msCell(s.FT.P50), FTp95: p95Cell(s.FT), Totp50: msCell(s.Total.P50), Totp95: p95Cell(s.Total)})
+		if len(q.Steps) < 2 {
+			continue
+		}
+		for _, st := range s.Steps {
+			steps = append(steps, stepStageRow{Stage: s.Name, Step: st.Name, Warmup: s.Warmup, N: fmtInt(int64(st.Total.N)),
+				FTp50: msCell(st.FT.P50), FTp95: msCell(st.FT.P95), Totp50: msCell(st.Total.P50), Totp95: msCell(st.Total.P95)})
 		}
 	}
-	return false
+	return rows, steps
 }

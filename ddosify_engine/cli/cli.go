@@ -168,7 +168,7 @@ time to first token and goodput. Run a test with "ddosify run".`,
 	root.SetErr(s.Err)
 	root.SetVersionTemplate("{{.Version}}\n")
 	root.CompletionOptions.HiddenDefaultCmd = false
-	root.AddCommand(newRunCmd(s), newVersionCmd(info, s), newDocsCmd(s))
+	root.AddCommand(newRunCmd(s), newReportCmd(s), newVersionCmd(info, s), newDocsCmd(s))
 	return root
 }
 

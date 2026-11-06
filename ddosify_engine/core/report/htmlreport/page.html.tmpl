@@ -7,72 +7,100 @@
 <meta name="referrer" content="no-referrer">
 <title>{{.R.Title}}</title>
 <style>
-:root {
-  --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #e3e3e3; --card: #fafafa;
-  --s0: #5b3fd6; --s1: #c2410c; --s2: #0f766e; --alarm: #b91c1c; --alarm-bg: #fdecec;
-  --bar: #5b3fd6; --grid: #ececec;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111113; --fg: #ececec; --muted: #9a9a9a; --line: #2c2c30; --card: #18181b;
-    --s0: #a593ff; --s1: #fb923c; --s2: #2dd4bf; --alarm: #f87171; --alarm-bg: #3a1616;
-    --bar: #a593ff; --grid: #232327;
-  }
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { font-size: 22px; margin: 0 0 4px; }
-h2 { font-size: 17px; margin: 36px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
-h3 { font-size: 15px; margin: 20px 0 6px; }
-.muted { color: var(--muted); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
-.card { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 10px 12px; }
-.card .label { color: var(--muted); font-size: 12px; }
-.card .value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.card .note { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.alarm { color: var(--alarm); }
-.card.alarm { border-color: var(--alarm); background: var(--alarm-bg); }
-.mark::before { content: "! "; font-weight: 700; }
-.table-wrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child, td.name, th.name { text-align: left; }
-th { color: var(--muted); font-weight: 500; font-size: 12px; }
-td.name { overflow-wrap: anywhere; white-space: normal; }
-.bar { height: 10px; background: var(--grid); border-radius: 3px; min-width: 120px; }
-.bar > span { display: block; height: 100%; background: var(--bar); border-radius: 3px; }
-.bar.alarm > span { background: var(--alarm); }
-.chart-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 6px; margin: 12px 0; background: var(--card); }
-.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.legend svg { vertical-align: middle; }
-.readout { font-size: 12px; min-height: 18px; font-variant-numeric: tabular-nums; }
-svg.chart { width: 100%; height: auto; display: block; }
-svg .grid { stroke: var(--grid); stroke-width: 1; }
-svg .tick { fill: var(--muted); font-size: 11px; }
-svg .stage { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
-svg .stagelabel { fill: var(--muted); font-size: 10px; }
-svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; }
-svg .s0 { stroke: var(--s0); } svg .s1 { stroke: var(--s1); } svg .s2 { stroke: var(--s2); }
-svg .cursor { stroke: var(--fg); stroke-width: 1; opacity: .4; }
-dl.config { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
-dl.config dt { color: var(--muted); }
-dl.config dd { margin: 0; }
-footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
+:root{color-scheme:light;
+--page:#f9f9f7;--card:#ffffff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);--band:rgba(11,11,11,.025);--bandw:rgba(11,11,11,.06);
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--ref:#52514e;--fillop:.16;--areaop:.10;
+--tip:#ffffff;--tipring:rgba(11,11,11,.14);--shadow:0 8px 24px rgba(11,11,11,.10)}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
+--page:#0d0d0d;--card:#141413;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--band:rgba(255,255,255,.025);--bandw:rgba(255,255,255,.06);
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{color-scheme:dark;
+--page:#0d0d0d;--card:#141413;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--band:rgba(255,255,255,.025);--bandw:rgba(255,255,255,.06);
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:22px;letter-spacing:-.015em;margin:0;font-weight:600}
+h2{font-size:15px;font-weight:600;margin:32px 0 10px}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px}
+p{margin:6px 0}
+.muted{color:var(--muted)}
+button.theme{background:var(--card);color:var(--ink2);border:1px solid var(--ring);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:18px}
+.card{background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:12px 14px}
+.card .label{color:var(--ink2);font-size:12px}
+.card .value{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.card .note{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.alarm{color:var(--crit)}
+.card.alarm{border-color:var(--crit)}
+.mark::before{content:"! ";font-weight:700}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))}
+.chart{background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:12px 14px 8px;min-width:0}
+.chart h3{margin:0}
+.chart .sub{color:var(--muted);font-size:12px;margin:1px 0 6px}
+.holder{position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin:2px 0 4px}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.legend i.dash{border-top-style:dashed}
+.legend i.box{height:10px;border:0;border-radius:2px;opacity:.6}
+svg{display:block;width:100%;overflow:visible}
+svg text{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+svg text.lab,svg .band-l{fill:var(--ink2)}
+svg .halo{fill:var(--ink2);paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}
+svg .fill{opacity:var(--fillop)}svg .area{opacity:var(--areaop)}
+svg:focus{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}
+#tip,.ptip{pointer-events:none;z-index:10;background:var(--tip);border:1px solid var(--tipring);border-radius:8px;box-shadow:var(--shadow);padding:8px 10px;font-size:12px;display:none}
+#tip{position:fixed;min-width:180px}.ptip{position:absolute;top:22px;opacity:.96}
+#tip .h,.ptip .h{color:var(--ink2);margin-bottom:4px;white-space:nowrap}
+#tip .r,.ptip .r{display:flex;align-items:center;gap:8px;white-space:nowrap;line-height:1.7}
+#tip .r i,.ptip .r i{width:12px;border-top:2px solid;flex:none}
+#tip .r i.dash,.ptip .r i.dash{border-top-style:dashed}
+#tip .r i.box,.ptip .r i.box{height:10px;border:0;border-radius:2px;opacity:.6}
+#tip .r b,.ptip .r b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;min-width:56px}
+#tip .r span,.ptip .r span{color:var(--ink2)}
+section.box,.table-wrap{background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:8px 12px}
+.table-wrap{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--grid);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th:first-child,td:first-child,td.name,th.name{text-align:left}
+th{color:var(--ink2);font-weight:500;font-size:12px}
+td.name{overflow-wrap:anywhere;white-space:normal}
+tr.warm td{color:var(--muted)}
+.bar{height:6px;background:var(--grid);border-radius:3px;min-width:120px}
+.bar>span{display:block;height:100%;background:var(--s1);border-radius:3px}
+.bar.alarm>span{background:var(--crit)}
+dl.config{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
+dl.config dt{color:var(--muted)}dl.config dd{margin:0}
+footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid var(--grid);padding-top:12px}
 </style>
 </head>
 <body>
 <main>
 <header>
-  <h1>{{.R.Title}}</h1>
-  <div class="muted">Generated {{.Generated}}. Duration {{.Duration}}. Status: <span class="{{if .StatusAlarm}}alarm mark{{end}}">{{.StatusText}}</span>.</div>
-  <div class="cards">
-    {{- range .Cards}}
-    <div class="card{{if .Alarm}} alarm{{end}}"><div class="label">{{.Label}}</div><div class="value{{if .Alarm}} mark{{end}}">{{.Value}}</div><div class="note">{{.Note}}</div></div>
-    {{- end}}
+  <div>
+    <h1>{{.R.Title}}</h1>
+    <div class="muted">Generated {{.Generated}}. Duration {{.Duration}}. Status: <span class="{{if .StatusAlarm}}alarm mark{{end}}">{{.StatusText}}</span>.</div>
   </div>
+  <button class="theme" id="theme" type="button" hidden>Theme</button>
 </header>
+<div class="cards">
+  {{- range .Cards}}
+  <div class="card{{if .Alarm}} alarm{{end}}"><div class="label">{{.Label}}</div><div class="value{{if .Alarm}} mark{{end}}">{{.Value}}</div><div class="note">{{.Note}}</div></div>
+  {{- end}}
+</div>
+<noscript><p class="muted">The charts need JavaScript; the tables below do not.</p></noscript>
+
+<section id="load-section">
+  <h2>Load</h2>
+  <div class="grid" id="load"></div>
+</section>
+
+<section id="latency-section">
+  <h2>Latency</h2>
+  <div class="grid" id="latency"></div>
+</section>
 
 <section id="goodput">
   <h2>Goodput</h2>
@@ -117,27 +145,10 @@ footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
 </section>
 {{- end}}
 
-{{- if .Charts}}
-<section id="charts">
-  <h2>Over time</h2>
-  <p class="muted">Dashed vertical lines mark where each stage (S1, S2, ...) began. Lines differ by dash as well as colour. Hover for values.</p>
-  {{- range .Charts}}
-  <div class="chart-box" id="chart-{{.ID}}" data-series="{{.Data}}">
-    <div class="chart-head">
-      <h3>{{.Title}}{{if .Unit}} <span class="muted">({{.Unit}})</span>{{end}}</h3>
-      <div class="legend">{{range $i, $s := .Legend}}<span><svg width="28" height="8" aria-hidden="true"><line x1="0" x2="28" y1="4" y2="4" class="line s{{$i}}" stroke-width="2"{{if $s.Dash}} stroke-dasharray="{{$s.Dash}}"{{end}}/></svg> {{$s.Name}}</span>{{end}}</div>
-    </div>
-    <div class="muted" style="font-size:12px">{{.Note}}</div>
-    {{.SVG}}
-    <div class="readout muted" aria-live="polite"></div>
-  </div>
-  {{- end}}
-</section>
-{{- end}}
-
 {{- if .Stages}}
 <section id="stages">
   <h2>Stages</h2>
+  <div class="grid" id="stagecharts"><div class="chart" id="stage-outcomes"></div><div class="chart" id="stage-dist"></div></div>
   <div class="table-wrap"><table>
     <thead><tr><th>#</th><th class="name">Stage</th><th>Iterations</th><th>OK</th><th>Goodput</th><th>429</th><th>503</th><th>Other 5xx</th><th>Timeout</th><th>Network</th><th>Cut</th><th>TTFT p50</th><th>TTFT p95</th><th>E2E p50</th><th>E2E p95</th></tr></thead>
     <tbody>
@@ -147,6 +158,32 @@ footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
     </tbody>
   </table></div>
   <p class="muted">Times in milliseconds. A warm-up stage is left out of the whole test's figures.</p>
+</section>
+{{- end}}
+
+{{- if .SteadyRows}}
+<section id="steady">
+  <h2>Steady state, from the request records</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">Stage</th><th>Settle excluded (s)</th><th>Requests</th><th>Succeeded</th><th>No first token</th><th>503</th><th>Other failure</th><th>Within SLO</th><th>First token p50</th><th>p95 [95% CI]</th><th>Total p50</th><th>p95 [95% CI]</th></tr></thead>
+    <tbody>
+    {{- range .SteadyRows}}
+      <tr{{if .Warmup}} class="warm"{{end}}><td class="name">{{.Name}}</td><td>{{.Settle}}</td><td>{{.Steady}}</td><td>{{.Answered}}</td><td>{{.NoText}}</td><td>{{.Rejected}}</td><td>{{.Failed}}</td><td>{{.Good}}</td><td>{{.FTp50}}</td><td>{{.FTp95}}</td><td>{{.Totp50}}</td><td>{{.Totp95}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- if .StepRows}}
+  <h3>Per step</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">Stage</th><th class="name">Step</th><th>Succeeded</th><th>First token p50</th><th>p95</th><th>Total p50</th><th>p95</th></tr></thead>
+    <tbody>
+    {{- range .StepRows}}
+      <tr{{if .Warmup}} class="warm"{{end}}><td class="name">{{.Stage}}</td><td class="name">{{.Step}}</td><td>{{.N}}</td><td>{{.FTp50}}</td><td>{{.FTp95}}</td><td>{{.Totp50}}</td><td>{{.Totp95}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+  <p class="muted">Times in milliseconds, of {{with .Steady}}{{range $i, $s := .Steps}}{{if $i}}, {{end}}{{$s}}{{end}}{{end}}. At the start of each stage the requests of iterations that began within max(the sliding window, the previous stage's p95 total) are left out, so the system is not measured before it settles at the new load. The window is half the shortest stage past warm-up, from 10 to 60 seconds. p99 needs 100 answers.{{if .Steady.Sampled}} Above {{.PerStep}} requests a step is measured from a uniform sample, and the counts are scaled back to the run.{{end}}{{if .Steady.Dropped}} {{.Steady.Dropped}} steps past the first 16 are not measured.{{end}}</p>
 </section>
 {{- end}}
 
@@ -211,36 +248,7 @@ footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
 
 <footer>Written by Ddosify. This file is self-contained and loads nothing from the network.</footer>
 </main>
-<script>
-(function () {
-  function fmt(v) {
-    if (v < 0) return "-";
-    return v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString("en-US");
-  }
-  function clock(s) {
-    s = Math.round(s);
-    var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60;
-    var mm = (h ? String(m).padStart(2, "0") : String(m));
-    return (h ? h + ":" : "") + mm + ":" + String(x).padStart(2, "0");
-  }
-  document.querySelectorAll(".chart-box[data-series]").forEach(function (box) {
-    var d;
-    try { d = JSON.parse(box.getAttribute("data-series")); } catch (e) { return; }
-    var svg = box.querySelector("svg"), cur = svg.querySelector(".cursor"), out = box.querySelector(".readout");
-    if (!d.t.length) return;
-    svg.addEventListener("mousemove", function (ev) {
-      var r = svg.getBoundingClientRect();
-      var vx = (ev.clientX - r.left) / r.width * svg.viewBox.baseVal.width;
-      var t = (vx - d.l) / d.w * d.tmax, lo = 0, hi = d.t.length - 1;
-      while (lo < hi) { var mid = (lo + hi) >> 1; if (d.t[mid] < t) lo = mid + 1; else hi = mid; }
-      if (lo > 0 && Math.abs(d.t[lo - 1] - t) < Math.abs(d.t[lo] - t)) lo--;
-      var x = d.l + d.t[lo] / d.tmax * d.w;
-      cur.setAttribute("x1", x); cur.setAttribute("x2", x); cur.setAttribute("visibility", "visible");
-      out.textContent = clock(d.t[lo]) + "   " + d.s.map(function (s) { return s.n + " " + fmt(s.v[lo]) + (d.u ? " " + d.u : ""); }).join("   ");
-    });
-    svg.addEventListener("mouseleave", function () { cur.setAttribute("visibility", "hidden"); out.textContent = ""; });
-  });
-})();
-</script>
+<script type="application/json" id="data">{{.Data}}</script>
+<script>{{.Script}}</script>
 </body>
 </html>

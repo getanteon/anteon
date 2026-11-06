@@ -3,7 +3,6 @@ package htmlreport
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -200,12 +199,6 @@ func TestReportIsValidHTML(t *testing.T) {
 				if a.Key == "id" {
 					ids[a.Val]++
 				}
-				if a.Key == "data-series" {
-					var v map[string]any
-					if err := json.Unmarshal([]byte(a.Val), &v); err != nil {
-						t.Errorf("chart data is not JSON: %v", err)
-					}
-				}
 				if a.Key == "style" && strings.Contains(a.Val, "ZgotmplZ") {
 					t.Errorf("template refused a style value: %q", a.Val)
 				}
@@ -226,8 +219,12 @@ func TestReportIsValidHTML(t *testing.T) {
 			t.Errorf("id %q used %d times", id, n)
 		}
 	}
-	if counts["svg"] < 6 {
-		t.Errorf("%d svg elements, want the charts", counts["svg"])
+	var d chartData
+	if err := json.Unmarshal([]byte(dataJSON(t, doc)), &d); err != nil {
+		t.Fatalf("chart data is not JSON: %v", err)
+	}
+	if d.TS == nil || len(d.TS.T) < 2 || len(d.Stages) != 3 {
+		t.Errorf("chart data lacks the series or the stages: %+v", d)
 	}
 	for _, want := range []string{"Goodput", "92.9%", "429 rate limited", "503 unavailable", "6/min", "12/min",
 		"Time to first token", "Event gap", "first token &lt;= 10,000 ms", "ask &lt;question&gt;", "1 success criteria failed"} {
@@ -239,7 +236,8 @@ func TestReportIsValidHTML(t *testing.T) {
 
 func TestReportLoadsNothing(t *testing.T) {
 	doc := render(t)
-	for _, re := range []string{`https?://`, `(?i)<link\b`, `(?i)\bsrc\s*=`, `(?i)@import`, `(?i)url\(`, `(?i)<iframe`, `(?i)\bhref\s*=\s*"[^#]`, `(?i)fetch\(|XMLHttpRequest|WebSocket|sendBeacon`} {
+	doc = strings.ReplaceAll(doc, `"http://www.w3.org/2000/svg"`, "") // a namespace name, not a fetch
+	for _, re := range []string{`https?://`, `(?i)<link\b`, `(?i)\bsrc\s*=`, `(?i)@import`, `(?i)url\(\s*['"]?[^#\s'"]`, `(?i)<iframe`, `(?i)\bhref\s*=\s*"[^#]`, `(?i)fetch\(|XMLHttpRequest|WebSocket|sendBeacon`} {
 		if loc := regexp.MustCompile(re).FindStringIndex(doc); loc != nil {
 			t.Errorf("%s found: %q", re, doc[max(0, loc[0]-40):min(len(doc), loc[1]+40)])
 		}
@@ -331,18 +329,6 @@ func TestWriteFile(t *testing.T) {
 	}
 }
 
-func TestAxisNum(t *testing.T) {
-	cases := []struct {
-		v, step float64
-		want    string
-	}{{0, 1, "0"}, {0.05, 0.05, "0.05"}, {0.15, 0.05, "0.15"}, {6250, 6250, "6,250"}, {2.5, 2.5, "2.5"}, {25000, 6250, "25,000"}}
-	for _, c := range cases {
-		if got := axisNum(c.v, c.step); got != c.want {
-			t.Errorf("axisNum(%v, %v) = %q, want %q", c.v, c.step, got, c.want)
-		}
-	}
-}
-
 func TestChartGapWhereNoSamples(t *testing.T) {
 	rec := NewRecorder(0)
 	for i := 0; i < 9; i++ {
@@ -352,35 +338,14 @@ func TestChartGapWhereNoSamples(t *testing.T) {
 		}
 		rec.Add(live.Snapshot{Elapsed: time.Duration(i) * time.Second, E2E: l, TTFT: l})
 	}
-	rep := FromResult(nil, Config{}, rec)
-	var e2e *chart
-	charts := buildCharts(rep, "ITL")
-	for i := range charts {
-		if charts[i].ID == "e2e" {
-			e2e = &charts[i]
+	d, _ := buildData(FromResult(nil, Config{}, rec), "ITL")
+	if d.TS == nil {
+		t.Fatal("no series")
+	}
+	for i, v := range d.TS.E2E.P50 {
+		if (v == nil) != (i == 4) {
+			t.Errorf("E2E p50 at %d is %v, want a gap only where nothing had finished", i, v)
 		}
-	}
-	if e2e == nil {
-		t.Fatal("no E2E chart")
-	}
-	path := regexp.MustCompile(`<path class="line s0"[^>]* d="([^"]*)"`).FindStringSubmatch(string(e2e.SVG))
-	if path == nil {
-		t.Fatal("no p50 path")
-	}
-	if n := strings.Count(path[1], "M"); n != 2 {
-		t.Errorf("p50 path has %d segments, want a break where there were no samples: %s", n, path[1])
-	}
-	if strings.Contains(path[1], fmt.Sprintf(" %.1f", float64(padT+plotH))) {
-		t.Errorf("a point drawn at zero: %s", path[1])
-	}
-	var data struct {
-		S []struct{ V []float64 }
-	}
-	if err := json.Unmarshal([]byte(e2e.Data), &data); err != nil {
-		t.Fatal(err)
-	}
-	if data.S[0].V[4] != -1 {
-		t.Errorf("hover data for the empty snapshot is %v, want the no-value marker", data.S[0].V[4])
 	}
 }
 
@@ -392,4 +357,18 @@ func TestRequestsCardSaysPerIteration(t *testing.T) {
 	if strings.Contains(doc, "Step results") {
 		t.Error("the old label is still there")
 	}
+}
+
+// dataJSON is the text of the page's chart data.
+func dataJSON(t *testing.T, doc string) string {
+	t.Helper()
+	m := regexp.MustCompile(`(?s)<script type="application/json" id="data">(.*?)</script>`).FindStringSubmatch(doc)
+	if m == nil {
+		t.Fatal("no chart data")
+	}
+	return m[1]
+}
+
+func liveSnapshot(sec, stage int) live.Snapshot {
+	return live.Snapshot{Elapsed: time.Duration(sec) * time.Second, Stage: live.StageRef{Index: stage, Count: 2}}
 }
