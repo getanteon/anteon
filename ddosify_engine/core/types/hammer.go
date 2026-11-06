@@ -72,6 +72,15 @@ type TimeRunCount []struct {
 	Warmup   bool
 }
 
+// Totals is the iteration count and the duration in seconds the stages add up to.
+func (t TimeRunCount) Totals() (iterations, duration int) {
+	for _, s := range t {
+		iterations += s.Count
+		duration += s.Duration
+	}
+	return
+}
+
 type Tag struct {
 	Tag  string `json:"tag"`
 	Type string `json:"type"`

@@ -347,11 +347,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 
 	// TimeRunCount
 	if len(j.TimeRunCount) > 0 {
-		*j.IterCount, j.Duration = 0, 0
-		for _, t := range j.TimeRunCount {
-			*j.IterCount += t.Count
-			j.Duration += t.Duration
-		}
+		*j.IterCount, j.Duration = types.TimeRunCount(j.TimeRunCount).Totals()
 	}
 
 	var samplingRate int
