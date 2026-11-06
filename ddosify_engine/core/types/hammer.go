@@ -70,15 +70,38 @@ type TimeRunCount []struct {
 	Count    int
 	Name     string
 	Warmup   bool
+	// Concurrency makes the stage closed-loop: Count iterations, at most Concurrency in flight, a new
+	// one starting as one ends. Duration is then an optional cap rather than the stage's length.
+	Concurrency int
 }
 
-// Totals is the iteration count and the duration in seconds the stages add up to.
+// Totals is the iteration count and the duration in seconds the stages add up to. A closed-loop
+// stage adds its cap, 0 without one: how long it takes is known only when it ends.
 func (t TimeRunCount) Totals() (iterations, duration int) {
 	for _, s := range t {
 		iterations += s.Count
 		duration += s.Duration
 	}
 	return
+}
+
+// ClosedLoop tells whether the stages are closed-loop, by concurrency, rather than arrival rates.
+func (t TimeRunCount) ClosedLoop() bool {
+	for _, s := range t {
+		if s.Concurrency > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// MaxConcurrency is the largest concurrency of the stages.
+func (t TimeRunCount) MaxConcurrency() int {
+	m := 0
+	for _, s := range t {
+		m = max(m, s.Concurrency)
+	}
+	return m
 }
 
 type Tag struct {
@@ -123,6 +146,9 @@ type Hammer struct {
 
 	// Duration (in second) - Request count map. Example: {10: 1500, 50: 400, ...}
 	TimeRunCountMap TimeRunCount
+
+	// How the HTML report reads the run as capacity: GPUs and SLO tiers
+	Capacity *Capacity
 
 	// Test Scenario
 	Scenario Scenario
@@ -207,7 +233,21 @@ func (h *Hammer) Validate() error {
 		return fmt.Errorf("unsupported EngineMode: %s", h.EngineMode)
 	}
 
-	if len(h.TimeRunCountMap) > 0 {
+	if h.TimeRunCountMap.ClosedLoop() {
+		for i, t := range h.TimeRunCountMap {
+			switch {
+			case t.Concurrency < 1:
+				return fmt.Errorf("manual_load stage %d has no concurrency: stages with a concurrency and stages with an arrival rate can not be mixed", i+1)
+			case t.Count < 1:
+				return fmt.Errorf("manual_load stage %d: a stage with a concurrency needs a count of 1 or more", i+1)
+			case t.Duration < 0:
+				return fmt.Errorf("manual_load stage %d: duration can not be negative", i+1)
+			}
+		}
+		if h.LoadSpread == LoadSpreadPoisson {
+			return fmt.Errorf("load_spread %s needs arrival rates; stages with a concurrency start a new iteration as one ends", LoadSpreadPoisson)
+		}
+	} else if len(h.TimeRunCountMap) > 0 {
 		for _, t := range h.TimeRunCountMap {
 			if t.Duration < 1 {
 				return fmt.Errorf("duration in manual_load should be greater than 0")
@@ -226,6 +266,9 @@ func (h *Hammer) Validate() error {
 		if err := h.SLO.validate(); err != nil {
 			return err
 		}
+	}
+	if err := h.Capacity.validate(); err != nil {
+		return err
 	}
 
 	return nil

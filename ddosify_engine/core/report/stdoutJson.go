@@ -145,6 +145,10 @@ func (s *stdoutJson) SetRequestLog(on bool) {
 	}
 }
 
+func (s *stdoutJson) SetCapacity(c *types.Capacity) {
+	s.result.Capacity = c
+}
+
 func (s *stdoutJson) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

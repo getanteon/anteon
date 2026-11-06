@@ -227,4 +227,6 @@ type LoadStage struct {
 	Index  int
 	Name   string
 	Warmup bool
+	// Iterations in flight at most in a closed-loop stage; 0 in a stage with an arrival rate
+	Concurrency int
 }

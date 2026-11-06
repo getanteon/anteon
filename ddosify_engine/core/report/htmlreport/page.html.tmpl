@@ -9,14 +9,14 @@
 <style>
 :root{color-scheme:light;
 --page:#f9f9f7;--card:#ffffff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);--band:rgba(11,11,11,.025);--bandw:rgba(11,11,11,.06);
---s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--ref:#52514e;--fillop:.16;--areaop:.10;
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#8f5ad8;--s5:#c43d78;--good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--ref:#52514e;--fillop:.16;--areaop:.10;
 --tip:#ffffff;--tipring:rgba(11,11,11,.14);--shadow:0 8px 24px rgba(11,11,11,.10)}
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
 --page:#0d0d0d;--card:#141413;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--band:rgba(255,255,255,.025);--bandw:rgba(255,255,255,.06);
---s1:#3987e5;--s2:#d95926;--s3:#199e70;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}}
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#a174e6;--s5:#d9568f;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}}
 :root[data-theme="dark"]{color-scheme:dark;
 --page:#0d0d0d;--card:#141413;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--band:rgba(255,255,255,.025);--bandw:rgba(255,255,255,.06);
---s1:#3987e5;--s2:#d95926;--s3:#199e70;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#a174e6;--s5:#d9568f;--ref:#c3c2b7;--fillop:.30;--areaop:.20;--tip:#232322;--tipring:rgba(255,255,255,.14);--shadow:0 8px 24px rgba(0,0,0,.5)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:1240px;margin:0 auto;padding:28px 16px 64px}
@@ -67,6 +67,8 @@ tr:last-child td{border-bottom:0}
 th:first-child,td:first-child,td.name,th.name{text-align:left}
 th{color:var(--ink2);font-weight:500;font-size:12px}
 td.name{overflow-wrap:anywhere;white-space:normal}
+td.run{text-align:left}
+td.tier{text-align:left;white-space:normal;min-width:140px}td.cap{white-space:normal;min-width:150px}
 tr.warm td{color:var(--muted)}
 .bar{height:6px;background:var(--grid);border-radius:3px;min-width:120px}
 .bar>span{display:block;height:100%;background:var(--s1);border-radius:3px}
@@ -81,7 +83,11 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
 <header>
   <div>
     <h1>{{.R.Title}}</h1>
+    {{- if .Compare}}
+    <div class="muted">Generated {{.Generated}}. {{len .Pareto.Series}} runs compared.</div>
+    {{- else}}
     <div class="muted">Generated {{.Generated}}. Duration {{.Duration}}. Status: <span class="{{if .StatusAlarm}}alarm mark{{end}}">{{.StatusText}}</span>.</div>
+    {{- end}}
   </div>
   <button class="theme" id="theme" type="button" hidden>Theme</button>
 </header>
@@ -92,6 +98,34 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
 </div>
 <noscript><p class="muted">The charts need JavaScript; the tables below do not.</p></noscript>
 
+{{- with .Pareto}}
+<section id="capacity">
+  <h2>Throughput and interactivity</h2>
+  <div class="grid"><div class="chart" id="pareto"></div></div>
+  <h3>Capacity</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="name">SLO</th>{{range .Series}}<th>{{.Label}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{- range .Rows}}
+      <tr><td class="tier"><b>{{.Tier}}</b><div class="muted">{{.Limits}}</div></td>{{range .Cells}}<td class="cap{{if .None}} alarm{{end}}"><b>{{.Value}}</b><div class="muted">{{.Note}}</div></td>{{end}}</tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  <p class="muted">The highest concurrency, or for open-loop stages the highest arrival rate, at which the 99th percentile of the time to first token and of the time per output token (each answer's mean, then the 99th percentile across answers) are both within the limits{{if eq (len .Series) 1}}{{with index .Series 0}}{{if gt .GPUs 1}}; throughput is per GPU, of {{.GPUs}}{{end}}{{end}}{{end}}. The default tiers are MLPerf Inference's conversational and interactive limits for Llama3.1-8B. An open-loop stage's arrivals are its planned rate, and its requests in flight the mean by Little's law: the rate times the mean time of an answer.{{if and (ge .MinN 0) (lt .MinN 100)}} A point has as few as {{.MinN}} requests, and below 100 the p99 is close to the slowest one.{{end}}</p>
+  <div class="table-wrap"><table>
+    <thead><tr>{{if gt (len .Series) 1}}<th class="name">Run</th>{{end}}<th class="name">Stage</th><th>Concurrency</th><th>Arrivals/s</th><th>In flight</th><th>Requests</th><th>Input tok p50</th><th>{{.Rate}} per user</th><th>{{.Rate}} per GPU</th><th>TTFT p50</th><th>TTFT p99</th><th>TPOT p50</th><th>TPOT p99</th>{{range .TierNames}}<th>{{.}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{- $multi := gt (len .Series) 1}}
+    {{- range .Stages}}
+      <tr>{{if $multi}}<td class="run">{{.Series}}</td>{{end}}<td class="name">{{.Stage}}</td><td>{{.Concurrency}}</td><td>{{.Rate}}</td><td>{{.InFlight}}</td><td>{{.Requests}}</td><td>{{.Input}}</td><td>{{.PerUser}}</td><td>{{.PerGPU}}</td><td>{{.TTFT50}}</td><td>{{.TTFT99}}</td><td>{{.TPOT50}}</td><td>{{.TPOT99}}</td>{{range .Tiers}}<td>{{if .}}yes{{else}}<span class="muted">no</span>{{end}}</td>{{end}}</tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  <p class="muted">{{.Rate}} per user is the median over answers of their output tokens over the time from their first token to their end; {{.Rate}} per GPU is all output of the stage over its span, from the first request sent to the last answer's end, divided by the GPUs. Input tokens are as the server or the tokenizer counted them, chat template included when the server counted.</p>
+</section>
+{{- end}}
+
+{{- if not .Compare}}
 <section id="load-section">
   <h2>Load</h2>
   <div class="grid" id="load"></div>
@@ -225,10 +259,10 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
   {{- if .R.Config.Stages}}
   <h3>Planned stages</h3>
   <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th class="name">Name</th><th>Duration (s)</th><th>Iterations</th><th>Warm-up</th></tr></thead>
+    <thead><tr><th>#</th><th class="name">Name</th><th>Duration (s)</th><th>Concurrency</th><th>Iterations</th><th>Warm-up</th></tr></thead>
     <tbody>
     {{- range $i, $s := .R.Config.Stages}}
-      <tr><td>{{inc $i}}</td><td class="name">{{$s.Name}}</td><td>{{$s.DurationS}}</td><td>{{$s.Count}}</td><td>{{if $s.Warmup}}yes{{else}}no{{end}}</td></tr>
+      <tr><td>{{inc $i}}</td><td class="name">{{$s.Name}}</td><td>{{if $s.Concurrency}}{{if $s.DurationS}}at most {{$s.DurationS}}{{else}}-{{end}}{{else}}{{$s.DurationS}}{{end}}</td><td>{{if $s.Concurrency}}{{$s.Concurrency}}{{else}}-{{end}}</td><td>{{$s.Count}}</td><td>{{if $s.Warmup}}yes{{else}}no{{end}}</td></tr>
     {{- end}}
     </tbody>
   </table></div>
@@ -245,6 +279,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
   </table></div>
   {{- end}}
 </section>
+
+{{- end}}
 
 <footer>Written by Ddosify. This file is self-contained and loads nothing from the network.</footer>
 </main>

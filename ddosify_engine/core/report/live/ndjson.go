@@ -41,6 +41,8 @@ type jsonStage struct {
 	Name     string  `json:"name,omitempty"`
 	Warmup   bool    `json:"warmup,omitempty"`
 	ElapsedS float64 `json:"elapsed_s"`
+	// a closed-loop stage's
+	Concurrency int `json:"concurrency,omitempty"`
 }
 
 type jsonGoodput struct {
@@ -120,11 +122,12 @@ func toJSONLine(s Snapshot) jsonLine {
 	}
 	if s.Stage.Count > 0 {
 		l.Stage = &jsonStage{
-			Index:    s.Stage.Index,
-			Count:    s.Stage.Count,
-			Name:     s.Stage.Name,
-			Warmup:   s.Stage.Warmup,
-			ElapsedS: r3(s.Stage.Elapsed.Seconds()),
+			Index:       s.Stage.Index,
+			Count:       s.Stage.Count,
+			Name:        s.Stage.Name,
+			Warmup:      s.Stage.Warmup,
+			ElapsedS:    r3(s.Stage.Elapsed.Seconds()),
+			Concurrency: s.Stage.Concurrency,
 		}
 	}
 	return l

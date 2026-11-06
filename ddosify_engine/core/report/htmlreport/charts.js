@@ -418,6 +418,105 @@
 		if (g && !g.children.length) g.closest("section").remove();
 	}
 
+	/* throughput per GPU against interactivity: one point per stage, a line per run */
+	const P = D.pareto;
+	const PC = P && P.series && P.series.length ? document.getElementById("pareto") : null;
+	if (PC) {
+		const colors = ["--s1", "--s2", "--s3", "--s4", "--s5"];
+		const msText = (v) => (v == null ? "-" : v >= 1000 ? num(v / 1000, 2) + " s" : num(v, v < 10 ? 1 : 0) + " ms");
+		const unit = P.series.some((s) => s.unit === "chunks") ? "chunks" : "tok";
+		const gpus = P.series.length === 1 ? P.series[0].gpus : 0;
+		h("h3", {}, PC, `Throughput${gpus > 1 ? " per GPU" : ""} against speed per user`);
+		h("div", { class: "sub" }, PC, `One point per stage, labelled by its concurrency; up and to the right is better. Throughput is ${unit}/s ${gpus > 1 ? "per GPU, of " + gpus : "per GPU"}; speed per user is the median answer's ${unit}/s after its first token.`);
+		const lg = h("div", { class: "legend" }, PC);
+		P.series.forEach((s, i) => legendItem(lg, s.label, colors[i % colors.length]));
+		const refs = (P.tiers || []).filter((t) => t.tpot_ms > 0).map((t) => ({ x: 1000 / t.tpot_ms, name: t.name, ms: t.tpot_ms }));
+		if (refs.length) legendItem(lg, "TPOT limits of the SLO tiers, as " + unit + "/s per user", "--ref", "dash");
+		const holder = h("div", { class: "holder" }, PC);
+		const pts = [];
+		P.series.forEach((s, si) => {
+			const ordered = s.points.filter((p) => p.user != null && p.gpu != null).slice().sort((a, b) => (a.c || 0) - (b.c || 0));
+			ordered.forEach((p) => pts.push({ s, si, p }));
+			s._pts = ordered;
+		});
+		let xMax = 0, yMax = 0;
+		for (const q of pts) { xMax = Math.max(xMax, q.p.user); yMax = Math.max(yMax, q.p.gpu); }
+		for (const r of refs) if (r.x < xMax * 3) xMax = Math.max(xMax, r.x);
+		watch(holder, () => {
+			holder.replaceChildren();
+			const W = holder.clientWidth, H = Math.round(Math.max(260, Math.min(400, W * 0.55)));
+			const multi = P.series.length > 1;
+			const M = { t: 18, r: 16, b: 40, l: 56 };
+			const iw = W - M.l - M.r, ih = H - M.t - M.b;
+			const xt = yTicks(xMax * 1.05, Math.max(3, Math.floor(iw / 90))), yt = yTicks(yMax * 1.05, 4);
+			const xTop = xt[xt.length - 1] || 1, yTop = yt[yt.length - 1] || 1;
+			const x = (v) => M.l + (v / xTop) * iw, y = (v) => M.t + ih - (v / yTop) * ih;
+			const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", tabindex: 0, "aria-label": "Throughput against speed per user, one line per run" }, holder);
+			for (const v of yt) {
+				el("line", { x1: M.l, x2: M.l + iw, y1: y(v), y2: y(v), stroke: "var(--grid)" }, svg);
+				el("text", { x: M.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg, num(v));
+			}
+			for (const v of xt) {
+				el("line", { x1: x(v), x2: x(v), y1: M.t + ih, y2: M.t + ih + 4, stroke: "var(--axis)" }, svg);
+				el("text", { x: x(v), y: M.t + ih + 17, "text-anchor": "middle" }, svg, num(v));
+			}
+			el("line", { x1: M.l, x2: M.l + iw, y1: M.t + ih, y2: M.t + ih, stroke: "var(--axis)" }, svg);
+			el("text", { x: M.l + iw / 2, y: H - 4, "text-anchor": "middle" }, svg, `${unit}/s per user`);
+			el("text", { x: 12, y: M.t + ih / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${M.t + ih / 2})` }, svg, `${unit}/s per GPU`);
+			const placed = [];
+			const free = (lx, ly, w) => !placed.some((q) => Math.abs(q.y - ly) < 12 && lx < q.x + q.w && q.x < lx + w);
+			// tier labels step down a line when the previous one would reach them
+			let lastEnd = -Infinity, row = 0;
+			for (const r of refs.slice().sort((a, b) => a.x - b.x)) {
+				if (r.x > xTop) continue;
+				const label = `${r.name} ${r.ms} ms`;
+				row = x(r.x) + 4 < lastEnd + 6 ? row + 1 : 0;
+				lastEnd = x(r.x) + 4 + label.length * 6.2;
+				el("line", { x1: x(r.x), x2: x(r.x), y1: M.t, y2: M.t + ih, stroke: "var(--ref)", "stroke-dasharray": "4 4" }, svg);
+				el("text", { x: x(r.x) + 4, y: M.t + 10 + row * 14, class: "halo" }, svg, label);
+				placed.push({ x: x(r.x) + 4, y: M.t + 6 + row * 14, w: label.length * 6.2 });
+			}
+			// every point is an obstacle for the labels, so no label covers another run's point
+			for (const q of pts) placed.push({ x: x(q.p.user) - 6, y: y(q.p.gpu) + 4, w: 12 });
+			P.series.forEach((s, si) => {
+				const c = `var(${colors[si % colors.length]})`;
+				const ps = s._pts;
+				if (ps.length > 1) el("path", { d: ps.map((p, i) => `${i ? "L" : "M"}${x(p.user)},${y(p.gpu)}`).join(""), fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+				const room = iw / Math.max(1, ps.length) > 26;
+				ps.forEach((p, i) => {
+					el("circle", { cx: x(p.user), cy: y(p.gpu), r: 4.5, fill: c, stroke: "var(--card)", "stroke-width": 2 }, svg);
+					const label = p.c ? String(p.c) : p.stage, lx = x(p.user) + 7, ly = y(p.gpu) - 7, lw = label.length * 6.2;
+					if ((room || i === 0 || i === ps.length - 1) && free(lx, ly, lw)) {
+						el("text", { x: lx, y: ly, class: "halo" }, svg, label);
+						placed.push({ x: lx, y: ly, w: lw });
+					}
+				});
+			});
+			const ring = el("circle", { r: 8, fill: "none", stroke: "var(--ink2)", "stroke-width": 1.5, visibility: "hidden" }, svg);
+			const pick = (ev) => {
+				const b = svg.getBoundingClientRect();
+				const px = ((ev.clientX - b.left) / b.width) * W, py = ((ev.clientY - b.top) / b.height) * H;
+				let best = null, bd = 24 * 24;
+				for (const q of pts) {
+					const d = (x(q.p.user) - px) ** 2 + (y(q.p.gpu) - py) ** 2;
+					if (d < bd) { bd = d; best = q; }
+				}
+				if (!best) { ring.setAttribute("visibility", "hidden"); hideTip(); return; }
+				const p = best.p, c = `var(${colors[best.si % colors.length]})`;
+				ring.setAttribute("cx", x(p.user)); ring.setAttribute("cy", y(p.gpu)); ring.setAttribute("visibility", "visible");
+				showTip(ev.clientX, ev.clientY, `${multi ? best.s.label + " · " : ""}${p.stage}${p.c ? ", concurrency " + p.c : ""}`, [
+					{ value: num(p.gpu), name: `${unit}/s per GPU`, color: c },
+					{ value: num(p.user, 1), name: `${unit}/s per user`, color: c },
+					{ value: `${msText(p.ttft50)} / ${msText(p.ttft99)}`, name: "TTFT p50 / p99" },
+					{ value: `${msText(p.tpot50)} / ${msText(p.tpot99)}`, name: "TPOT p50 / p99" },
+					{ value: num(p.n), name: "requests" },
+				]);
+			};
+			svg.addEventListener("pointermove", pick);
+			svg.addEventListener("pointerleave", () => { ring.setAttribute("visibility", "hidden"); hideTip(); });
+		});
+	}
+
 	const btn = document.getElementById("theme");
 	if (btn) {
 		btn.hidden = false;

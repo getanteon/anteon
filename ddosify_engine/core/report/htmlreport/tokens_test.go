@@ -29,6 +29,7 @@ func TestTokenSection(t *testing.T) {
 		t.Fatal(err)
 	}
 	page = b.String()
+	page = page[:strings.Index(page, `<script type="application/json"`)] // the chart code names TPOT for runs that have it
 	if strings.Contains(page, "TPOT") || strings.Contains(page, "Output per answer (tokens)") || !strings.Contains(page, "90 chunks over 3 answers") {
 		t.Errorf("chunks must not read as tokens")
 	}

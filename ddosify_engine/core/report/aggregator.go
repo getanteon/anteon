@@ -169,6 +169,9 @@ type Result struct {
 	LLM      *llm.Summary         `json:"llm,omitempty"`
 	Schedule *llm.ScheduleSummary `json:"schedule,omitempty"`
 
+	// How a report reads the run as capacity, when the config gave it
+	Capacity *types.Capacity `json:"capacity,omitempty"`
+
 	ext *extended
 }
 

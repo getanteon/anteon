@@ -47,10 +47,11 @@ func init() {
 }
 
 type timeRunCount []struct {
-	Duration int    `json:"duration"`
-	Count    int    `json:"count"`
-	Name     string `json:"name"`
-	Warmup   bool   `json:"warmup"`
+	Duration    int    `json:"duration"`
+	Count       int    `json:"count"`
+	Name        string `json:"name"`
+	Warmup      bool   `json:"warmup"`
+	Concurrency int    `json:"concurrency"`
 }
 
 type auth struct {
@@ -199,6 +200,7 @@ type JsonReader struct {
 	Duration     int                    `json:"duration"`
 	Assertions   []TestAssertion        `json:"success_criterias"`
 	TimeRunCount timeRunCount           `json:"manual_load"`
+	Capacity     *types.Capacity        `json:"capacity,omitempty"`
 	Steps        []step                 `json:"steps"`
 	Output       string                 `json:"output"`
 	Proxy        string                 `json:"proxy"`
@@ -415,6 +417,7 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 		Seed:              types.DefaultSeed,
 		StopOnFailure:     j.StopOnFail,
 		RequestLog:        j.RequestLog,
+		Capacity:          j.Capacity,
 	}
 	if j.Seed != nil {
 		h.Seed = *j.Seed

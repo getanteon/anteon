@@ -62,19 +62,8 @@ func (d *Dataset) Load() ([][]string, error) {
 		return nil, fmt.Errorf("llm dataset: %v", err)
 	}
 	defer f.Close()
-	format := strings.ToLower(d.Format)
-	if format == "" {
-		switch strings.ToLower(filepath.Ext(d.Path)) {
-		case ".jsonl", ".ndjson", ".json":
-			format = "jsonl"
-		case ".csv":
-			format = "csv"
-		default:
-			format = "txt"
-		}
-	}
 	var sessions [][]string
-	switch format {
+	switch d.format() {
 	case "jsonl":
 		sessions, err = d.readJSONL(f)
 	case "csv":
@@ -91,6 +80,21 @@ func (d *Dataset) Load() ([][]string, error) {
 		return nil, fmt.Errorf("llm dataset %s has no prompts", d.Path)
 	}
 	return sessions, nil
+}
+
+// format is the dataset's format: Format, else from the file's extension, txt by default.
+func (d *Dataset) format() string {
+	if f := strings.ToLower(d.Format); f != "" {
+		return f
+	}
+	switch strings.ToLower(filepath.Ext(d.Path)) {
+	case ".jsonl", ".ndjson", ".json":
+		return "jsonl"
+	case ".csv":
+		return "csv"
+	default:
+		return "txt"
+	}
 }
 
 func (d *Dataset) full(n int) bool { return d.Limit > 0 && n >= d.Limit }

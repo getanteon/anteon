@@ -15,9 +15,9 @@ func TestReportCommand(t *testing.T) {
 	var gotIn, gotTitle string
 	old := elive.LogReport
 	t.Cleanup(func() { elive.LogReport = old })
-	elive.LogReport = func(in io.Reader, title string, open func() (io.Writer, error)) error {
+	elive.LogReport = func(in io.Reader, o elive.ReportOptions, open func() (io.Writer, error)) error {
 		b, _ := io.ReadAll(in)
-		gotIn, gotTitle = string(b), title
+		gotIn, gotTitle = string(b), o.Title
 		if gotIn == "bad" {
 			return errors.New(`no "report" line`)
 		}
@@ -57,5 +57,53 @@ func TestReportCommand(t *testing.T) {
 	elive.LogReport = nil
 	if code, _, stderr = run(t, "report", log); code != ExitError || !strings.Contains(stderr, "no HTML report") {
 		t.Errorf("a build without the HTML report: exit %d, stderr %q", code, stderr)
+	}
+}
+
+func TestReportCompareAndOptions(t *testing.T) {
+	old, oldC := elive.LogReport, elive.CompareLogs
+	t.Cleanup(func() { elive.LogReport, elive.CompareLogs = old, oldC })
+	var got elive.ReportOptions
+	var labels []string
+	elive.CompareLogs = func(logs []elive.LabeledLog, o elive.ReportOptions, open func() (io.Writer, error)) error {
+		got, labels = o, nil
+		for _, l := range logs {
+			labels = append(labels, l.Label)
+		}
+		w, err := open()
+		if err != nil {
+			return err
+		}
+		_, err = io.WriteString(w, "<cmp>")
+		return err
+	}
+	elive.LogReport = func(in io.Reader, o elive.ReportOptions, open func() (io.Writer, error)) error {
+		got = o
+		return nil
+	}
+	dir := t.TempDir()
+	a, b := filepath.Join(dir, "qwen-a.ndjson"), filepath.Join(dir, "qwen-b.ndjson")
+	for _, p := range []string{a, b} {
+		if err := os.WriteFile(p, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, stdout, stderr := run(t, "report", a, b, "-o", "-", "--gpus", "2", "--tier", "fast:500:30")
+	if code != ExitOK || stdout != "<cmp>" || strings.Join(labels, ",") != "qwen-a,qwen-b" || got.GPUs != 2 ||
+		len(got.Tiers) != 1 || got.Tiers[0].Name != "fast" || got.Tiers[0].FirstTokenMs != 500 || got.Tiers[0].TPOTMs != 30 {
+		t.Errorf("exit %d, stdout %q, stderr %q, labels %v, options %+v", code, stdout, stderr, labels, got)
+	}
+	if run(t, "report", a, b, "-o", "-", "--label", "A", "--label", "B"); strings.Join(labels, ",") != "A,B" {
+		t.Errorf("labels %v", labels)
+	}
+	for _, bad := range [][]string{
+		{"report", a, b, "--label", "only one"},
+		{"report", a, "--tier", "x:0:0"},
+		{"report", a, "--tier", "x:1"},
+		{"report", a, "--gpus", "0"},
+	} {
+		if code, _, _ := run(t, bad...); code != ExitUsage {
+			t.Errorf("%v: exit %d, want a usage error", bad, code)
+		}
 	}
 }

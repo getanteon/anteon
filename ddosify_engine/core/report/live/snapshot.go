@@ -97,14 +97,20 @@ type StageRef struct {
 	Warmup   bool
 	Elapsed  time.Duration
 	Duration time.Duration
+
+	// A closed-loop stage: its concurrency, and its iterations ended and planned
+	Concurrency   int
+	Done, Planned int64
 }
 
 // StagePlan is one stage of the load plan.
 type StagePlan struct {
 	Name     string
 	Warmup   bool
-	Duration time.Duration
-	Count    int64 // iterations planned
+	Duration time.Duration // a closed-loop stage's cap, 0 without one
+	Count    int64         // iterations planned
+
+	Concurrency int // a closed-loop stage's
 }
 
 // Latency holds percentiles in milliseconds over the samples so far.
@@ -216,10 +222,11 @@ func StagePlansFromHammer(h *types.Hammer) []StagePlan {
 	plans := make([]StagePlan, 0, len(h.TimeRunCountMap))
 	for _, s := range h.TimeRunCountMap {
 		plans = append(plans, StagePlan{
-			Name:     s.Name,
-			Warmup:   s.Warmup,
-			Duration: time.Duration(s.Duration) * time.Second,
-			Count:    int64(s.Count),
+			Name:        s.Name,
+			Warmup:      s.Warmup,
+			Duration:    time.Duration(s.Duration) * time.Second,
+			Count:       int64(s.Count),
+			Concurrency: s.Concurrency,
 		})
 	}
 	return plans

@@ -124,7 +124,25 @@ func Names() []string {
 // LogReport writes the report of a finished run from its --json output. It reads the whole log
 // before it calls open, so a log with no report leaves the destination untouched. The HTML report
 // package sets it in init, so a build without that package has none.
-var LogReport func(in io.Reader, title string, open func() (io.Writer, error)) error
+var LogReport func(in io.Reader, o ReportOptions, open func() (io.Writer, error)) error
+
+// CompareLogs writes one page comparing several runs from their --json output, each with its
+// label, once every log has been read. Set by the HTML report package like LogReport.
+var CompareLogs func(logs []LabeledLog, o ReportOptions, open func() (io.Writer, error)) error
+
+// ReportOptions are what a report from a log can be given beside the log: a title, and the GPUs
+// and SLO tiers to read its stages as capacity with, over what the run's config said.
+type ReportOptions struct {
+	Title string
+	GPUs  int
+	Tiers []types.CapacityTier
+}
+
+// LabeledLog is one run's --json output and the name it is shown under.
+type LabeledLog struct {
+	Label string
+	In    io.Reader
+}
 
 // Build looks up and builds the named observer.
 func Build(name string, o Options) (Observer, error) {
@@ -145,6 +163,11 @@ type Stage struct {
 
 	// Planned iterations in the stage
 	Iterations int `json:"iterations"`
+
+	// A closed-loop stage: iterations in flight at most, and its duration cap if it has one. Start
+	// is when it began, known only once it has; End stays 0.
+	Concurrency int           `json:"concurrency,omitempty"`
+	Cap         time.Duration `json:"cap_ns,omitempty"`
 }
 
 // StepInfo names a scenario step.
@@ -172,6 +195,9 @@ type Plan struct {
 
 	// Planned iterations per 100 ms tick, from which TargetRPS is read
 	Schedule []int `json:"schedule"`
+
+	// Stages run by concurrency, one after another, each as long as its iterations take
+	ClosedLoop bool `json:"closed_loop,omitempty"`
 
 	// The thresholds, and the goodput target in SLO.GoodputPerc; nil without an slo
 	SLO *types.SLO `json:"slo,omitempty"`

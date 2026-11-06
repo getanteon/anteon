@@ -29,26 +29,67 @@ import (
 
 	elive "go.ddosify.com/ddosify/v2/core/live"
 	"go.ddosify.com/ddosify/v2/core/report/live"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 func init() {
 	elive.Register("html", newObserver)
 	elive.LogReport = writeFromLog
+	elive.CompareLogs = compareLogs
 }
 
-func writeFromLog(in io.Reader, title string, open func() (io.Writer, error)) error {
+// withOptions puts the options over what the run's own config said.
+func withOptions(rep *Report, o elive.ReportOptions) {
+	if o.Title != "" {
+		rep.Title = o.Title
+	}
+	if o.GPUs > 0 || o.Tiers != nil {
+		c := types.Capacity{}
+		if rep.Capacity != nil {
+			c = *rep.Capacity
+		}
+		if o.GPUs > 0 {
+			c.GPUs = o.GPUs
+		}
+		if o.Tiers != nil {
+			c.Tiers = o.Tiers
+		}
+		rep.Capacity = &c
+	}
+}
+
+func writeFromLog(in io.Reader, o elive.ReportOptions, open func() (io.Writer, error)) error {
 	rep, err := ReadLog(in)
 	if err != nil {
 		return err
 	}
-	if title != "" {
-		rep.Title = title
-	}
+	withOptions(&rep, o)
 	w, err := open()
 	if err != nil {
 		return err
 	}
 	return Write(w, rep)
+}
+
+func compareLogs(logs []elive.LabeledLog, o elive.ReportOptions, open func() (io.Writer, error)) error {
+	runs := make([]Labeled, 0, len(logs))
+	for _, l := range logs {
+		rep, err := ReadLog(l.In)
+		if err != nil {
+			return fmt.Errorf("%s: %w", l.Label, err)
+		}
+		withOptions(&rep, elive.ReportOptions{GPUs: o.GPUs, Tiers: o.Tiers})
+		runs = append(runs, Labeled{Label: l.Label, Report: rep})
+	}
+	var tiers []types.CapacityTier
+	if o.Tiers != nil {
+		tiers = o.Tiers
+	}
+	w, err := open()
+	if err != nil {
+		return err
+	}
+	return WriteCompare(w, o.Title, runs, o.GPUs, tiers)
 }
 
 type observer struct {
@@ -108,7 +149,11 @@ func (h *observer) Finish(f elive.Final) {
 func ConfigFromPlan(p elive.Plan) Config {
 	c := Config{LoadType: p.LoadType, Iterations: p.Iterations, DurationS: int(p.Duration.Seconds())}
 	for _, s := range p.Stages {
-		c.Stages = append(c.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, DurationS: int((s.End - s.Start).Seconds()), Count: s.Iterations})
+		d := int((s.End - s.Start).Seconds())
+		if s.Concurrency > 0 {
+			d = int(s.Cap.Seconds())
+		}
+		c.Stages = append(c.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, DurationS: d, Count: s.Iterations, Concurrency: s.Concurrency})
 	}
 	for _, s := range p.Steps {
 		c.Steps = append(c.Steps, StepConfig{ID: s.ID, Name: s.Name, Stream: s.Streamed})

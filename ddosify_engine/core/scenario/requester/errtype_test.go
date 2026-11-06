@@ -18,7 +18,6 @@
 *
  */
 
-
 package requester
 
 import (

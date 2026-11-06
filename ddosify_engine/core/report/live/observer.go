@@ -85,8 +85,15 @@ func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 		}
 	}
 	out.PrefixCache = PrefixCache(p)
+	if p.ClosedLoop {
+		out.Duration = 0 // how long the stages take is known only when they end
+	}
 	for _, st := range p.Stages {
-		out.Stages = append(out.Stages, StagePlan{Name: st.Name, Warmup: st.Warmup, Duration: st.End - st.Start, Count: int64(st.Iterations)})
+		d := st.End - st.Start
+		if st.Concurrency > 0 {
+			d = st.Cap
+		}
+		out.Stages = append(out.Stages, StagePlan{Name: st.Name, Warmup: st.Warmup, Duration: d, Count: int64(st.Iterations), Concurrency: st.Concurrency})
 	}
 	if len(p.Stages) > 0 {
 		out.All = scopeOf(s.Total)
@@ -99,6 +106,10 @@ func FromEngine(p elive.Plan, s elive.Snapshot) Snapshot {
 			Warmup:   s.Stage.Warmup,
 			Elapsed:  max(0, s.Elapsed-s.Stage.Start),
 			Duration: s.Stage.End - s.Stage.Start,
+		}
+		if c := s.Stage.Concurrency; c > 0 {
+			out.Stage.Duration = 0
+			out.Stage.Concurrency, out.Stage.Done, out.Stage.Planned = c, s.Current.Iterations, int64(s.Stage.Iterations)
 		}
 	}
 	return out

@@ -270,7 +270,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 | Command | What it does |
 | ------- | ------------ |
 | `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
-| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout |
+| `ddosify report [LOG...] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout. With two logs or more, a page comparing the runs (`--label`, `--gpus`, `--tier`) |
 | `ddosify version [--json]` | Prints the version, commit, build date and Go version |
 | `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
 | `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
@@ -289,7 +289,11 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-t`, `--target` | Target URL, when there is no config file; it can also be the argument | - |
 | `-n`, `--iterations` | Total iteration count | `100` |
 | `-d`, `--duration` | Test duration in seconds | `10` |
-| `--stage` | A [`manual_load`](#configuration) stage, `DURATION:COUNT[:NAME[:warmup]]`: `60s:4:warm-up:warmup`, `4m:15:6/min`. Repeat it; the stages replace the config's `manual_load`, and the iterations and duration follow from them. `DURATION` is whole seconds, `COUNT` the iterations started in the stage, `NAME` can not hold a `:` | - |
+| `--stage` | A [`manual_load`](#configuration) stage, `DURATION:COUNT[:NAME[:warmup]]`: `60s:4:warm-up:warmup`, `4m:15:6/min`, or a closed-loop one, `c=CONCURRENCY:COUNT[:NAME[:warmup]]`: `c=16:160`. Repeat it; the stages replace the config's `manual_load`, and the iterations and duration follow from them. `DURATION` is whole seconds, `COUNT` the iterations started in the stage, `NAME` can not hold a `:` | - |
+| `--concurrency` | Closed-loop stages, one per level: `1,2,4,8,16,32,64,128`, each named `c=N`; they replace the config's `manual_load` | - |
+| `--per-level` | With `--concurrency`: iterations of each level; `0` is max(10 x level, 20) | `0` |
+| `--warmup-iterations` | With `--concurrency`: a warm-up stage of this many iterations at the first level, left out of the results | `0` |
+| `--gpus` | GPUs serving the model, for the HTML report's throughput per GPU (`capacity.gpus`) | `1` |
 | `-l`, `--load-type` | [Load type](#load-types): `linear`, `incremental`, `waved` | `linear` |
 | `--load-spread` | `front`, `even` or `poisson`, see `load_spread` | `front` |
 | `--seed` | Seeds the `poisson` arrivals and the random data rows, see `seed` | `1` |
@@ -313,6 +317,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--drain` | After an interrupt, how long iterations in flight may finish before they are cut; a second interrupt cuts them now | `30s` |
 | `--tokenizer` | A Hugging Face `tokenizer.json` that counts the streamed answers' tokens; see [docs/llm.md](docs/llm.md) | - |
 | `--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens` | With `--preset openai`: an OpenAI compatible chat completions test without a config file | - |
+| `--input-tokens`, `--ignore-eos` | With `--preset openai`: every prompt exactly this many tokens of the dataset's text, and every answer run to `--max-tokens`; see [docs/llm.md](docs/llm.md#exact-input-lengths-and-concurrency-sweeps) | - |
 
 #### Seeing what a run does
 
@@ -331,7 +336,7 @@ Finished in 1:01: 3 iterations started, requests ok 0, failed 3 (network_error 3
 
 A pod's log holds both streams; `ddosify report` and other NDJSON readers skip the lines that are not JSON.
 
-**Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config or with `--stage`.
+**Precedence.** A flag wins over its environment variable, `DDOSIFY_` and the flag's name in capitals with `_` for `-` (`DDOSIFY_ITERATIONS`, `DDOSIFY_INSECURE`, `DDOSIFY_JSON`), which wins over the config file. `--target`, `--method`, `--body`, `--auth` and the certificate flags describe a single request and are refused with `--config`; `--iterations` and `--duration` are refused with a `manual_load` config or with `--stage` or `--concurrency`.
 
 **Output.** The report goes to stdout, banners and errors to stderr. With `--json`, progress lines are data and go to stdout too, and stderr gets the status lines above; without it, progress lines go to stderr. Colors only when stdout is a terminal.
 
@@ -433,6 +438,25 @@ There is an example config file at [config_examples/config.json](https://github.
   ```
 
   A stage can also carry a `name` and `"warmup": true`. Once any stage does, the report has a row per stage, and a warm-up stage is left out of the stream summary, the outcomes and the goodput. See [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages).
+
+  A stage with `concurrency` is closed-loop: it runs `count` iterations with at most `concurrency` in flight, a new one starting as soon as one ends, and ends when they all have, as `vllm bench serve` does with `--max-concurrency` and `--num-prompts`. Its `duration` is optional and caps it: past it no iteration starts and those in flight finish. The stages run one after the other, and all of them are closed-loop or none is; `load_spread` does not apply. A closed-loop stage is always reported on its own row.
+
+  ```json
+  "manual_load": [
+      {"concurrency": 1, "count": 4, "name": "warm-up", "warmup": true},
+      {"concurrency": 1, "count": 20, "name": "c=1"},
+      {"concurrency": 16, "count": 160, "name": "c=16"},
+      {"concurrency": 64, "count": 640, "name": "c=64", "duration": 900}
+  ]
+  ```
+
+- `capacity` (_optional_)
+
+  How the HTML report reads the stages as capacity: `gpus`, the GPUs serving the model, divides the throughput, and `tiers` are the SLOs a stage is checked against, each `{"name", "first_token_ms", "tpot_ms"}` on the 99th percentile. The default tiers are MLPerf Inference's for Llama3.1-8B: conversational, TTFT 2,000 ms and TPOT 100 ms, and interactive, 500 ms and 30 ms. See [Exact input lengths and concurrency sweeps](docs/llm.md#exact-input-lengths-and-concurrency-sweeps).
+
+  ```json
+  "capacity": {"gpus": 1, "tiers": [{"name": "interactive", "first_token_ms": 500, "tpot_ms": 30}]}
+  ```
 
 - `load_spread` (_optional_)
 
@@ -1440,6 +1464,9 @@ kubectl logs job/loadtest | ddosify report -o report.html  # a pod's log holds b
 
 # in a container, with no volume: the log in on stdin, the page out on stdout
 docker run -i --rm IMAGE report -o - < run.ndjson > report.html
+
+# runs side by side: one chart, one capacity table
+ddosify report a.ndjson b.ndjson --label "model A" --label "model B" --gpus 1 -o compare.html
 ```
 
 What it shows:
@@ -1448,6 +1475,7 @@ What it shows:
 - **Arrival rate**: iterations started a second (a minute under one a second) against each stage's planned rate, and failed requests. **In flight**: requests sent and not yet ended.
 - **Latency**: p50 as a line and p50 to p95 as a band, with the SLO, for the first token, the total time and the ITL; goodput over time. Hovering one chart shows the same moment on every chart.
 - **Stages**: each stage's outcomes as one bar (within SLO, outside it, 503, 429, other), and its first token and total p50, p95 and p99.
+- **Throughput and interactivity**, when the stages are closed-loop or there are two or more with counted output: each stage as a point, its output tokens a second per GPU against the median answer's tokens a second after its first token, with the TPOT limits of the SLO tiers; and the **capacity** each tier allows, the highest concurrency, or the highest arrival rate of open-loop stages with the requests in flight by Little's law, whose TTFT p99 and TPOT p99 are within it.
 - Tables of the outcomes, the answers' tokens, the stages, every step's percentiles and the shape of the load.
 
 With `request_log` on, `ddosify report` also reads the `request` lines and adds:

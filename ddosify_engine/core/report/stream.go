@@ -50,6 +50,11 @@ const (
 	OutcomeInterrupted  = "interrupted"
 )
 
+// CapacitySetter is implemented by the report services whose result carries the capacity config.
+type CapacitySetter interface {
+	SetCapacity(c *types.Capacity)
+}
+
 // SLOSetter is implemented by the report services that compute goodput.
 type SLOSetter interface {
 	SetSLO(slo *types.SLO)
@@ -276,6 +281,8 @@ type StageSummary struct {
 	GoodputPerc *float64         `json:"goodput_perc,omitempty"`
 	Outcomes    map[string]int64 `json:"outcomes"`
 	Stream      *StreamSummary   `json:"stream,omitempty"`
+	// Iterations in flight at most, in a closed-loop stage
+	Concurrency int `json:"concurrency,omitempty"`
 }
 
 type stageAgg struct {
@@ -532,13 +539,14 @@ func (x *extended) finalize(r *Result) {
 		for _, i := range idx {
 			sa := x.stages[i]
 			ss := &StageSummary{
-				Index:      sa.stage.Index,
-				Name:       sa.stage.Name,
-				Warmup:     sa.stage.Warmup,
-				Iterations: sa.iterations,
-				OK:         sa.ok,
-				Outcomes:   sa.outcomes,
-				Stream:     sa.stream.summary(),
+				Index:       sa.stage.Index,
+				Name:        sa.stage.Name,
+				Warmup:      sa.stage.Warmup,
+				Iterations:  sa.iterations,
+				OK:          sa.ok,
+				Outcomes:    sa.outcomes,
+				Stream:      sa.stream.summary(),
+				Concurrency: sa.stage.Concurrency,
 			}
 			if x.slo != nil {
 				g := sa.good
