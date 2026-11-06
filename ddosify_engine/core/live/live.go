@@ -61,6 +61,10 @@ type Options struct {
 	// Arg is the observer's argument: the path of --html, or what follows "=" in --observer name=arg.
 	Arg string
 
+	// JSON is --json: the data lines (progress, request, report) go to stdout, and stderr is for a
+	// person: what the run does, and its errors.
+	JSON bool
+
 	// Stop ends the test gracefully, as CTRL+C does: no new iterations, the running ones finish,
 	// then Finish is called. Safe to call more than once and from any goroutine.
 	Stop func()

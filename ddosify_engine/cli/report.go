@@ -36,11 +36,11 @@ func newReportCmd(s Streams) *cobra.Command {
 		Use:   "report [LOG]",
 		Short: "Write the HTML report of a finished run from its --json output",
 		Long: `Reads the output of "ddosify run --json": the "report" line, and the per-second "progress"
-lines (on stderr, so keep both streams: 2>&1) and the per-request "request" lines (request_log in
-the config) when they are there.
+lines and the per-request "request" lines (request_log in the config) when they are there.
+Lines that are not JSON, such as a pod log's status lines, are skipped.
 With request lines the report adds latency by start time and each stage's steady state.
 LOG is a file, or - and no argument for stdin. The report loads nothing from the network.`,
-		Example: `  ddosify run --config config.json --json > run.ndjson 2>&1
+		Example: `  ddosify run --config config.json --json > run.ndjson
   ddosify report run.ndjson -o report.html
   kubectl logs job/loadtest | ddosify report -o report.html`,
 		Args: cobra.MaximumNArgs(1),

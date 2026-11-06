@@ -25,6 +25,7 @@ package live
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -209,11 +210,19 @@ func (n *ndjsonObserver) Update(s elive.Snapshot) {
 		return
 	}
 	n.last = time.Now()
-	_ = WriteNDJSON(n.o.Stderr, FromEngine(n.plan, s))
+	_ = WriteNDJSON(n.out(), FromEngine(n.plan, s))
+}
+
+// out is stdout under --json, beside the request and report lines, else stderr.
+func (n *ndjsonObserver) out() io.Writer {
+	if n.o.JSON {
+		return n.o.Stdout
+	}
+	return n.o.Stderr
 }
 
 func (n *ndjsonObserver) Finish(f elive.Final) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	_ = WriteNDJSON(n.o.Stderr, FromEngine(n.plan, f.Last))
+	_ = WriteNDJSON(n.out(), FromEngine(n.plan, f.Last))
 }

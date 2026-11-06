@@ -150,7 +150,7 @@ func checkEnvsValidInStep(st *ScenarioStep, definedEnvs map[string]struct{}) err
 					}
 
 					return EnvironmentNotDefinedError{
-						msg: fmt.Sprintf("%s is not found in the operating system environment variables", v),
+						msg: fmt.Sprintf("%s: the environment variable %s is not set", v, varName),
 					}
 				}
 
@@ -355,7 +355,7 @@ func (si *ScenarioStep) validate(definedEnvs map[string]struct{}) error {
 
 func wrapAsScenarioValidationError(err error) ScenarioValidationError {
 	return ScenarioValidationError{
-		msg:        fmt.Sprintf("ScenarioValidationError %v", err),
+		msg:        fmt.Sprintf("the config is not valid: %v", err),
 		wrappedErr: err,
 	}
 }
