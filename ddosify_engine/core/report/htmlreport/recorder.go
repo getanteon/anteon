@@ -70,6 +70,7 @@ type Recorder struct {
 type Span struct {
 	Start, End     float64
 	StartAt, EndAt int64
+	Failed         int64 // the stage's failed requests at its last snapshot
 }
 
 // NewRecorder keeps at most maxPoints points; 0 uses DefaultMaxPoints.
@@ -121,7 +122,7 @@ func (r *Recorder) Add(s live.Snapshot) {
 			sp = &Span{Start: p.T, StartAt: p.At}
 			r.spans[stage] = sp
 		}
-		sp.End, sp.EndAt = p.T, p.At
+		sp.End, sp.EndAt, sp.Failed = p.T, p.At, p.Failed
 	}
 	r.seen++
 	if (r.seen-1)%r.stride != 0 {

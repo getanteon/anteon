@@ -93,7 +93,8 @@
 	for (const s of S) if (s.start != null) { T0 = Math.min(T0, s.start); T1 = Math.max(T1, s.end); }
 	if (TS && TS.t.length) { T0 = Math.min(T0, TS.t[0]); T1 = Math.max(T1, TS.t[TS.t.length - 1]); }
 	if (D.req && D.req.t.length) { T0 = Math.min(T0, D.req.t[0]); T1 = Math.max(T1, D.req.t[D.req.t.length - 1]); }
-	if (!isFinite(T0)) return;
+	// Without a time range (a log with only the report line) the time charts are left out, the rest is drawn.
+	const hasTime = isFinite(T0) && T1 > T0;
 	const stageAt = (t) => { let n = ""; for (const s of S) if (s.start != null && t >= s.start - 0.5) n = s.name || ""; return n; };
 	const charts = [];
 
@@ -271,7 +272,7 @@
 	}
 
 	/* load */
-	const L = document.getElementById("load");
+	const L = hasTime ? document.getElementById("load") : null;
 	const per = "/" + (D.rateUnit || "s");
 	if (TS && L) {
 		const t = TS.t;
@@ -285,7 +286,7 @@
 	}
 
 	/* latency */
-	const LT = document.getElementById("latency");
+	const LT = hasTime ? document.getElementById("latency") : null;
 	const R = D.req;
 	if (LT && R && R.t.length) {
 		const extra = (t) => { const i = nearest(R.t.map((x) => [x]), t); return i < 0 ? [] : [{ color: null, value: num(R.n[i]), name: `answers started in the last ${num(R.win[i] / 60000, 1)} min` }]; };

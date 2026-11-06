@@ -65,6 +65,9 @@ type stepSample struct {
 type Requests struct {
 	steps map[uint16]*stepSample
 	rng   *rand.Rand
+	// Steps past maxSteps are not measured; the report says how many
+	dropped   map[uint16]bool
+	droppedFT bool
 }
 
 func NewRequests() *Requests {
@@ -76,6 +79,11 @@ func (q *Requests) Add(r Record) {
 	s := q.steps[r.StepID]
 	if s == nil {
 		if len(q.steps) >= maxSteps {
+			if q.dropped == nil {
+				q.dropped = map[uint16]bool{}
+			}
+			q.dropped[r.StepID] = true
+			q.droppedFT = q.droppedFT || r.HasFT
 			return
 		}
 		s = &stepSample{id: r.StepID, name: r.StepName}
@@ -152,6 +160,7 @@ func distOf(vals []float64) Dist {
 
 // StageWindow is when a stage ran, in milliseconds from the start.
 type StageWindow struct {
+	Index  int // the stage's own index, as the request lines carry it
 	Name   string
 	Warmup bool
 	Start  float64
@@ -199,6 +208,7 @@ type ReqSeries struct {
 // ReqData is what the request records add to the report.
 type ReqData struct {
 	Count   int64         `json:"count"`
+	Dropped int           `json:"dropped"` // steps past the limit, not measured
 	Kept    int           `json:"kept"`
 	Sampled bool          `json:"sampled"`
 	Steps   []string      `json:"steps"` // the measured steps
@@ -211,7 +221,7 @@ type ReqData struct {
 // milliseconds, and also the least a stage's start is left out for.
 func (q *Requests) Analyze(stages []StageWindow, sloFT, sloTotal, window float64) *ReqData {
 	var measured []*stepSample
-	anyFT := false
+	anyFT := q.droppedFT
 	for _, s := range q.steps {
 		anyFT = anyFT || s.ft
 	}
@@ -224,7 +234,7 @@ func (q *Requests) Analyze(stages []StageWindow, sloFT, sloTotal, window float64
 		return nil
 	}
 	slices.SortFunc(measured, func(a, b *stepSample) int { return int(a.id) - int(b.id) })
-	out := &ReqData{}
+	out := &ReqData{Dropped: len(q.dropped)}
 	var reqs []Record
 	weight := map[uint16]float64{} // records each kept one stands for
 	for _, s := range measured {
@@ -255,10 +265,10 @@ func (q *Requests) Analyze(stages []StageWindow, sloFT, sloTotal, window float64
 	}
 
 	prevP95 := math.NaN()
-	for i, st := range stages {
+	for _, st := range stages {
 		var rs []Record
 		for _, r := range reqs {
-			if r.Stage == i {
+			if r.Stage == st.Index {
 				rs = append(rs, r)
 			}
 		}
@@ -266,27 +276,33 @@ func (q *Requests) Analyze(stages []StageWindow, sloFT, sloTotal, window float64
 		if !math.IsNaN(prevP95) {
 			settle = max(settle, prevP95)
 		}
-		b := SteadyStage{Name: st.Name, Warmup: st.Warmup, SettleMs: settle, All: len(rs)}
+		b := SteadyStage{Name: st.Name, Warmup: st.Warmup, SettleMs: settle}
+		// Counts stand for the run: a sampled record counts for the records it replaced.
+		var nAll, nSteady, nGood, nRejected, nFailed, nAnswered, nNoText float64
+		for _, r := range rs {
+			nAll += weight[r.StepID]
+		}
 		var ft, tot []float64
 		perStep := map[uint16]*[2][]float64{}
 		for _, r := range rs {
 			if st.Known && r.Intended < st.Start+settle {
 				continue
 			}
-			b.Steady++
+			w := weight[r.StepID]
+			nSteady += w
 			if good(r) {
-				b.Good++
+				nGood += w
 			}
 			switch {
 			case r.Outcome == report.OutcomeUnavailable:
-				b.Rejected++
+				nRejected += w
 			case !ok(r):
-				b.Failed++
+				nFailed += w
 			}
 			if !ok(r) {
 				continue
 			}
-			b.Answered++
+			nAnswered += w
 			p := perStep[r.StepID]
 			if p == nil {
 				p = &[2][]float64{}
@@ -296,11 +312,13 @@ func (q *Requests) Analyze(stages []StageWindow, sloFT, sloTotal, window float64
 				ft = append(ft, r.FT)
 				p[0] = append(p[0], r.FT)
 			} else if q.steps[r.StepID].ft {
-				b.NoText++
+				nNoText += w
 			}
 			tot = append(tot, r.Total)
 			p[1] = append(p[1], r.Total)
 		}
+		n := func(v float64) int { return int(math.Round(v)) }
+		b.All, b.Steady, b.Good, b.Rejected, b.Failed, b.Answered, b.NoText = n(nAll), n(nSteady), n(nGood), n(nRejected), n(nFailed), n(nAnswered), n(nNoText)
 		b.FT, b.Total = distOf(ft), distOf(tot)
 		for _, s := range measured {
 			if p := perStep[s.id]; p != nil {

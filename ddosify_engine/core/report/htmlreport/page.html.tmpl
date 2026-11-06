@@ -183,7 +183,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
     </tbody>
   </table></div>
   {{- end}}
-  <p class="muted">Times in milliseconds, of {{with .Steady}}{{range $i, $s := .Steps}}{{if $i}}, {{end}}{{$s}}{{end}}{{end}}. At the start of each stage the requests of iterations that began within max(the sliding window, the previous stage's p95 total) are left out, so the system is not measured before it settles at the new load. The window is half the shortest stage past warm-up, from 10 to 60 seconds. p99 needs 100 answers.{{if .Steady.Sampled}} Above {{.PerStep}} requests a step is measured from a uniform sample.{{end}}</p>
+  <p class="muted">Times in milliseconds, of {{with .Steady}}{{range $i, $s := .Steps}}{{if $i}}, {{end}}{{$s}}{{end}}{{end}}. At the start of each stage the requests of iterations that began within max(the sliding window, the previous stage's p95 total) are left out, so the system is not measured before it settles at the new load. The window is half the shortest stage past warm-up, from 10 to 60 seconds. p99 needs 100 answers.{{if .Steady.Sampled}} Above {{.PerStep}} requests a step is measured from a uniform sample, and the counts are scaled back to the run.{{end}}{{if .Steady.Dropped}} {{.Steady.Dropped}} steps past the first 16 are not measured.{{end}}</p>
 </section>
 {{- end}}
 

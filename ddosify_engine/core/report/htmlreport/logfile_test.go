@@ -267,3 +267,61 @@ func TestReadLogIsBounded(t *testing.T) {
 		t.Errorf("heap grew %d MB reading %d lines", grown>>20, n)
 	}
 }
+
+// A stage with no result is not listed in the report, so a listed stage's index can differ from
+// its position: its window, its planned rate and its requests follow the index.
+func TestStageIndexNotPosition(t *testing.T) {
+	var b strings.Builder
+	t0 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	stages := []struct {
+		name  string
+		count int
+	}{{"a", 300}, {"pause", 0}, {"c", 600}}
+	for sec := 0; sec <= 90; sec++ { // the last snapshot comes at the end of the run
+		i := min(sec/30, 2)
+		at := t0.Add(time.Duration(sec) * time.Second)
+		fmt.Fprintf(&b, `{"type":"progress","time":%q,"elapsed_s":%d,"stage":{"index":%d,"count":3,"name":%q},"iterations":%d,"outcomes":{}}`+"\n",
+			at.Format(time.RFC3339Nano), sec, i, stages[i].name, sec*10)
+		if stages[i].count > 0 && sec < 90 {
+			for k := 0; k < stages[i].count/30; k++ {
+				sent := at.Add(time.Duration(k) * time.Second / time.Duration(stages[i].count/30))
+				fmt.Fprintf(&b, `{"type":"request","time":%q,"stage":%q,"stage_index":%d,"step_id":1,"step_name":"get","sent":%q,"outcome":"ok","total_ms":50}`+"\n",
+					sent.Add(50*time.Millisecond).Format(time.RFC3339Nano), stages[i].name, i, sent.Format(time.RFC3339Nano))
+			}
+		}
+	}
+	b.WriteString(`{"type":"report","test_status":"success","steps":{"1":{"name":"get"}},"stages":[{"index":0,"name":"a","iterations":300,"ok":300},{"index":2,"name":"c","iterations":600,"ok":600}]}`)
+	rep, err := ReadLog(strings.NewReader(b.String()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, steady := buildData(rep, "ITL")
+	if s := d.Stages[1]; s.Start == nil || *s.Start != 60 {
+		t.Errorf("stage c starts at %v, want 60 s", deref(s.Start))
+	}
+	if s := d.Stages[0]; s.End == nil || *s.End != 30 {
+		t.Errorf("stage a ends at %v, want 30 s where the pause begins", deref(s.End))
+	}
+	for i, tt := range d.TS.T {
+		want := map[int]float64{0: 10, 1: 0, 2: 20}[int(tt)/30]
+		if tt > 0 && int(tt)%30 != 0 && want > 0 && math.Abs(d.TS.Target[i]-want) > 1e-9 {
+			t.Fatalf("planned rate at %v s is %v, want %v", tt, d.TS.Target[i], want)
+		}
+	}
+	if got := steady.Stages[1].All; got != 600 {
+		t.Errorf("stage c has %d requests, want 600", got)
+	}
+}
+
+// Above the sample size, a stage's counts stand for the run, not for the sample.
+func TestSampledCountsScaleBack(t *testing.T) {
+	q := NewRequests()
+	const n = 4 * PerStepSamples
+	for i := range n {
+		q.Add(Record{Stage: 0, StepID: 1, StepName: "get", Sent: float64(i), Done: float64(i + 10), Total: 10, Outcome: "ok"})
+	}
+	d := q.Analyze([]StageWindow{{Index: 0, Name: "s"}}, 0, 0, 60_000)
+	if s := d.Stages[0]; s.All != n || s.Answered != n {
+		t.Errorf("all %d, answered %d, want %d", s.All, s.Answered, n)
+	}
+}

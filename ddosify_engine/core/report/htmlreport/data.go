@@ -109,19 +109,25 @@ func latOrNil(l live.Latency, v float64) *float64 {
 	return pf(v)
 }
 
-// stageWindows is when each stage ran: seconds from the start, and the absolute times in
-// milliseconds when the snapshots carried them.
-func stageWindows(spans map[int]Span, n int) (rel [][2]float64, abs []StageWindow) {
-	rel = make([][2]float64, n)
-	abs = make([]StageWindow, n)
-	for i := range n {
-		sp, ok := spans[i]
+// stageWindows is when each listed stage ran, by its own index: a stage with no result is not
+// listed, so the position in the list is not the index. Seconds from the start, and the absolute
+// times in milliseconds when the snapshots carried them.
+func stageWindows(spans map[int]Span, stages []*report.StageSummary) (rel [][2]float64, abs []StageWindow) {
+	rel = make([][2]float64, len(stages))
+	abs = make([]StageWindow, len(stages))
+	for i, st := range stages {
+		abs[i] = StageWindow{Index: st.Index, Name: st.Name, Warmup: st.Warmup}
+		sp, ok := spans[st.Index]
 		if !ok {
 			rel[i] = [2]float64{math.NaN(), math.NaN()}
 			continue
 		}
 		rel[i] = [2]float64{sp.Start, sp.End}
-		abs[i] = StageWindow{Start: float64(sp.StartAt), End: float64(sp.EndAt), Known: sp.StartAt > 0}
+		// A stage ends where the next one, listed or not, begins.
+		if next, ok := spans[st.Index+1]; ok {
+			rel[i][1] = next.Start
+		}
+		abs[i].Start, abs[i].End, abs[i].Known = float64(sp.StartAt), float64(sp.EndAt), sp.StartAt > 0
 	}
 	return rel, abs
 }
@@ -133,7 +139,7 @@ func buildData(r Report, itlName string) (chartData, *ReqData) {
 		d.SLO = sloData{FT: float64(g.SLO.FirstTokenMs), Total: float64(g.SLO.TotalMs)}
 	}
 	pts := r.Series
-	rel, abs := stageWindows(r.Spans, len(r.Stages))
+	rel, abs := stageWindows(r.Spans, r.Stages)
 	for i, s := range r.Stages {
 		sd := stageData{Name: s.Name, Warmup: s.Warmup, Iterations: s.Iterations, OK: s.OK, Good: s.Good,
 			Rejected: s.Outcomes[report.OutcomeUnavailable], RateLimited: s.Outcomes[report.OutcomeRateLimited]}
@@ -148,40 +154,31 @@ func buildData(r Report, itlName string) (chartData, *ReqData) {
 		if st := s.Stream; st != nil {
 			sd.FT, sd.Total = pctOf(st.FirstToken), pctOf(st.Total)
 		}
-		abs[i].Name, abs[i].Warmup = s.Name, s.Warmup
 		d.Stages = append(d.Stages, sd)
-	}
-	// A stage ends where the next begins.
-	for i := 0; i+1 < len(d.Stages); i++ {
-		if d.Stages[i].End != nil && d.Stages[i+1].Start != nil {
-			d.Stages[i].End = pf(*d.Stages[i+1].Start)
-		}
 	}
 
 	win := smoothing(r)
 	d.Window = win
 	started := windowRate(pts, win, func(i int) float64 { return float64(pts[i].Iterations) })
 	target := windowMean(pts, win, func(i int) float64 { return pts[i].TargetRPS })
-	// A stage's planned rate is its iterations over its length: flat, as the plan was written.
-	planned := make([]float64, len(r.Stages))
+	// A stage's planned rate is its iterations over its length, flat as the plan was written: the
+	// plan's own count when the report was written by the run, else the iterations the stage started.
+	planned := map[int]float64{}
 	for i, s := range r.Stages {
-		dur := 0.0
-		if i < len(r.Config.Stages) {
-			dur = float64(r.Config.Stages[i].DurationS)
-		}
-		if dur <= 0 && !math.IsNaN(rel[i][0]) {
+		count, dur := float64(s.Iterations), 0.0
+		if s.Index < len(r.Config.Stages) && r.Config.Stages[s.Index].DurationS > 0 {
+			c := r.Config.Stages[s.Index]
+			count, dur = float64(c.Count), float64(c.DurationS)
+		} else if !math.IsNaN(rel[i][0]) {
 			dur = rel[i][1] - rel[i][0]
-			if i+1 < len(rel) && !math.IsNaN(rel[i+1][0]) {
-				dur = rel[i+1][0] - rel[i][0]
-			}
 		}
 		if dur >= 10 {
-			planned[i] = float64(s.Iterations) / dur
+			planned[s.Index] = count / dur
 		}
 	}
 	for i, p := range pts {
-		if p.Stage >= 0 && p.Stage < len(planned) && planned[p.Stage] > 0 {
-			target[i] = planned[p.Stage]
+		if v, ok := planned[p.Stage]; ok && v > 0 {
+			target[i] = v
 		}
 	}
 	maxRate := 0.0
@@ -199,16 +196,16 @@ func buildData(r Report, itlName string) (chartData, *ReqData) {
 		ts := &tsData{}
 		var ttft, itl bandData
 		hasTTFT, hasITL := false, false
-		// The counts are the stage's own: carry the finished stages' totals across a stage change.
-		var carried, last int64
+		// The counts are the stage's own: carry each finished stage's final count, kept by the
+		// recorder from every snapshot, across a stage change.
+		var carried int64
 		prevStage := pts[0].Stage
 		failed := make([]float64, len(pts))
 		for i, p := range pts {
 			if p.Stage != prevStage {
-				carried += last
+				carried += r.Spans[prevStage].Failed
 				prevStage = p.Stage
 			}
-			last = p.Failed
 			failed[i] = float64(carried + p.Failed)
 			ts.T = append(ts.T, p.T)
 			ts.Target = append(ts.Target, target[i]*scale)
@@ -274,9 +271,16 @@ func buildData(r Report, itlName string) (chartData, *ReqData) {
 // smoothing is the sliding window of the charts, in seconds: half the shortest stage past warm-up, from 10 to
 // 60 seconds, so a short stage is not smeared into the next. A run with no stages takes a tenth of it.
 func smoothing(r Report) float64 {
+	warm := map[int]bool{}
+	for i, s := range r.Config.Stages {
+		warm[i] = s.Warmup
+	}
+	for _, s := range r.Stages {
+		warm[s.Index] = warm[s.Index] || s.Warmup
+	}
 	shortest := math.Inf(1)
 	for i, s := range r.Spans {
-		if i < len(r.Stages) && r.Stages[i].Warmup {
+		if warm[i] {
 			continue
 		}
 		if d := s.End - s.Start; d > 0 {
