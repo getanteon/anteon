@@ -36,7 +36,7 @@ func init() {
 	elive.LogReport = writeFromLog
 }
 
-func writeFromLog(in io.Reader, title, path string) error {
+func writeFromLog(in io.Reader, title string, open func() (io.Writer, error)) error {
 	rep, err := ReadLog(in)
 	if err != nil {
 		return err
@@ -44,7 +44,11 @@ func writeFromLog(in io.Reader, title, path string) error {
 	if title != "" {
 		rep.Title = title
 	}
-	return WriteFile(path, rep)
+	w, err := open()
+	if err != nil {
+		return err
+	}
+	return Write(w, rep)
 }
 
 type observer struct {

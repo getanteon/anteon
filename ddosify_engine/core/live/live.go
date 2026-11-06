@@ -121,9 +121,10 @@ func Names() []string {
 	return names
 }
 
-// LogReport writes a report file from a finished run's --json output. The HTML report package sets
-// it in init, so a build without that package has none.
-var LogReport func(in io.Reader, title, path string) error
+// LogReport writes the report of a finished run from its --json output. It reads the whole log
+// before it calls open, so a log with no report leaves the destination untouched. The HTML report
+// package sets it in init, so a build without that package has none.
+var LogReport func(in io.Reader, title string, open func() (io.Writer, error)) error
 
 // Build looks up and builds the named observer.
 func Build(name string, o Options) (Observer, error) {

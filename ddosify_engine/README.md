@@ -270,7 +270,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 | Command | What it does |
 | ------- | ------------ |
 | `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
-| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output |
+| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout |
 | `ddosify version [--json]` | Prints the version, commit, build date and Go version |
 | `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
 | `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
@@ -1437,6 +1437,9 @@ ddosify run --config config.json --json > run.ndjson
 ddosify report run.ndjson -o report.html --title "Nightly run"
 
 kubectl logs job/loadtest | ddosify report -o report.html  # a pod's log holds both streams
+
+# in a container, with no volume: the log in on stdin, the page out on stdout
+docker run -i --rm IMAGE report -o - < run.ndjson > report.html
 ```
 
 What it shows:
