@@ -82,6 +82,8 @@
   - [Goodput and SLO](#goodput-and-slo)
   - [Stepped arrival rate and stages](#stepped-arrival-rate-and-stages)
   - [Example: an AI SDK chat API](#example-an-ai-sdk-chat-api)
+  - [Tokens, the OpenAI preset, sessions and prefix caching](#tokens-the-openai-preset-sessions-and-prefix-caching)
+- [HTML report](#html-report)
 - [Common Issues](#common-issues)
   - [macOS Security Issue](#macos-security-issue)
   - [OS Limit - Too Many Open Files](#os-limit---too-many-open-files)
@@ -268,6 +270,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 | Command | What it does |
 | ------- | ------------ |
 | `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
+| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output |
 | `ddosify version [--json]` | Prints the version, commit, build date and Go version |
 | `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
 | `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
@@ -303,7 +306,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `--cert-path`, `--cert-key-path` | Client certificate and key files | - |
 | `--insecure` | Does not verify the target's TLS certificate. Off by default: certificates are verified | `false` |
 | `--preset` | Applies a registered config preset; repeat it | - |
-| `--html` | Also writes an HTML report to this file, when the build has the HTML report | - |
+| `--html` | Also writes the [HTML report](#html-report) to this file, when the build has the HTML report | - |
 | `--observer` | Adds a registered live observer, `name` or `name=arg` | - |
 | `--ui` | `auto` shows the live TUI on a terminal and ndjson snapshots when stdout is not a terminal or with `--json`, when the build has them; `tui`, `ndjson` or `plain` choose one. `TERM=dumb` never gets the TUI | `auto` |
 | `--no-color` | No colors; `NO_COLOR` and `TERM=dumb` do the same | `false` |
@@ -1403,6 +1406,38 @@ ddosify run --config config_examples/sse_llm.json --tokenizer ~/models/Qwen3-8B/
 ### Tokens, the OpenAI preset, sessions and prefix caching
 
 [docs/llm.md](docs/llm.md) covers output tokens (from the server's usage, a Hugging Face `tokenizer.json`, or labelled as chunks), TPOT, ITL and tokens per second, the OpenAI compatible preset that needs only a URL, a key and a dataset, multi-turn sessions, cache-busting and shared prefixes, and the scheduling lag that shows a saturated client.
+
+## HTML report
+
+One self-contained HTML file that opens offline and loads nothing from the network. It holds numbers and step names only: no URL, header, body, token, credential or test data, so it can be sent on. Light and dark follow the reader's system, and a button switches them.
+
+Write it while the test runs, or afterwards from the `--json` output:
+
+```bash
+ddosify run --config config.json --html report.html
+
+ddosify run --config config.json --json > run.ndjson 2>&1   # progress lines are on stderr
+ddosify report run.ndjson -o report.html --title "Nightly run"
+
+kubectl logs job/loadtest | ddosify report -o report.html  # a pod's log holds both streams
+```
+
+What it shows:
+
+- **Cards**: goodput, requests, 429 and 503, and the first token and total p95 of the streamed steps.
+- **Arrival rate**: iterations started a second (a minute under one a second) against each stage's planned rate, and failed requests. **In flight**: requests sent and not yet ended.
+- **Latency**: p50 as a line and p50 to p95 as a band, with the SLO, for the first token, the total time and the ITL; goodput over time. Hovering one chart shows the same moment on every chart.
+- **Stages**: each stage's outcomes as one bar (within SLO, outside it, 503, 429, other), and its first token and total p50, p95 and p99.
+- Tables of the outcomes, the answers' tokens, the stages, every step's percentiles and the shape of the load.
+
+With `request_log` on, `ddosify report` also reads the `request` lines and adds:
+
+- **Latency by start time**: every quarter window, the answers that started over the last window, or longer when 30 requests took longer to start. A request is placed where it began, so a slow answer is charged to the load that caused it, not to the moment it ended.
+- **Steady state**: each stage without its first moments, the iterations that began within the window or the previous stage's p95 total time, whichever is longer. Its p95 has a distribution-free 95% confidence interval. With more than one measured step, each step's percentiles per stage.
+
+The window is half the shortest stage past warm-up, from 10 to 60 seconds. When a step streams, the streamed steps are measured; otherwise every step. Memory stays bounded on a long run: the time series keeps about 1,500 points, and above 25,000 requests a step is measured from a seeded uniform sample, which the report says.
+
+`ddosify report` exits `2` when the log can not be read, has no `report` line, or the output can not be written.
 
 ## Common Issues
 

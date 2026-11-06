@@ -53,12 +53,16 @@ type Report struct {
 	Outcomes map[string]int64 // whole test, warm-up excluded
 
 	Series        []Point
+	Spans         map[int]Span
 	ITLIsEventGap bool
 
 	// Answers' output and the scheduling lag, set when a step has an llm config
 	LLM         *llm.Summary
 	Schedule    *llm.ScheduleSummary
 	PrefixCache string
+
+	// Per-request records, when the report is read from a log that has them
+	Requests *Requests
 }
 
 // Config is the shape of the load, without anything a request carries.
@@ -127,6 +131,7 @@ func FromResult(r *report.Result, cfg Config, rec *Recorder) Report {
 	}
 	if rec != nil {
 		rep.Series = rec.Points()
+		rep.Spans = rec.Spans()
 		rep.ITLIsEventGap = rec.EventGap()
 		if n := len(rep.Series); n > 0 {
 			rep.Duration = time.Duration(rep.Series[n-1].T * float64(time.Second))

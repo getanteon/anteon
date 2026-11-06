@@ -24,6 +24,7 @@ package htmlreport
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	elive "go.ddosify.com/ddosify/v2/core/live"
@@ -32,6 +33,18 @@ import (
 
 func init() {
 	elive.Register("html", newObserver)
+	elive.LogReport = writeFromLog
+}
+
+func writeFromLog(in io.Reader, title, path string) error {
+	rep, err := ReadLog(in)
+	if err != nil {
+		return err
+	}
+	if title != "" {
+		rep.Title = title
+	}
+	return WriteFile(path, rep)
 }
 
 type observer struct {
