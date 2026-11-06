@@ -63,16 +63,37 @@ func (f *firstErrors) note(w io.Writer, scr *types.ScenarioResult) {
 			continue
 		}
 		f.seen[key] = true
-		if len(reason) > 500 {
-			reason = reason[:500] + "..."
+		shown := reason
+		if sr.Err.Detail != "" {
+			shown = sr.Err.Detail
+		} else if sr.Err.Type == "" && len(sr.RespBody) > 0 {
+			if line := firstLine(sr.RespBody); line != "" {
+				shown += ": " + line
+			}
+		}
+		if len(shown) > 500 {
+			shown = shown[:500] + "..."
 		}
 		step := fmt.Sprintf("step %d", sr.StepID)
 		if sr.StepName != "" {
 			step += fmt.Sprintf(" %q", sr.StepName)
 		}
-		fmt.Fprintf(w, "Error: %s: %s: %s\n", step, outcome, strings.TrimSpace(reason))
+		fmt.Fprintf(w, "Error: %s: %s: %s\n", step, outcome, strings.TrimSpace(shown))
 		if len(f.seen) == maxFirstErrors {
 			fmt.Fprintf(w, "Error: %d kinds of errors so far; more are in the report only\n", maxFirstErrors)
 		}
 	}
+}
+
+// firstLine is the first non-empty line of a response body, at most 200 bytes and valid UTF-8.
+func firstLine(b []byte) string {
+	for _, l := range strings.Split(string(b), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			if len(l) > 200 {
+				l = strings.ToValidUTF8(l[:200], "") + "..."
+			}
+			return l
+		}
+	}
+	return ""
 }
