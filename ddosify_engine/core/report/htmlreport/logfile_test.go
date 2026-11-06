@@ -216,7 +216,7 @@ func TestSpansSurviveThinning(t *testing.T) {
 // A log's report line carries error reasons and failed rules; none of it may reach the page.
 func TestReadLogHoldsNoSecrets(t *testing.T) {
 	in := `{"type":"report","test_status":"failed","failed_criterias":[{"rule":"RULESECRET","received":{"x":"RECEIVEDSECRET"}}],` +
-		`"steps":{"1":{"name":"get","fail":{"count":1,"server":{"count":1,"reasons":{"Get \"https://llm.bank.internal/x?k=QUERYSECRET\"":1}}}}}}`
+		`"steps":{"1":{"name":"get","fail":{"count":1,"server":{"count":1,"reasons":{"Get \"https://llm.example.internal/x?k=QUERYSECRET\"":1}}}}}}`
 	rep, err := ReadLog(strings.NewReader(in))
 	if err != nil {
 		t.Fatal(err)
@@ -225,7 +225,7 @@ func TestReadLogHoldsNoSecrets(t *testing.T) {
 	if err := Write(&b, rep); err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range []string{"RULESECRET", "RECEIVEDSECRET", "QUERYSECRET", "llm.bank.internal"} {
+	for _, s := range []string{"RULESECRET", "RECEIVEDSECRET", "QUERYSECRET", "llm.example.internal"} {
 		if strings.Contains(b.String(), s) {
 			t.Errorf("report contains %q", s)
 		}

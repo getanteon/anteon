@@ -23,7 +23,7 @@ import (
 
 var secrets = []string{
 	"sk-live-HEADERSECRET", "QUERYSECRET", "BODYSECRET", "PASSSECRET", "COOKIESECRET",
-	"ENVSECRET", "ASSERTSECRET", "CRITSECRET", "CSVSECRET", "llm.bank.internal", "Authorization", "Bearer",
+	"ENVSECRET", "ASSERTSECRET", "CRITSECRET", "CSVSECRET", "llm.example.internal", "Authorization", "Bearer",
 }
 
 func secretHammer() *types.Hammer {
@@ -46,7 +46,7 @@ func secretHammer() *types.Hammer {
 			Steps: []types.ScenarioStep{
 				{
 					ID: 1, Name: "create chat", Method: "POST",
-					URL:     "https://llm.bank.internal/v1/chats?api_key=QUERYSECRET",
+					URL:     "https://llm.example.internal/v1/chats?api_key=QUERYSECRET",
 					Headers: map[string]string{"Authorization": "Bearer sk-live-HEADERSECRET"},
 					Payload: `{"title":"BODYSECRET"}`,
 					Auth:    types.Auth{Type: "basic", Username: "user", Password: "PASSSECRET"},
@@ -54,7 +54,7 @@ func secretHammer() *types.Hammer {
 				},
 				{
 					ID: 2, Name: "ask <question>", Method: "POST",
-					URL:        "https://llm.bank.internal/v1/answer",
+					URL:        "https://llm.example.internal/v1/answer",
 					Headers:    map[string]string{"Authorization": "Bearer sk-live-HEADERSECRET"},
 					Payload:    `{"messages":[{"role":"user","content":"BODYSECRET"}]}`,
 					Assertions: []string{`equals(headers.X, "ASSERTSECRET")`},

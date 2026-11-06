@@ -320,7 +320,7 @@ With `--json` the data goes to stdout and a person's view of the run to stderr, 
 
 ```text
 Started: 3 iterations over 1:00; stages: smoke 3 in 1:00; steps: 1 "Create chat", 2 "Turn 1"
-Error: step 1 "Create chat": network_error: Post "https://gurubase.bank.local/api/v1beta/gurus/.../chats": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Error: step 1 "Create chat": network_error: Post "https://gurubase.example.internal/api/v1beta/gurus/.../chats": tls: failed to verify certificate: x509: certificate signed by unknown authority
 0:10/1:00 smoke · started 1 · in flight 0 · ok 0 · failed 1 (network_error 1)
 Finished in 1:01: 3 iterations started, requests ok 0, failed 3 (network_error 3); the test failed: no request succeeded; the first error of each kind is above
 ```
