@@ -39,10 +39,12 @@ func newReportCmd(s Streams) *cobra.Command {
 lines and the per-request "request" lines (request_log in the config) when they are there.
 Lines that are not JSON, such as a pod log's status lines, are skipped.
 With request lines the report adds latency by start time and each stage's steady state.
-LOG is a file, or - and no argument for stdin. The report loads nothing from the network.`,
+LOG is a file, or - and no argument for stdin; -o - writes the report to stdout. The report loads
+nothing from the network.`,
 		Example: `  ddosify run --config config.json --json > run.ndjson
   ddosify report run.ndjson -o report.html
-  kubectl logs job/loadtest | ddosify report -o report.html`,
+  kubectl logs job/loadtest | ddosify report -o report.html
+  docker run -i --rm IMAGE report -o - < run.ndjson > report.html`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var in io.Reader = s.In
@@ -58,14 +60,31 @@ LOG is a file, or - and no argument for stdin. The report loads nothing from the
 			if elive.LogReport == nil {
 				return runtimeErr(fmt.Errorf("this build has no HTML report"))
 			}
-			if err := elive.LogReport(in, title, out); err != nil {
+			var f *os.File
+			open := func() (io.Writer, error) {
+				if out == "-" {
+					return s.Out, nil
+				}
+				var err error
+				f, err = os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+				return f, err
+			}
+			err := elive.LogReport(in, title, open)
+			if f != nil {
+				if cerr := f.Close(); err == nil {
+					err = cerr
+				}
+			}
+			if err != nil {
 				return usageErr(fmt.Errorf("%s: %w", name, err))
 			}
-			fmt.Fprintf(s.Err, "HTML report written to %s\n", out)
+			if out != "-" {
+				fmt.Fprintf(s.Err, "HTML report written to %s\n", out)
+			}
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&out, "output", "o", "report.html", "the HTML file to write")
+	cmd.Flags().StringVarP(&out, "output", "o", "report.html", "the HTML file to write, or - for stdout")
 	cmd.Flags().StringVar(&title, "title", "", "the report's title")
 	return cmd
 }

@@ -18,7 +18,7 @@ func failed(id uint16, name, reason string, code int) *types.ScenarioStepResult 
 func TestFirstErrorsOncePerKind(t *testing.T) {
 	var b strings.Builder
 	var f firstErrors
-	tls := `Post "https://bank.local/api/gurus/%s/chats": tls: failed to verify certificate: x509: certificate signed by unknown authority`
+	tls := `Post "https://api.example.internal/api/gurus/%s/chats": tls: failed to verify certificate: x509: certificate signed by unknown authority`
 	for _, id := range []string{"a", "b", "c"} {
 		f.note(&b, &types.ScenarioResult{StepResults: []*types.ScenarioStepResult{failed(1, "Create chat", strings.Replace(tls, "%s", id, 1), 0)}})
 	}
@@ -27,7 +27,7 @@ func TestFirstErrorsOncePerKind(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("want one line per kind, got %q", b.String())
 	}
-	if !strings.HasPrefix(lines[0], `Error: step 1 "Create chat": network_error: Post "https://bank.local/api/gurus/a/chats": tls:`) || !strings.Contains(lines[0], "x509") {
+	if !strings.HasPrefix(lines[0], `Error: step 1 "Create chat": network_error: Post "https://api.example.internal/api/gurus/a/chats": tls:`) || !strings.Contains(lines[0], "x509") {
 		t.Errorf("first line %q", lines[0])
 	}
 	if lines[1] != "Error: step 2: unavailable_503: HTTP 503" {

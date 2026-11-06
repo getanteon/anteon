@@ -270,7 +270,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 | Command | What it does |
 | ------- | ------------ |
 | `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
-| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output |
+| `ddosify report [LOG] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout |
 | `ddosify version [--json]` | Prints the version, commit, build date and Go version |
 | `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
 | `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
@@ -320,7 +320,7 @@ With `--json` the data goes to stdout and a person's view of the run to stderr, 
 
 ```text
 Started: 3 iterations over 1:00; stages: smoke 3 in 1:00; steps: 1 "Create chat", 2 "Turn 1"
-Error: step 1 "Create chat": network_error: Post "https://gurubase.bank.local/api/v1beta/gurus/.../chats": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Error: step 1 "Create chat": network_error: Post "https://gurubase.example.internal/api/v1beta/gurus/.../chats": tls: failed to verify certificate: x509: certificate signed by unknown authority
 0:10/1:00 smoke · started 1 · in flight 0 · ok 0 · failed 1 (network_error 1)
 Finished in 1:01: 3 iterations started, requests ok 0, failed 3 (network_error 3); the test failed: no request succeeded; the first error of each kind is above
 ```
@@ -1437,6 +1437,9 @@ ddosify run --config config.json --json > run.ndjson
 ddosify report run.ndjson -o report.html --title "Nightly run"
 
 kubectl logs job/loadtest | ddosify report -o report.html  # a pod's log holds both streams
+
+# in a container, with no volume: the log in on stdin, the page out on stdout
+docker run -i --rm IMAGE report -o - < run.ndjson > report.html
 ```
 
 What it shows:
