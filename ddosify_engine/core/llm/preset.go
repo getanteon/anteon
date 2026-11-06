@@ -22,6 +22,7 @@ package llm
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"go.ddosify.com/ddosify/v2/core/types"
@@ -68,6 +69,12 @@ type Preset struct {
 	// Seconds, for the whole stream
 	Timeout int `json:"timeout"`
 
+	// Every request's prompt is this many tokens of the dataset's text, cut at its own place in it
+	InputTokens      int    `json:"input_tokens"`
+	InputInstruction string `json:"input_instruction"`
+	// How much of a plain text dataset input_tokens reads, spread over the file; 32 MiB by default
+	InputCorpusBytes int64 `json:"input_corpus_bytes"`
+
 	Tokenizer          string `json:"tokenizer"`
 	TokenSource        string `json:"token_source"`
 	CacheBust          bool   `json:"cache_bust"`
@@ -96,12 +103,25 @@ func (p *Preset) Steps() ([]types.ScenarioStep, error) {
 			sessions = append(sessions, []string{pr})
 		}
 	}
-	if p.Dataset != nil {
+	// input_tokens samples a plain text file of any size rather than reading it whole
+	var corpus string
+	if p.InputTokens > 0 && p.Dataset != nil && p.Dataset.format() == "txt" {
+		if _, err := os.Stat(p.Dataset.Path); err != nil {
+			return nil, fmt.Errorf("llm dataset: %v", err)
+		}
+		corpus = p.Dataset.Path
+		if len(sessions) == 0 {
+			sessions = [][]string{{""}} // the prompts come from the corpus
+		}
+	} else if p.Dataset != nil {
 		s, err := p.Dataset.Load()
 		if err != nil {
 			return nil, err
 		}
 		sessions = append(sessions, s...)
+	}
+	if p.InputCorpusBytes < 0 {
+		return nil, fmt.Errorf("llm input_corpus_bytes can not be negative")
 	}
 	if len(sessions) == 0 {
 		return nil, fmt.Errorf("llm preset needs a dataset or prompts")
@@ -114,6 +134,15 @@ func (p *Preset) Steps() ([]types.ScenarioStep, error) {
 	turns := p.Turns
 	if turns <= 0 {
 		turns = 1
+	}
+	if p.InputTokens < 0 {
+		return nil, fmt.Errorf("llm input_tokens can not be negative")
+	}
+	if p.InputTokens > 0 && turns > 1 {
+		return nil, fmt.Errorf("llm input_tokens cuts single requests out of a text; it does not work with turns")
+	}
+	if p.InputTokens > 0 && p.CacheBust {
+		return nil, fmt.Errorf("llm input_tokens gives every request a text of its own already; drop cache_bust, whose marker would add tokens")
 	}
 	timeout := p.Timeout
 	if timeout <= 0 {
@@ -161,6 +190,11 @@ func (p *Preset) Steps() ([]types.ScenarioStep, error) {
 					Random:         strings.EqualFold(p.Order, "random"),
 					Turn:           t,
 					CarryHistory:   turns > 1,
+
+					InputTokens:      p.InputTokens,
+					InputInstruction: p.InputInstruction,
+					InputCorpus:      corpus,
+					InputCorpusBytes: p.InputCorpusBytes,
 				},
 			},
 		}

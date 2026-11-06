@@ -25,6 +25,7 @@ package htmlreport
 
 import (
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"sort"
@@ -63,6 +64,9 @@ type Report struct {
 
 	// Per-request records, when the report is read from a log that has them
 	Requests *Requests
+
+	// GPUs and SLO tiers to read the stages as capacity; nil takes 1 GPU and the default tiers
+	Capacity *types.Capacity
 }
 
 // Config is the shape of the load, without anything a request carries.
@@ -77,10 +81,11 @@ type Config struct {
 }
 
 type StageConfig struct {
-	Name      string
-	Warmup    bool
-	DurationS int
-	Count     int
+	Name        string
+	Warmup      bool
+	DurationS   int // a closed-loop stage's cap, 0 without one
+	Count       int
+	Concurrency int
 }
 
 type StepConfig struct {
@@ -114,7 +119,7 @@ func ConfigFromHammer(h *types.Hammer) Config {
 		SLO:        live.ThresholdsFromSLO(h.SLO),
 	}
 	for _, s := range h.TimeRunCountMap {
-		c.Stages = append(c.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, DurationS: s.Duration, Count: s.Count})
+		c.Stages = append(c.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, DurationS: s.Duration, Count: s.Count, Concurrency: s.Concurrency})
 	}
 	for _, s := range h.Scenario.Steps {
 		c.Steps = append(c.Steps, StepConfig{ID: s.ID, Name: s.Name, Stream: s.Stream != nil, TimeoutS: s.Timeout})
@@ -146,6 +151,9 @@ func FromResult(r *report.Result, cfg Config, rec *Recorder) Report {
 	rep.Stages = r.Stages
 	rep.LLM = r.LLM
 	rep.Schedule = r.Schedule
+	if r.Capacity != nil {
+		rep.Capacity = r.Capacity
+	}
 
 	ids := make([]int, 0, len(r.StepResults))
 	for id := range r.StepResults {
@@ -183,6 +191,37 @@ func WriteFile(path string, r Report) error {
 		return err
 	}
 	return f.Close()
+}
+
+// WriteCompare renders runs side by side: their throughput and interactivity on one chart, and
+// the capacity each SLO tier allows. gpus > 0 overrides every run's, tiers nil takes the first
+// run's or the defaults.
+func WriteCompare(w io.Writer, title string, runs []Labeled, gpus int, tiers []types.CapacityTier) error {
+	if title == "" {
+		title = "Ddosify comparison"
+	}
+	if tiers == nil && len(runs) > 0 {
+		tiers = runs[0].Report.Capacity.TierList()
+	}
+	if tiers == nil {
+		tiers = types.DefaultCapacityTiers
+	}
+	var series []*ParetoSeries
+	for _, r := range runs {
+		s := ParetoOf(r.Report, r.Label, gpus)
+		if s == nil {
+			return fmt.Errorf("%s: no stage with streamed answers whose output was counted", r.Label)
+		}
+		series = append(series, s)
+	}
+	v := pageView{R: Report{Title: title}, Generated: time.Now().UTC().Format("2006-01-02 15:04:05 UTC"), Compare: true}
+	v.Pareto = buildPareto(series, tiers)
+	v.Data = chartData{Pareto: paretoData(v.Pareto)}
+	v.Script = template.JS(chartsJS)
+	if err := page.Execute(w, v); err != nil {
+		return fmt.Errorf("html report: %w", err)
+	}
+	return nil
 }
 
 // Write renders the report.

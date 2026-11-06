@@ -148,7 +148,7 @@ func ReadLog(r io.Reader) (Report, error) {
 		cfg.SLO = live.ThresholdsFromSLO(&g.SLO)
 	}
 	for _, s := range result.Stages {
-		cfg.Stages = append(cfg.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, Count: int(s.Iterations)})
+		cfg.Stages = append(cfg.Stages, StageConfig{Name: s.Name, Warmup: s.Warmup, Count: int(s.Iterations), Concurrency: s.Concurrency})
 	}
 	rep := FromResult(result, cfg, rec)
 	for _, s := range rep.Steps {

@@ -66,13 +66,21 @@ func (s *statusObserver) Start(p elive.Plan) {
 	s.plan = p
 	s.last = time.Now()
 	var b strings.Builder
-	fmt.Fprintf(&b, "Started: %d iterations over %s", p.Iterations, clockOf(p.Duration))
+	if p.ClosedLoop {
+		fmt.Fprintf(&b, "Started: %d iterations by concurrency", p.Iterations)
+	} else {
+		fmt.Fprintf(&b, "Started: %d iterations over %s", p.Iterations, clockOf(p.Duration))
+	}
 	if len(p.Stages) > 1 || (len(p.Stages) == 1 && p.Stages[0].Name != "") {
 		var st []string
 		for _, x := range p.Stages {
 			name := x.Name
 			if name == "" {
 				name = fmt.Sprintf("S%d", x.Index+1)
+			}
+			if x.Concurrency > 0 {
+				st = append(st, fmt.Sprintf("%s %d at concurrency %d", name, x.Iterations, x.Concurrency))
+				continue
 			}
 			st = append(st, fmt.Sprintf("%s %d in %s", name, x.Iterations, clockOf(x.End-x.Start)))
 		}
@@ -130,11 +138,14 @@ func (s *statusObserver) Finish(f elive.Final) {
 func statusLine(p elive.Plan, snap elive.Snapshot) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s", clockOf(snap.Elapsed))
-	if p.Duration > 0 {
+	if p.Duration > 0 && !p.ClosedLoop {
 		fmt.Fprintf(&b, "/%s", clockOf(p.Duration))
 	}
 	if snap.Stage.Index >= 0 && len(p.Stages) > 1 && snap.Stage.Name != "" {
 		fmt.Fprintf(&b, " %s", snap.Stage.Name)
+	}
+	if c := snap.Stage.Concurrency; c > 0 {
+		fmt.Fprintf(&b, " · concurrency %d · stage %d/%d done", c, snap.Current.Iterations, snap.Stage.Iterations)
 	}
 	t := snap.Total
 	ok := t.Outcomes[report.OutcomeOK]

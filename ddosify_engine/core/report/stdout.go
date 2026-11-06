@@ -190,6 +190,10 @@ func (s *stdout) SetRunStatus(status string) {
 	s.result.ext.runStatus = status
 }
 
+func (s *stdout) SetCapacity(c *types.Capacity) {
+	s.result.Capacity = c
+}
+
 func (s *stdout) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

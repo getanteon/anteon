@@ -104,6 +104,9 @@ type pageView struct {
 	TokenUnit    string
 	TokenMetrics []metricRow
 	TokenFacts   []string
+
+	Pareto  *paretoView
+	Compare bool
 }
 
 func fromLLM(d *llm.Dist) *report.Dist {
@@ -321,6 +324,10 @@ func buildView(r Report) pageView {
 	}
 
 	v.Data, v.Steady = buildData(r, v.ITLName)
+	if ps := ParetoOf(r, "this run", 0); ps.worth(r) {
+		v.Pareto = buildPareto([]*ParetoSeries{ps}, r.Capacity.TierList())
+		v.Data.Pareto = paretoData(v.Pareto)
+	}
 	v.SteadyRows, v.StepRows = steadyRows(v.Steady)
 	v.Script = template.JS(chartsJS)
 	v.PerStep = fmtInt(PerStepSamples)

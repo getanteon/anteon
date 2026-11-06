@@ -68,7 +68,10 @@ The top level `llm` replaces `steps`. Each request is `{"model", "messages", "st
 | `max_tokens_field` | `max_completion_tokens` for an OpenAI reasoning model | `max_tokens` |
 | `ignore_eos` | vLLM's `ignore_eos`, so every answer runs to `max_tokens` | `false` |
 | `include_usage` | Ask for the usage chunk | `true` |
-| `extra_body` | Merged into the body last | none |
+| `extra_body` | Merged into the body last, nested objects included: `{"top_p": 0.8, "top_k": 20, "presence_penalty": 1.5, "chat_template_kwargs": {"enable_thinking": false}}` | none |
+| `input_tokens` | Every prompt is exactly this many tokens of the dataset's text, cut at its own place in it; needs a tokenizer. See [below](#exact-input-lengths-and-concurrency-sweeps) | none |
+| `input_instruction` | Follows the text of an `input_tokens` prompt | `Continue the text above.` |
+| `input_corpus_bytes` | How much of a plain text dataset `input_tokens` reads, spread over the file | 32 MiB |
 | `dataset` | `{"path", "format", "field", "fields", "header", "limit"}` | |
 | `prompts` | Inline prompts, besides or instead of `dataset` | |
 | `order` | `sequential` or `random` | `sequential` |
@@ -182,6 +185,58 @@ Each iteration records when the schedule meant it to start (with `poisson`, its 
 
 A field that does not apply is left out. A skipped step has no line. The lines and the report are written by the report's one writer, a whole line at a time, so they never interleave; the live progress lines go to stderr. With another output the setting is ignored with a warning.
 
+## Exact input lengths and concurrency sweeps
+
+Serving benchmarks such as [InferenceMAX](https://newsletter.semianalysis.com/p/inferencemax-open-source-inference) and `vllm bench serve` run fixed input and output lengths, such as 1,024 in and 1,024 out, at a ladder of concurrencies, and read each level as a point of a trade-off: output tokens a second per GPU against output tokens a second for one user.
+
+**Exact input lengths.** `input_tokens` cuts every prompt out of the dataset's text, exactly that many tokens as the configured tokenizer counts them, the `input_instruction` last. Each request starts at its own place in the text, so no two share a prefix and a prefix cache serves none of them. Real text rather than random token ids keeps speculative decoding's acceptance (MTP, EAGLE) what it is on real prompts. With `max_tokens` and `ignore_eos` the output length is fixed too. The server adds its chat template, a dozen tokens or so; the report's input tokens are what the server or the tokenizer counted, so they can be checked.
+
+A plain text dataset (`.txt`, or `"format": "txt"`) of any size is sampled, not loaded: a file under `input_corpus_bytes` is read whole, a larger one as that many bytes in 64 pieces spread evenly over it, each moved by the seed and cut at whitespace. Memory stays at the budget and about 4 bytes a word, whatever the file's size, and the text keeps its own spacing, so source code keeps its lines and indentation. A JSONL or CSV dataset is read whole, so use plain text for a large corpus.
+
+**Concurrency sweeps.** A `manual_load` stage with `concurrency` is closed-loop: `count` iterations, at most `concurrency` in flight. `--concurrency 1,2,4,8` builds one such stage a level, named `c=N`, of max(10 x level, 20) iterations unless `--per-level` says otherwise.
+
+```json
+{
+    "llm": {
+        "url": "http://localhost:8000/v1/chat/completions",
+        "model": "my-model",
+        "tokenizer": "tokenizer.json",
+        "dataset": {"path": "corpus.txt"},
+        "input_tokens": 1024,
+        "max_tokens": 1024,
+        "ignore_eos": true,
+        "temperature": 0,
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": false}}
+    },
+    "manual_load": [
+        {"concurrency": 1, "count": 4, "name": "warm-up", "warmup": true},
+        {"concurrency": 1, "count": 20, "name": "c=1"},
+        {"concurrency": 2, "count": 20, "name": "c=2"},
+        {"concurrency": 4, "count": 40, "name": "c=4"},
+        {"concurrency": 8, "count": 80, "name": "c=8"},
+        {"concurrency": 16, "count": 160, "name": "c=16"},
+        {"concurrency": 32, "count": 320, "name": "c=32"},
+        {"concurrency": 64, "count": 640, "name": "c=64"},
+        {"concurrency": 128, "count": 1280, "name": "c=128"}
+    ],
+    "capacity": {"gpus": 1},
+    "request_log": true
+}
+```
+
+The same without a config file:
+
+```bash
+ddosify run --preset openai --url http://localhost:8000/v1/chat/completions --model my-model \
+  --dataset corpus.txt --tokenizer tokenizer.json --input-tokens 1024 --max-tokens 1024 --ignore-eos \
+  --concurrency 1,2,4,8,16,32,64,128 --warmup-iterations 4 --json > run.ndjson
+ddosify report run.ndjson -o report.html
+```
+
+**Capacity.** The HTML report draws each stage as a point, throughput per GPU (`capacity.gpus`, or `--gpus`) against the median answer's tokens a second after its first token, and gives the capacity each SLO tier allows: the highest concurrency whose time to first token p99 and time per output token p99 are within it. TPOT is each answer's mean time per token after the first, and the p99 is taken across answers. The default tiers are [MLPerf Inference's](https://github.com/mlcommons/inference_policies/blob/master/inference_rules.adoc) for Llama3.1-8B: conversational, TTFT 2,000 ms and TPOT 100 ms, and interactive, 500 ms and 30 ms; `capacity.tiers` or `--tier NAME:TTFT_MS:TPOT_MS` replace them. Open-loop stages work too, such as MLPerf's Server scenario's Poisson arrivals (`"load_spread": "poisson"`): the capacity is the highest arrival rate within the tier, and the requests in flight its mean by Little's law, the rate times the mean time of an answer. A p99 over fewer than 100 answers is close to the slowest one, which the report says.
+
+`ddosify report a.ndjson b.ndjson --label A --label B` puts runs on one chart and one capacity table: two models, or speculative decoding on and off.
+
 ## From the command line
 
 The preset needs no config file:
@@ -197,7 +252,7 @@ ddosify run --preset openai --url http://localhost:8000/v1/chat/completions --mo
 ddosify run --config /loadtest/config.json --stage 60s:4:warm-up:warmup --stage 4m:15:6/min --stage 4m:30:12/min
 ```
 
-`--url`, `--model`, `--dataset`, `--api-key` and `--max-tokens` fill the top level `llm` object, over a config's when `--config` is given too; `DDOSIFY_API_KEY` keeps the key off the command line. `--tokenizer` (`DDOSIFY_TOKENIZER`) gives every streamed step that tokenizer, and gives a streamed step without an `llm` block one, so a plain SSE scenario counts tokens too.
+`--url`, `--model`, `--dataset`, `--api-key`, `--max-tokens`, `--input-tokens` and `--ignore-eos` fill the top level `llm` object, over a config's when `--config` is given too; `DDOSIFY_API_KEY` keeps the key off the command line. `--tokenizer` (`DDOSIFY_TOKENIZER`) gives every streamed step that tokenizer, and gives a streamed step without an `llm` block one, so a plain SSE scenario counts tokens too.
 
 ## Gurubase
 

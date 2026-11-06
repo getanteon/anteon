@@ -82,10 +82,18 @@ type runOptions struct {
 	dataset   string
 	apiKey    string
 	maxTokens int
+
+	inputTokens int
+	ignoreEOS   bool
+
+	concurrency      []int
+	perLevel         int
+	warmupIterations int
+	gpus             int
 }
 
 // Flags of the top level "llm" config, the OpenAI compatible preset
-var llmFlags = []string{"url", "model", "dataset", "api-key", "max-tokens"}
+var llmFlags = []string{"url", "model", "dataset", "api-key", "max-tokens", "input-tokens", "ignore-eos"}
 
 // Flags that only describe a single request; with --config the scenario comes from the file.
 var requestOnlyFlags = []string{"target", "method", "body", "auth", "cert-path", "cert-key-path"}
@@ -136,6 +144,9 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.IntVarP(&o.iterations, "iterations", "n", types.DefaultIterCount, "total iterations")
 	f.IntVarP(&o.duration, "duration", "d", types.DefaultDuration, "test duration in seconds")
 	f.StringArrayVar(&o.stages, "stage", nil, "a manual_load stage, "+stageFormat+"; repeat it, and the stages replace the config's manual_load")
+	f.IntSliceVar(&o.concurrency, "concurrency", nil, "closed-loop stages, one per level, such as 1,2,4,8: at most that many iterations in flight; they replace the config's manual_load")
+	f.IntVar(&o.perLevel, "per-level", 0, "with --concurrency: iterations of each level; 0 is max(10 x level, "+fmt.Sprint(minPerLevel)+")")
+	f.IntVar(&o.warmupIterations, "warmup-iterations", 0, "with --concurrency: a warm-up stage of this many iterations at the first level, left out of the results")
 	f.StringVarP(&o.loadType, "load-type", "l", types.DefaultLoadType, "linear, incremental or waved")
 	f.StringVar(&o.loadSpread, "load-spread", "", "front, even or poisson: where in a second or stage iterations start")
 	f.Int64Var(&o.seed, "seed", types.DefaultSeed, "seeds the poisson arrivals and the random data rows; the same seed repeats a run")
@@ -164,6 +175,9 @@ Exit codes: 0 the test passed, 1 it could not run, 2 a flag or the config is wro
 	f.StringVar(&o.dataset, "dataset", "", "with --preset openai: prompts, a .jsonl, .csv or .txt file")
 	f.StringVar(&o.apiKey, "api-key", "", "with --preset openai: sent as Authorization: Bearer; DDOSIFY_API_KEY keeps it off the command line")
 	f.IntVar(&o.maxTokens, "max-tokens", 0, "with --preset openai: max_tokens of every request")
+	f.IntVar(&o.inputTokens, "input-tokens", 0, "with --preset openai: every prompt is exactly this many tokens of the dataset's text (needs --tokenizer)")
+	f.BoolVar(&o.ignoreEOS, "ignore-eos", false, "with --preset openai: send ignore_eos, so every answer runs to --max-tokens")
+	f.IntVar(&o.gpus, "gpus", 0, "GPUs serving the model, to give the HTML report's throughput per GPU (the config's capacity.gpus)")
 	return cmd
 }
 
@@ -467,6 +481,12 @@ func applyLLMFlags(raw []byte, flags *pflag.FlagSet, o *runOptions) ([]byte, err
 	}
 	if flags.Changed("max-tokens") {
 		m["max_tokens"] = o.maxTokens
+	}
+	if flags.Changed("input-tokens") {
+		m["input_tokens"] = o.inputTokens
+	}
+	if flags.Changed("ignore-eos") {
+		m["ignore_eos"] = o.ignoreEOS
 	}
 	return json.Marshal(c)
 }

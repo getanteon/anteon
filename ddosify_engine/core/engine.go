@@ -132,6 +132,9 @@ var InitEngineServices = func(h types.Hammer) (*EngineServices, error) {
 	if ss, ok := rs.(report.SLOSetter); ok && h.SLO != nil {
 		ss.SetSLO(h.SLO)
 	}
+	if cs, ok := rs.(report.CapacitySetter); ok && h.Capacity != nil {
+		cs.SetCapacity(h.Capacity)
+	}
 	if h.RequestLog && !h.Debug {
 		if rl, ok := rs.(report.RequestLogSetter); ok {
 			rl.SetRequestLog(true)
@@ -236,6 +239,15 @@ func (e *engine) plan() live.Plan {
 		Schedule:   append([]int(nil), e.reqCountArr...),
 		SLO:        e.hammer.SLO,
 	}
+	if e.closedLoop() {
+		p.Duration = time.Duration(e.hammer.TestDuration) * time.Second // the caps; 0 when no stage has one
+		p.Iterations = e.hammer.IterationCount
+		p.ClosedLoop = true
+		for i, t := range e.hammer.TimeRunCountMap {
+			p.Stages = append(p.Stages, live.Stage{Index: i, Name: t.Name, Warmup: t.Warmup,
+				Iterations: t.Count, Concurrency: t.Concurrency, Cap: time.Duration(t.Duration) * time.Second})
+		}
+	}
 	for _, ts := range e.stages {
 		p.Stages = append(p.Stages, live.Stage{Index: ts.stage.Index, Name: ts.stage.Name, Warmup: ts.stage.Warmup,
 			Start: time.Duration(ts.start) * tickDur, End: time.Duration(ts.end) * tickDur,
@@ -283,6 +295,9 @@ func (e *engine) Start() (status string) {
 	e.tickCounter = 0
 	e.startedAt = time.Now()
 	e.wg = sync.WaitGroup{}
+	if e.closedLoop() {
+		return e.runClosedLoop()
+	}
 	var mutex = &sync.Mutex{}
 	for range ticker.C {
 		if e.tickCounter >= len(e.reqCountArr) {
@@ -360,6 +375,97 @@ func (e *engine) runArrivals(stage *types.LoadStage, at []time.Duration) {
 	}
 	if timer != nil {
 		timer.Stop()
+	}
+}
+
+func (e *engine) closedLoop() bool {
+	return !e.hammer.Debug && e.hammer.TimeRunCountMap.ClosedLoop()
+}
+
+// runClosedLoop runs the stages one after the other. A stage starts its count of iterations with
+// at most its concurrency in flight, a new one as soon as one ends, as vllm bench serve does with
+// --max-concurrency and --num-prompts; it ends when all have ended, or at its duration when it has
+// one, after which it starts no more and lets those in flight finish.
+func (e *engine) runClosedLoop() string {
+	for i, t := range e.hammer.TimeRunCountMap {
+		stage := &types.LoadStage{Index: i, Name: t.Name, Warmup: t.Warmup, Concurrency: t.Concurrency}
+		if e.collector != nil {
+			e.collector.EnterStage(i)
+		}
+		if status := e.runStage(stage, t.Count, time.Duration(t.Duration)*time.Second); status != "" {
+			return status
+		}
+	}
+	return resultDone
+}
+
+// runStage returns "" when the stage ended, or the status that ended the test.
+func (e *engine) runStage(stage *types.LoadStage, count int, limit time.Duration) string {
+	var capped <-chan time.Time
+	if limit > 0 {
+		t := time.NewTimer(limit)
+		defer t.Stop()
+		capped = t.C
+	}
+	slots := make(chan struct{}, stage.Concurrency)
+	var inStage sync.WaitGroup
+	interrupted := func() string {
+		select {
+		case <-e.ctx.Done():
+			return resultStopped
+		case <-e.abortChan:
+			e.testSuccess = false
+			return resultAborted
+		default:
+			return ""
+		}
+	}
+launch:
+	for n := 0; n < count; n++ {
+		select {
+		case slots <- struct{}{}:
+		case <-e.ctx.Done():
+			return resultStopped
+		case <-e.abortChan:
+			e.testSuccess = false
+			return resultAborted
+		case <-capped:
+			break launch
+		}
+		if status := interrupted(); status != "" {
+			<-slots
+			return status
+		}
+		select {
+		case <-capped:
+			<-slots
+			break launch
+		default:
+		}
+		e.wg.Add(1)
+		inStage.Add(1)
+		go func(start time.Time) {
+			defer func() {
+				<-slots
+				inStage.Done()
+				e.wg.Done()
+			}()
+			e.runWorker(start, stage, start)
+		}(time.Now())
+	}
+	done := make(chan struct{})
+	go func() {
+		inStage.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return ""
+	case <-e.ctx.Done():
+		return resultStopped
+	case <-e.abortChan:
+		e.testSuccess = false
+		return resultAborted
 	}
 }
 
@@ -517,6 +623,9 @@ func (e *engine) stop(status string) string {
 }
 
 func (e *engine) getMaxConcurrentIterCount() int {
+	if e.closedLoop() {
+		return e.hammer.TimeRunCountMap.MaxConcurrency()
+	}
 	max := 0
 	for _, v := range e.reqCountArr {
 		if v > max {
@@ -529,6 +638,9 @@ func (e *engine) getMaxConcurrentIterCount() int {
 func (e *engine) initReqCountArr() {
 	if e.hammer.Debug {
 		e.reqCountArr = []int{1}
+		return
+	}
+	if e.closedLoop() {
 		return
 	}
 	length := int(e.hammer.TestDuration * int(time.Second/(tickerInterval*time.Millisecond)))

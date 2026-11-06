@@ -500,11 +500,22 @@ func (m *Model) stages(w int) []string {
 		switch {
 		case i < cur || (i == cur && m.finished && !m.stopping):
 			frac, status = 1, "done"
+		case i == cur && m.finished && p.Concurrency > 0:
+			if s.Stage.Planned > 0 {
+				frac = math.Min(1, float64(s.Stage.Done)/float64(s.Stage.Planned))
+			}
+			status = fmt.Sprintf("stopped at %.0f%%", frac*100)
 		case i == cur && m.finished:
 			if p.Duration > 0 {
 				frac = math.Min(1, float64(s.Stage.Elapsed)/float64(p.Duration))
 			}
 			status = fmt.Sprintf("stopped at %.0f%%", frac*100)
+		case i == cur && p.Concurrency > 0:
+			marker = ">"
+			if s.Stage.Planned > 0 {
+				frac = math.Min(1, float64(s.Stage.Done)/float64(s.Stage.Planned))
+			}
+			status = fmt.Sprintf("%3.0f%%  %d / %d in %s", frac*100, s.Stage.Done, s.Stage.Planned, clock(s.Stage.Elapsed))
 		case i == cur:
 			marker = ">"
 			if p.Duration > 0 {
@@ -538,7 +549,10 @@ func (m *Model) stages(w int) []string {
 
 func stageName(p StagePlan) string {
 	n := p.Name
-	if n == "" {
+	switch {
+	case n == "" && p.Concurrency > 0:
+		n = fmt.Sprintf("%d at concurrency %d", p.Count, p.Concurrency)
+	case n == "":
 		n = fmt.Sprintf("%d in %s", p.Count, clock(p.Duration))
 	}
 	if p.Warmup && !strings.Contains(strings.ToLower(n), "warm") {

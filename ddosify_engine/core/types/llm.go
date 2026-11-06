@@ -96,6 +96,15 @@ type ChatRequest struct {
 
 	// The previous turns' messages are sent with this one
 	CarryHistory bool
+
+	// InputTokens > 0 cuts every request's user message out of the sessions' text, exactly this
+	// many tokens long by the step's tokenizer, InputInstruction last
+	InputTokens      int
+	InputInstruction string
+
+	// A plain text file input_tokens samples instead of the sessions, and how much of it
+	InputCorpus      string
+	InputCorpusBytes int64
 }
 
 func (c *LLMConf) validate() error {

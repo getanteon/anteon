@@ -74,6 +74,7 @@ type Step struct {
 	prefix       string
 	prefixTokens int
 	seq          uint64
+	input        *inputText
 }
 
 // NewStep loads the tokenizer and builds the shared prefix.
@@ -88,6 +89,17 @@ func NewStep(conf *types.LLMConf) (*Step, error) {
 	}
 	if conf.SharedPrefixTokens > 0 {
 		s.prefix, s.prefixTokens, _ = SharedPrefix(s.tok, conf.SharedPrefixTokens)
+	}
+	if c := conf.Chat; c != nil && c.InputTokens > 0 {
+		text, err := inputSource(c)
+		if err != nil {
+			return nil, err
+		}
+		in, err := newInputText(s.tok, c.InputTokens, c.InputInstruction, text, c.Seed)
+		if err != nil {
+			return nil, err
+		}
+		s.input = in
 	}
 	return s, nil
 }

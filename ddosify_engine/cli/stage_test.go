@@ -185,3 +185,85 @@ func TestStageFlagRunsTheStages(t *testing.T) {
 		}
 	}
 }
+
+func TestConcurrencyFlagBuildsClosedLoopStages(t *testing.T) {
+	cfg := writeConfig(t, `{`+stageConfigRest+`}`)
+	got, err := hammerFor(t, "--config", cfg, "--concurrency", "1,4,16", "--warmup-iterations", "3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []struct {
+		name     string
+		count, c int
+		warmup   bool
+	}{{"warm-up", 3, 1, true}, {"c=1", 20, 1, false}, {"c=4", 40, 4, false}, {"c=16", 160, 16, false}}
+	if len(got.TimeRunCountMap) != len(want) || got.IterationCount != 223 || got.TestDuration != 0 {
+		t.Fatalf("stages %+v, iterations %d, duration %d", got.TimeRunCountMap, got.IterationCount, got.TestDuration)
+	}
+	for i, w := range want {
+		s := got.TimeRunCountMap[i]
+		if s.Name != w.name || s.Count != w.count || s.Concurrency != w.c || s.Warmup != w.warmup {
+			t.Errorf("stage %d: %+v, want %+v", i, s, w)
+		}
+	}
+	got, err = hammerFor(t, "--config", cfg, "--concurrency", "2", "--per-level", "7", "--gpus", "2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.TimeRunCountMap[0].Count != 7 || got.Capacity == nil || got.Capacity.GPUs != 2 {
+		t.Errorf("--per-level and --gpus: %+v %+v", got.TimeRunCountMap, got.Capacity)
+	}
+	st, err := parseStages([]string{"c=8:80:eight", "c=2:10:warm:warmup"})
+	if err != nil || st[0].Concurrency != 8 || st[0].Count != 80 || st[0].Name != "eight" || !st[1].Warmup || st[1].Concurrency != 2 {
+		t.Errorf("--stage c=N: %+v %v", st, err)
+	}
+}
+
+func TestConcurrencyFlagRefused(t *testing.T) {
+	cfg := writeConfig(t, `{"steps":[{"id":1,"url":"http://127.0.0.1:1"}]}`)
+	cases := map[string][]string{
+		"use one":               {"run", "--config", cfg, "--concurrency", "2", "--stage", "1s:1"},
+		"--iterations":          {"run", "--config", cfg, "--concurrency", "2", "-n", "5"},
+		"go with --concurrency": {"run", "--config", cfg, "--per-level", "5"},
+		"1 or more":             {"run", "--config", cfg, "--concurrency", "0"},
+		`CONCURRENCY "0"`:       {"run", "--config", cfg, "--stage", "c=0:5"},
+	}
+	for want, args := range cases {
+		code, _, errOut := run(t, args...)
+		if code != ExitUsage || !strings.Contains(errOut, want) {
+			t.Errorf("%v: expected exit 2 naming %s, got %d %q", args, want, code, errOut)
+		}
+	}
+}
+
+func TestConcurrencyFlagRunsTheStages(t *testing.T) {
+	c := &counter{}
+	srv := countingServer(t, c)
+	cfg := writeConfig(t, fmt.Sprintf(`{"steps":[{"id":1,"url":"%s"}]}`, srv.URL))
+	code, out, errOut := run(t, "run", "--config", cfg, "--concurrency", "1,3", "--per-level", "4", "--warmup-iterations", "2", "--json")
+	if code != ExitOK {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if n := atomic.LoadInt64(&c.n); n != 10 {
+		t.Errorf("the stages run 10 iterations, the server saw %d", n)
+	}
+	var res struct {
+		Stages []struct {
+			Name        string `json:"name"`
+			Iterations  int64  `json:"iterations"`
+			Concurrency int    `json:"concurrency"`
+		} `json:"stages"`
+	}
+	if err := json.Unmarshal([]byte(lastJSONLine(out)), &res); err != nil {
+		t.Fatalf("the report line: %v %q", err, out)
+	}
+	if len(res.Stages) != 3 || res.Stages[1].Name != "c=1" || res.Stages[2].Concurrency != 3 || res.Stages[2].Iterations != 4 {
+		t.Errorf("stages %+v", res.Stages)
+	}
+}
+
+// lastJSONLine is the last line of a --json output, the report.
+func lastJSONLine(out string) string {
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	return lines[len(lines)-1]
+}

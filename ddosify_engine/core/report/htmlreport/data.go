@@ -25,6 +25,7 @@ import (
 
 	"go.ddosify.com/ddosify/v2/core/report"
 	"go.ddosify.com/ddosify/v2/core/report/live"
+	"go.ddosify.com/ddosify/v2/core/types"
 )
 
 // chartData is what the page's script draws. Times are seconds from the start, latencies milliseconds.
@@ -36,6 +37,19 @@ type chartData struct {
 	Stages   []stageData `json:"stages"`
 	TS       *tsData     `json:"ts"`
 	Req      *reqChart   `json:"req"`
+	Pareto   *paretoJSON `json:"pareto,omitempty"`
+}
+
+type paretoJSON struct {
+	Series []*ParetoSeries      `json:"series"`
+	Tiers  []types.CapacityTier `json:"tiers"`
+}
+
+func paretoData(v *paretoView) *paretoJSON {
+	if v == nil {
+		return nil
+	}
+	return &paretoJSON{Series: v.Series, Tiers: v.Tiers}
 }
 
 type sloData struct {
@@ -165,6 +179,9 @@ func buildData(r Report, itlName string) (chartData, *ReqData) {
 	// plan's own count when the report was written by the run, else the iterations the stage started.
 	planned := map[int]float64{}
 	for i, s := range r.Stages {
+		if s.Concurrency > 0 {
+			continue // a closed-loop stage has no planned rate
+		}
 		count, dur := float64(s.Iterations), 0.0
 		if s.Index < len(r.Config.Stages) && r.Config.Stages[s.Index].DurationS > 0 {
 			c := r.Config.Stages[s.Index]

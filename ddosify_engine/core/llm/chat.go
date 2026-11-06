@@ -67,6 +67,9 @@ func (s *Step) prepareChat(envs map[string]interface{}, p *Prepared, obs *Observ
 	}
 	idx := s.pickSession(envs, p)
 	user := turnPrompt(c.Sessions, idx, c.Turn)
+	if s.input != nil {
+		user, _ = s.input.next()
+	}
 
 	var history []ChatMessage
 	if c.CarryHistory {

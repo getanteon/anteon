@@ -277,6 +277,7 @@ type Collector struct {
 	stages    map[int]*agg
 	total     *agg
 	seq       int64
+	current   int // the closed-loop stage running now
 
 	stop chan struct{}
 	done chan struct{}
@@ -284,6 +285,8 @@ type Collector struct {
 }
 
 func NewCollector(plan Plan, slo *types.SLO, observers []Observer) *Collector {
+	// its own stages: a closed-loop stage's start is written here while observers read theirs
+	plan.Stages = append([]Stage(nil), plan.Stages...)
 	return &Collector{plan: plan, slo: slo, observers: observers, stages: map[int]*agg{}, total: newAgg(),
 		stop: make(chan struct{}), done: make(chan struct{})}
 }
@@ -293,8 +296,10 @@ func (c *Collector) Start() {
 	c.mu.Lock()
 	c.begin = time.Now()
 	c.mu.Unlock()
+	p := c.plan
+	p.Stages = append([]Stage(nil), c.plan.Stages...)
 	for _, o := range c.observers {
-		o.Start(c.plan)
+		o.Start(p)
 	}
 	go c.loop()
 }
@@ -370,7 +375,20 @@ func (c *Collector) stageAgg(index int) *agg {
 	return a
 }
 
+// EnterStage marks the start of closed-loop stage index, whose start the plan can not know.
+func (c *Collector) EnterStage(index int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if index >= 0 && index < len(c.plan.Stages) {
+		c.plan.Stages[index].Start = time.Since(c.begin)
+		c.current = index
+	}
+}
+
 func (c *Collector) stageAt(elapsed time.Duration) Stage {
+	if c.plan.ClosedLoop && len(c.plan.Stages) > 0 {
+		return c.plan.Stages[c.current]
+	}
 	for _, s := range c.plan.Stages {
 		if elapsed >= s.Start && elapsed < s.End {
 			return s
