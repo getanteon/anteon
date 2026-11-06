@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -306,8 +307,14 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 				requestErr = fetchErrType(bodyReadErr)
 			}
 		} else {
-			// do not write into memory, just read
-			_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
+			// do not write into memory, just read; a failed response keeps its first bytes, which
+			// usually say why
+			if httpRes.StatusCode >= 400 {
+				respBody, bodyReadErr = io.ReadAll(io.LimitReader(httpRes.Body, errBodyKeep))
+			}
+			if bodyReadErr == nil {
+				_, bodyReadErr = io.Copy(io.Discard, httpRes.Body)
+			}
 			if bodyReadErr != nil {
 				requestErr = fetchErrType(bodyReadErr)
 			}
@@ -458,7 +465,7 @@ func streamErrType(err error) types.RequestError {
 		return types.RequestError{Type: types.ErrorIntented, Reason: types.ReasonCtxCanceled}
 	}
 	if isTimeout(err) {
-		return types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout}
+		return types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout, Detail: err.Error()}
 	}
 	return fetchErrType(err)
 }
@@ -610,6 +617,9 @@ func (h *HttpRequester) prepareReq(envs map[string]interface{}, trace *httptrace
 	return httpReq, nil
 }
 
+// errBodyKeep is how much of a failed response's body is kept when the body is not otherwise read.
+const errBodyKeep = 512
+
 // Currently we can't detect exact error type by returned err.
 // But we need to find an elegant way instead of this.
 func fetchErrType(err error) types.RequestError {
@@ -620,6 +630,16 @@ func fetchErrType(err error) types.RequestError {
 	ue, ok := err.(*url.Error)
 	if ok {
 		errString := ue.Error()
+		// A name that does not resolve is said as such, also when the resolver timed out: "read
+		// timeout" sends people to the server instead of to their DNS.
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) && !strings.Contains(errString, "proxyconnect") {
+			cause := dnsErr.Err
+			if dnsErr.IsTimeout {
+				cause = "timeout" // its text names a random local port
+			}
+			return types.RequestError{Type: types.ErrorConn, Reason: fmt.Sprintf("dns lookup %s: %s", dnsErr.Name, cause), Detail: errString}
+		}
 		if strings.Contains(errString, "proxyconnect") {
 			if strings.Contains(errString, "connection refused") {
 				requestErr = types.RequestError{Type: types.ErrorProxy, Reason: types.ReasonProxyFailed}
@@ -642,6 +662,9 @@ func fetchErrType(err error) types.RequestError {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: "connection reset by peer"}
 		} else {
 			requestErr = types.RequestError{Type: types.ErrorConn, Reason: errString}
+		}
+		if requestErr.Reason != errString {
+			requestErr.Detail = errString
 		}
 	}
 

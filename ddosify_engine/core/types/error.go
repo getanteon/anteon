@@ -50,6 +50,9 @@ const (
 type RequestError struct {
 	Type   string
 	Reason string
+	// Detail is the error as the client returned it, with the method, the URL and the cause, when
+	// Reason is a short class such as "connection refused". Only for people: nothing groups on it.
+	Detail string
 }
 
 // Custom error message method of ScenarioError

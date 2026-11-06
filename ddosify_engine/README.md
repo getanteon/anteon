@@ -325,7 +325,7 @@ Error: step 1 "Create chat": network_error: Post "https://gurubase.example.inter
 Finished in 1:01: 3 iterations started, requests ok 0, failed 3 (network_error 3); the test failed: no request succeeded; the first error of each kind is above
 ```
 
-- **An error is shown when it first happens**, once per step, outcome and reason, with the reason in full: a refused certificate, a timeout, an `HTTP 503`. A URL in the reason does not make a new kind, so an id in the path does not repeat it. Twenty kinds at most; the report counts them all.
+- **An error is shown when it first happens**, once per step, outcome and reason, with the reason in full: a refused certificate, a timeout, an `HTTP 503`. A network error shows the method, the URL and the cause (`dial tcp 10.0.0.1:443: connect: connection refused`); a name that does not resolve says `lookup`, also when the resolver timed out; an HTTP error shows the first line of the response body (`HTTP 401: {"error": "Invalid API key"}`, at most 200 characters). A URL in the reason does not make a new kind, so an id in the path does not repeat it. Twenty kinds at most; the report counts them all.
 - **A config that needs an environment variable** (`{{$NAME}}`) that is not set stops before anything is sent, naming every missing one. In a container, pass each with `-e NAME=value`; `-e NAME` alone passes it only when it is exported in the shell that runs `docker`.
 - **The exit code** says how it ended: `0` passed, `2` the command or the config is wrong, `3` a success criterion failed, for example no request succeeded.
 
