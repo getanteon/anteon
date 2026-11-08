@@ -324,12 +324,9 @@ func (j *JsonReader) CreateHammer() (h types.Hammer, err error) {
 	}
 
 	// Proxy
-	var proxyURL *url.URL
-	if j.Proxy != "" {
-		proxyURL, err = url.Parse(j.Proxy)
-		if err != nil {
-			return
-		}
+	proxyURL, err := ProxyURL(j.Proxy)
+	if err != nil {
+		return h, fmt.Errorf("proxy: %w", err)
 	}
 	p := proxy.Proxy{
 		Strategy: proxy.ProxyTypeSingle,
