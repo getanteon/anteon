@@ -67,6 +67,13 @@ type Report struct {
 
 	// GPUs and SLO tiers to read the stages as capacity; nil takes 1 GPU and the default tiers
 	Capacity *types.Capacity
+
+	// When the run began and ended by the load generator's clock, when the log says: from the
+	// progress lines, else the report line's started_at, else the request lines. Zero when unknown.
+	StartedAt, EndedAt time.Time
+
+	// Server resource samples placed on the run, when given
+	Resources *Resources
 }
 
 // Config is the shape of the load, without anything a request carries.
@@ -217,6 +224,17 @@ func WriteCompare(w io.Writer, title string, runs []Labeled, gpus int, tiers []t
 	v := pageView{R: Report{Title: title}, Generated: time.Now().UTC().Format("2006-01-02 15:04:05 UTC"), Compare: true}
 	v.Pareto = buildPareto(series, tiers)
 	v.Data = chartData{Pareto: paretoData(v.Pareto)}
+	var res []labeledRes
+	for _, r := range runs {
+		if d := resRunData(r.Label, r.Report, true); d != nil {
+			v.Data.ResRuns = append(v.Data.ResRuns, d)
+			res = append(res, labeledRes{label: r.Label, res: r.Report.Resources})
+		}
+	}
+	if len(res) > 0 {
+		v.Res = buildResView(res)
+		v.Res.Multi = true
+	}
 	v.Script = template.JS(chartsJS)
 	if err := page.Execute(w, v); err != nil {
 		return fmt.Errorf("html report: %w", err)

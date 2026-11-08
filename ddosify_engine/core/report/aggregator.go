@@ -148,7 +148,9 @@ func aggregate(result *Result, scr *types.ScenarioResult, samplingCount map[uint
 
 // Total test result, all scenario iterations combined
 type Result struct {
-	TestStatus           string                                `json:"test_status"`
+	TestStatus string `json:"test_status"`
+	// When the test began, RFC 3339 in UTC; the progress lines' elapsed_s count from it
+	StartedAt            string                                `json:"started_at,omitempty"`
 	TestFailedAssertions []assertion.FailedRule                `json:"failed_criterias"`
 	SuccessCount         int64                                 `json:"success_count"`
 	ServerFailedCount    int64                                 `json:"server_fail_count"`

@@ -38,6 +38,8 @@ type chartData struct {
 	TS       *tsData     `json:"ts"`
 	Req      *reqChart   `json:"req"`
 	Pareto   *paretoJSON `json:"pareto,omitempty"`
+	Res      *resRun     `json:"res,omitempty"`
+	ResRuns  []*resRun   `json:"resRuns,omitempty"`
 }
 
 type paretoJSON struct {

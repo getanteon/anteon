@@ -74,8 +74,14 @@ func TestVariableLengthSessions(t *testing.T) {
 	if err = e.Init(); err != nil {
 		t.Fatal(err)
 	}
+	before := time.Now()
 	e.Start()
 	r := es.ReportServ.(report.ResultProvider).Result()
+
+	// the report line says when the run began, so other clocks' samples can be placed on it
+	if at, err := time.Parse(time.RFC3339Nano, r.StartedAt); err != nil || at.Before(before.Add(-time.Second)) || at.After(time.Now()) {
+		t.Errorf("started_at %q: %v", r.StartedAt, err)
+	}
 
 	// rows a,b twice: three steps; a, twice: two; fail,c twice: two, the second a 503.
 	// The legacy counts take a 503 as an answer; the outcomes below do not.

@@ -112,6 +112,7 @@ const maxLine = 64 << 20
 func ReadLog(r io.Reader) (Report, error) {
 	rec := NewRecorder(0)
 	reqs := NewRequests()
+	reqs.first, reqs.last = math.Inf(1), math.Inf(-1)
 	var result *report.Result
 	br := bufio.NewReaderSize(r, 1<<20)
 	stageIndex := map[string]int{} // from the progress lines, for a request line with no stage_index
@@ -157,7 +158,39 @@ func ReadLog(r io.Reader) (Report, error) {
 	if reqs.Len() > 0 {
 		rep.Requests = reqs
 	}
+	rep.StartedAt, rep.EndedAt = runSpan(rep.Series, result.StartedAt, reqs.first, reqs.last)
 	return rep, nil
+}
+
+// runSpan is when the run began and ended: the progress lines' first time less its elapsed
+// seconds, else the report line's started_at, else the first request's intended start; and the
+// last progress line or the last request's end, whichever is later.
+func runSpan(pts []Point, startedAt string, firstReq, lastReq float64) (start, end time.Time) {
+	var startMs, endMs float64
+	for _, p := range pts {
+		if p.At > 0 {
+			startMs = float64(p.At) - p.T*1000
+			break
+		}
+	}
+	if startMs == 0 {
+		if ms, ok := parseTime(startedAt); ok {
+			startMs = float64(ms)
+		}
+	}
+	if startMs == 0 && !math.IsInf(firstReq, 0) {
+		startMs = firstReq
+	}
+	if startMs == 0 {
+		return time.Time{}, time.Time{}
+	}
+	if n := len(pts); n > 0 {
+		endMs = startMs + pts[n-1].T*1000
+	}
+	if !math.IsInf(lastReq, 0) {
+		endMs = max(endMs, lastReq)
+	}
+	return time.UnixMilli(int64(startMs)), time.UnixMilli(int64(endMs))
 }
 
 func readLine(b []byte, rec *Recorder, reqs *Requests, result **report.Result, stageIndex map[string]int) error {
@@ -225,6 +258,7 @@ func readLine(b []byte, rec *Recorder, reqs *Requests, result **report.Result, s
 			r.Total = *l.TotalMs
 		}
 		reqs.Add(r)
+		reqs.first, reqs.last = min(reqs.first, r.Intended), max(reqs.last, r.Done)
 	}
 	return nil
 }

@@ -68,6 +68,8 @@ type Requests struct {
 	// Steps past maxSteps are not measured; the report says how many
 	dropped   map[uint16]bool
 	droppedFT bool
+	// the earliest intended start and the latest end of every record, kept or not, in Unix ms
+	first, last float64
 }
 
 func NewRequests() *Requests {
