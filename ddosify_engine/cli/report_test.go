@@ -107,3 +107,60 @@ func TestReportCompareAndOptions(t *testing.T) {
 		}
 	}
 }
+
+func TestReportResources(t *testing.T) {
+	old, oldC := elive.LogReport, elive.CompareLogs
+	t.Cleanup(func() { elive.LogReport, elive.CompareLogs = old, oldC })
+	var got elive.ReportOptions
+	var read []string
+	keep := func(o elive.ReportOptions) {
+		got, read = o, nil
+		for _, r := range o.Resources {
+			b, _ := io.ReadAll(r.In)
+			read = append(read, r.Run+":"+string(b))
+		}
+	}
+	elive.LogReport = func(in io.Reader, o elive.ReportOptions, open func() (io.Writer, error)) error {
+		keep(o)
+		return nil
+	}
+	elive.CompareLogs = func(logs []elive.LabeledLog, o elive.ReportOptions, open func() (io.Writer, error)) error {
+		keep(o)
+		return nil
+	}
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	a, b := write("a.ndjson", "x"), write("b.ndjson", "x")
+	pods, gpus := write("pods.csv", "P"), write("gpus.csv", "G")
+
+	if code, _, stderr := run(t, "report", a, "-o", "-", "--resources", pods, "--resources", gpus, "--resources-per", "masking"); code != ExitOK ||
+		strings.Join(read, ",") != ":P,:G" || strings.Join(got.ResourcesPer, ",") != "masking" || got.Stderr == nil {
+		t.Errorf("one run: exit %d, stderr %q, read %v, options %+v", code, stderr, read, got)
+	}
+	// in a comparison each file names its run; a label may hold "="
+	if code, _, stderr := run(t, "report", a, b, "-o", "-", "--label", "cpu", "--label", "gpu=x",
+		"--resources", "gpu=x="+gpus, "--resources", "cpu="+pods); code != ExitOK || strings.Join(read, ",") != "gpu=x:G,cpu:P" {
+		t.Errorf("comparison: exit %d, stderr %q, read %v", code, stderr, read)
+	}
+	// the default labels are the file names
+	if code, _, _ := run(t, "report", a, b, "-o", "-", "--resources", "b="+gpus); code != ExitOK || strings.Join(read, ",") != "b:G" {
+		t.Errorf("default labels: exit %d, read %v", code, read)
+	}
+	for _, bad := range [][]string{
+		{"report", a, "--resources", filepath.Join(dir, "missing.csv")},
+		{"report", a, b, "--resources", pods},              // no label in a comparison
+		{"report", a, b, "--resources", "nope=" + pods},    // not a run's label
+		{"report", a, "--resources-per", "masking"},        // nothing to filter
+		{"report", a, b, "--resources", "a=" + dir + "/x"}, // the file is missing
+	} {
+		if code, _, _ := run(t, bad...); code != ExitUsage {
+			t.Errorf("%v: exit %d, want a usage error", bad, code)
+		}
+	}
+}

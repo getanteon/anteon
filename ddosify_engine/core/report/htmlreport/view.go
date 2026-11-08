@@ -107,6 +107,9 @@ type pageView struct {
 
 	Pareto  *paretoView
 	Compare bool
+
+	// Server resources, when samples were given
+	Res *resView
 }
 
 func fromLLM(d *llm.Dist) *report.Dist {
@@ -327,6 +330,10 @@ func buildView(r Report) pageView {
 	if ps := ParetoOf(r, "this run", 0); ps.worth(r) {
 		v.Pareto = buildPareto([]*ParetoSeries{ps}, r.Capacity.TierList())
 		v.Data.Pareto = paretoData(v.Pareto)
+	}
+	if r.Resources != nil {
+		v.Res = buildResView([]labeledRes{{res: r.Resources}})
+		v.Data.Res = resRunData("", r, false)
 	}
 	v.SteadyRows, v.StepRows = steadyRows(v.Steady)
 	v.Script = template.JS(chartsJS)

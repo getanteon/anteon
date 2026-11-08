@@ -93,12 +93,15 @@
 	for (const s of S) if (s.start != null) { T0 = Math.min(T0, s.start); T1 = Math.max(T1, s.end); }
 	if (TS && TS.t.length) { T0 = Math.min(T0, TS.t[0]); T1 = Math.max(T1, TS.t[TS.t.length - 1]); }
 	if (D.req && D.req.t.length) { T0 = Math.min(T0, D.req.t[0]); T1 = Math.max(T1, D.req.t[D.req.t.length - 1]); }
+	if (D.res && D.res.end > 0) { T0 = Math.min(T0, 0); T1 = Math.max(T1, D.res.end); }
 	// Without a time range (a log with only the report line) the time charts are left out, the rest is drawn.
 	const hasTime = isFinite(T0) && T1 > T0;
-	const stageAt = (t) => { let n = ""; for (const s of S) if (s.start != null && t >= s.start - 0.5) n = s.name || ""; return n; };
-	const charts = [];
+	// An axis is a time range, its stages and the charts that share its hover; a comparison draws
+	// each run's resources on an axis of its own.
+	const axis = (stages, t0, t1) => ({ S: stages, T0: t0, T1: t1, charts: [], stageAt(t) { let n = ""; for (const s of this.S) if (s.start != null && t >= s.start - 0.5) n = s.name || ""; return n; } });
+	const AX = axis(S, T0, T1);
 
-	function stageBands(svg, x, M, ih) {
+	function stageBands(svg, x, M, ih, S) {
 		S.forEach((s, i) => {
 			if (s.start == null) return;
 			const x0 = x(s.start), x1 = x(s.end);
@@ -108,7 +111,7 @@
 			if (x1 - x0 > label.length * 6.2 + 6) el("text", { x: (x0 + x1) / 2, y: M.t - 6, "text-anchor": "middle", class: "band-l" }, svg, label);
 		});
 	}
-	function timeAxis(svg, x, M, iw, ih) {
+	function timeAxis(svg, x, M, iw, ih, { T0, T1 }) {
 		const span = T1 - T0;
 		const step = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200].find((m) => span / m <= Math.max(3, iw / 75)) || 7200;
 		for (let t = Math.ceil(T0 / step) * step; t <= T1; t += step) {
@@ -132,6 +135,7 @@
 	}
 
 	function timeChart(parent, cfg) {
+		const ax = cfg.ax || AX, { T0, T1 } = ax, charts = ax.charts;
 		const card = h("div", { class: "chart" }, parent);
 		h("h3", {}, card, cfg.title);
 		if (cfg.sub) h("div", { class: "sub" }, card, cfg.sub);
@@ -155,12 +159,12 @@
 			const ymax = ticks[ticks.length - 1];
 			const x = (t) => M.l + ((t - T0) / (T1 - T0 || 1)) * iw;
 			const y = (v) => M.t + ih - (v / ymax) * ih;
-			stageBands(svg, x, M, ih);
+			stageBands(svg, x, M, ih, ax.S);
 			for (const v of ticks) {
 				el("line", { x1: M.l, x2: M.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)" }, svg);
 				el("text", { x: M.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg, fmt(v) + (cfg.unit && cfg.unit.length <= 3 ? cfg.unit : ""));
 			}
-			timeAxis(svg, x, M, iw, ih);
+			timeAxis(svg, x, M, iw, ih, ax);
 			const cid = "clip" + ++clipN;
 			el("rect", { x: M.l, y: M.t - 6, width: iw, height: ih + 12 }, el("clipPath", { id: cid }, el("defs", {}, svg)));
 			const g = el("g", { "clip-path": `url(#${cid})` }, svg);
@@ -221,7 +225,7 @@
 					rows.push({ color: `var(${s.color})`, dash: s.dash, value: ok ? fmt(p[1]) + (cfg.unit || "") : "-", name: s.name });
 				});
 				if (cfg.extra) for (const r of cfg.extra(t)) rows.push(r);
-				const head = `${elapsed(t)}${stageAt(t) ? " · " + stageAt(t) : ""}`;
+				const head = `${elapsed(t)}${ax.stageAt(t) ? " · " + ax.stageAt(t) : ""}`;
 				if (active) { ptip.style.display = "none"; if (ev) showTip(ev.clientX, ev.clientY, head, rows); return; }
 				fillTip(ptip, head, rows);
 				ptip.style.display = "block";
@@ -411,6 +415,52 @@
 			});
 		});
 	} else if (DC) DC.remove();
+	/* server resources: a chart per metric family, a line per source */
+	const RS = document.getElementById("resources");
+	function resourceCharts(parent, series, ax) {
+		const colors = ["--s1", "--s2", "--s3", "--s4", "--s5"];
+		const sources = [...new Set(series.map((s) => s.source))].sort();
+		const style = (src) => { const i = sources.indexOf(src); return { color: colors[i % colors.length], dash: Math.floor(i / colors.length) % 2 === 1 }; };
+		const bytes = (list) => {
+			let m = 0;
+			for (const s of list) for (const v of s.v) if (v != null && v > m) m = v;
+			return m >= 2 ** 30 ? { k: 2 ** 30, u: " GiB" } : m >= 2 ** 20 ? { k: 2 ** 20, u: " MiB" } : { k: 1024, u: " KiB" };
+		};
+		const small = (v) => num(v, Number.isInteger(v) ? 0 : v < 10 ? 2 : 1);
+		const fams = [
+			{ m: "cpu_cores", title: "CPU (cores)", sub: "Cores in use by each source", fmt: small, unit: " cores" },
+			{ m: "mem_bytes", title: "Memory", sub: "Memory in use by each source", mem: true },
+			{ m: "gpu_util_pct", title: "GPU utilisation", sub: "Each GPU's utilisation", fmt: (v) => num(v, 0), unit: "%", yMax: 100 },
+			{ m: "gpu_mem_bytes", title: "GPU memory", sub: "Each GPU's memory in use", mem: true },
+		];
+		for (const m of [...new Set(series.map((s) => s.metric))].sort()) if (!fams.some((f) => f.m === m)) fams.push({ m, title: m, sub: "As the samples gave it", fmt: small, unit: "" });
+		const many = sources.length > 8;
+		for (const f of fams) {
+			const list = series.filter((s) => s.metric === f.m);
+			if (!list.length) continue;
+			let k = 1, unit = f.unit, fmt = f.fmt, title = f.title;
+			if (f.mem) { const b = bytes(list); k = b.k; unit = b.u; fmt = small; title += ` (${b.u.trim()})`; }
+			timeChart(parent, {
+				ax, title, sub: f.sub + "; the mean of the samples in each slice of the run", fmt, unit, yMax: f.yMax, labels: !many,
+				series: list.map((s) => ({ name: s.source, short: s.source.length > 14 ? s.source.slice(0, 13) + "…" : s.source, ...style(s.source), width: 1.75, tol: Math.max(30, 3 * (s.step || 0)), data: zip(s.t, s.v, k) })),
+			});
+		}
+	}
+	if (RS && hasTime && D.res) {
+		const g = h("div", { class: "grid" }, RS);
+		resourceCharts(g, D.res.series, AX);
+		if (!g.children.length) g.remove();
+	} else if (RS && D.resRuns) {
+		for (const run of D.resRuns) {
+			const st = run.stages || [];
+			let t0 = 0, t1 = run.end;
+			for (const s of st) if (s.start != null) { t0 = Math.min(t0, s.start); t1 = Math.max(t1, s.end); }
+			if (!(t1 > t0) || !run.series.length) continue;
+			h("h3", {}, RS, run.label);
+			resourceCharts(h("div", { class: "grid" }, RS), run.series, axis(st, t0, t1));
+		}
+	}
+
 	const grid = document.getElementById("stagecharts");
 	if (grid && !grid.children.length) grid.remove();
 	for (const id of ["load", "latency"]) {

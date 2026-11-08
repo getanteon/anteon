@@ -64,6 +64,11 @@ func writeFromLog(in io.Reader, o elive.ReportOptions, open func() (io.Writer, e
 		return err
 	}
 	withOptions(&rep, o)
+	if len(o.Resources) > 0 {
+		if rep.Resources, err = LoadResources(rep, o.Resources, o.ResourcesPer, o.Stderr); err != nil {
+			return err
+		}
+	}
 	w, err := open()
 	if err != nil {
 		return err
@@ -79,6 +84,17 @@ func compareLogs(logs []elive.LabeledLog, o elive.ReportOptions, open func() (io
 			return fmt.Errorf("%s: %w", l.Label, err)
 		}
 		withOptions(&rep, elive.ReportOptions{GPUs: o.GPUs, Tiers: o.Tiers})
+		var files []elive.ResourceLog
+		for _, f := range o.Resources {
+			if f.Run == l.Label {
+				files = append(files, f)
+			}
+		}
+		if len(files) > 0 {
+			if rep.Resources, err = LoadResources(rep, files, o.ResourcesPer, o.Stderr); err != nil {
+				return fmt.Errorf("%s: %w", l.Label, err)
+			}
+		}
 		runs = append(runs, Labeled{Label: l.Label, Report: rep})
 	}
 	var tiers []types.CapacityTier

@@ -270,7 +270,7 @@ You can configure your load test by the CLI options or a config file. Config fil
 | Command | What it does |
 | ------- | ------------ |
 | `ddosify run [TARGET_URL]` | Runs a load test, from `--config FILE` or from a target URL and flags |
-| `ddosify report [LOG...] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout. With two logs or more, a page comparing the runs (`--label`, `--gpus`, `--tier`) |
+| `ddosify report [LOG...] [-o FILE] [--title T]` | Writes the [HTML report](#html-report) of a finished run from its `--json` output; `-o -` writes it to stdout. With two logs or more, a page comparing the runs (`--label`, `--gpus`, `--tier`). `--resources FILE` adds the servers' CPU, memory and GPU over the run and per stage ([Server resources](#server-resources)) |
 | `ddosify version [--json]` | Prints the version, commit, build date and Go version |
 | `ddosify completion bash\|zsh\|fish\|powershell` | Prints a shell completion script |
 | `ddosify docs man\|markdown --dir DIR` | Writes the man pages or the Markdown reference of every command |
@@ -305,7 +305,7 @@ ddosify run [TARGET_URL] [FLAGS]
 | `-T`, `--timeout` | Request timeout in seconds; for a stream it covers the whole stream | `5` |
 | `-P`, `--proxy` | Proxy, `http://user:pass@proxy_host.com:port` | - |
 | `-o`, `--output` | `stdout` or `stdout-json` | `stdout` |
-| `--json` | NDJSON on stdout, the same as `-o stdout-json`: a `"type": "progress"` line every second, a `"type": "request"` line per request with `request_log`, and last the report, one line with `"type": "report"`. Stderr is for a person: what the run is doing every 10 seconds, the first error of each kind the moment it happens, and how it ended. See [Seeing what a run does](#seeing-what-a-run-does) | `false` |
+| `--json` | NDJSON on stdout, the same as `-o stdout-json`: a `"type": "progress"` line every second, a `"type": "request"` line per request with `request_log`, and last the report, one line with `"type": "report"`, whose `started_at` is when the test began (RFC 3339, UTC; each progress line's `time` less its `elapsed_s` is the same moment). Stderr is for a person: what the run is doing every 10 seconds, the first error of each kind the moment it happens, and how it ended. See [Seeing what a run does](#seeing-what-a-run-does) | `false` |
 | `--debug` | Runs one iteration and prints every request and response | `false` |
 | `--cert-path`, `--cert-key-path` | Client certificate and key files | - |
 | `--insecure` | Does not verify the target's TLS certificate. Off by default: certificates are verified | `false` |
@@ -1450,7 +1450,7 @@ ddosify run --config config_examples/sse_llm.json --tokenizer ~/models/Qwen3-8B/
 
 ## HTML report
 
-One self-contained HTML file that opens offline and loads nothing from the network. It holds numbers and step names only: no URL, header, body, token, credential or test data, so it can be sent on. Light and dark follow the reader's system, and a button switches them.
+One self-contained HTML file that opens offline and loads nothing from the network. It holds numbers and step names only, and with `--resources` the sources' names: no URL, header, body, token, credential or test data, so it can be sent on. Light and dark follow the reader's system, and a button switches them.
 
 Write it while the test runs, or afterwards from the `--json` output:
 
@@ -1477,6 +1477,7 @@ What it shows:
 - **Stages**: each stage's outcomes as one bar (within SLO, outside it, 503, 429, other), and its first token and total p50, p95 and p99.
 - **Throughput and interactivity**, when the stages are closed-loop or there are two or more with counted output: each stage as a point, its output tokens a second per GPU against the median answer's tokens a second after its first token, with the TPOT limits of the SLO tiers; and the **capacity** each tier allows, the highest concurrency, or the highest arrival rate of open-loop stages with the requests in flight by Little's law, whose TTFT p99 and TPOT p99 are within it.
 - Tables of the outcomes, the answers' tokens, the stages, every step's percentiles and the shape of the load.
+- **Resources**, with `ddosify report --resources`: the servers' CPU, memory and GPU over the run and per stage, and requests a second per CPU core; see [Server resources](#server-resources). `ddosify run --html` does not take samples: write the report afterwards.
 
 With `request_log` on, `ddosify report` also reads the `request` lines and adds:
 
@@ -1486,6 +1487,61 @@ With `request_log` on, `ddosify report` also reads the `request` lines and adds:
 The window is half the shortest stage past warm-up, from 10 to 60 seconds. When a step streams, the streamed steps are measured; otherwise every step. Memory stays bounded on a long run: the time series keeps about 1,500 points, and above 25,000 requests a step is measured from a seeded uniform sample, which the report says.
 
 `ddosify report` exits `2` when the log can not be read, has no `report` line, or the output can not be written.
+
+### Server resources
+
+`--resources FILE` puts the system under test's resource use on the run's timeline, so the load and what it cost read side by side: a **Resources** section with a chart for CPU, memory, GPU utilisation and GPU memory, one line per source, on the same time axis, stage bands and hover as the other charts; a table of each stage's mean and peak CPU, peak memory, mean and peak GPU utilisation and peak GPU memory per source, the warm-up greyed; and each stage's **succeeded requests a second per CPU core**.
+
+```bash
+scripts/resource-samples.sh kubectl 15 -n my-app > pods.csv &   # beside the test, stopped after it
+scripts/resource-samples.sh nvidia 1000 > gpus.csv &
+ddosify run --config config.json --json > run.ndjson
+kill %1 %2
+ddosify report run.ndjson --resources pods.csv --resources gpus.csv --resources-per masking -o report.html
+
+# runs compared: each file says whose it is, LABEL=FILE with the run's --label (or its file name)
+ddosify report cpu.ndjson gpu.ndjson --label cpu --label gpu \
+  --resources cpu=cpu-pods.csv --resources gpu=gpu-pods.csv --resources gpu=gpus.csv -o compare.html
+```
+
+The file is CSV with a header, any number of files, any order of lines:
+
+```csv
+timestamp,source,metric,value
+1762601234.5,masking-cpu-0,cpu_cores,3.9
+1762601234.5,masking-cpu-0,mem_bytes,2120Mi
+2026-11-08T12:00:01Z,gateway-7c9f,cpu_pct,391.2
+1762601235,gpu0,gpu_util_pct,87
+1762601235,gpu0,gpu_mem_bytes,30500Mi
+```
+
+| Column | Meaning |
+| --- | --- |
+| `timestamp` | Unix seconds, fractional or not (milliseconds are told apart by their size), or RFC 3339; a time with no zone is UTC |
+| `source` | A name: a pod, a container, a GPU (`masking-cpu-0`, `gateway-7c9f`, `gpu0`). The report holds it, so keep addresses out of it |
+| `metric` | `cpu_cores` (CPU in use, in cores), `cpu_pct` (percent of one core, as `docker stats` prints it, read as cores: 391.2 is 3.912), `mem_bytes`, `gpu_util_pct`, `gpu_mem_bytes`. Another name is kept and drawn as a chart of its own, not in the table |
+| `value` | A number, with the unit those tools print if any: `%`, `m` (millicores, `3912m`), `Ki Mi Gi Ti`, `KiB MiB GiB TiB`, `kB MB GB TB`, `B` |
+
+- **Placing the samples.** A sample is placed by its timestamp against the run's start: the progress lines' `time` less `elapsed_s`, else the report line's `started_at`, else the first request's `intended_start`. The run lasts until its last progress line or its last answer, whichever is later. Samples more than 15 seconds before or after are left out. The samples are compared with the load generator's clock: take them on the same machine, or one whose clock agrees with it (NTP).
+- **Per stage.** A stage takes the samples from its start to the next stage's start. The mean is the mean of those samples, the peak the highest one; a run without stages is one row, the whole run.
+- **Per core.** A stage's succeeded requests over its length, over the sum of the mean CPU cores of the sources whose name holds a `--resources-per` text (repeat it; `masking` counts `masking-cpu-0` and `masking-cpu-1`), or of every CPU source without it.
+- **Lines that can not be read**, a missing column or a value that is not a number, are counted and said once per file on stderr, with the first one's line number; so are samples outside the run. A file that can not be opened, or with no sample at all, exits `2`. Memory stays bounded however long the run: each series keeps the mean of its samples in about 1,500 slices of the run, and the per stage figures are counted as the file is read.
+
+[scripts/resource-samples.sh](scripts/resource-samples.sh) writes such a file from `docker stats`, `kubectl top pods` (`KUBECTL="oc adm"` for OpenShift's `oc adm top pods`) or `nvidia-smi`. The same, by hand:
+
+```bash
+# every container on this host, every 2 s
+while :; do docker stats --no-stream --format '{{.Name}},{{.CPUPerc}},{{.MemUsage}}' |
+  awk -F, -v ts="$(date +%s)" '{split($3,m," / "); print ts","$1",cpu_pct,"$2; print ts","$1",mem_bytes,"m[1]}'; sleep 2; done >> docker.csv
+# pods (kubectl top pods, or oc adm top pods), every 15 s; metrics-server refreshes about that often
+while :; do kubectl top pods -n my-app --no-headers |
+  awk -v ts="$(date +%s)" '{print ts","$1",cpu_cores,"$2; print ts","$1",mem_bytes,"$3}'; sleep 15; done >> pods.csv
+# every GPU, every second
+nvidia-smi --query-gpu=index,utilization.gpu,memory.used --format=csv,noheader,nounits -lms 1000 |
+  while IFS=', ' read -r i u m; do t=$(date +%s); echo "$t,gpu$i,gpu_util_pct,$u"; echo "$t,gpu$i,gpu_mem_bytes,${m}Mi"; done >> gpus.csv
+```
+
+Start each file with the header line, `echo timestamp,source,metric,value > pods.csv`, or leave it out: without one the columns are in that order.
 
 ## Common Issues
 

@@ -125,6 +125,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
 </section>
 {{- end}}
 
+{{- if and .Compare .Res}}{{template "resources" .Res}}{{end}}
+
 {{- if not .Compare}}
 <section id="load-section">
   <h2>Load</h2>
@@ -135,6 +137,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
   <h2>Latency</h2>
   <div class="grid" id="latency"></div>
 </section>
+
+{{- with .Res}}{{template "resources" .}}{{end}}
 
 <section id="goodput">
   <h2>Goodput</h2>
@@ -288,3 +292,31 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid va
 <script>{{.Script}}</script>
 </body>
 </html>
+{{- define "resources"}}
+<section id="resources-section">
+  <h2>Resources</h2>
+  <div id="resources"></div>
+  <h3>Per stage</h3>
+  <div class="table-wrap"><table>
+    <thead><tr>{{if .Multi}}<th class="name">Run</th>{{end}}<th class="name">Stage</th><th class="name">Source</th>{{if .HasCPU}}<th>CPU mean (cores)</th><th>CPU peak</th>{{end}}{{if .HasMem}}<th>Memory peak</th>{{end}}{{if .HasGPU}}<th>GPU mean</th><th>GPU peak</th>{{end}}{{if .HasGPUMem}}<th>GPU memory peak</th>{{end}}</tr></thead>
+    <tbody>
+    {{- $r := .}}
+    {{- range .Rows}}
+      <tr{{if .Warmup}} class="warm"{{end}}>{{if $r.Multi}}<td class="run">{{if .First}}{{.Run}}{{end}}</td>{{end}}<td class="name">{{if .First}}{{.Stage}}{{if .WarmupNote}} <span class="muted">(warm-up)</span>{{end}}{{end}}</td><td class="name">{{.Source}}</td>{{if $r.HasCPU}}<td>{{.CPUMean}}</td><td>{{.CPUPeak}}</td>{{end}}{{if $r.HasMem}}<td>{{.MemPeak}}</td>{{end}}{{if $r.HasGPU}}<td>{{.GPUMean}}</td><td>{{.GPUPeak}}</td>{{end}}{{if $r.HasGPUMem}}<td>{{.GPUMemPeak}}</td>{{end}}</tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- if .Rates}}
+  <h3>Throughput per CPU core</h3>
+  <div class="table-wrap"><table>
+    <thead><tr>{{if .Multi}}<th class="name">Run</th>{{end}}<th class="name">Stage</th><th>OK requests/s</th><th>CPU cores, mean</th><th>CPU sources</th><th>OK requests/s per core</th></tr></thead>
+    <tbody>
+    {{- range .Rates}}
+      <tr{{if .Warmup}} class="warm"{{end}}>{{if $r.Multi}}<td class="run">{{.Run}}</td>{{end}}<td class="name">{{.Stage}}{{if .WarmupNote}} <span class="muted">(warm-up)</span>{{end}}</td><td>{{.Rate}}</td><td>{{.Cores}}</td><td>{{.Sources}}</td><td>{{.PerCore}}</td></tr>
+    {{- end}}
+    </tbody>
+  </table></div>
+  {{- end}}
+  <p class="muted">Each stage's samples from its start to the next stage's; the mean is of the samples, the peak the highest one. CPU is in cores, a percent of one core read as a hundredth of a core.{{if .Rates}} Throughput per core is the stage's succeeded requests a second over the sum of the mean CPU cores of {{.PerText}}.{{end}} The charts show the mean of the samples in each slice of the run, about 1,500 slices at most.</p>
+</section>
+{{- end}}

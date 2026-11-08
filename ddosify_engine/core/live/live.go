@@ -136,6 +136,23 @@ type ReportOptions struct {
 	Title string
 	GPUs  int
 	Tiers []types.CapacityTier
+
+	// Resources are server resource samples, CSV of timestamp,source,metric,value, drawn on the
+	// run's timeline. In a comparison each names the run it belongs to by its label.
+	Resources []ResourceLog
+	// ResourcesPer picks the CPU sources that throughput per core divides by: those whose name
+	// holds one of these texts. Empty takes every CPU source.
+	ResourcesPer []string
+	// Stderr hears, once per file, the lines that could not be read and the samples left out.
+	Stderr io.Writer
+}
+
+// ResourceLog is one file of resource samples, the run it belongs to (a comparison's label, empty
+// for a single run) and its name for messages.
+type ResourceLog struct {
+	Run  string
+	Name string
+	In   io.Reader
 }
 
 // LabeledLog is one run's --json output and the name it is shown under.
