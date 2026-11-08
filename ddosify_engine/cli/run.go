@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -628,7 +627,7 @@ func parseProxy(s string) (proxy.Proxy, error) {
 	if s == "" {
 		return p, nil
 	}
-	u, err := url.Parse(s)
+	u, err := config.ProxyURL(s)
 	if err != nil {
 		return p, fmt.Errorf("--proxy: %w", err)
 	}

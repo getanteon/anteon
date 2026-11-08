@@ -488,7 +488,7 @@ There is an example config file at [config_examples/config.json](https://github.
 
 - `proxy` (_optional_)
 
-  This is the equivalent of the `-P` flag.
+  This is the equivalent of the `-P` flag. It can read the address from the environment, for example `"proxy": "{{$PROXY_URL}}"`, so the same config runs behind a different proxy in each environment.
 
 - `output` (_optional_)
 
@@ -875,7 +875,7 @@ ddosify run --config ddosify_config_dynamic.json
 
 In addition, you can also use operating system environment variables. To access these variables, simply add the `$` prefix followed by the variable name wrapped in double curly braces. The syntax for this is `{{$OS_ENV_VARIABLE}}` within the **config file**.
 
-For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, and `Basic Authentication`.
+For instance, to use the `USER` environment variable from your operating system, simply input `{{$USER}}`. You can use operating system environment variables in `URL`, `Headers`, `Body (Payload)`, `Basic Authentication` and `proxy`. The `-P` flag and `DDOSIFY_PROXY` accept `{{$NAME}}` too; an unset one stops the run before anything is sent, like any other missing variable.
 
 Here is an example of using operating system environment variables in the config file. `TARGET_SITE` operating system environment variable is used in `URL` and `USER` environment variable is used in `Headers`.
 
