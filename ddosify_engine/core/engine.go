@@ -598,6 +598,9 @@ func (e *engine) stop(status string) string {
 	if rs, ok := e.reportService.(report.RunStatusSetter); ok {
 		rs.SetRunStatus(status)
 	}
+	if ss, ok := e.reportService.(report.StartSetter); ok && !e.startedAt.IsZero() {
+		ss.SetStartedAt(e.startedAt)
+	}
 	close(e.resultReportChan)
 	close(e.resultAssertChan)
 	e.proxyService.Done()

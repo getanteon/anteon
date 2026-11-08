@@ -149,6 +149,12 @@ func (s *stdoutJson) SetCapacity(c *types.Capacity) {
 	s.result.Capacity = c
 }
 
+// SetStartedAt puts the test's start on the report line, so its other lines' times can be read
+// against the clock of another source, such as server resource samples.
+func (s *stdoutJson) SetStartedAt(t time.Time) {
+	s.result.StartedAt = t.UTC().Format(time.RFC3339Nano)
+}
+
 func (s *stdoutJson) SetSLO(slo *types.SLO) {
 	s.result.ext.slo = slo
 }

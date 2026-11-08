@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -451,5 +452,17 @@ func TestStdoutJsonTestResultStatusShouldBeFalseWhenAssertionsFail(t *testing.T)
 
 	if testStatus {
 		t.Errorf("Test status should be false")
+	}
+}
+
+func TestStdoutJsonStartedAt(t *testing.T) {
+	s := &stdoutJson{}
+	s.Init(false, 0)
+	if b, _ := json.Marshal(s.result); strings.Contains(string(b), "started_at") {
+		t.Errorf("started_at with no start: %s", b)
+	}
+	s.SetStartedAt(time.Date(2026, 11, 8, 13, 0, 0, 500_000_000, time.FixedZone("x", 3600)))
+	if b, _ := json.Marshal(s.result); !strings.Contains(string(b), `"started_at":"2026-11-08T12:00:00.5Z"`) {
+		t.Errorf("started_at not in UTC RFC 3339: %s", b)
 	}
 }

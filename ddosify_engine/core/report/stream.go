@@ -60,6 +60,11 @@ type SLOSetter interface {
 	SetSLO(slo *types.SLO)
 }
 
+// StartSetter is implemented by the report services whose result carries the run's start time.
+type StartSetter interface {
+	SetStartedAt(t time.Time)
+}
+
 // ResultProvider is implemented by the report services that keep the aggregated result.
 // Result is complete once DoneChan has delivered.
 type ResultProvider interface {
