@@ -427,25 +427,7 @@ func TestCaptureEnvShouldSetEmptyStringWhenReqFails(t *testing.T) {
 			_ = h.Init(ctx, test.scenarioStep, proxy, debug, nil)
 			envs := map[string]interface{}{}
 
-			tempDurationClose := durationCloseFunc
-
-			// the close runs on a timer after Send returns
-			durationClosed := make(chan struct{})
-			durationCloseFunc = func(d *duration) func() {
-				return func() {
-					tempDurationClose(d)()
-					close(durationClosed)
-				}
-			}
-			defer func() { durationCloseFunc = tempDurationClose }()
-
 			res := h.Send(&http.Client{}, envs)
-
-			select {
-			case <-durationClosed:
-			case <-time.After(5 * time.Second):
-				t.Errorf("Duration close should be called")
-			}
 
 			if !reflect.DeepEqual(res.ExtractedEnvs, test.expectedExtractedEnvs) {
 				t.Errorf("Extracted env should be set empty string on req failure")
@@ -502,13 +484,7 @@ func TestAssertions(t *testing.T) {
 
 func TestTraceResDur_TypicalScenario(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-
-		resDurCh:   make(chan time.Duration, 1),
-		resStartCh: make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -533,13 +509,7 @@ func TestTraceResDur_TypicalScenario(t *testing.T) {
 
 func TestTraceResDur_UnusualScenario(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-
-		resDurCh:   make(chan time.Duration, 1),
-		resStartCh: make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -565,13 +535,7 @@ func TestTraceResDur_UnusualScenario(t *testing.T) {
 
 func TestTraceServerProcessDur(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-
-		resDurCh:   make(chan time.Duration, 1),
-		resStartCh: make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -592,13 +556,7 @@ func TestTraceServerProcessDur(t *testing.T) {
 
 func TestTraceServerProcessDur_2(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-
-		resDurCh:   make(chan time.Duration, 1),
-		resStartCh: make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -621,13 +579,7 @@ func TestTraceServerProcessDur_2(t *testing.T) {
 
 func TestTraceServerProcessDur_3(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-
-		resDurCh:   make(chan time.Duration, 1),
-		resStartCh: make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -656,12 +608,7 @@ func TestTraceServerProcessDur_3(t *testing.T) {
 
 func TestTraceServerProcessDur_ErrCase(t *testing.T) {
 	var maxDuration int64 = 1<<63 - 1
-	d := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-		resDurCh:             make(chan time.Duration, 1),
-		resStartCh:           make(chan time.Time, 1),
-	}
+	d := &duration{}
 	trace := newTrace(d, nil, nil)
 
 	// below two is called by different goroutines
@@ -673,10 +620,6 @@ func TestTraceServerProcessDur_ErrCase(t *testing.T) {
 		// not called in err case
 		// go trace.GotFirstResponseByte()
 	}()
-
-	// called by Send method
-	// channels should be closed, otherwise get calls can block forever
-	durationCloseFunc(d)()
 
 	// called by Send method
 	// this get needs to wait for GotFirstResponseByte

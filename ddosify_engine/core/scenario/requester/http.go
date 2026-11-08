@@ -227,13 +227,8 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		client.Timeout = time.Duration(h.packet.Timeout) * time.Second
 	}
 
-	durations := &duration{
-		serverProcessDurCh:   make(chan time.Duration, 1),
-		serverProcessStartCh: make(chan time.Time, 1),
-		resDurCh:             make(chan time.Duration, 1),
-		resStartCh:           make(chan time.Time, 1),
-	}
-	headersAddedByClient := make(map[string][]string)
+	durations := &duration{}
+	headersAddedByClient := &clientHeaders{m: make(map[string][]string)}
 	trace := newTrace(durations, h.proxyAddr, headersAddedByClient)
 
 	httpReq, err := h.prepareReq(usableVars, trace)
@@ -370,9 +365,6 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 		ddResTime = time.Duration(resTime*1000) * time.Millisecond
 	}
 
-	// close duration channels, so that if any goroutine is waiting on them, it can return
-	go time.AfterFunc(10*time.Millisecond, durationCloseFunc(durations))
-
 	// Finalize
 	res = &types.ScenarioStepResult{
 		StepID:        h.packet.ID,
@@ -386,7 +378,7 @@ func (h *HttpRequester) Send(client *http.Client, envs map[string]interface{}) (
 
 		Url:         httpReq.URL.String(),
 		Method:      httpReq.Method,
-		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient),
+		ReqHeaders:  concatHeaders(httpReq.Header, headersAddedByClient.snapshot()),
 		ReqBody:     copiedReqBody,
 		RespHeaders: respHeaders,
 		RespBody:    respBody,
@@ -468,12 +460,6 @@ func streamErrType(err error) types.RequestError {
 		return types.RequestError{Type: types.ErrorConn, Reason: types.ReasonReadTimeout, Detail: err.Error()}
 	}
 	return fetchErrType(err)
-}
-
-var durationCloseFunc = func(d *duration) func() {
-	return func() {
-		d.close()
-	}
 }
 
 func concatEnvs(envs1, envs2 map[string]interface{}) map[string]interface{} {
@@ -778,8 +764,8 @@ func (h *HttpRequester) Type() string {
 	return "HTTP"
 }
 
-func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string][]string) *httptrace.ClientTrace {
-	var dnsStart, connStart, tlsStart, reqStart time.Time
+func newTrace(duration *duration, proxyAddr *url.URL, headersByClient *clientHeaders) *httptrace.ClientTrace {
+	var dnsStart, connStart, tlsStart time.Time
 
 	// According to the doc in the trace.go;
 	// Some of the hooks below can be triggered multiple times in case of retried connections, "Happy Eyeballs" etc..
@@ -844,26 +830,20 @@ func newTrace(duration *duration, proxyAddr *url.URL, headersByClient map[string
 			m.Unlock()
 		},
 		GotConn: func(connInfo httptrace.GotConnInfo) {
-			m.Lock()
-			if reqStart.IsZero() {
-				reqStart = time.Now()
-			}
-			m.Unlock()
+			duration.setReqStart(time.Now())
 		},
 		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			// no need to handle error in here. We can detect it at http.Client.Do return.
+			// A failed write (the server answered early and stopped reading a large body) leaves the
+			// write time unknown; the phases are then derived from the first response byte.
 			if w.Err == nil {
-				go duration.setReqDur(time.Since(reqStart))
-				go duration.setServerProcessStart(time.Now())
+				duration.setWroteAt(time.Now())
 			}
 		},
 		GotFirstResponseByte: func() {
 			duration.setFirstByteAt(time.Now())
-			go duration.setServerProcessDur()
-			go duration.setResStartTime(time.Now())
 		},
 		WroteHeaderField: func(key string, value []string) {
-			headersByClient[key] = value
+			headersByClient.set(key, value)
 		},
 	}
 }
@@ -936,7 +916,39 @@ func (h *HttpRequester) captureEnvironmentVariables(header http.Header, respBody
 	return failedCaptures
 }
 
+// clientHeaders are the headers the transport adds to a request. The transport writes them from
+// its own goroutine, which may still be writing when an early answer has already returned the
+// response, so they are guarded.
+type clientHeaders struct {
+	mu sync.Mutex
+	m  map[string][]string
+}
+
+func (c *clientHeaders) set(key string, value []string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.m[key] = value
+}
+
+func (c *clientHeaders) snapshot() map[string][]string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make(map[string][]string, len(c.m))
+	for k, v := range c.m {
+		out[k] = v
+	}
+	return out
+}
+
+// duration holds the timing of one request. The httptrace hooks record timestamps under a mutex
+// and the getters derive the phases from them, so no getter ever waits for a hook: a hook that
+// never fires (an early answer while a large body is still being written) or fires out of order
+// yields a zero or derived phase, never a hang.
 type duration struct {
+	mu sync.Mutex
 
 	// DNS lookup duration. If IP:Port porvided instead of domain, this will be 0
 	dnsDur time.Duration
@@ -947,57 +959,33 @@ type duration struct {
 	// TLS handshake duration. For HTTP this will be 0
 	tlsDur time.Duration
 
-	// Request write duration
-	reqDur time.Duration
-
-	// Response read duration
+	// Response read duration, from the first response byte to the response headers read
 	resDur time.Duration
 
-	// Duration between full request write to first response. AKA Time To First Byte (TTFB)
-	serverProcessDur time.Duration
+	// Time the connection was got, the start of the request write
+	reqStart time.Time
 
-	// Time of the first response byte, for streams
+	// Time the request was fully written; zero when the write failed or has not ended
+	wroteAt time.Time
+
+	// Time of the first response byte
 	firstByteAt time.Time
-
-	// Time at response reading start
-	resStart         time.Time
-	resStartCh       chan time.Time
-	resStartChClosed bool
-
-	serverProcessDurCh       chan time.Duration
-	serverProcessDurChClosed bool
-
-	serverProcessStartCh       chan time.Time
-	serverProcessStartChClosed bool
-
-	resDurCh       chan time.Duration
-	resDurChClosed bool
-
-	mu        sync.Mutex
-	chMu      sync.Mutex
-	getChLock sync.Mutex
 }
 
-func (d *duration) setResStartTime(t time.Time) {
-	d.chMu.Lock()
-	defer d.chMu.Unlock()
-
-	if !d.resStartChClosed {
-		d.resStartCh <- t
-		d.resStartChClosed = true
-		close(d.resStartCh)
+func (d *duration) setReqStart(t time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.reqStart.IsZero() {
+		d.reqStart = t
 	}
 }
 
 // this maybe called multiple times in case of retried requests by WroteRequest hook
-func (d *duration) setServerProcessStart(t time.Time) {
-	d.chMu.Lock()
-	defer d.chMu.Unlock()
-
-	if !d.serverProcessStartChClosed {
-		d.serverProcessStartCh <- t
-		d.serverProcessStartChClosed = true
-		close(d.serverProcessStartCh)
+func (d *duration) setWroteAt(t time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.wroteAt.IsZero() {
+		d.wroteAt = t
 	}
 }
 
@@ -1057,127 +1045,73 @@ func (d *duration) getConnDur() time.Duration {
 	return d.connDur
 }
 
-func (d *duration) setReqDur(t time.Duration) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.reqDur == 0 {
-		d.reqDur = t
-	}
+// wroteBeforeAnswer tells whether the request was fully written before the first response byte,
+// the normal order. Callers hold d.mu.
+func (d *duration) wroteBeforeAnswer() bool {
+	return !d.wroteAt.IsZero() && (d.firstByteAt.IsZero() || !d.wroteAt.After(d.firstByteAt))
 }
 
+// getReqDur is the request write time. When the server answered before the write ended, the
+// request was being written until the first response byte, and that is the write time.
 func (d *duration) getReqDur() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return d.reqDur
+	return d.reqDurLocked()
 }
 
-func (d *duration) setServerProcessDur() {
-	serverProcessStart := <-d.serverProcessStartCh
-	d.chMu.Lock()
-	defer d.chMu.Unlock()
-
-	if !d.serverProcessDurChClosed {
-		d.serverProcessDurCh <- time.Since(serverProcessStart)
-		d.serverProcessDurChClosed = true
-		close(d.serverProcessDurCh)
+func (d *duration) reqDurLocked() time.Duration {
+	if d.reqStart.IsZero() {
+		return 0
 	}
-
+	if d.wroteBeforeAnswer() {
+		return nonNegative(d.wroteAt.Sub(d.reqStart))
+	}
+	if !d.firstByteAt.IsZero() {
+		return nonNegative(d.firstByteAt.Sub(d.reqStart))
+	}
+	return 0
 }
 
+// getServerProcessDur is the time from the full request write to the first response byte, AKA
+// Time To First Byte (TTFB). It is 0 when the server answered before the request was written.
 func (d *duration) getServerProcessDur() time.Duration {
-	d.getChLock.Lock()
-	defer d.getChLock.Unlock()
-
-	serverProcessDur, ok := <-d.serverProcessDurCh
-
-	if !ok { // channel closed, dur already set or closed by timer
-		return d.serverProcessDur
-	}
-
-	d.serverProcessDur = serverProcessDur
-	return d.serverProcessDur
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.serverProcessDurLocked()
 }
 
-func (d *duration) setResDur() {
-	resStart := <-d.resStartCh
-
-	d.chMu.Lock()
-	defer d.chMu.Unlock()
-
-	if !d.resDurChClosed {
-		d.resDurCh <- time.Since(resStart)
-		d.resDurChClosed = true
-		close(d.resDurCh)
+func (d *duration) serverProcessDurLocked() time.Duration {
+	if d.firstByteAt.IsZero() || !d.wroteBeforeAnswer() {
+		return 0
 	}
+	return nonNegative(d.firstByteAt.Sub(d.wroteAt))
+}
 
+// setResDur is called when the response headers are read.
+func (d *duration) setResDur() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.resDur == 0 && !d.firstByteAt.IsZero() {
+		d.resDur = nonNegative(time.Since(d.firstByteAt))
+	}
 }
 
 func (d *duration) getResDur() time.Duration {
-	d.getChLock.Lock()
-	defer d.getChLock.Unlock()
-
-	resDur, ok := <-d.resDurCh
-
-	if !ok { // channel closed, probably resDur already set and chan closed by sender
-		return d.resDur
-	}
-
-	d.resDur = resDur
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return d.resDur
-
 }
 
 func (d *duration) totalDuration() time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.dnsDur + d.connDur + d.tlsDur + d.reqDur + d.getServerProcessDur() + d.getResDur()
+	return d.dnsDur + d.connDur + d.tlsDur + d.reqDurLocked() + d.serverProcessDurLocked() + d.resDur
 }
 
-// normally channels are closed by sender, but in case of senders are not called, we close them here
-func (d *duration) close() {
-	d.chMu.Lock()
-	defer d.chMu.Unlock()
-
-	// close channels
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// channel already closed
-			}
-		}()
-		d.serverProcessStartChClosed = true
-		close(d.serverProcessStartCh)
-	}()
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// channel already closed
-			}
-		}()
-		d.serverProcessDurChClosed = true
-		close(d.serverProcessDurCh)
-	}()
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// channel already closed
-			}
-		}()
-		d.resStartChClosed = true
-		close(d.resStartCh)
-	}()
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				// channel already closed
-			}
-		}()
-		d.resDurChClosed = true
-		close(d.resDurCh)
-	}()
-
+func nonNegative(t time.Duration) time.Duration {
+	if t < 0 {
+		return 0
+	}
+	return t
 }
