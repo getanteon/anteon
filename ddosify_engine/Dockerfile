@@ -1,5 +1,5 @@
 # Builds ddosify from source: docker build -t ddosify ddosify_engine
-FROM golang:1.26.10-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS builder
+FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
