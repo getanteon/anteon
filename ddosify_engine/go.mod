@@ -20,7 +20,7 @@ require (
 	github.com/mattn/go-colorable v0.1.16
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/tidwall/gjson v1.20.0
 	golang.org/x/net v0.62.0
 )
